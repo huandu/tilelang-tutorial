@@ -5,7 +5,8 @@
 - GitHub repository: `huandu/tilelang-tutorial`
 - Vercel project: `tilelang-tutorial`
 - Production URL: <https://tilelang-tutorial.huandu.me>
-- Cloudflare DNS record: `CNAME tilelang-tutorial → cname.vercel-dns.com`
+- Cloudflare DNS record:
+  `CNAME tilelang-tutorial → 1506863d884e7057.vercel-dns-017.com` (DNS only)
 - Build command: `pnpm run build`
 - Install command: `pnpm install --frozen-lockfile`
 - Node.js: 24.x on Vercel
@@ -42,10 +43,9 @@ Check at least:
 
 ## Domain changes
 
-The domain is managed in Cloudflare and attached to the Vercel project. The
-expected record is a proxied or unproxied CNAME to `cname.vercel-dns.com`,
-depending on the existing zone policy. Do not modify the apex `huandu.me`
-records when changing this subdomain.
+The domain is managed in Cloudflare and attached to the Vercel project. Keep the
+subdomain CNAME in DNS-only mode so Vercel can issue and renew its certificate.
+Do not modify the apex `huandu.me` records when changing this subdomain.
 
 After DNS propagation:
 
