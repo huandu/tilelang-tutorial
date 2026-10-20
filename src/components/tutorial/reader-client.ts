@@ -42,14 +42,17 @@ function storeTheme(theme: ReaderTheme): void {
   }
 }
 
-function requestFullscreen(): void {
+function requestFullscreen(onSuccess: () => void): void {
   try {
     // Called synchronously from the click handler, so the user gesture still
     // counts. iOS Safari has no element fullscreen; there the focus layout is
     // the whole effect, which is why the call must never throw.
-    void document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {
-      // Fullscreen can also be refused by permissions or a browser policy.
-    });
+    void document.documentElement
+      .requestFullscreen({ navigationUI: 'hide' })
+      .then(onSuccess)
+      .catch(() => {
+        // A refused request keeps the distraction-free layout as the fallback.
+      });
   } catch {
     // No Fullscreen API at all.
   }
@@ -83,6 +86,8 @@ function init(): void {
   let active = false;
   /** The site theme to restore on exit; captured when the mode is entered. */
   let previousTheme: string | null = null;
+  /** A browser can refuse fullscreen; only then should Esc handling stay inert. */
+  let fullscreenEntered = false;
 
   const paintThemeButtons = (theme: ReaderTheme): void => {
     for (const button of themeButtons) {
@@ -110,6 +115,7 @@ function init(): void {
     if (previousTheme === null) root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', previousTheme);
     previousTheme = null;
+    fullscreenEntered = false;
     syncChrome();
     releaseFullscreen();
     enterButton.focus();
@@ -124,7 +130,9 @@ function init(): void {
     applyTheme(theme);
     paintThemeButtons(theme);
     syncChrome();
-    requestFullscreen();
+    requestFullscreen(() => {
+      fullscreenEntered = true;
+    });
     toolbar.focus();
   };
 
@@ -148,7 +156,12 @@ function init(): void {
   // Pressing Esc leaves fullscreen without going through our button; leaving
   // fullscreen is treated as leaving the mode in both directions.
   document.addEventListener('fullscreenchange', () => {
-    if (active && document.fullscreenElement === null) leave();
+    if (!active) return;
+    if (document.fullscreenElement !== null) {
+      fullscreenEntered = true;
+      return;
+    }
+    if (fullscreenEntered) leave();
   });
 }
 
