@@ -60,6 +60,10 @@ reference pages keep the normal shell so their footer spacing matches the site.
 Fullscreen requires a user gesture, so reading mode is intentionally not
 restored across navigation. Only the selected colour is persisted.
 
+The floating entry control is independent of page layout. It hides as soon as
+the footer enters the viewport, which prevents it from covering footer links
+without adding compensation padding or empty space to the footer.
+
 ## Dependency boundaries
 
 - Browser code may import pure modules only.

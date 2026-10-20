@@ -88,6 +88,8 @@ function init(): void {
   let previousTheme: string | null = null;
   /** A browser can refuse fullscreen; only then should Esc handling stay inert. */
   let fullscreenEntered = false;
+  /** Hide the floating entry before it can overlap the footer's own links. */
+  let footerVisible = false;
 
   const paintThemeButtons = (theme: ReaderTheme): void => {
     for (const button of themeButtons) {
@@ -103,8 +105,16 @@ function init(): void {
   };
 
   const syncChrome = (): void => {
-    enterButton.hidden = active;
+    enterButton.hidden = active || footerVisible;
     toolbar.hidden = !active;
+  };
+
+  const footer = document.querySelector<HTMLElement>('footer');
+  const syncFooterVisibility = (): void => {
+    const nextVisible = footer !== null && footer.getBoundingClientRect().top < window.innerHeight;
+    if (footerVisible === nextVisible) return;
+    footerVisible = nextVisible;
+    syncChrome();
   };
 
   const leave = (): void => {
@@ -140,6 +150,9 @@ function init(): void {
   // put the two states in sync before wiring the buttons.
   controls.hidden = false;
   syncChrome();
+  window.addEventListener('scroll', syncFooterVisibility, { passive: true });
+  window.addEventListener('resize', syncFooterVisibility);
+  syncFooterVisibility();
   enterButton.addEventListener('click', enter);
   exitButton.addEventListener('click', leave);
 

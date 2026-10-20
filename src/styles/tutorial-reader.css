@@ -91,15 +91,6 @@ html[data-reader='on'] .chapter-prose :where(h2, h3, h4) {
   scroll-margin-top: 2rem;
 }
 
-/*
-  Keep the floating entry button from sitting on the footer's GitHub link. Only
-  the button state needs this, but the extra space is harmless in reader mode,
-  where the footer is hidden.
-*/
-body:has([data-reader-controls]) footer {
-  padding-bottom: 1.5rem;
-}
-
 /* -------------------------------------------------------------------------- */
 /* Floating controls                                                          */
 /* -------------------------------------------------------------------------- */
