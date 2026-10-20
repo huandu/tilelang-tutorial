@@ -1,0 +1,31 @@
+{
+  "id": "04-rope-two-conventions",
+  "title": "RoPE 的两种配对约定",
+  "kind": "compare",
+  "section": "3.3",
+  "caption": "同一个 8 维向量，两种约定的配对方式不同，结果也不同——写错了不会报错。",
+  "columns": ["interleaved（原版 RoFormer）", "half-split（NeoX / Llama）"],
+  "rows": [
+    { "label": "配对", "values": ["(0,1) (2,3) (4,5) (6,7)", "(0,4) (1,5) (2,6) (3,7)"] },
+    {
+      "label": "公式",
+      "values": [
+        "y[2p] = x[2p]·c[p] − x[2p+1]·s[p]\ny[2p+1] = x[2p]·s[p] + x[2p+1]·c[p]",
+        "y[p] = x[p]·c[p] − x[p+H]·s[p]\ny[p+H] = x[p+H]·c[p] + x[p]·s[p]"
+      ]
+    },
+    {
+      "label": "访存",
+      "values": [
+        "按 pair 循环时两条 store 步长都是 2，散访；正确做法是按 128-bit 向量读整行",
+        "两条 store 的索引步长都是 1，各自可向量化"
+      ]
+    },
+    { "label": "适用模型", "values": ["RoFormer / non-neox", "NeoX / Llama / Qwen"] }
+  ],
+  "notes": [
+    "H = R/2，cos/sin 表形状 (seq_len, R/2)：一个 pair 占一行",
+    "自检：c=1, s=0 时应原样返回 x；c=0, s=1 时两种约定的输出必须不同",
+    "错误只体现在数值上——两种约定都能跑完，不报错也不崩"
+  ]
+}

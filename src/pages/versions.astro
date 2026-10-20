@@ -1,0 +1,39 @@
+---
+/* eslint-disable astro/no-set-html-directive -- see the note in `[slug].astro`. */
+import TutorialLayout from '@layouts/TutorialLayout.astro';
+import versionsJson from '@data/tutorial/generated/versions.json';
+
+interface VersionsPayload {
+  html: string;
+}
+
+const versions: VersionsPayload = versionsJson;
+const versionsHtml = versions.html;
+---
+
+<TutorialLayout
+  description="TileLang 教程锁定的版本：仓库、commit、日期与验证边界。"
+  path="/versions/"
+  title="版本锁定"
+>
+  <div class="mx-auto w-full max-w-3xl px-5 py-12 sm:px-8">
+    <nav aria-label="面包屑" class="breadcrumbs text-sm opacity-70" data-reader-hide>
+      <ul>
+        <li>
+          <a class="link link-hover" href="/">
+            TileLang 教程
+          </a>
+        </li>
+        <li>版本锁定</li>
+      </ul>
+    </nav>
+    <article class="prose mt-8 max-w-none" set:html={versionsHtml} />
+    <p class="mt-10 text-sm opacity-60">
+      全部引用的上游地址见{' '}
+      <a class="link link-hover" href="/references/">
+        资料与版本
+      </a>
+      。
+    </p>
+  </div>
+</TutorialLayout>

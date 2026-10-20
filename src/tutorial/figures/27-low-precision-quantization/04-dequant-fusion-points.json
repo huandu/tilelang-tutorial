@@ -1,0 +1,47 @@
+{
+  "id": "04-dequant-fusion-points",
+  "title": "反量化可以融合在哪一级",
+  "caption": "同一个「W 是低精度、要乘 scale 才能用」的问题有三个融合位置：搬入时、主循环里、累加之后；代价与适用条件由 scale 的粒度倒推。",
+  "kind": "compare",
+  "section": "4.3",
+  "labelWidth": 110,
+  "columns": ["A 搬入时（prologue）", "B 主循环里（L1→L0）", "C 累加之后（epilogue）"],
+  "rows": [
+    {
+      "label": "做法",
+      "values": [
+        "GM(int4) --T.copy--> SMEM --解码--> 寄存器 --T.gemm--> 累加器",
+        "GM --MTE--> L1(int8 + e8m0 scale) --L1→L0--> L0A/L0B，搬运指令里按粒度作用 scale",
+        "L0C/寄存器里的 int32 或 fp32 累加结果 --乘 scale--> 输出"
+      ]
+    },
+    {
+      "label": "代表",
+      "values": [
+        "examples/dequantize_gemm/*（_tir_packed_to_unsigned_convert、w4a8 符号扩展）",
+        "CATLASS 的 BlockMmadTla<MmadMx<...>>；tilelang/ascend 粒度固定 32 的 T.gemm_blockscaled",
+        "tilelang-ascend example_quant_batch_matmul：T.gemm_v0 累加到 int32，再 c_scale *= scale_ub"
+      ]
+    },
+    {
+      "label": "优点",
+      "values": [
+        "反量化只做一次，之后整条 GEMM 路径是普通 fp16 GEMM",
+        "Cube 直接吃低精度操作数，L1 带宽省下来",
+        "整数累加精确，scale 只乘一次，误差只来自权重量化"
+      ]
+    },
+    {
+      "label": "缺点 / 适用条件",
+      "values": [
+        "SMEM 要按解压后的尺寸开（4 bit → 16 bit 是 4 倍）",
+        "粒度被硬件模板固定，改粒度要改模板",
+        "只适用于 scale 与 K 无关（per-tensor / per-channel）；per-K-block 就得回到 B"
+      ]
+    }
+  ],
+  "notes": [
+    "选择判据：scale 与 K 无关 → C；权重 4 bit + group scale → A；硬件提供块缩放 MMA（SM100 tcgen05、昇腾 950 Cube）→ B。",
+    "位置 C 的「整数累加精确」只在累加器是整数时成立：fp8 权重配 fp16 累加器时，scale 乘法仍精确，但累加本身已经有误差。"
+  ]
+}

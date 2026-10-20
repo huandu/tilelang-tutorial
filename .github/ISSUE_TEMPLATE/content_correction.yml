@@ -1,0 +1,30 @@
+name: Content correction
+description: 报告技术、引用或文字问题
+title: "[Content] "
+labels: ["content"]
+body:
+  - type: input
+    id: chapter
+    attributes:
+      label: 章节或页面
+      placeholder: 第 14 章 / 14-operators-gemm
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: 问题
+      description: 指出原文和问题所在。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 依据
+      description: 给出源码 tag、文件行号、官方文档或论文链接。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议修改

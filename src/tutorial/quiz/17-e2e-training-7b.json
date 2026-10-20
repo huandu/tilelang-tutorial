@@ -1,0 +1,89 @@
+{
+  "chapter": "17-e2e-training-7b",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "Qwen2.5-7B 训练态显存账本里，占用最大的是哪一类，为什么？",
+      "options": [
+        "bf16 权重，因为它要参与每一次前向与反向",
+        "bf16 梯度，因为反向会为每个参数各算一份",
+        "Adam 的 m、v 与 fp32 主权重，因为优化器状态是 fp32 且每个参数多份",
+        "激活值，因为它随 batch 与序列长度线性增长"
+      ],
+      "answer": 2,
+      "explain": "见 §2.1：权重+梯度仅 28 GiB，Adam m/v 与 fp32 主权重合计 85 GiB，占 113.40 GiB 的约 75%，所以「训练比推理吃显存」的根子在优化器；激活值不在这张账本里。"
+    },
+    {
+      "id": "q2",
+      "stem": "训练算力估算 C ≈ 6·N·D 中的「6」是怎么来的？",
+      "options": [
+        "前向 2 次、反向 4 次浮点运算（乘加各算一次）",
+        "前向 3 次、反向 3 次浮点运算",
+        "一次前向加一次反向共 6 次矩阵乘",
+        "忽略 attention 后剩下的 6 个算子在每层各跑一次"
+      ],
+      "answer": 0,
+      "explain": "见 §2.3：前向每个参数每个 token 约 2 FLOP，反向对权重与输入各求一次梯度约为前向的 2 倍（4），合计 6；这个式子忽略了 attention 里随序列长度二次增长的项。"
+    },
+    {
+      "id": "q3",
+      "stem": "验证换过 TileLang 算子的前向结果时，为什么 bf16 不能用 1e-6 当误差门限？",
+      "options": [
+        "因为 bf16 的动态范围太小，容易出现 inf",
+        "因为 bf16 只有 8 位尾数，本身就带千分级相对误差，示例用的是 rtol=atol=2e-2",
+        "因为 TileLang 的 kernel 只保证 bitwise 一致，无法比较误差",
+        "因为 1e-6 是 fp16 的门限，bf16 必须用 1e-3"
+      ],
+      "answer": 1,
+      "explain": "见 §7.3：门限要按 dtype 选，bf16 只有 8 位尾数、天然带千分级相对误差，示例用 bf16 rtol=atol=2e-2、fp32 1e-5；用 1e-6 只会把正常的舍入当成错误。"
+    },
+    {
+      "id": "q4",
+      "stem": "训练日志里 GPU 利用率周期性掉到接近 0，按本章的排查顺序应该先做什么？",
+      "options": [
+        "先调 kernel 的 tile 与流水，把单算子做快",
+        "先加大 micro_batch，让 GPU 有更多活干",
+        "先查 DataLoader 的 num_workers、tokenizer 是否单线程瓶颈、packing 是否在循环里同步做",
+        "先把混合精度从 bf16 换成 fp16 并打开 GradScaler"
+      ],
+      "answer": 2,
+      "explain": "见 §4.4：这种症状说明数据管线供给不够快，应先查 num_workers、tokenizer 与 packing 的时机；kernel 再快也救不了喂不进去的数据。"
+    },
+    {
+      "id": "q5",
+      "stem": "关于 TileLang 在训练中的角色，下面哪一句最准确？",
+      "options": [
+        "它是一套训练框架，负责数据、分布式、优化器与 checkpoint",
+        "它只把模型前向里的热点算子写成 tile kernel，反向必须自己用 torch.autograd.Function 或自写 kernel 补上",
+        "它替换整个模型前向，并自动生成对应的 autograd 图",
+        "它只能写反向 kernel，前向仍由 PyTorch 负责"
+      ],
+      "answer": 1,
+      "explain": "见 §7.4：TileLang 产出的是前向 device 函数，源码里搜不到 autograd/requires_grad，loss.backward() 穿不过裸 kernel；数据、分布式、优化器、checkpoint、评测都不归它管。"
+    },
+    {
+      "id": "q6",
+      "stem": "「TileLang 通过 tilelang/jit/adapter/torch/ 这个通用的 torch 适配层接进 PyTorch」这句话错在哪？",
+      "options": [
+        "错在 TileLang 完全不能收发 torch 张量",
+        "错在 v0.1.15 里该目录只服务苹果 Metal，CUDA/昇腾走的是 tvm_ffi 或 cython 适配器",
+        "错在 out_idx 只能指定正数下标",
+        "错在编译产物返回的是 numpy 数组而不是张量"
+      ],
+      "answer": 1,
+      "explain": "见 §7.2：该目录只有 __init__.py、kernel_cache.py、metal.py，且 execution_backend == \"torch\" 时断言 is_metal_target；CUDA/昇腾默认执行后端是 tvm_ffi（可选 cython），它们直接收发 torch 张量。"
+    },
+    {
+      "id": "q7",
+      "stem": "checkpoint 只保存模型权重、不保存优化器状态与步数，恢复训练后最可能出现什么？",
+      "options": [
+        "loss 出现一次跳变，因为 Adam 的动量没了",
+        "训练完全无法继续，程序直接报错退出",
+        "模型权重被清零，等于重新随机初始化",
+        "没有任何影响，因为优化器状态可以从梯度重新推导"
+      ],
+      "answer": 0,
+      "explain": "见 §6：checkpoint 至少要存权重、优化器状态与已完成的步数/数据位置；只存权重时 Adam 的动量丢失，恢复后 loss 会跳变，且数据位置无法精确重放。"
+    }
+  ]
+}

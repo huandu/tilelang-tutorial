@@ -1,0 +1,81 @@
+{
+  "id": "03-tileop-to-cce",
+  "title": "从方言 op 到 CCE intrinsic 的链路",
+  "caption": "T.copy 先在 Python 方言层被重拼成 tl.tileop.ascend_copy，随后 AscendLowerTileOp 按 scope 选 DMAPath，codegen 再把每个 op 换成 asc_* 内置函数。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 26,
+  "section": "4.3",
+  "nodes": [
+    {
+      "id": "u",
+      "label": "用户代码",
+      "sub": "T.copy(A[m, k*block_K], A_l1) · T.gemm(A_l1, B_l1, C_l0c)",
+      "tone": "default"
+    },
+    {
+      "id": "p",
+      "label": "Python 方言层",
+      "sub": "tilelang/ascend/language/* — copy 重拼成 tl.tileop.ascend_copy",
+      "tone": "default"
+    },
+    {
+      "id": "ir",
+      "label": "TIR + SBlock",
+      "sub": "tl.tileop.ascend_copy / tl.tileop.gemm",
+      "tone": "default"
+    },
+    {
+      "id": "sch",
+      "label": "AscendPassPipelineBody",
+      "sub": "AutoSchedule → AssignCore → InsertSync",
+      "tone": "accent"
+    },
+    {
+      "id": "cut",
+      "label": "AscendLowerTileOp",
+      "sub": "按 src/dst scope 选 DMAPath",
+      "tone": "accent"
+    },
+    {
+      "id": "op",
+      "label": "ascend_copy_* 调用 + ascend_mad",
+      "sub": "7 条搬运 + MX 两条",
+      "tone": "default"
+    },
+    {
+      "id": "cg",
+      "label": "CodeGenTileLangAscend",
+      "sub": "EmitGmToUbufCopy_ / EmitL1ToL0Copy_ / EmitMad_",
+      "tone": "accent"
+    },
+    {
+      "id": "cce",
+      "label": "CCE 源文本",
+      "sub": "asc_copy_gm2ub_align(...) / asc_mmad(...)",
+      "tone": "store"
+    },
+    { "id": "bisheng", "label": "bisheng dav-3510 + ld.lld", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "u", "to": "p" },
+    { "from": "p", "to": "ir", "label": "重拼" },
+    { "from": "ir", "to": "sch" },
+    { "from": "sch", "to": "cut" },
+    { "from": "cut", "to": "op", "label": "按 scope 选通路" },
+    { "from": "op", "to": "cg", "label": "按名分派" },
+    { "from": "cg", "to": "cce", "label": "发射" },
+    { "from": "cce", "to": "bisheng" }
+  ],
+  "groups": [
+    {
+      "label": "编译期（TIR pass + codegen）",
+      "nodes": ["sch", "cut", "op", "cg"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "同步不是用户写的，而且在 IR 里先于 intrinsic 产生：InsertSync 在 LowerScheduledTIR 之前运行，插入的是 hard_event（MTE2_FIX 这类 pipe 对）。",
+    "RewriteFlagToBuf 把 hard_event 落到 8 槽 flag 命名空间，超出的按背包问题溢出到共享 get_buf/rls_buf 互斥池。"
+  ]
+}

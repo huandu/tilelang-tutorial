@@ -1,0 +1,99 @@
+---
+/* eslint-disable astro/no-set-html-directive -- see the note in `../[slug].astro`. */
+import TutorialLayout from '@layouts/TutorialLayout.astro';
+import notesJson from '@data/tutorial/generated/notes.json';
+import { NOTES, type TutorialNote } from '@data/tutorial/generated/notes.ts';
+
+interface NoteIndexEntry {
+  slug: string;
+  title: string;
+}
+
+/*
+  `getStaticPaths` is hoisted into its own chunk, so everything it needs is
+  computed inside it; the component then re-derives the same list for the prev /
+  next links.
+*/
+export function getStaticPaths(): { params: { slug: string }; props: { note: TutorialNote } }[] {
+  const notes: NoteIndexEntry[] = notesJson.notes;
+  return notes.flatMap((note) => {
+    const resolved = NOTES[note.slug];
+    // A note listed in the index but missing from the barrel is a build bug;
+    // skipping it here keeps the page from rendering an empty shell.
+    return resolved === undefined
+      ? []
+      : [{ params: { slug: note.slug }, props: { note: resolved } }];
+  });
+}
+
+interface Props {
+  note: TutorialNote;
+}
+
+const { note } = Astro.props;
+const notes: NoteIndexEntry[] = notesJson.notes;
+const position = notes.findIndex((entry) => entry.slug === note.slug);
+const previous = position > 0 ? notes[position - 1] : undefined;
+const next = position >= 0 && position < notes.length - 1 ? notes[position + 1] : undefined;
+---
+
+<TutorialLayout
+  description={`${note.title}——TileLang 教程的编者笔记。`}
+  path={`/notes/${note.slug}/`}
+  title={note.title}
+>
+  <div class="mx-auto w-full max-w-3xl px-5 py-12 sm:px-8">
+    <nav aria-label="面包屑" class="breadcrumbs text-sm opacity-70" data-reader-hide>
+      <ul>
+        <li>
+          <a class="link link-hover" href="/">
+            TileLang 教程
+          </a>
+        </li>
+        <li>
+          <a class="link link-hover" href="/notes/">
+            编者笔记
+          </a>
+        </li>
+        <li>{note.title}</li>
+      </ul>
+    </nav>
+
+    <header class="mt-6 border-b border-base-300 pb-6">
+      <p class="text-sm font-medium text-base-content/60">编者笔记</p>
+      <h1 class="mt-2 text-3xl font-semibold tracking-tight">{note.title}</h1>
+      <div class="alert mt-4 bg-base-200 text-sm">
+        <span>
+          这篇笔记由教程编者撰写，分析基线是资料库的 <code>main</code> 快照（2026-09-30）。
+          正式章节锁定的是 release tag，个别 pass 名与 API 可能与本文不同；逐行核对请以
+          <a class="link link-hover" href="/versions/">
+            版本锁定
+          </a>{' '}
+          页为准。
+        </span>
+      </div>
+    </header>
+
+    <article class="prose mt-8 max-w-none" set:html={note.html} />
+
+    <nav
+      aria-label="笔记导航"
+      class="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-base-300 pt-6 text-sm"
+    >
+      <div>
+        {previous !== undefined && (
+          <a class="link link-hover" href={`/notes/${previous.slug}/`}>
+            ← {previous.title}
+          </a>
+        )}
+      </div>
+      <div class="text-right">
+        {next !== undefined && (
+          <a class="link link-hover" href={`/notes/${next.slug}/`}>
+            {next.title} →
+          </a>
+        )}
+      </div>
+    </nav>
+  </div>
+</TutorialLayout>

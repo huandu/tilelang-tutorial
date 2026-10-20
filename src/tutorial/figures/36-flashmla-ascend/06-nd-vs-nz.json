@@ -1,0 +1,34 @@
+{
+  "id": "06-nd-vs-nz",
+  "title": "ND 与 NZ 的排布对照",
+  "kind": "grid",
+  "section": "3.4",
+  "caption": "ND（行优先，一行是一个 token 的 512 维）与 NZ（16×16 fractal，fractal 内 head 维优先）在内存里的顺序不同，这正是稀疏 gather 无法随路转换的原因。",
+  "headers": ["第 1 个 32 B", "第 2 个 32 B", "第 3 个 32 B", "第 4 个 32 B"],
+  "rows": [
+    {
+      "label": "ND（显存）",
+      "cells": [
+        "token 0 的 head 0-15",
+        "token 0 的 head 16-31",
+        "token 0 的 head 32-47",
+        "token 0 的 head 48-63"
+      ]
+    },
+    {
+      "label": "NZ（L1）",
+      "cells": [
+        "16 个 token 的 head 0-15",
+        "16 个 token 的 head 16-31",
+        "下一个 fractal",
+        "下一个 fractal"
+      ],
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "ND 一行 = 一个 token 的 512 维（row-major）；NZ 一块 = 16×16 fractal，正好是 L0A/L0B 的输入单元。",
+    "UB 里的 NZ buffer 多留一行（B_TOPK_PER_V + 1，config.h:81），注释写明是为避免 ND→NZ 写回时的 bank conflict。",
+    "来源：报告 :146-152；config.h:81；kernel_body.h:287-296。"
+  ]
+}

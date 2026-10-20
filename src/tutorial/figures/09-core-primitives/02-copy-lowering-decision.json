@@ -1,0 +1,45 @@
+{
+  "id": "02-copy-lowering-decision",
+  "title": "T.copy 的降级判定链（硬约束部分）",
+  "caption": "判定链的前四条是硬约束：条件一旦成立就锁死指令形态，不满足直接编译失败，不会静默回退。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "s", "label": "T.copy / T.async_copy / T.tma_copy", "tone": "default" },
+    { "id": "p1", "label": "① gather4 / scatter4 标记？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "r1",
+      "label": "kBulkLoadGather4 / kBulkStoreScatter4",
+      "sub": "强制 TMA gather/scatter，无回退",
+      "tone": "warn"
+    },
+    { "id": "p2", "label": "② cluster_mask != 0？", "shape": "diamond", "tone": "muted" },
+    { "id": "r2", "label": "必须 TMA multicast", "sub": "否则报错", "tone": "warn" },
+    { "id": "p3", "label": "③ T.tma_copy？", "shape": "diamond", "tone": "muted" },
+    { "id": "r3", "label": "必须 TMA", "sub": "否则报错", "tone": "warn" },
+    { "id": "p4", "label": "④ T.async_copy？", "shape": "diamond", "tone": "muted" },
+    { "id": "r4", "label": "必须 cp.async", "sub": "否则报错", "tone": "warn" },
+    {
+      "id": "p5",
+      "label": "⑤/⑥/⑦ prefer_instruction？",
+      "sub": "见下一张图 02-b",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "s", "to": "p1" },
+    { "from": "p1", "to": "r1", "label": "是" },
+    { "from": "p1", "to": "p2", "label": "否" },
+    { "from": "p2", "to": "r2", "label": "是" },
+    { "from": "p2", "to": "p3", "label": "否" },
+    { "from": "p3", "to": "r3", "label": "是" },
+    { "from": "p3", "to": "p4", "label": "否" },
+    { "from": "p4", "to": "r4", "label": "是" },
+    { "from": "p4", "to": "p5", "label": "否" }
+  ],
+  "notes": [
+    "显式 T.async_copy / T.tma_copy 是硬约束：不满足就编译失败，不会静默退回同步拷贝。",
+    "来源：src/cuda/op/copy_analysis.cc:716-808（SelectCopyInstForLowering）。"
+  ]
+}

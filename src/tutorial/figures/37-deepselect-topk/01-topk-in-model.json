@@ -1,0 +1,44 @@
+{
+  "id": "01-topk-in-model",
+  "title": "TopK 在 DeepSeek 推理里的两个位置",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 16,
+  "section": "1.1",
+  "caption": "左侧是 DSA 的 Lightning Indexer：用轻量打分从海量 context token 里选出 k 个最相关的位置；右侧是采样器：从约 128K 的词表 logits 里选出 k 个候选 token。两处都是「k 小、N 大」。",
+  "nodes": [
+    { "id": "score", "label": "indexer 打分", "sub": "轻量 QK + 权重归约", "tone": "compute" },
+    {
+      "id": "tk1",
+      "label": "DeepSelect TopK",
+      "sub": "bf16, topk=512, 行长可达百万",
+      "tone": "accent"
+    },
+    { "id": "sel", "label": "被选中的上下文位置", "sub": "稀疏索引" },
+    { "id": "mla", "label": "稀疏 MLA", "sub": "只读这些位置的 KV", "tone": "compute" },
+    { "id": "logits", "label": "词表 logits", "sub": "fp32, vocab≈128K", "tone": "store" },
+    { "id": "tk2", "label": "DeepSelect TopK", "sub": "topk=512", "tone": "accent" },
+    { "id": "cand", "label": "候选 token", "sub": "值 + 下标" },
+    { "id": "dist", "label": "按权重采样", "sub": "得到下一个 token", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "score", "to": "tk1" },
+    { "from": "tk1", "to": "sel" },
+    { "from": "sel", "to": "mla" },
+    { "from": "logits", "to": "tk2" },
+    { "from": "tk2", "to": "cand" },
+    { "from": "cand", "to": "dist" }
+  ],
+  "groups": [
+    {
+      "label": "DSA / Lightning Indexer",
+      "nodes": ["score", "tk1", "sel", "mla"],
+      "tone": "default"
+    },
+    { "label": "采样器 Sampler", "nodes": ["logits", "tk2", "cand", "dist"], "tone": "default" }
+  ],
+  "notes": [
+    "两个场景的共同点是「k 很小（≤ 4096，主要优化 512）、N 很大」，所以瓶颈是访存与选择，不是浮点计算。",
+    "两个场景的差异（dtype、行长、后端支持）见第 6 张图；topk=512 取自仓库自述「DeepSeek V4 的 topk」。"
+  ]
+}

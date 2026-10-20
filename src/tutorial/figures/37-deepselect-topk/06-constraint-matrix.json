@@ -1,0 +1,26 @@
+{
+  "id": "06-constraint-matrix",
+  "title": "两个场景的约束矩阵",
+  "kind": "grid",
+  "section": "1.2",
+  "caption": "Lightning Indexer 场景（bf16、行长可到百万）与采样场景（fp32、词表约 128K）在 dtype、topk、后端支持上的约束对照。唯一的硬约束是 topk ≤ 4096。",
+  "headers": ["Lightning Indexer (DSA)", "Sampler"],
+  "rows": [
+    { "label": "输入 dtype", "cells": ["bfloat16", "float32"] },
+    { "label": "topk", "cells": ["≤ 4096，主要优化 512", "≤ 4096（benchmark 用 512）"] },
+    {
+      "label": "行长 / vocab_size",
+      "cells": ["1 ~ +∞（benchmark 到 1M）", "≈128K（benchmark 129280）"]
+    },
+    { "label": "batch_size", "cells": ["1 ~ +∞", "1 ~ +∞"] },
+    { "label": "CUDA 支持", "cells": ["是（bf16）", "是（fp32 的唯一路径）"], "tone": "accent" },
+    { "label": "昇腾支持", "cells": ["是（仅 bf16）", "否（不支持 fp32）"], "tone": "warn" },
+    { "label": "输出 index dtype", "cells": ["int32 / int64", "同左；昇腾仅 int32"] },
+    { "label": "sorted_value", "cells": ["仅 CUDA 的 fp32 变体支持", "支持（仅 CUDA）"] }
+  ],
+  "notes": [
+    "两个场景不变的是「k 小、N 大」；dtype、行长与后端能力都在变，所以算法写成「阈值 + 随机块序」。",
+    "topk ≤ 4096 是硬约束（csrc/api.cpp:57），不是优化建议。",
+    "输入行 stride 有对齐要求：CUDA 1024 B、昇腾 32 B（csrc/structs.h）；不满足要自己 padding。"
+  ]
+}

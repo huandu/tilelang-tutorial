@@ -1,0 +1,2337 @@
+{
+  "parts": [
+    {
+      "id": "part-1",
+      "label": "第一部分 · 宏观",
+      "title": "背景、设计思想与架构",
+      "blurb": "先建立正确的心智模型：TileLang 为什么存在、它处在软件栈的哪一层、与同类框架比强在哪。",
+      "from": "01",
+      "to": "06"
+    },
+    {
+      "id": "part-2",
+      "label": "第二部分 · 实用",
+      "title": "从会用到敢用",
+      "blurb": "按 PyTorch tutorial 的节奏动手：写第一个 kernel、吃透核心原语、完成四类算子实战，最后训练并推理一个 7B 模型。",
+      "from": "07",
+      "to": "19"
+    },
+    {
+      "id": "part-3",
+      "label": "第三部分 · 深入",
+      "title": "编译期、后端与芯片",
+      "blurb": "把 TileLang 从黑盒变成可读的编译器：IR 与 pass、布局推导、流水与同步、NVIDIA 与昇腾两条后端、性能方法论。",
+      "from": "20",
+      "to": "29"
+    },
+    {
+      "id": "part-4",
+      "label": "第四部分 · 前沿与参与",
+      "title": "未合入的方向与如何贡献",
+      "blurb": "区分「已发布 / 只在 main / 只在 PR」三种状态，然后给出从 issue 到 PR 的完整贡献路径。",
+      "from": "30",
+      "to": "31"
+    },
+    {
+      "id": "part-5",
+      "label": "第五部分 · DeepSeek 昇腾全栈",
+      "title": "一次真实开源的完整拆解",
+      "blurb": "DeepSeek 在 2026-09-30 开源了面向昇腾的一整套基础设施。用 TileLang 当主线，把这六个组件从算法、TileLang 写法、后端实现到 128 卡端到端串成一条完整链路。",
+      "from": "32",
+      "to": "39"
+    }
+  ],
+  "chapters": [
+    {
+      "slug": "01-why-tile-dsl",
+      "number": "01",
+      "title": "为什么需要 Tile DSL",
+      "summary": "从「为什么 PyTorch 里一个算子会慢」讲起：存储层级的不对称、算术强度与机器平衡点，然后沿着 SIMT → 张量核 → 异步搬运三代硬件演进，说明为什么 CUDA、Triton、TileLang 会依次出现。",
+      "readingMinutes": 25,
+      "exerciseCount": 14,
+      "quizCount": 7,
+      "figureCount": 5,
+      "inlineFigureCount": 5,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-为什么-pytorch-里一个算子会慢",
+          "text": "1. 问题的由来：为什么 PyTorch 里一个算子会慢"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-一个-tile-程序长什么样",
+          "text": "3. 用法：一个 tile 程序长什么样"
+        },
+        {
+          "id": "4-实现机制-三代方案的问题演进",
+          "text": "4. 实现机制：三代方案的问题演进"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "02-from-pytorch-to-kernels",
+      "number": "02",
+      "title": "从 PyTorch 到 kernel：算子在栈里的位置",
+      "summary": "把「一次训练迭代」和「一次推理请求」拆成算子的清单与账本：每个算子要搬多少字节、算多少次、是 memory-bound 还是 compute-bound，以及 torch.compile 的边界在哪、什么时候必须自己写 kernel。",
+      "readingMinutes": 25,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 3,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-算子在一次迭代里出现在哪些位置",
+          "text": "1. 问题的由来：算子在一次迭代里出现在哪些位置"
+        },
+        {
+          "id": "2-概念与模型-一个算子要读多少字节-算多少次",
+          "text": "2. 概念与模型：一个算子要读多少字节、算多少次"
+        },
+        {
+          "id": "3-用法-一行-pytorch-到底做了什么",
+          "text": "3. 用法：一行 PyTorch 到底做了什么"
+        },
+        {
+          "id": "4-实现机制-融合是默认答案-torch-compile-做到哪一步",
+          "text": "4. 实现机制：融合是默认答案，torch.compile 做到哪一步"
+        },
+        {
+          "id": "5-进阶与陷阱-什么时候你需要自己写-kernel",
+          "text": "5. 进阶与陷阱：什么时候你需要自己写 kernel"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "03-design-philosophy",
+      "number": "03",
+      "title": "TileLang 的设计哲学与编程模型",
+      "summary": "TileLang 的核心主张：把调度空间（线程绑定、layout、tensorize、流水）从数据流里解耦出来。讲清 tile 的定义、beginner/developer/expert 三层接口，以及可组合（composable）到底是什么意思。",
+      "readingMinutes": 27,
+      "exerciseCount": 12,
+      "quizCount": 7,
+      "figureCount": 4,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-调度为什么会变成负担",
+          "text": "1. 问题的由来：调度为什么会变成负担"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-同一段数据流-三种写法",
+          "text": "3. 用法：同一段数据流，三种写法"
+        },
+        {
+          "id": "4-实现机制-解耦在编译器里落在哪",
+          "text": "4. 实现机制：解耦在编译器里落在哪"
+        },
+        {
+          "id": "5-与-triton-的取舍差异",
+          "text": "5. 与 Triton 的取舍差异"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "04-architecture-and-compilation-flow",
+      "number": "04",
+      "title": "架构总览与一次编译的全流程",
+      "summary": "给出一张可随时重画的仓库结构图与一次编译的完整路径：前端 → TIR → pass pipeline → device codegen → host wrapper，并对比 CUDA 与 Ascend 两条管线。",
+      "readingMinutes": 25,
+      "exerciseCount": 12,
+      "quizCount": 8,
+      "figureCount": 4,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-一次编译到底发生了什么",
+          "text": "3. 用法：一次编译到底发生了什么"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "05-comparisons",
+      "number": "05",
+      "title": "横向对比：CUDA / Triton / CUTLASS-CuTe / TVM / cuTile / Ascend C / PTO-DSL",
+      "summary": "用「用户必须提供的硬件相关决策数量」这把尺子，把 CUDA、Triton、CUTLASS-CuTe、TVM、cuTile、Ascend C、PTO-DSL 放到同一条纵轴上，再用同一个带融合 epilogue 的 GEMM 逐层对照。",
+      "readingMinutes": 23,
+      "exerciseCount": 15,
+      "quizCount": 7,
+      "figureCount": 5,
+      "inlineFigureCount": 2,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-为什么需要一张坐标系",
+          "text": "1. 问题的由来：为什么需要一张坐标系"
+        },
+        {
+          "id": "2-概念与模型-三层抽象-七个对象",
+          "text": "2. 概念与模型：三层抽象，七个对象"
+        },
+        {
+          "id": "3-用法-同一个-gemm-六种写法",
+          "text": "3. 用法：同一个 GEMM，六种写法"
+        },
+        {
+          "id": "4-实现机制-tvm-是底盘-不是竞争者",
+          "text": "4. 实现机制：TVM 是底盘，不是竞争者"
+        },
+        {
+          "id": "5-什么时候该选谁-决策表",
+          "text": "5. 什么时候该选谁：决策表"
+        },
+        {
+          "id": "6-进阶与陷阱",
+          "text": "6. 进阶与陷阱"
+        },
+        {
+          "id": "7-本章小结",
+          "text": "7. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "06-hardware-intro-nv-vs-ascend",
+      "number": "06",
+      "title": "芯片导论：NV GPU 与昇腾 NPU 的抽象对照",
+      "summary": "用存储层级、执行单元、数据搬运、同步四个维度描述任意加速器，再分别落到 NVIDIA（grid/warp/Tensor Core/TMA/cluster）与昇腾（Cube/Vector/MTE/UB/L1/L0）上，并解释为什么「GPU 是 SIMT、NPU 是 SIMD」已经过时。",
+      "readingMinutes": 38,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 7,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-为什么必须有-片上存储-和-分块搬运",
+          "text": "1. 问题的由来：为什么必须有「片上存储」和「分块搬运」"
+        },
+        {
+          "id": "2-概念与模型-描述任何加速器的四个维度",
+          "text": "2. 概念与模型：描述任何加速器的四个维度"
+        },
+        {
+          "id": "3-nv-侧-从-simt-线程模型到异步张量流水",
+          "text": "3. NV 侧：从 SIMT 线程模型到异步张量流水"
+        },
+        {
+          "id": "4-昇腾侧-cube-vector-分工与-mte-搬运流水",
+          "text": "4. 昇腾侧：Cube / Vector 分工与 MTE 搬运流水"
+        },
+        {
+          "id": "5-对照-把两台机器压成一张表",
+          "text": "5. 对照：把两台机器压成一张表"
+        },
+        {
+          "id": "6-实现机制-tilelang-如何把两台机器收进同一套语言",
+          "text": "6. 实现机制：TileLang 如何把两台机器收进同一套语言"
+        },
+        {
+          "id": "7-进阶与陷阱",
+          "text": "7. 进阶与陷阱"
+        },
+        {
+          "id": "8-本章小结",
+          "text": "8. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "07-quickstart",
+      "number": "07",
+      "title": "快速上手：安装与第一个 kernel",
+      "summary": "装好 TileLang 并写出第一个 kernel：安装的三条路径、kernel 的四个部件、如何把生成的 CUDA 源码逐行读回来，以及 JIT、编译缓存与 kernel 复用的行为。",
+      "readingMinutes": 24,
+      "exerciseCount": 14,
+      "quizCount": 7,
+      "figureCount": 3,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型-一个-kernel-的四个部件",
+          "text": "2. 概念与模型：一个 kernel 的四个部件"
+        },
+        {
+          "id": "3-安装-三条路径",
+          "text": "3. 安装：三条路径"
+        },
+        {
+          "id": "4-第一个-kernel-从零到能跑",
+          "text": "4. 第一个 kernel：从零到能跑"
+        },
+        {
+          "id": "5-读懂生成的源码",
+          "text": "5. 读懂生成的源码"
+        },
+        {
+          "id": "6-jit-编译缓存与-kernel-复用",
+          "text": "6. JIT、编译缓存与 kernel 复用"
+        },
+        {
+          "id": "7-昇腾侧的第一个-kernel",
+          "text": "7. 昇腾侧的第一个 kernel"
+        },
+        {
+          "id": "8-常见安装-运行错误与排查",
+          "text": "8. 常见安装 / 运行错误与排查"
+        },
+        {
+          "id": "9-本章小结",
+          "text": "9. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "08-language-basics",
+      "number": "08",
+      "title": "语言基础",
+      "summary": "把第 7 章的生成源码往回拆：内核定义与网格、dtype 与内存作用域、T.Parallel/循环/控制流各自对应 IR 里什么、代价是什么，以及 Python 兼容性的边界在哪。",
+      "readingMinutes": 30,
+      "exerciseCount": 15,
+      "quizCount": 8,
+      "figureCount": 8,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-kernel-里到底要-表达-什么",
+          "text": "1. 问题的由来：kernel 里到底要\"表达\"什么"
+        },
+        {
+          "id": "2-概念与模型-六个构件",
+          "text": "2. 概念与模型：六个构件"
+        },
+        {
+          "id": "3-kernel-定义与网格-t-kernel",
+          "text": "3. kernel 定义与网格：`T.Kernel`"
+        },
+        {
+          "id": "4-数据类型",
+          "text": "4. 数据类型"
+        },
+        {
+          "id": "5-buffer-与内存作用域",
+          "text": "5. buffer 与内存作用域"
+        },
+        {
+          "id": "6-并行与循环",
+          "text": "6. 并行与循环"
+        },
+        {
+          "id": "7-控制流",
+          "text": "7. 控制流"
+        },
+        {
+          "id": "8-python-兼容性边界",
+          "text": "8. Python 兼容性边界"
+        },
+        {
+          "id": "9-类型系统与隐式转换的坑",
+          "text": "9. 类型系统与隐式转换的坑"
+        },
+        {
+          "id": "10-实现机制-编译器把这些语义落到哪里",
+          "text": "10. 实现机制：编译器把这些语义落到哪里"
+        },
+        {
+          "id": "11-进阶与陷阱",
+          "text": "11. 进阶与陷阱"
+        },
+        {
+          "id": "12-本章小结",
+          "text": "12. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "09-core-primitives",
+      "number": "09",
+      "title": "核心原语详解",
+      "summary": "逐个讲透核心原语：T.copy 的搬运与越界语义、T.gemm 如何选指令、reduce/atomic/fill 的用法与坑，以及昇腾专属的 T.dual_copy、T.SimtVF/T.SimdVF 为什么必须存在。",
+      "readingMinutes": 26,
+      "exerciseCount": 12,
+      "quizCount": 8,
+      "figureCount": 8,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-原语是-接口-不是-实现",
+          "text": "1. 问题的由来：原语是「接口」，不是「实现」"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-每个原语的最小示例",
+          "text": "3. 用法：每个原语的最小示例"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "10-layout-and-memory-intro",
+      "number": "10",
+      "title": "布局与存储层级入门",
+      "summary": "解释「同一个张量为什么会有摆法问题」：从 fragment 与线程的对应、bank conflict、swizzle 到昇腾的 fractal 与 ND→NZ，并给出把布局画出来观察的可复现步骤。",
+      "readingMinutes": 19,
+      "exerciseCount": 12,
+      "quizCount": 8,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-同一个张量-为什么会有-摆法-问题",
+          "text": "1. 问题的由来：同一个张量，为什么会有「摆法」问题"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法",
+          "text": "3. 用法"
+        },
+        {
+          "id": "4-实现机制-编译器在背后做了什么",
+          "text": "4. 实现机制：编译器在背后做了什么"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "11-pipeline-and-autotuning",
+      "number": "11",
+      "title": "流水线与自动调优",
+      "summary": "把搬运与计算重叠起来：T.Pipelined 的 stage/order 语义、多缓冲的容量代价、如何判断一份配置还放不放得下，以及 autotuner 的搜索空间怎么定义、结果怎么读。",
+      "readingMinutes": 39,
+      "exerciseCount": 12,
+      "quizCount": 8,
+      "figureCount": 3,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-不做流水会怎样",
+          "text": "1. 问题的由来：不做流水会怎样"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法",
+          "text": "3. 用法"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "12-debugging-and-profiling",
+      "number": "12",
+      "title": "调试与性能分析",
+      "summary": "把 kernel 问题分成生成、正确性、性能、偶发四类，给出对应的工具链：编译期日志与 IR Lower Trace、运行期打印与异常 dump、对拍容差的来源，以及 Nsight Compute / msProf 的读法。",
+      "readingMinutes": 27,
+      "exerciseCount": 12,
+      "quizCount": 8,
+      "figureCount": 7,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法",
+          "text": "3. 用法"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "13-operators-elementwise-norm-rope",
+      "number": "13",
+      "title": "算子实战 I：逐元素、归一化与 RoPE",
+      "summary": "从最不起眼的逐元素算子讲起：用访存账本说明融合的价值，再逐步实现 scale+add、LayerNorm/RMSNorm 与 RoPE，最后合成 RMSNorm+RoPE+量化的融合算子。",
+      "readingMinutes": 32,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-最-简单-的算子也值得认真写",
+          "text": "1. 问题的由来：最\"简单\"的算子也值得认真写"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-三个递进的实战",
+          "text": "3. 用法：三个递进的实战"
+        },
+        {
+          "id": "4-实现机制-编译器把这一行变成了什么",
+          "text": "4. 实现机制：编译器把这一行变成了什么"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "14-operators-gemm",
+      "number": "14",
+      "title": "算子实战 II：GEMM 全家族",
+      "summary": "GEMM 的性能账本与五级实现阶梯：从朴素分块到 shared memory、软件流水、swizzle 注解与官方 intrinsic 版本，再到 split-K/stream-K/grouped 与低精度变体的选择依据。",
+      "readingMinutes": 30,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 1,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-gemm-的性能账本",
+          "text": "1. 问题的由来：GEMM 的性能账本"
+        },
+        {
+          "id": "2-五级阶梯-从朴素版到-intrinsic",
+          "text": "2. 五级阶梯：从朴素版到 intrinsic"
+        },
+        {
+          "id": "3-实现机制-这些原语在编译器里发生了什么",
+          "text": "3. 实现机制：这些原语在编译器里发生了什么"
+        },
+        {
+          "id": "4-变体家族-split-k-stream-k-grouped-batched",
+          "text": "4. 变体家族：split-K / stream-K / grouped / batched"
+        },
+        {
+          "id": "5-低精度-gemm-结构与调用方式",
+          "text": "5. 低精度 GEMM：结构与调用方式"
+        },
+        {
+          "id": "6-昇腾对照-catlass-与-tilelang-ascend",
+          "text": "6. 昇腾对照：CATLASS 与 tilelang-ascend"
+        },
+        {
+          "id": "7-性能对齐方法论",
+          "text": "7. 性能对齐方法论"
+        },
+        {
+          "id": "8-常见陷阱",
+          "text": "8. 常见陷阱"
+        },
+        {
+          "id": "本章小结",
+          "text": "本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "15-operators-attention",
+      "number": "15",
+      "title": "算子实战 III：Attention 家族",
+      "summary": "从朴素 attention 的三趟访存推导到 online softmax 的一趟实现，逐级加上分块、流水与片上复用，并覆盖 causal、varlen、GQA、decode、paged KV 与 split-KV 等变体。",
+      "readingMinutes": 33,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-attention-的时间花在哪",
+          "text": "1. 问题的由来：attention 的时间花在哪"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-四级递进实现",
+          "text": "3. 用法：四级递进实现"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "16-operators-moe-mla",
+      "number": "16",
+      "title": "算子实战 IV：MoE 与 MLA",
+      "summary": "大模型里最贵的两段结构：MoE 的路由、重排与 grouped GEMM，以及 MLA 的 KV 压缩如何改变访存与 kernel 形态；最后给出一次 decode step 的耗时占比与瓶颈类型总结。",
+      "readingMinutes": 33,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 3,
+      "inlineFigureCount": 1,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-一个-decode-step-里最贵的是什么",
+          "text": "1. 问题的由来：一个 decode step 里最贵的是什么"
+        },
+        {
+          "id": "2-moe-四段结构-两段不是矩阵乘",
+          "text": "2. MoE：四段结构，两段不是矩阵乘"
+        },
+        {
+          "id": "3-mla-换一种-attention-的算术结构",
+          "text": "3. MLA：换一种 attention 的算术结构"
+        },
+        {
+          "id": "4-稀疏与索引类算子-nsa-dsa-lightning-indexer",
+          "text": "4. 稀疏与索引类算子：NSA、DSA、lightning indexer"
+        },
+        {
+          "id": "5-昇腾侧的实际做法",
+          "text": "5. 昇腾侧的实际做法"
+        },
+        {
+          "id": "6-四个工程约束",
+          "text": "6. 四个工程约束"
+        },
+        {
+          "id": "7-总结表-一个-decode-step-里哪些算子最贵",
+          "text": "7. 总结表：一个 decode step 里哪些算子最贵"
+        },
+        {
+          "id": "8-常见陷阱",
+          "text": "8. 常见陷阱"
+        },
+        {
+          "id": "本章小结",
+          "text": "本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "17-e2e-training-7b",
+      "number": "17",
+      "title": "端到端 I：用 HuggingFace 资产从零训练一个 7B 模型",
+      "summary": "用 HuggingFace 的数据、tokenizer 与权重，把 TileLang 算子接进真实的训练循环：显存与算力两本账、数据管线、混合精度与 checkpoint，以及哪些热点算子值得换成自己的 kernel。",
+      "readingMinutes": 23,
+      "exerciseCount": 14,
+      "quizCount": 7,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-从零训练一个-7b-模型-这句话哪里是真的",
+          "text": "1. 问题的由来：「从零训练一个 7B 模型」这句话哪里是真的"
+        },
+        {
+          "id": "2-可行性核算-显存与算力两本账",
+          "text": "2. 可行性核算：显存与算力两本账"
+        },
+        {
+          "id": "3-两条路线-小规模预训练复现-vs-从开源权重继续训练",
+          "text": "3. 两条路线：小规模预训练复现 vs 从开源权重继续训练"
+        },
+        {
+          "id": "4-数据管线-从-hf-datasets-流式到-packing",
+          "text": "4. 数据管线：从 HF datasets 流式到 packing"
+        },
+        {
+          "id": "5-模型与-tokenizer-qwen2-5-7b-的结构如何决定算子选择",
+          "text": "5. 模型与 tokenizer：Qwen2.5-7B 的结构如何决定算子选择"
+        },
+        {
+          "id": "6-训练循环",
+          "text": "6. 训练循环"
+        },
+        {
+          "id": "7-把热点算子换成-tilelang",
+          "text": "7. 把热点算子换成 TileLang"
+        },
+        {
+          "id": "8-昇腾路线",
+          "text": "8. 昇腾路线"
+        },
+        {
+          "id": "9-验收标准-可检查的阶段目标",
+          "text": "9. 验收标准：可检查的阶段目标"
+        },
+        {
+          "id": "10-按比例缩小的降级路径",
+          "text": "10. 按比例缩小的降级路径"
+        },
+        {
+          "id": "本章小结",
+          "text": "本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "18-e2e-inference-serving",
+      "number": "18",
+      "title": "端到端 II：推理与部署",
+      "summary": "训练完的模型怎么变成服务：prefill 与 decode 的差异、KV cache 的显存账本、paged KV 与 continuous batching，以及 decode attention、量化 GEMM 如何接进 vLLM / TileRT 这类框架。",
+      "readingMinutes": 34,
+      "exerciseCount": 12,
+      "quizCount": 7,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-训练完的模型怎么变成服务",
+          "text": "1. 问题的由来：训练完的模型怎么变成服务"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-从一次-decode-到一次服务",
+          "text": "3. 用法：从一次 decode 到一次服务"
+        },
+        {
+          "id": "4-用-tilelang-写推理-kernel",
+          "text": "4. 用 TileLang 写推理 kernel"
+        },
+        {
+          "id": "5-与推理框架集成",
+          "text": "5. 与推理框架集成"
+        },
+        {
+          "id": "6-昇腾部署-torch-npu-aclgraph-与-msprof",
+          "text": "6. 昇腾部署：torch_npu、ACLGraph 与 msProf"
+        },
+        {
+          "id": "7-基准方法-ttft-tpot-与吞吐",
+          "text": "7. 基准方法：TTFT、TPOT 与吞吐"
+        },
+        {
+          "id": "8-进阶与陷阱",
+          "text": "8. 进阶与陷阱"
+        },
+        {
+          "id": "9-本章小结",
+          "text": "9. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "19-ascend-hands-on",
+      "number": "19",
+      "title": "昇腾实战：在昇腾上开发与调优算子",
+      "summary": "在昇腾上写第一个算子：环境与 CANN 安装、GM→UB/L1/L0 的数据流、Ascend C 对照实现、msProf 调优、ACLGraph 入图与设备端调试手段。",
+      "readingMinutes": 48,
+      "exerciseCount": 12,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 7,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-在昇腾上写算子-难-在哪",
+          "text": "1. 问题的由来：在昇腾上写算子，「难」在哪"
+        },
+        {
+          "id": "2-概念与模型-昇腾的机器长什么样",
+          "text": "2. 概念与模型：昇腾的机器长什么样"
+        },
+        {
+          "id": "3-用法-一-环境准备",
+          "text": "3. 用法（一）：环境准备"
+        },
+        {
+          "id": "4-用法-二-第一个昇腾-kernel-逐元素-add",
+          "text": "4. 用法（二）：第一个昇腾 kernel —— 逐元素 add"
+        },
+        {
+          "id": "5-用法-三-第一个-gemm-kernel",
+          "text": "5. 用法（三）：第一个 GEMM kernel"
+        },
+        {
+          "id": "6-ascend-c-对照-同一个算子-手写要做什么",
+          "text": "6. Ascend C 对照：同一个算子，手写要做什么"
+        },
+        {
+          "id": "7-昇腾专属原语与-用哪棵树",
+          "text": "7. 昇腾专属原语与「用哪棵树」"
+        },
+        {
+          "id": "8-调优-msprof-与瓶颈判读",
+          "text": "8. 调优：msProf 与瓶颈判读"
+        },
+        {
+          "id": "9-入图与部署-aclgraph-与-pytorch-集成",
+          "text": "9. 入图与部署：ACLGraph 与 PyTorch 集成"
+        },
+        {
+          "id": "10-调试-t-printf-t-dump-tensor-与-aicore-exception-dump",
+          "text": "10. 调试：`T.printf` / `T.dump_tensor` 与 AICore exception dump"
+        },
+        {
+          "id": "11-常见坑清单-昇腾特有",
+          "text": "11. 常见坑清单（昇腾特有）"
+        },
+        {
+          "id": "12-本章小结",
+          "text": "12. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "20-ir-and-pass-pipeline",
+      "number": "20",
+      "title": "IR 与编译期管线精读",
+      "summary": "把 TileLang 的编译期读成一条可验证的管线：TIR 的基本构件、CUDA 与 Ascend 两条 pass 序列的分组与职责，以及 LayoutInference、LowerTileOp、ThreadSync 这些承重 pass 各自改变了什么。",
+      "readingMinutes": 27,
+      "exerciseCount": 13,
+      "quizCount": 7,
+      "figureCount": 4,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-把一段真实-kernel-的-ir-读到骨头",
+          "text": "3. 用法：把一段真实 kernel 的 IR 读到骨头"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "21-layout-inference",
+      "number": "21",
+      "title": "布局推导（Layout Inference）原理与实现",
+      "summary": "layout 推导的形式化与实现：约束从哪里来、如何在 tile op 图上传播、冲突时如何权衡转换代价，以及昇腾的 fractal 归一化、ND→NZ 与边界填充为什么是另一类问题。",
+      "readingMinutes": 31,
+      "exerciseCount": 13,
+      "quizCount": 7,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-为什么-layout-必须被-推导",
+          "text": "1. 问题的由来：为什么 layout 必须被「推导」"
+        },
+        {
+          "id": "2-形式化-layout-代数",
+          "text": "2. 形式化：layout 代数"
+        },
+        {
+          "id": "3-算法-约束产生-传播与求解",
+          "text": "3. 算法：约束产生、传播与求解"
+        },
+        {
+          "id": "4-实现-v0-1-15-的代码地图",
+          "text": "4. 实现：v0.1.15 的代码地图"
+        },
+        {
+          "id": "5-昇腾侧-fractal-nz-oob",
+          "text": "5. 昇腾侧：fractal / NZ / OOB"
+        },
+        {
+          "id": "6-实战-观察一次-gemm-的-layout-推导",
+          "text": "6. 实战：观察一次 GEMM 的 layout 推导"
+        },
+        {
+          "id": "7-进阶与陷阱",
+          "text": "7. 进阶与陷阱"
+        },
+        {
+          "id": "8-与论文的关系",
+          "text": "8. 与论文的关系"
+        },
+        {
+          "id": "9-本章小结",
+          "text": "9. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "22-pipeline-sync-multibuffer",
+      "number": "22",
+      "title": "流水线、多缓冲与同步插入",
+      "summary": "软件流水的算法层：依赖距离与模调度、缓冲版本数的推导、多缓冲的物化与复用，以及从读写集推导同步点（CUDA 的 ThreadSync 与昇腾的 InsertSync）的原理。",
+      "readingMinutes": 35,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 4,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-把-重叠-变成可判定的事",
+          "text": "1. 问题的由来：把「重叠」变成可判定的事"
+        },
+        {
+          "id": "2-软件流水的形式化",
+          "text": "2. 软件流水的形式化"
+        },
+        {
+          "id": "3-多缓冲的物化",
+          "text": "3. 多缓冲的物化"
+        },
+        {
+          "id": "4-同步插入",
+          "text": "4. 同步插入"
+        },
+        {
+          "id": "5-正确性-漏一个同步-vs-多一个同步",
+          "text": "5. 正确性：漏一个同步 vs 多一个同步"
+        },
+        {
+          "id": "6-与硬件特性的关系",
+          "text": "6. 与硬件特性的关系"
+        },
+        {
+          "id": "7-实战-改-num-stages-看-ir-怎么变",
+          "text": "7. 实战：改 num_stages，看 IR 怎么变"
+        },
+        {
+          "id": "8-常见坑",
+          "text": "8. 常见坑"
+        },
+        {
+          "id": "9-本章小结",
+          "text": "9. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "23-autoschedule-smt",
+      "number": "23",
+      "title": "自动调度与约束求解（昇腾）",
+      "summary": "昇腾后端最有技术含量的一步：把 kernel 拆成带资源标签的任务、估计延迟与容量、用 Z3 求解调度与多缓冲，再把解落成真实的 Set/Wait。讲清模型、约束与它失效时的后果。",
+      "readingMinutes": 32,
+      "exerciseCount": 12,
+      "quizCount": 7,
+      "figureCount": 2,
+      "inlineFigureCount": 2,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-ascend-c-里最难的不是写-是排",
+          "text": "1. 问题的由来：Ascend C 里最难的不是写，是排"
+        },
+        {
+          "id": "2-建模-把-kernel-变成一个调度问题",
+          "text": "2. 建模：把 kernel 变成一个调度问题"
+        },
+        {
+          "id": "3-用法-你要写多少-编译器替你写多少",
+          "text": "3. 用法：你要写多少，编译器替你写多少"
+        },
+        {
+          "id": "4-实现机制-13-个-pass-与一个-smt-求解器",
+          "text": "4. 实现机制：13 个 pass 与一个 SMT 求解器"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "24-nvidia-backend-codegen",
+      "number": "24",
+      "title": "NVIDIA 后端：代码生成与硬件特性",
+      "summary": "NVIDIA 后端如何把 tile 程序翻译成 CUDA 与 PTX：指令选择的谓词链、TMA 判定、warp specialization、cluster/DSM，以及 Blackwell 的 tcgen05 与 TMEM 带来的新约束。",
+      "readingMinutes": 38,
+      "exerciseCount": 15,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 2,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法",
+          "text": "3. 用法"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-本章小结",
+          "text": "6. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "25-ascend-backend-codegen",
+      "number": "25",
+      "title": "昇腾后端：代码生成与硬件特性",
+      "summary": "昇腾后端的四条路线与它们各自的落点：主干 ascend 方言、适配器的 Ascend C&PTO 与 AscendNPU IR，以及 T.alloc_l1/l0a/l0b/l0c、dual_copy 在代码生成里变成了什么。",
+      "readingMinutes": 26,
+      "exerciseCount": 12,
+      "quizCount": 8,
+      "figureCount": 7,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-一次-target-ascend-之后到底发生了什么",
+          "text": "1. 问题的由来：一次 `target=\"ascend\"` 之后到底发生了什么"
+        },
+        {
+          "id": "2-概念与模型-昇腾的机器长什么样-只讲影响代码生成的部分",
+          "text": "2. 概念与模型：昇腾的机器长什么样（只讲影响代码生成的部分）"
+        },
+        {
+          "id": "3-用法-从两段真实-kernel-看生成物",
+          "text": "3. 用法：从两段真实 kernel 看生成物"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-与-nv-后端的结构对照",
+          "text": "5. 与 NV 后端的结构对照"
+        },
+        {
+          "id": "6-进阶与陷阱",
+          "text": "6. 进阶与陷阱"
+        },
+        {
+          "id": "7-调试与验证-没有-npu-时怎么核查生成代码",
+          "text": "7. 调试与验证：没有 NPU 时怎么核查生成代码"
+        },
+        {
+          "id": "8-本章小结",
+          "text": "8. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "26-runtime-jit-abi",
+      "number": "26",
+      "title": "运行时、JIT、ABI 与框架集成",
+      "summary": "从装饰器到可调用 kernel 的完整链路：JIT 生命周期、缓存键与失效、packed ABI 的参数校验、五个 adapter 的分工，以及张量转换、stream 语义与 autograd 的边界。",
+      "readingMinutes": 31,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法",
+          "text": "3. 用法"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-进阶与陷阱",
+          "text": "5. 进阶与陷阱"
+        },
+        {
+          "id": "6-前沿-仅-main-未合入-不属于-v0-1-15",
+          "text": "6. 前沿（仅 main / 未合入，不属于 v0.1.15）"
+        },
+        {
+          "id": "7-本章小结",
+          "text": "7. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "27-low-precision-quantization",
+      "number": "27",
+      "title": "低精度、量化与数值正确性",
+      "summary": "低精度的数值基础与工程约束：fp16/bf16/fp8/MXFP4/int4 的表示与误差、block scale 的打包与存储布局，以及如何选参考实现对拍、如何区分数值误差与逻辑错误。",
+      "readingMinutes": 33,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-数值基础",
+          "text": "2. 数值基础"
+        },
+        {
+          "id": "3-tilelang-里的表达",
+          "text": "3. TileLang 里的表达"
+        },
+        {
+          "id": "4-实现机制-块缩放的硬件约束",
+          "text": "4. 实现机制：块缩放的硬件约束"
+        },
+        {
+          "id": "5-正确性验证方法论",
+          "text": "5. 正确性验证方法论"
+        },
+        {
+          "id": "6-性能与精度的权衡",
+          "text": "6. 性能与精度的权衡"
+        },
+        {
+          "id": "7-常见陷阱",
+          "text": "7. 常见陷阱"
+        },
+        {
+          "id": "8-本章小结",
+          "text": "8. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "28-operator-design-methodology",
+      "number": "28",
+      "title": "算子设计方法论与性能模型",
+      "summary": "把前面的经验上升成方法论：先算（性能模型、roofline）、再定 tile、再定流水，最后才写代码；配一个完整的融合算子案例与一份反模式清单。",
+      "readingMinutes": 34,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 9,
+      "inlineFigureCount": 1,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-为什么必须-先算再写",
+          "text": "1. 问题的由来：为什么必须「先算再写」"
+        },
+        {
+          "id": "2-第一步-把一个算子变成-flops-bytes",
+          "text": "2. 第一步：把一个算子变成 `(flops, bytes)`"
+        },
+        {
+          "id": "3-第二步-tile-级解析模型",
+          "text": "3. 第二步：tile 级解析模型"
+        },
+        {
+          "id": "4-第三步-tile-尺寸怎么定",
+          "text": "4. 第三步：tile 尺寸怎么定"
+        },
+        {
+          "id": "5-第四步-fusion-split-特殊指令",
+          "text": "5. 第四步：fusion / split / 特殊指令"
+        },
+        {
+          "id": "6-第五步-把一个融合算子从头设计一遍",
+          "text": "6. 第五步：把一个融合算子从头设计一遍"
+        },
+        {
+          "id": "7-反模式清单",
+          "text": "7. 反模式清单"
+        },
+        {
+          "id": "8-本章小结",
+          "text": "8. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "29-compiler-engineering",
+      "number": "29",
+      "title": "编译器工程：写 pass、测试与回归",
+      "summary": "把「读编译器」变成「改编译器」：C++ 与 Python pass 的双语结构、写一个新 pass 的完整流程、IR diff 与性能回归怎么测，以及评审时会被问什么。",
+      "readingMinutes": 33,
+      "exerciseCount": 11,
+      "quizCount": 7,
+      "figureCount": 4,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-从零写一个-pass",
+          "text": "3. 用法：从零写一个 pass"
+        },
+        {
+          "id": "4-实现机制",
+          "text": "4. 实现机制"
+        },
+        {
+          "id": "5-pass-的正确性测试",
+          "text": "5. pass 的正确性测试"
+        },
+        {
+          "id": "6-性能回归",
+          "text": "6. 性能回归"
+        },
+        {
+          "id": "7-调试一个-pass-的手段",
+          "text": "7. 调试一个 pass 的手段"
+        },
+        {
+          "id": "8-代码风格与评审要求",
+          "text": "8. 代码风格与评审要求"
+        },
+        {
+          "id": "9-昇腾侧的额外要求",
+          "text": "9. 昇腾侧的额外要求"
+        },
+        {
+          "id": "10-改动类型-需要跑的测试-基准-评审关注点",
+          "text": "10. 改动类型 → 需要跑的测试 / 基准 → 评审关注点"
+        },
+        {
+          "id": "11-本章小结",
+          "text": "11. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "30-frontier",
+      "number": "30",
+      "title": "前沿探索：只有 main / 未合入的方向",
+      "summary": "区分「已发布 / 只在 main / 只在未合入 PR」三种状态，逐条核对 TVM 迁移、CuteDSL 后端、Ascend 950 与 PTO、持久化 kernel、AutoSimtVF 等方向的现状，并给出持续跟踪上游的方法。",
+      "readingMinutes": 34,
+      "exerciseCount": 12,
+      "quizCount": 7,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来-release-之外还有两个世界",
+          "text": "1. 问题的由来：release 之外还有两个世界"
+        },
+        {
+          "id": "2-概念与模型-三种状态-四步判定",
+          "text": "2. 概念与模型：三种状态、四步判定"
+        },
+        {
+          "id": "3-架构级变化-解耦-迁移-新后端",
+          "text": "3. 架构级变化：解耦、迁移、新后端"
+        },
+        {
+          "id": "4-昇腾前沿",
+          "text": "4. 昇腾前沿"
+        },
+        {
+          "id": "5-语义与正确性-rfc",
+          "text": "5. 语义与正确性 RFC"
+        },
+        {
+          "id": "6-生态-tileops-tilert-tilefoundry-tilesight",
+          "text": "6. 生态：TileOPs / TileRT / TileFoundry / TileSight"
+        },
+        {
+          "id": "7-nvidia-侧的对照-cutile-与-cute-dsl",
+          "text": "7. NVIDIA 侧的对照：cuTile 与 CuTe DSL"
+        },
+        {
+          "id": "8-如何持续跟踪上游",
+          "text": "8. 如何持续跟踪上游"
+        },
+        {
+          "id": "9-总表-能力-状态-验证方式",
+          "text": "9. 总表：能力 → 状态 → 验证方式"
+        },
+        {
+          "id": "10-本章小结",
+          "text": "10. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "31-contributing",
+      "number": "31",
+      "title": "贡献指南",
+      "summary": "把改动变成上游的一部分：写算子、改编译器、加后端三条路径各自的门槛与测试要求，issue→RFC→PR→CI 的流程，以及昇腾双仓库的协作方式与自检清单。",
+      "readingMinutes": 34,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 4,
+      "inlineFigureCount": 6,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "1-问题的由来",
+          "text": "1. 问题的由来"
+        },
+        {
+          "id": "2-概念与模型-三种路径-四道门",
+          "text": "2. 概念与模型：三种路径、四道门"
+        },
+        {
+          "id": "3-上游流程-从-issue-到-ci-的实际形态",
+          "text": "3. 上游流程：从 issue 到 CI 的实际形态"
+        },
+        {
+          "id": "4-路径一-写算子与示例",
+          "text": "4. 路径一：写算子与示例"
+        },
+        {
+          "id": "5-路径二-改编译器-pass-layout-codegen",
+          "text": "5. 路径二：改编译器（pass / layout / codegen）"
+        },
+        {
+          "id": "6-路径三-加-改后端",
+          "text": "6. 路径三：加/改后端"
+        },
+        {
+          "id": "7-昇腾侧的特殊流程",
+          "text": "7. 昇腾侧的特殊流程"
+        },
+        {
+          "id": "8-代码规范与格式化工具",
+          "text": "8. 代码规范与格式化工具"
+        },
+        {
+          "id": "9-测试与基准的强制要求",
+          "text": "9. 测试与基准的强制要求"
+        },
+        {
+          "id": "10-第一次贡献-可执行清单",
+          "text": "10. 第一次贡献：可执行清单"
+        },
+        {
+          "id": "11-改动自检清单",
+          "text": "11. 改动自检清单"
+        },
+        {
+          "id": "12-社区与沟通",
+          "text": "12. 社区与沟通"
+        },
+        {
+          "id": "13-本章小结",
+          "text": "13. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "32-deepseek-ascend-release",
+      "number": "32",
+      "title": "DeepSeek 昇腾全栈：这次开源了什么",
+      "summary": "2026-09-30 DeepSeek 面向昇腾开源了六个组件。本章给出全景地图：每个组件解决什么问题、与 NVIDIA 侧怎么一一对应、在一次训练 step 和一次推理请求里各占哪一段，以及怎么自己核验版本、硬件与可用状态。",
+      "readingMinutes": 46,
+      "exerciseCount": 12,
+      "quizCount": 7,
+      "figureCount": 0,
+      "inlineFigureCount": 5,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-为什么需要先读一张地图",
+          "text": "1. 问题的由来：为什么需要先读一张地图"
+        },
+        {
+          "id": "2-官方文章的原始表述",
+          "text": "2. 官方文章的原始表述"
+        },
+        {
+          "id": "3-组件地图-六件东西怎么拼在一起",
+          "text": "3. 组件地图：六件东西怎么拼在一起"
+        },
+        {
+          "id": "4-与-nvidia-侧的一一对应",
+          "text": "4. 与 NVIDIA 侧的一一对应"
+        },
+        {
+          "id": "5-一次训练-step-里-各组件在哪",
+          "text": "5. 一次训练 step 里，各组件在哪"
+        },
+        {
+          "id": "6-一次推理请求里-各组件在哪",
+          "text": "6. 一次推理请求里，各组件在哪"
+        },
+        {
+          "id": "7-昇腾-950-的-128-卡超节点-为什么通信是主角",
+          "text": "7. 昇腾 950 的 128 卡超节点：为什么通信是主角"
+        },
+        {
+          "id": "8-如何自己核验",
+          "text": "8. 如何自己核验"
+        },
+        {
+          "id": "9-本部分的学习路线",
+          "text": "9. 本部分的学习路线"
+        },
+        {
+          "id": "10-常见坑-本章特有",
+          "text": "10. 常见坑（本章特有）"
+        },
+        {
+          "id": "本章小结",
+          "text": "本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "33-tilekernels-two-backends",
+      "number": "33",
+      "title": "TileKernels（上）：一份算法，两个后端",
+      "summary": "TileKernels 是用 TileLang 写的生产算子库，同一份算法提供 CUDA 与 Ascend 两个后端。以 top-k gate 为例逐行对照两种写法，讲清哪些部分平台无关、哪些必须重写，以及量化、RoPE、Rand 这些算子族的接口。",
+      "readingMinutes": 57,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-为什么是-tilekernels",
+          "text": "1. 问题的由来：为什么是 TileKernels"
+        },
+        {
+          "id": "2-概念与模型-三层结构",
+          "text": "2. 概念与模型：三层结构"
+        },
+        {
+          "id": "3-运行期后端选择",
+          "text": "3. 运行期后端选择"
+        },
+        {
+          "id": "4-核心对照-top-k-gate-的两个后端",
+          "text": "4. 核心对照：top-k gate 的两个后端"
+        },
+        {
+          "id": "5-量化算子族-三种粒度-两套后端",
+          "text": "5. 量化算子族：三种粒度，两套后端"
+        },
+        {
+          "id": "6-rope-与-rand-双后端不只是大算子的事",
+          "text": "6. RoPE 与 Rand：双后端不只是大算子的事"
+        },
+        {
+          "id": "7-方法论落点-哪些是共享的-哪些必须重写",
+          "text": "7. 方法论落点：哪些是共享的，哪些必须重写"
+        },
+        {
+          "id": "8-本章小结",
+          "text": "8. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "34-tilekernels-engram-mhc",
+      "number": "34",
+      "title": "TileKernels（下）：Engram 与流形超连接",
+      "summary": "另一类算子：不是矩阵乘，而是访存与小算子为主的结构性算子。以 Engram 论文与 mHC 论文（arXiv:2512.24880）为定义、以 TileKernels 的 mhc/ 与 engram/ 源码为实现，讲透门控融合、Sinkhorn 归一化，以及「除 prenorm GEMM 外都用 TileLang」这条边界。",
+      "readingMinutes": 51,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-为什么需要-不是矩阵乘-的算子",
+          "text": "1. 问题的由来：为什么需要「不是矩阵乘」的算子"
+        },
+        {
+          "id": "2-engram-的数据流与算子清单",
+          "text": "2. Engram 的数据流与算子清单"
+        },
+        {
+          "id": "3-门控-kernel-的融合设计",
+          "text": "3. 门控 kernel 的融合设计"
+        },
+        {
+          "id": "4-前后向与梯度归约",
+          "text": "4. 前后向与梯度归约"
+        },
+        {
+          "id": "5-sinkhorn-归一化",
+          "text": "5. Sinkhorn 归一化"
+        },
+        {
+          "id": "6-mhc-把-mix-拆开再拼起来",
+          "text": "6. mHC：把 mix 拆开再拼起来"
+        },
+        {
+          "id": "7-这类算子的共同特征与写法",
+          "text": "7. 这类算子的共同特征与写法"
+        },
+        {
+          "id": "8-常见坑",
+          "text": "8. 常见坑"
+        },
+        {
+          "id": "9-本章小结",
+          "text": "9. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "35-deepgemm-ascend",
+      "number": "35",
+      "title": "DeepGEMM-Ascend：把 GEMM 压到硬件极限",
+      "summary": "当 TileLang 不够用（或不该用）时，专家怎么在昇腾上把 GEMM 做到 99% 硬件利用率。讲清 MAD 原语抽象包了什么、JIT 与启发式怎么选配置、MegaMoE 为什么能把通信和两个 grouped GEMM 融进一个 kernel，以及哪一类算子反而适合交给 TileLang。",
+      "readingMinutes": 50,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-tilelang-什么时候不够用",
+          "text": "1. 问题的由来：TileLang 什么时候不够用"
+        },
+        {
+          "id": "2-概念与模型",
+          "text": "2. 概念与模型"
+        },
+        {
+          "id": "3-用法-一次调用的全流程",
+          "text": "3. 用法：一次调用的全流程"
+        },
+        {
+          "id": "4-实现机制-一次-shape-的旅程",
+          "text": "4. 实现机制：一次 shape 的旅程"
+        },
+        {
+          "id": "5-六类算子-各卡在哪一条流水线上",
+          "text": "5. 六类算子，各卡在哪一条流水线上"
+        },
+        {
+          "id": "6-逐段读-hc-prenorm-py-tilelang-够用的那一块",
+          "text": "6. 逐段读 `hc_prenorm.py`：TileLang 够用的那一块"
+        },
+        {
+          "id": "7-决策表-什么时候用-tilelang-什么时候下钻",
+          "text": "7. 决策表：什么时候用 TileLang，什么时候下钻"
+        },
+        {
+          "id": "8-常见坑",
+          "text": "8. 常见坑"
+        },
+        {
+          "id": "9-本章小结",
+          "text": "9. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "36-flashmla-ascend",
+      "number": "36",
+      "title": "FlashMLA 昇腾稀疏注意力：算法与流水",
+      "summary": "官方为昇腾稀疏注意力写了一篇技术报告。本章把它讲成一条可跟着走的设计过程：从算存比推出「64 head/AI Core、1C2V、accumulator 放 UB」，再讲 KV 的 ND2NZ 时机、双流水排布、gather2 与 skip-scale，并划清哪些结论能用 TileLang 表达、哪些必须下钻。",
+      "readingMinutes": 46,
+      "exerciseCount": 14,
+      "quizCount": 7,
+      "figureCount": 7,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-稀疏注意力为什么要在昇腾上重写一遍",
+          "text": "1. 问题的由来：稀疏注意力为什么要在昇腾上重写一遍"
+        },
+        {
+          "id": "2-算法回顾-单个-q-token-的稀疏-attention",
+          "text": "2. 算法回顾：单个 Q token 的稀疏 attention"
+        },
+        {
+          "id": "3-四个关键设计讨论",
+          "text": "3. 四个关键设计讨论"
+        },
+        {
+          "id": "4-流水线设计",
+          "text": "4. 流水线设计"
+        },
+        {
+          "id": "5-优化技巧",
+          "text": "5. 优化技巧"
+        },
+        {
+          "id": "6-回到-tilelang-哪些能表达-哪些要下钻-哪些必须手写",
+          "text": "6. 回到 TileLang：哪些能表达，哪些要下钻，哪些必须手写"
+        },
+        {
+          "id": "7-进阶与陷阱",
+          "text": "7. 进阶与陷阱"
+        },
+        {
+          "id": "8-本章小结",
+          "text": "8. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "37-deepselect-topk",
+      "number": "37",
+      "title": "DeepSelect：算法先行的 TopK",
+      "summary": "算法先行，硬件随后。用阈值扫描 + 随机块序 + RadixSelect 把 TopK 的额外计算量压到 O(k log(N/k))，并给出期望复杂度的证明；再看 CUDA 侧怎么用 mask 与 PTX 把常数压到极致。它同时回答了「什么类型的算子该手写而不是用 TileLang」。",
+      "readingMinutes": 50,
+      "exerciseCount": 13,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-topk-为什么在-deepseek-里是个瓶颈",
+          "text": "1. 问题的由来：TopK 为什么在 DeepSeek 里是个瓶颈"
+        },
+        {
+          "id": "2-概念与模型-把-topk-变成-读一遍-有界选择",
+          "text": "2. 概念与模型：把 TopK 变成「读一遍 + 有界选择」"
+        },
+        {
+          "id": "3-期望复杂度证明-讲成人话",
+          "text": "3. 期望复杂度证明（讲成人话）"
+        },
+        {
+          "id": "4-cuda-实现-算法定上限-硬件定常数",
+          "text": "4. CUDA 实现：算法定上限，硬件定常数"
+        },
+        {
+          "id": "5-昇腾侧-同一套算法-另一组常数",
+          "text": "5. 昇腾侧：同一套算法，另一组常数"
+        },
+        {
+          "id": "6-性能怎么读",
+          "text": "6. 性能怎么读"
+        },
+        {
+          "id": "7-本章小结",
+          "text": "7. 本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "38-deepep-ascend",
+      "number": "38",
+      "title": "DeepEP-Ascend：专家并行通信与计算重叠",
+      "summary": "MoE 的专家并行会引入 all-to-all，而通信很容易把算力省下的东西吃回去。本章讲清 EP dispatch/combine 的语义、FP8 dispatch 与延迟 epilogue、HCCL/UBMEM/URMA 的分工、DeepJIT 为什么要在运行时编译，以及 EP8–EP128 的带宽数字怎么读。",
+      "readingMinutes": 40,
+      "exerciseCount": 14,
+      "quizCount": 8,
+      "figureCount": 6,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-问题的由来-省下来的算力-被-all-to-all-吃回去",
+          "text": "1. 问题的由来：省下来的算力，被 all-to-all 吃回去"
+        },
+        {
+          "id": "2-概念与模型-一次-dispatch-combine-到底发生了什么",
+          "text": "2. 概念与模型：一次 dispatch / combine 到底发生了什么"
+        },
+        {
+          "id": "3-用法-把-readme-的样例读成一段能落地的代码",
+          "text": "3. 用法：把 README 的样例读成一段能落地的代码"
+        },
+        {
+          "id": "4-实现机制-buffer-layout-与两个-kernel",
+          "text": "4. 实现机制：buffer、layout 与两个 kernel"
+        },
+        {
+          "id": "5-底座-hccl-hcomm-ubmem-urma-各管什么",
+          "text": "5. 底座：HCCL / HCOMM / UBMEM / URMA 各管什么"
+        },
+        {
+          "id": "6-deepjit-device-kernel-为什么在运行时编译",
+          "text": "6. DeepJIT：device kernel 为什么在运行时编译"
+        },
+        {
+          "id": "7-性能表怎么读-128-卡超节点的带宽数字",
+          "text": "7. 性能表怎么读：128 卡超节点的带宽数字"
+        },
+        {
+          "id": "8-状态的诚实标注-现在能用什么-别用什么",
+          "text": "8. 状态的诚实标注：现在能用什么，别用什么"
+        },
+        {
+          "id": "9-tilelang-这条线-通信库不用它-它服务的两端用",
+          "text": "9. TileLang 这条线：通信库不用它，它服务的两端用"
+        },
+        {
+          "id": "本章小结",
+          "text": "本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    },
+    {
+      "slug": "39-deepseek-e2e-supernode",
+      "number": "39",
+      "title": "端到端：128 卡超节点上的训练与推理",
+      "summary": "收口章：把六个组件拼回一条完整链路，分别走一遍训练的一步与推理的 prefill/decode，给出算力、片内带宽、卡间带宽三类资源的预算账与瓶颈定位清单，并把前面所有「未实现 / 实验性」的结论集中成一份诚实的现状清单。",
+      "readingMinutes": 53,
+      "exerciseCount": 14,
+      "quizCount": 7,
+      "figureCount": 5,
+      "inlineFigureCount": 0,
+      "toc": [
+        {
+          "id": "学习目标",
+          "text": "学习目标"
+        },
+        {
+          "id": "前置知识",
+          "text": "前置知识"
+        },
+        {
+          "id": "本章的验证边界-务必先读",
+          "text": "本章的验证边界（务必先读）"
+        },
+        {
+          "id": "1-收口-这一章要回答两个问题",
+          "text": "1. 收口：这一章要回答两个问题"
+        },
+        {
+          "id": "2-训练侧的一条完整链路",
+          "text": "2. 训练侧的一条完整链路"
+        },
+        {
+          "id": "3-推理侧的一条完整链路",
+          "text": "3. 推理侧的一条完整链路"
+        },
+        {
+          "id": "4-128-卡超节点的预算账",
+          "text": "4. 128 卡超节点的预算账"
+        },
+        {
+          "id": "5-瓶颈定位的检查清单",
+          "text": "5. 瓶颈定位的检查清单"
+        },
+        {
+          "id": "6-从-能跑-到-跑满-的路线图",
+          "text": "6. 从「能跑」到「跑满」的路线图"
+        },
+        {
+          "id": "7-这套生态还缺什么",
+          "text": "7. 这套生态还缺什么"
+        },
+        {
+          "id": "8-收口到贡献",
+          "text": "8. 收口到贡献"
+        },
+        {
+          "id": "9-全书回顾-五个部分各给了什么",
+          "text": "9. 全书回顾：五个部分各给了什么"
+        },
+        {
+          "id": "本章小结",
+          "text": "本章小结"
+        },
+        {
+          "id": "延伸阅读",
+          "text": "延伸阅读"
+        }
+      ]
+    }
+  ]
+}

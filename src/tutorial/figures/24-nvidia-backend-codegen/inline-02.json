@@ -1,0 +1,51 @@
+{
+  "id": "inline-02",
+  "title": "TMA 描述符从 device IR 到 host 生成",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "inlineQuote": "device IR 里的 create_tma_descriptor(TIR op)\n   → LowerHopperIntrin 收集成 host 函数的 tma_descriptor_args 属性\n   → wrapper 在 host 侧生成 cuTensorMapEncodeTiled(...)",
+  "caption": "描述符的完整链路：device IR 里的 create_tma_descriptor 被 LowerHopperIntrin 提升成 host 函数的 tma_descriptor_args 属性，wrapper 在 host 侧调 cuTensorMapEncodeTiled(...) 造出描述符，作为 kernel 参数交给 device 上的 TMA 拷贝。",
+  "nodes": [
+    {
+      "id": "op",
+      "label": "create_tma_descriptor(TIR op)",
+      "sub": "device IR 里对描述符的请求",
+      "tone": "default"
+    },
+    {
+      "id": "lower",
+      "label": "LowerHopperIntrin 收集",
+      "sub": "提升成 host 函数的 tma_descriptor_args 属性",
+      "tone": "accent"
+    },
+    {
+      "id": "encode",
+      "label": "wrapper：cuTensorMapEncodeTiled",
+      "sub": "在 host 侧生成描述符的调用",
+      "tone": "accent"
+    },
+    {
+      "id": "param",
+      "label": "__grid_constant__ const CUtensorMap",
+      "sub": "描述符以 kernel 参数传给 device",
+      "tone": "store"
+    },
+    {
+      "id": "bulk",
+      "label": "cp.async.bulk.tensor 使用它",
+      "sub": "device 上单线程发起 TMA 拷贝",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "op", "to": "lower" },
+    { "from": "lower", "to": "encode" },
+    { "from": "encode", "to": "param" },
+    { "from": "param", "to": "bulk" }
+  ],
+  "notes": [
+    "另有 TMA_IM2COL_DESC_INIT_FUNC 对应 cuTensorMapEncodeIm2col，是同一套链路里的 IM2COL 变体。",
+    "device 侧的 PTX 在 tl_templates/cuda/copy_sm90.h 的模板里：1D/2D 的 tma_load、multicast 变体与 tma_store_cluster 都是 cp.async.bulk.tensor.* 的内联汇编。"
+  ]
+}

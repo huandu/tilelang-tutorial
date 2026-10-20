@@ -1,0 +1,29 @@
+{
+  "id": "03-copy-selection",
+  "title": "T.copy 的搬运指令选择顺序",
+  "caption": "SelectCopyInstForLowering 按标注、cluster、显式 TMA、显式 async、prefer_instruction 的顺序选路，最后才走默认兜底。",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "4.4",
+  "steps": [
+    { "label": "gather4 / scatter4 标注", "sub": "是 → BulkLoadGather4 / BulkStoreScatter4" },
+    { "label": "cluster_mask != 0", "sub": "是 → 必须 kBulkLoad（multicast），否则报错" },
+    { "label": "显式 T.tma_copy", "sub": "→ TMA；约束不满足直接报错，不降级" },
+    { "label": "显式 async / force_cp_async", "sub": "→ kCPAsync；不满足则报错" },
+    { "label": "prefer_instruction", "sub": "tma → TMA；cp_async → cp.async；sync → 同步拷贝" },
+    {
+      "label": "无任何提示（默认路径）",
+      "sub": "只对 store 自动试 TMA：allow_load=false, allow_store=true"
+    },
+    {
+      "label": "兜底 SelectSyncLikeInst",
+      "sub": "LDSM → STSM → TMem → Normal，注意不是 cp.async",
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "load 想走 TMA，只有显式 T.tma_copy、prefer_instruction=\"tma\"、或 warp-specialized producer 分支三种途径。",
+    "TMA 硬条件：arch ≥ 90、作用域必须是 global ↔ shared、最后一维是 128 位的整数倍、最内层 stride 为 1。",
+    "1D bulk 路径额外要求 global 区域连续、shared 布局语义线性、两侧元素数相等、总位数 16 字节对齐。"
+  ]
+}

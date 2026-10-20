@@ -1,0 +1,81 @@
+{
+  "id": "01-three-layers",
+  "title": "TileKernels 的三层结构与后端分派",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "2.1",
+  "caption": "外层 *_kernel.py 只做校验、分配与分派；两个后端各是一个 *_cuda.py / *_asc.py；参考实现、对拍工具、配置与共享算术全程不进 kernel。",
+  "nodes": [
+    { "id": "user", "label": "用户代码", "sub": "topk_gate(scores, k)", "tone": "accent" },
+    {
+      "id": "outer",
+      "label": "外层：校验 + 分配 + 短路",
+      "sub": "dim / contiguous / dtype / shape 上限；torch.empty；num_tokens == 0 直接返回",
+      "tone": "default"
+    },
+    { "id": "disp", "label": "is_ascend() ?", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "kc",
+      "label": "get_*_kernel_cuda(...)",
+      "sub": "use_pdl=get_pdl()　→　@tilelang.jit 编译 / 取缓存",
+      "tone": "default"
+    },
+    {
+      "id": "ka",
+      "label": "get_*_kernel_asc(...)",
+      "sub": "num_vec_cores=get_num_vec_cores()（延迟 import）",
+      "tone": "default"
+    },
+    {
+      "id": "pc",
+      "label": "CUDA kernel",
+      "sub": "T.Kernel(num_tokens, threads=32)",
+      "tone": "compute"
+    },
+    {
+      "id": "pa",
+      "label": "Ascend kernel",
+      "sub": "T.Kernel(num_vec_cores)",
+      "tone": "compute"
+    },
+    { "id": "ret", "label": "return topk_idx", "tone": "accent" },
+    { "id": "ref", "label": "torch/ 参考实现", "sub": "slow but correct", "tone": "muted" },
+    {
+      "id": "testing",
+      "label": "testing/ 对拍与计时",
+      "sub": "assert_equal / calc_diff",
+      "tone": "muted"
+    },
+    { "id": "cfg", "label": "config.py", "sub": "核数 / PDL / 容量探测", "tone": "muted" },
+    { "id": "qc", "label": "共享算术", "sub": "quant/common.py 的 get_sf_and_inv", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "user", "to": "outer" },
+    { "from": "outer", "to": "disp" },
+    { "from": "disp", "to": "kc", "label": "否" },
+    { "from": "disp", "to": "ka", "label": "是" },
+    { "from": "kc", "to": "pc" },
+    { "from": "ka", "to": "pa" },
+    { "from": "pc", "to": "ret" },
+    { "from": "pa", "to": "ret" },
+    { "from": "ref", "to": "ret", "dashed": true, "label": "对拍" },
+    { "from": "testing", "to": "ret", "dashed": true },
+    { "from": "cfg", "to": "disp", "dashed": true },
+    { "from": "qc", "to": "pc", "dashed": true },
+    { "from": "qc", "to": "pa", "dashed": true }
+  ],
+  "groups": [
+    { "label": "外层 *_kernel.py（平台无关）", "nodes": ["outer", "disp"], "tone": "default" },
+    {
+      "label": "共享资产（不进 kernel）",
+      "nodes": ["ref", "testing", "cfg", "qc"],
+      "tone": "muted"
+    }
+  ],
+  "notes": [
+    "分派发生在「工厂函数被调用」这一步，不是「kernel 被执行」这一步；所有型号相关的值在这一刻成为编译期常量，并进入 JIT 缓存键。",
+    "CUDA 工厂在模块顶层 import；昇腾工厂只在 is_ascend() 为真时才 import（延迟 import）。",
+    "tests/** 只调用外层 API，所以同一份测试同时覆盖两个后端。"
+  ]
+}

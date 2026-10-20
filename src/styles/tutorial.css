@@ -1,0 +1,340 @@
+/*
+  Styles for the `/` tutorial.
+
+  Everything here is theme-agnostic: colours come from DaisyUI's semantic tokens
+  (`--color-base-*`, `--color-primary`, …) which the `data-theme` attribute
+  switches, so one rule serves both light and dark. Nothing in this file may use
+  a raw palette colour, and there are no `dark:` variants.
+
+  The `tlfig-*` block styles the inline SVGs produced by
+  `scripts/tutorial/svg.mjs`; the rest styles the interactive widgets.
+*/
+
+/* -------------------------------------------------------------------------- */
+/* Figures                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.tlfig-figure {
+  margin: 1.75rem 0;
+  padding: 1rem 1rem 0.75rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: 1rem;
+  background:
+    radial-gradient(
+        circle at 1px 1px,
+        color-mix(in oklch, var(--color-base-content) 8%, transparent) 1px,
+        transparent 0
+      )
+      0 0 / 18px 18px,
+    var(--color-base-100);
+  overflow-x: auto;
+}
+
+.tlfig {
+  display: block;
+  margin-inline: auto;
+  overflow: visible;
+}
+
+.tlfig text {
+  font-family: var(--font-sans);
+  fill: var(--color-base-content);
+}
+
+.tlfig-mono {
+  font-family: var(--font-mono);
+}
+
+.tlfig-node {
+  fill: var(--color-base-100);
+  stroke: color-mix(in oklch, var(--color-base-content) 30%, transparent);
+  stroke-width: 1.5;
+}
+
+.tlfig-node--accent {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.tlfig-node--store {
+  fill: color-mix(in oklch, var(--color-base-100) 82%, var(--color-primary) 18%);
+}
+
+.tlfig-node--compute {
+  fill: color-mix(in oklch, var(--color-base-100) 82%, var(--color-success) 18%);
+}
+
+.tlfig-node--muted {
+  fill: var(--color-base-200);
+}
+
+.tlfig-node--warn {
+  stroke: var(--color-warning);
+  stroke-width: 2;
+}
+
+.tlfig-node--header {
+  fill: var(--color-base-200);
+  stroke: var(--color-base-300);
+}
+
+.tlfig-node--cell {
+  fill: var(--color-base-100);
+  stroke: color-mix(in oklch, var(--color-base-content) 18%, transparent);
+}
+
+.tlfig-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tlfig-sub,
+.tlfig-edge-label,
+.tlfig-group-label,
+.tlfig-code {
+  fill: color-mix(in oklch, var(--color-base-content) 72%, transparent);
+}
+
+.tlfig-code {
+  font-family: var(--font-mono);
+}
+
+.tlfig-step-index {
+  fill: var(--color-primary);
+  font-weight: 700;
+}
+
+.tlfig-edge {
+  fill: none;
+  stroke: color-mix(in oklch, var(--color-base-content) 42%, transparent);
+  stroke-width: 1.5;
+}
+
+.tlfig-edge--dashed {
+  stroke-dasharray: 6 5;
+}
+
+.tlfig-axis {
+  fill: none;
+  stroke: color-mix(in oklch, var(--color-base-content) 28%, transparent);
+  stroke-width: 1.5;
+}
+
+.tlfig-arrowhead {
+  fill: color-mix(in oklch, var(--color-base-content) 45%, transparent);
+}
+
+.tlfig-group {
+  fill: color-mix(in oklch, var(--color-base-200) 55%, transparent);
+  stroke: var(--color-base-300);
+  stroke-dasharray: 5 4;
+}
+
+.tlfig-dot--accent {
+  fill: var(--color-primary);
+}
+
+.tlfig-dot--default {
+  fill: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+}
+
+.tlfig-track {
+  fill: var(--color-base-200);
+}
+
+.tlfig-bar--accent {
+  fill: var(--color-primary);
+}
+
+.tlfig-bar--store {
+  fill: color-mix(in oklch, var(--color-primary) 55%, var(--color-base-content) 45%);
+}
+
+.tlfig-bar--default {
+  fill: color-mix(in oklch, var(--color-base-content) 45%, transparent);
+}
+
+.tlfig-row {
+  fill: color-mix(in oklch, var(--color-base-200) 45%, transparent);
+}
+
+.tlfig-badge {
+  fill: color-mix(in oklch, var(--color-primary) 18%, var(--color-base-100));
+  stroke: var(--color-primary);
+}
+
+.tlfig-badge-label {
+  fill: var(--color-base-content);
+}
+
+.tlfig-caption {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: color-mix(in oklch, var(--color-base-content) 68%, transparent);
+}
+
+.tlfig-notes {
+  margin: 0.5rem 0 0.25rem;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: color-mix(in oklch, var(--color-base-content) 62%, transparent);
+  list-style: disc;
+}
+
+/* Shiki dual-theme output: light colours by default, dark ones under `night`. */
+.shiki {
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: var(--shiki-light-bg) !important;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+[data-theme='night'] .shiki {
+  background: var(--shiki-dark-bg) !important;
+}
+
+[data-theme='night'] .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Layout helpers                                                             */
+/* -------------------------------------------------------------------------- */
+
+.tutorial-shell {
+  display: grid;
+  gap: 2.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .tutorial-shell {
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+}
+
+.tutorial-toc {
+  position: sticky;
+  top: 5.5rem;
+  max-height: calc(100vh - 7rem);
+  overflow-y: auto;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.tutorial-toc a {
+  display: block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.4rem;
+  color: color-mix(in oklch, var(--color-base-content) 72%, transparent);
+}
+
+.tutorial-toc a:hover {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+}
+
+.tutorial-toc a[data-level='3'] {
+  padding-left: 1.25rem;
+  font-size: 0.78rem;
+}
+
+.tutorial-toc a[aria-current='true'] {
+  background: color-mix(in oklch, var(--color-primary) 14%, transparent);
+  color: var(--color-base-content);
+  font-weight: 600;
+}
+
+.chapter-prose {
+  max-width: 100%;
+}
+
+.chapter-prose :where(h2, h3) {
+  scroll-margin-top: 6rem;
+}
+
+.chapter-prose :where(table) {
+  display: block;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Exercises                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.exercise-item[data-state='correct'] {
+  border-color: var(--color-success);
+}
+
+.exercise-item[data-state='partial'] {
+  border-color: var(--color-warning);
+}
+
+.exercise-item[data-state='wrong'] {
+  border-color: var(--color-error);
+}
+
+.exercise-answer {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1rem;
+}
+
+.quiz-option {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.quiz-option:hover {
+  border-color: var(--color-primary);
+}
+
+.quiz-option[data-verdict='correct'] {
+  border-color: var(--color-success);
+  background: color-mix(in oklch, var(--color-success) 12%, transparent);
+}
+
+.quiz-option[data-verdict='wrong'] {
+  border-color: var(--color-error);
+  background: color-mix(in oklch, var(--color-error) 12%, transparent);
+}
+
+.quiz-option input {
+  margin-top: 0.25rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Progress                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring__track {
+  stroke: var(--color-base-300);
+}
+
+.progress-ring__value {
+  stroke: var(--color-primary);
+  transition: stroke-dashoffset 400ms ease;
+}
+
+.chapter-card[data-read='true'] {
+  border-color: color-mix(in oklch, var(--color-success) 45%, var(--color-base-300));
+}
+
+.chapter-card[data-read='true'] .chapter-card__number {
+  background: color-mix(in oklch, var(--color-success) 22%, transparent);
+  color: var(--color-base-content);
+}

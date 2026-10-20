@@ -1,0 +1,34 @@
+{
+  "id": "02-bank-conflict",
+  "title": "bank conflict 的发生与两种消除方式",
+  "caption": "32×32 float tile、warp 内 32 个线程读同一列：行主序会 32 路撞 bank，padding 与 XOR swizzle 是两种修法。",
+  "kind": "compare",
+  "section": "2.3",
+  "columns": ["行主序 · stride=32", "方式一 · padding stride=33", "方式二 · XOR swizzle"],
+  "rows": [
+    {
+      "label": "地址公式",
+      "values": ["addr(t) = t × 32", "addr(t) = t × 33", "物理单元号 = 逻辑单元号 XOR 行号"]
+    },
+    {
+      "label": "bank(t)",
+      "values": ["(t × 32) mod 32 = 0", "(t × 33) mod 32 = t", "第 s 行读到单元 c xor s"]
+    },
+    {
+      "label": "一个 warp 读同一列",
+      "values": [
+        "32 个线程全撞 bank 0 → 32 拍",
+        "32 个线程落在 32 个不同 bank → 1 拍",
+        "列访问不再撞同一个 bank"
+      ]
+    },
+    {
+      "label": "代价",
+      "values": ["冲突本身，无额外机制", "容量多出一整列，约 +3%", "地址计算多一次异或，容量不涨"]
+    }
+  ],
+  "notes": [
+    "bank 每拍服务 32 bit；warp 是 32 线程、bank 也是 32 个，所以一个 warp 内任意两个线程都可能撞 bank。",
+    "两者都在消同一个东西：同一 warp 内多个线程命中同一个 bank。"
+  ]
+}

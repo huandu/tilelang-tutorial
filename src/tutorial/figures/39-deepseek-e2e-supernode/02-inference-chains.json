@@ -1,0 +1,50 @@
+{
+  "id": "02-inference-chains",
+  "title": "prefill 与 decode 的组件链路对照",
+  "kind": "compare",
+  "labelWidth": 150,
+  "caption": "两段用的是同一批算子，但形状不同：prefill 是大 M，decode 是小 M——瓶颈是形状的函数。",
+  "columns": ["prefill（大 M）", "decode（小 M）"],
+  "rows": [
+    {
+      "label": "① 索引打分",
+      "values": [
+        "MQA logits，FIX-pipe bound 99%（第 35 章）",
+        "MQA logits，Q=256：带宽 2006 GB/s（第 35 章）"
+      ]
+    },
+    {
+      "label": "② TopK 筛选",
+      "values": ["DeepSelect，bf16，topk=512（第 37 章）", "同一场景；昇腾不支持 fp32（第 37 章）"]
+    },
+    {
+      "label": "③ 稀疏注意力",
+      "values": [
+        "FlashMLA 稀疏 prefill：410 TFlops / 95%（第 36 章）",
+        "FlashMLA 稀疏 decode：360 TFlops / 83%（第 36 章）"
+      ]
+    },
+    {
+      "label": "④ 专家通信",
+      "values": [
+        "DeepEP dispatch 达链路 90–95%（第 38 章）",
+        "同样的接口，但 launch 固定开销占比高（第 38 章）"
+      ]
+    },
+    {
+      "label": "⑤ 常规算子",
+      "values": [
+        "TileKernels：norm / RoPE / 量化（第 33 章）",
+        "采样 TopK 走 DeepSelect 的采样场景"
+      ]
+    },
+    {
+      "label": "主要瓶颈",
+      "values": ["算力 / FixPipe / 卡间带宽", "片内带宽 + 启动开销"]
+    }
+  ],
+  "notes": [
+    "decode 的 KV cache 只支持 FP8 / FP4，bf16 不支持（FlashMLA README:136）。",
+    "两段的指标不同：TTFT 由 prefill 决定，TPOT 由 decode 决定（第 18 章 §7）。"
+  ]
+}

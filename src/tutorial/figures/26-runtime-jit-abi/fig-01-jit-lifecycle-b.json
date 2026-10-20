@@ -1,0 +1,64 @@
+{
+  "id": "fig-01-jit-lifecycle-b",
+  "title": "缓存命中与未命中两条路",
+  "caption": "进程内参数键命中就直接返回 JITKernel；未命中才走 compile → cached() → 磁盘/内存缓存，再未命中才 lower/codegen/adapter，并把产物落盘。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "2.1",
+  "nodes": [
+    { "id": "call", "label": "用户调用 jit_fn(M, N, block_M=…)", "tone": "default" },
+    {
+      "id": "mode",
+      "label": "initialize_jit_mode / _infer_jit_mode",
+      "sub": "jit/__init__.py:394 — lazy 返回 PrimFunc，eager 走 DSL body",
+      "tone": "default"
+    },
+    {
+      "id": "key",
+      "label": "JITFunc.parse_args",
+      "sub": "→ (key, tensor_args) · builder.py:1692",
+      "tone": "accent"
+    },
+    { "id": "g1", "label": "JITImpl._kernel_cache 命中？", "shape": "diamond", "tone": "muted" },
+    { "id": "kernel", "label": "返回 JITKernel", "tone": "accent" },
+    {
+      "id": "compile",
+      "label": "JITImpl.compile → tilelang.jit.compile",
+      "sub": "jit/__init__.py:466 · :94",
+      "tone": "default"
+    },
+    { "id": "cached", "label": "cached() 缓存派发 · KernelCache", "tone": "default" },
+    { "id": "g2", "label": "磁盘 / 内存 KernelCache 命中？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "build",
+      "label": "JITKernel(...) → _compile_artifact → adapter",
+      "sub": "jit/kernel.py:288 / :324 — lower → codegen → adapter",
+      "tone": "default"
+    },
+    {
+      "id": "save",
+      "label": "_save_kernel_to_disk",
+      "sub": "staging → 原子 rename · :552 / :629",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "call", "to": "mode" },
+    { "from": "mode", "to": "key" },
+    { "from": "key", "to": "g1" },
+    { "from": "g1", "to": "kernel", "label": "命中" },
+    { "from": "g1", "to": "compile", "label": "未命中" },
+    { "from": "compile", "to": "cached" },
+    { "from": "cached", "to": "g2" },
+    { "from": "g2", "to": "kernel", "label": "命中" },
+    { "from": "g2", "to": "build", "label": "未命中" },
+    { "from": "build", "to": "kernel" },
+    { "from": "build", "to": "save", "label": "落盘" },
+    { "from": "save", "to": "kernel", "dashed": true }
+  ],
+  "notes": [
+    "③ 和 ⑥ 之间夹着 ④⑤：缓存命中时 ④⑤ 完全不执行，你拿到的是上一轮落盘的 kernel_lib.so。",
+    "进程内那本账的 key 是 Python 层的实参组合，不是 TIR 哈希；命中时连磁盘都不碰。"
+  ]
+}

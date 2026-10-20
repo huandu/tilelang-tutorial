@@ -1,0 +1,44 @@
+{
+  "id": "inline-01",
+  "title": "抽象层次纵轴：从图级到硬件 ISA",
+  "kind": "layers",
+  "section": "2.1",
+  "inlineQuote": "高层  ▲  图级 / 模型级 ：   torch.compile（不在本章范围，见第 02 章）\n      │\n      │  tile 级        ：   Triton      cuTile      TileLang",
+  "layers": [
+    {
+      "label": "图级 / 模型级",
+      "sub": "torch.compile（不在本章范围，见第 02 章）",
+      "right": "高层",
+      "tone": "muted"
+    },
+    {
+      "label": "tile 级",
+      "sub": "Triton（编译器选调度）· cuTile · TileLang（用户显式数据流）",
+      "right": "高层",
+      "tone": "accent"
+    },
+    {
+      "label": "线程 / 指令级",
+      "sub": "CUDA · CUTLASS-CuTe（C++ 与 CuTe DSL） · Ascend C · PTO-DSL",
+      "right": "低层",
+      "tone": "default"
+    },
+    {
+      "label": "硬件 ISA",
+      "sub": "PTX / SASS · PTO-ISA / CCE",
+      "right": "最低",
+      "tone": "default"
+    },
+    {
+      "label": "TVM 底盘（横穿所有层）",
+      "sub": "IR + pass 基础设施 + target/device 抽象",
+      "right": "横切",
+      "tone": "store"
+    }
+  ],
+  "caption": "七个对象不在同一层：图级、tile 级、线程 / 指令级与硬件 ISA，再加上横穿所有层的 TVM 底盘。",
+  "notes": [
+    "层次越高，用户为表达一个算子必须提供的硬件相关决策越少（见正文 2.1 节给出的三个问题）。",
+    "CuTe 与 CuTe DSL 是一族，在抽象层次上和 CUDA 同级；Ascend C 与 PTO-DSL 同样在低层，但暴露的是昇腾的 L1 / L0A / L0B / L0C / UB 与 MTE 搬运流水。"
+  ]
+}

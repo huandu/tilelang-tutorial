@@ -1,0 +1,51 @@
+{
+  "id": "06-atomic-paths",
+  "title": "原子操作的两条路径",
+  "caption": "T.atomic_add 分标量与 tile-region 两条路径，能力不同；昇腾侧则用有状态的 set_atomic 或适配器 API。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "a", "label": "T.atomic_add(dst, value)", "tone": "default" },
+    { "id": "q", "label": "能推出 extent 吗？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "s",
+      "label": "tl.atomic_add_elem_op",
+      "sub": "AtomicAdd / AtomicAddx2 / AtomicAddx4",
+      "tone": "accent"
+    },
+    { "id": "s2", "label": "支持 return_prev 与 memory_order", "tone": "default" },
+    {
+      "id": "r",
+      "label": "tl.tileop.atomicadd",
+      "sub": "per-element 原子，或 use_tma 时的 TMA cp.reduce",
+      "tone": "accent"
+    },
+    { "id": "r2", "label": "return_prev 不支持", "sub": "抛 NotImplementedError", "tone": "warn" },
+    {
+      "id": "r3",
+      "label": "use_tma dtype 白名单",
+      "sub": "fp16 / bf16 / fp32 / int32 / uint32 / uint64",
+      "tone": "default"
+    },
+    {
+      "id": "as",
+      "label": "昇腾：T.set_atomic + T.tile.atomic_add",
+      "sub": "set_atomic 有状态，必须配对 set_atomic_none()",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "a", "to": "q" },
+    { "from": "q", "to": "s", "label": "两边都推不出（标量地址）" },
+    { "from": "s", "to": "s2" },
+    { "from": "q", "to": "r", "label": "至少一边能推出（tile-region）" },
+    { "from": "r", "to": "r2" },
+    { "from": "r", "to": "r3" },
+    { "from": "a", "to": "as", "label": "昇腾", "dashed": true }
+  ],
+  "notes": [
+    "判据是 get_extent() 能不能推出区域，不是「dst 有几个元素」。",
+    "T.set_atomic 是模式开关，T.atomic_add 是一次性原语，两者不等价：忘记 set_atomic_none() 会让后面的普通 store 也变成累加。"
+  ]
+}

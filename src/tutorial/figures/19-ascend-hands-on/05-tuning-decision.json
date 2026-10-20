@@ -1,0 +1,85 @@
+{
+  "id": "05-tuning-decision",
+  "title": "瓶颈判读决策树",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "section": "8.3",
+  "caption": "输入是 do_bench(backend=\"msprof_detail\") 返回的 KernelProfile：先分 compute-bound / memory-bound，再看 aic_mad、aic_mte1/2、aic_fixpipe、aiv_mte2/3 定位瓶颈。",
+  "nodes": [
+    { "id": "s", "label": "dur_ns 与算术强度", "tone": "accent" },
+    {
+      "id": "p",
+      "label": "compute-bound 还是 memory-bound？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    { "id": "m", "label": "compute-bound：aic_mad 高不高？", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "alg",
+      "label": "Cube 已打满",
+      "sub": "aic_mad 接近上限 → 改算法 / tile / dtype，别再叠流水",
+      "tone": "compute"
+    },
+    { "id": "w", "label": "aic_mad 低，Cube 在等谁？", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "gm2",
+      "label": "GM→L1 带宽是瓶颈",
+      "sub": "aic_mte2 高 → L2 提示 / swizzle / 减少重复读",
+      "tone": "warn"
+    },
+    {
+      "id": "l0l1",
+      "label": "L1→L0 太频繁",
+      "sub": "aic_mte1 高 → 调 kL0Size / L0 tile",
+      "tone": "warn"
+    },
+    {
+      "id": "fix",
+      "label": "L0C 写回太慢",
+      "sub": "aic_fixpipe 高 → 调 L0C 使用方式 / 写回策略",
+      "tone": "warn"
+    },
+    {
+      "id": "sync",
+      "label": "可能在等同步",
+      "sub": "都不高 → 查 flag 配对 / 多缓冲",
+      "tone": "warn"
+    },
+    {
+      "id": "v",
+      "label": "memory-bound：aiv_mte2/mte3 高不高？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "band",
+      "label": "搬运带宽吃满",
+      "sub": "高 → 做算子融合 / 减少 GM 往返",
+      "tone": "warn"
+    },
+    {
+      "id": "vsync",
+      "label": "在等同步或多缓冲不够",
+      "sub": "低但 dur 高 → 检查 T.Pipelined / 版本数",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "s", "to": "p" },
+    { "from": "p", "to": "m" },
+    { "from": "p", "to": "v" },
+    { "from": "m", "to": "alg" },
+    { "from": "m", "to": "w" },
+    { "from": "w", "to": "gm2" },
+    { "from": "w", "to": "l0l1" },
+    { "from": "w", "to": "fix" },
+    { "from": "w", "to": "sync" },
+    { "from": "v", "to": "band" },
+    { "from": "v", "to": "vsync" }
+  ],
+  "notes": [
+    "AIC 与 AIV 的比值各自相对自己的 total_cycles，不要相加当成一个统一时间轴的占比；do_bench(backend=\"msprof\") 不带 median/quantile，多取几次自己求中位数。",
+    "本图是判读方法，不含任何实测数字；字段定义来自 M 树 tilelang/profiler/msprof.py:60-134。"
+  ]
+}

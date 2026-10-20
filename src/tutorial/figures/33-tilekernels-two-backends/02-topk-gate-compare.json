@@ -1,0 +1,63 @@
+{
+  "id": "02-topk-gate-compare",
+  "title": "topk_gate 两个后端的逐项对照",
+  "kind": "compare",
+  "width": 1000,
+  "labelWidth": 150,
+  "rowHeight": 46,
+  "section": "4.4",
+  "caption": "同一份算法，同一套 tie-break 契约；下表的每一行差异都是「并行映射」差异，没有一行改变算法语义。行号为 corpus 快照里的行号。",
+  "columns": ["CUDA 版 topk_gate_cuda.py", "Ascend 版 topk_gate_asc.py"],
+  "rows": [
+    {
+      "label": "网格",
+      "values": ["T.Kernel(num_tokens, threads=32)　:22", "T.Kernel(num_vec_cores)　:30"]
+    },
+    {
+      "label": "并行单位",
+      "values": ["1 block = 1 token，32 线程 / warp", "1 Vector 核 = 1 token，64 lane / 指令"]
+    },
+    { "label": "一行放哪", "values": ["alloc_fragment（寄存器）:25-27", "alloc_shared（UB）:31"] },
+    {
+      "label": "归约怎么写",
+      "values": [
+        "alloc_reducer(op=min/sum) + init/update/finalize",
+        "S.vmax / S.vmin / S.vcmax / S.vcmin"
+      ]
+    },
+    { "label": "越界元素", "values": ["补齐成 -inf　:37-38", "掩码屏蔽　:81,120"] },
+    {
+      "label": "非法值检测",
+      "values": [
+        "reducer 累加 + 循环外一次 assert :41-46",
+        "x-x != 0 打标 + vmax 累积 + 循环外 assert"
+      ]
+    },
+    { "label": "剩余行", "values": ["网格 = token 数，天然整除", "if row < num_tokens 守卫　:47"] },
+    { "label": "迭代划分", "values": ["无（一 block 一行）", "按核交错 row = w*V + core_id　:46"] },
+    { "label": "流水", "values": ["无", "T.Pipelined(..., num_stages=6)　:41-45"] },
+    { "label": "缓冲版本", "values": ["编译器决定", "annotate_buffer_versions（显式）　:35"] },
+    { "label": "显式同步", "values": ["无", "一句 S.mem_bar('VST_VLD')　:151"] },
+    {
+      "label": "向量宽度",
+      "values": ["编译器选（T.Parallel + 向量化）", "写死 vector_length = 64　:11"]
+    },
+    {
+      "label": "int64 输出",
+      "values": ["T.copy 做 int32→int64 转换　:64", "T.view 成 int32 视图，逐 lane 写　:34,101"]
+    },
+    {
+      "label": "启动/结束",
+      "values": ["T.pdl_sync() / T.pdl_trigger()　:23-24,65-66", "无（PDL 是 CUDA-only）"]
+    },
+    {
+      "label": "pass_configs",
+      "values": ["关掉 warp specialization　:8-10", "无（AutoSchedule 默认开）"]
+    }
+  ],
+  "notes": [
+    "左列多出来的两行（PDL、pass_configs）是「CUDA 有、昇腾没有对应物」。",
+    "右列多出来的四行（流水、缓冲版本、mem_bar、显式向量宽度）是「昇腾必须显式表达、CUDA 交给编译器」。",
+    "tie-break 契约（并列取最小下标）在两边都用「最小归约」实现：左边是 op='min' 的 reducer，右边是 S.vmin + S.vcmin。"
+  ]
+}

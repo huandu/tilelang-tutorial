@@ -1,0 +1,49 @@
+{
+  "id": "02-vectorization-decision",
+  "title": "逐元素循环的向量化判定链",
+  "kind": "flow",
+  "direction": "TB",
+  "section": "4.1",
+  "nodeMaxEm": 24,
+  "caption": "最内层循环能不能一次处理 k 个元素：四个条件任一不满足就退化成标量。",
+  "nodes": [
+    {
+      "id": "a",
+      "label": "T.Parallel(threads, num_per_thread)",
+      "sub": "最内层循环是候选向量轴",
+      "tone": "default"
+    },
+    { "id": "b", "label": "索引对最内层是仿射、步长为 1？", "shape": "diamond", "tone": "default" },
+    { "id": "c", "label": "越界谓词在向量组内部恒定？", "shape": "diamond", "tone": "default" },
+    { "id": "d", "label": "涉及跨 dtype 的 cast？", "shape": "diamond", "tone": "default" },
+    {
+      "id": "e",
+      "label": "宽度 = gcd(源侧 lane 上限, 目标侧 lane 上限, 初始宽度)",
+      "tone": "compute"
+    },
+    { "id": "f", "label": "宽度由 buffer dtype 与 max_vector_bits 决定", "tone": "compute" },
+    { "id": "g", "label": "按宽度切分最内层循环", "tone": "default" },
+    { "id": "h", "label": "store 的索引沿向量轴推进？", "shape": "diamond", "tone": "default" },
+    { "id": "i", "label": "发出向量访存 + 向量算术", "tone": "accent" },
+    { "id": "z", "label": "向量宽度 = 1，退化成标量循环", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "a", "to": "b" },
+    { "from": "b", "to": "c", "label": "是" },
+    { "from": "b", "to": "z", "label": "否" },
+    { "from": "c", "to": "d", "label": "是" },
+    { "from": "c", "to": "z", "label": "否" },
+    { "from": "d", "to": "e", "label": "是" },
+    { "from": "d", "to": "f", "label": "否" },
+    { "from": "e", "to": "g" },
+    { "from": "f", "to": "g" },
+    { "from": "g", "to": "h" },
+    { "from": "h", "to": "i", "label": "是" },
+    { "from": "h", "to": "z", "label": "否" }
+  ],
+  "notes": [
+    "官方对照：N=2047、threads=256、每线程 8 个元素时生成的 CUDA 带 idx<2047 谓词，没有 uint4；N=2048 时生成 128-bit 访存",
+    "fp32→fp16 的 cast 上限是 4 lane（128/32），int32→fp8 也是 4 lane",
+    "read-modify-write 的 store（索引在向量组内不变）会被规划器直接标量化"
+  ]
+}

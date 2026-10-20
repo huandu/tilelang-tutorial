@@ -1,0 +1,43 @@
+{
+  "id": "02-first-kernel-anatomy",
+  "title": "一个 kernel 的四个部件",
+  "caption": "前两列是人写的、后两列是编译器补的：T.Parallel 是块级意图，线程映射与向量化由编译器决定。",
+  "kind": "grid",
+  "section": "4",
+  "headers": ["部件", "你写的（Python）", "它回答的问题", "编译器兑现成"],
+  "rows": [
+    {
+      "label": "① 网格",
+      "cells": [
+        "with T.Kernel(...) as bx",
+        "这段计算被切成多少块并行执行",
+        "CUDA grid / blockIdx.x；昇腾的核编号"
+      ]
+    },
+    {
+      "label": "② buffer",
+      "cells": [
+        "T.alloc_shared / T.alloc_fragment",
+        "数据放在哪一级存储上",
+        "shared / 寄存器数组；昇腾 UB / L1 / L0*"
+      ]
+    },
+    {
+      "label": "③ 搬运",
+      "cells": [
+        "T.copy(src, dst)",
+        "一个 tile 怎么从一级存储到另一级",
+        "LDG/STG、cp.async、TMA；昇腾 MTE"
+      ]
+    },
+    {
+      "label": "④ 并行域",
+      "cells": ["for i in T.Parallel(n):", "这 n 个元素各做一次，具体谁做", "线程映射 + 向量化"]
+    }
+  ],
+  "notes": [
+    "官方原文的表述是：T.Kernel 之内是「block level, not thread level」。",
+    "想要 thread-level 也可以，用 T.get_thread_binding()，属 expert 层。",
+    "同一个块里的 256 个元素，可能由 32 个线程各做 8 个，也可能由 256 个线程各做 1 个。"
+  ]
+}

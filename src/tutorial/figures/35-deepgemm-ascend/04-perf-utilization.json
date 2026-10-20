@@ -1,0 +1,53 @@
+{
+  "id": "04-perf-utilization",
+  "title": "五张性能表的利用率对照",
+  "kind": "bars",
+  "max": 100,
+  "caption": "同一份“利用率”要看清分母：dense/grouped/MegaMoE 的分母是算力极限，MQA 是 FIX pipe，HC prenorm 应看带宽。",
+  "items": [
+    { "label": "Dense BF16 431/432", "value": 99.8, "display": "99.8% 算力", "tone": "accent" },
+    { "label": "Dense FP8×FP8 861/865", "value": 99.5, "display": "99.5% 算力", "tone": "accent" },
+    {
+      "label": "Dense FP4×FP4 1701/1730",
+      "value": 98.3,
+      "display": "98.3% 算力",
+      "tone": "accent"
+    },
+    {
+      "label": "M-Grouped 最优 862/865",
+      "value": 99.7,
+      "display": "99.7% 算力",
+      "tone": "compute"
+    },
+    {
+      "label": "MQA prefill FP8 681/865",
+      "value": 78.7,
+      "display": "78.7% 算力（官方口径是 FIX 99%）",
+      "tone": "warn"
+    },
+    {
+      "label": "MegaMoE 384/16384 846/865",
+      "value": 97.8,
+      "display": "97.8% 算力",
+      "tone": "compute"
+    },
+    {
+      "label": "HC Prenorm M=8192 带宽 3463/3500",
+      "value": 98.9,
+      "display": "98.9% 带宽",
+      "tone": "store"
+    },
+    {
+      "label": "HC Prenorm M=8192 算力 82/432",
+      "value": 4.7,
+      "display": "4.7% 算力（读错分母）",
+      "tone": "muted"
+    }
+  ],
+  "notes": [
+    "硬件极限由源码模型复算：8192×16/elem_bits×1650MHz×32 核。",
+    "MQA 的 99% 是官方给出的 FIX pipe 占用率，不是算力利用率。",
+    "HC Prenorm 是 memory-bound，算力利用率没意义，应看带宽。",
+    "口径：Ascend 950DT + CANN 9.20 + bench_msprof + 冷 L2。"
+  ]
+}

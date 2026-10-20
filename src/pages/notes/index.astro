@@ -1,0 +1,83 @@
+---
+import TutorialLayout from '@layouts/TutorialLayout.astro';
+import notesJson from '@data/tutorial/generated/notes.json';
+import { NOTES } from '@data/tutorial/generated/notes.ts';
+
+interface NoteIndexEntry {
+  slug: string;
+  title: string;
+}
+
+interface NoteCard extends NoteIndexEntry {
+  summary: string;
+}
+
+const notes: NoteCard[] = notesJson.notes.map((note) => ({
+  ...note,
+  summary: NOTES[note.slug]?.html ?? '',
+}));
+
+/** Opening prose of the note, stripped of tags and cut on a sentence end. */
+const blurb = (note: { summary: string }): string => {
+  const text = note.summary
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const start = text.search(/这份文档|这篇|读者设定|三份文档/);
+  const slice = start > 0 ? text.slice(start) : text;
+  const LIMIT = 132;
+  if (slice.length <= LIMIT) return slice;
+  const window = slice.slice(0, LIMIT);
+  const stop = Math.max(window.lastIndexOf('。'), window.lastIndexOf('；'));
+  return stop > 40 ? window.slice(0, stop + 1) : `${window}…`;
+};
+---
+
+<TutorialLayout
+  description="TileLang 教程的编者笔记：知识体系与学习路径、编译期内部地图、昇腾路线。"
+  path="/notes/"
+  title="编者笔记"
+>
+  <div class="mx-auto w-full max-w-3xl px-5 py-12 sm:px-8">
+    <nav aria-label="面包屑" class="breadcrumbs text-sm opacity-70" data-reader-hide>
+      <ul>
+        <li>
+          <a class="link link-hover" href="/">
+            TileLang 教程
+          </a>
+        </li>
+        <li>编者笔记</li>
+      </ul>
+    </nav>
+
+    <header class="mt-6 border-b border-base-300 pb-8">
+      <h1 class="text-3xl font-semibold tracking-tight">编者笔记</h1>
+      <p class="mt-4 leading-relaxed opacity-75">
+        三篇由教程编者撰写、并随教程一起维护的分析笔记。它们回答的是「怎么学」「编译器里到底发生了什么」
+        「昇腾这条线长什么样」三类全局问题，覆盖范围比单章更宽，也因此更早、更容易过时——
+        每篇开头都写明了分析基线与版本提示。
+      </p>
+    </header>
+
+    <ul class="mt-8 space-y-4">
+      {notes.map((note) => (
+        <li class="rounded-xl border border-base-300 bg-base-100 p-5">
+          <a class="link link-hover text-lg font-medium" href={`/notes/${note.slug}/`}>
+            {note.title}
+          </a>
+          <p class="mt-2 text-sm leading-relaxed opacity-70">{blurb(note)}</p>
+        </li>
+      ))}
+    </ul>
+
+    <div class="alert mt-8 bg-base-200 text-sm">
+      <span>
+        这些笔记的引用同样已经指向可公开访问的上游地址；完整清单见
+        <a class="link link-hover" href="/references/">
+          资料与版本
+        </a>
+        。
+      </span>
+    </div>
+  </div>
+</TutorialLayout>

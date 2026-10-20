@@ -1,0 +1,57 @@
+{
+  "id": "03-runtime-debug-path-b",
+  "title": "运行期调试路径（二）：打印、断言与自动缩小",
+  "caption": "偶发分支先去掉并发、再加回并发定位同步问题；数值分支则用打印、device_assert 与 AutoDD 逐步缩小现场。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "section": "3.5",
+  "nodes": [
+    { "id": "r6", "label": "用 fp64 参考重算同一输入", "tone": "muted" },
+    { "id": "r5", "label": "每次不一样 → 进入「偶发」分支", "tone": "muted" },
+    { "id": "s1", "label": "假设 1：缺 barrier", "sub": "读到没写完的 shared", "tone": "warn" },
+    {
+      "id": "s2",
+      "label": "假设 2：pipeline 缓冲版本错",
+      "sub": "stage 数 / order 与实际不符",
+      "tone": "warn"
+    },
+    {
+      "id": "s3",
+      "label": "假设 3：跨 block 无序写",
+      "sub": "atomic / 归约顺序不确定",
+      "tone": "warn"
+    },
+    {
+      "id": "s4",
+      "label": "num_stages=1、关流水、降为单 block",
+      "sub": "如果变对，就是同步问题",
+      "tone": "default"
+    },
+    { "id": "s5", "label": "逐步加回并发，找第一次出错的位置", "tone": "default" },
+    {
+      "id": "r7",
+      "label": "T.print / T.printf / T.dump_tensor 局部打印中间张量",
+      "tone": "accent"
+    },
+    { "id": "r8", "label": "T.device_assert 把范围缩到一个张量 / 一段线程", "tone": "accent" },
+    { "id": "r9", "label": "AutoDD 自动缩小到最小复现", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "r5", "to": "s1" },
+    { "from": "r5", "to": "s2" },
+    { "from": "r5", "to": "s3" },
+    { "from": "s1", "to": "s4" },
+    { "from": "s2", "to": "s4" },
+    { "from": "s3", "to": "s4" },
+    { "from": "s4", "to": "s5" },
+    { "from": "s5", "to": "r7" },
+    { "from": "r6", "to": "r7" },
+    { "from": "r7", "to": "r8" },
+    { "from": "r8", "to": "r9" }
+  ],
+  "notes": [
+    "偶发错误的排查顺序是先去掉并发、再加回并发，而不是直接读代码找 bug。",
+    "昇腾侧没有 CUDA 的 device printf 语义：主动打印用 T.printf / T.dump_tensor（每个核 1 MB 上限），事后取现场用 AICore 异常 dump。"
+  ]
+}

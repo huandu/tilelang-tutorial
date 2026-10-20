@@ -1,0 +1,169 @@
+---
+/* eslint-disable astro/no-set-html-directive -- see the note in `../[slug].astro`. */
+import TutorialLayout from '@layouts/TutorialLayout.astro';
+import { CODE } from '@data/tutorial/generated/code/index.ts';
+import { chapterMeta, chapterPath } from '@lib/tutorial.ts';
+import { codeToHtml } from 'shiki';
+
+import type { TutorialCodeFile } from '@lib/tutorial.ts';
+
+import type { GetStaticPaths } from 'astro';
+
+interface Props {
+  slug: string;
+  file: TutorialCodeFile | undefined;
+  dir: string;
+  siblings: { path: string; bytes: number }[];
+  subdirs: string[];
+}
+
+/*
+  `getStaticPaths` is hoisted into its own chunk, so everything it needs is
+  computed inside it; the component then re-derives the directory listing from
+  the same map.
+*/
+export const getStaticPaths = (() => {
+  const paths: {
+    params: { path: string };
+    props: { slug: string; file: TutorialCodeFile | undefined; dir: string };
+  }[] = [];
+  for (const [slug, files] of Object.entries(CODE)) {
+    paths.push({ params: { path: slug }, props: { slug, file: undefined, dir: '' } });
+    const dirs = new Set<string>();
+    for (const file of files) {
+      paths.push({ params: { path: `${slug}/${file.path}` }, props: { slug, file, dir: '' } });
+      const parts = file.path.split('/');
+      for (let i = 1; i < parts.length; i += 1) dirs.add(parts.slice(0, i).join('/'));
+    }
+    for (const dir of dirs) {
+      paths.push({ params: { path: `${slug}/${dir}` }, props: { slug, file: undefined, dir } });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { slug, file, dir } = Astro.props;
+
+/** File extension -> Shiki language id, mirroring `scripts/tutorial/build.mjs`. */
+const LANGUAGES: Record<string, string> = {
+  py: 'python',
+  cpp: 'cpp',
+  cc: 'cpp',
+  c: 'c',
+  h: 'cpp',
+  cu: 'cpp',
+  sh: 'bash',
+  bash: 'bash',
+  json: 'json',
+  yaml: 'yaml',
+  yml: 'yaml',
+  md: 'markdown',
+  txt: 'text',
+  cfg: 'ini',
+  ini: 'ini',
+  toml: 'toml',
+  diff: 'diff',
+};
+
+const highlighted =
+  file === undefined
+    ? ''
+    : await codeToHtml(file.content, {
+        lang: LANGUAGES[file.path.split('.').pop()?.toLowerCase() ?? ''] ?? 'text',
+        themes: { light: 'github-light', dark: 'github-dark' },
+      });
+
+const meta = chapterMeta(slug);
+const files = CODE[slug] ?? [];
+const prefix = dir === '' ? '' : `${dir}/`;
+const siblings = files
+  .filter((entry) => {
+    if (!entry.path.startsWith(prefix)) return false;
+    if (entry.path === prefix) return false;
+    return !entry.path.slice(prefix.length).includes('/');
+  })
+  .map((entry) => ({ path: entry.path, bytes: entry.bytes }));
+const subdirs = [
+  ...new Set(
+    files
+      .filter((entry) => entry.path.startsWith(prefix))
+      .map((entry) => entry.path.slice(prefix.length))
+      .filter((rest) => rest.includes('/'))
+      .map((rest) => rest.slice(0, rest.indexOf('/'))),
+  ),
+].sort();
+const dirPath = dir === '' ? '' : `${dir}/`;
+const canonicalPath = file === undefined ? `/code/${slug}/${dirPath}` : `/code/${file.path}/`;
+---
+
+<TutorialLayout
+  description={`第 ${meta?.number ?? ''} 章的可运行示例代码。`}
+  path={canonicalPath}
+  title={`${meta?.title ?? slug} · 代码`}
+>
+  <div class="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8">
+    <nav aria-label="面包屑" class="breadcrumbs text-sm opacity-70" data-reader-hide>
+      <ul>
+        <li>
+          <a class="link link-hover" href="/">
+            TileLang 教程
+          </a>
+        </li>
+        <li>
+          <a class="link link-hover" href={chapterPath(slug)}>
+            第 {meta?.number} 章
+          </a>
+        </li>
+        <li>代码</li>
+      </ul>
+    </nav>
+
+    <header class="mt-6 border-b border-base-300 pb-6">
+      <h1 class="text-2xl font-semibold tracking-tight">
+        {meta !== undefined ? `第 ${meta.number} 章 ${meta.title}` : slug}
+      </h1>
+      <p class="mt-2 font-mono text-sm opacity-70">
+        /code/{slug}/{dir}
+      </p>
+    </header>
+
+    {file === undefined ? (
+      <div class="mt-8">
+        <h2 class="text-lg font-semibold">本章代码</h2>
+        <p class="mt-2 text-sm leading-relaxed opacity-70">
+          正文里引用到的示例都在这里，可直接在浏览器中阅读；代码与教材仓库保持一致。
+        </p>
+        <ul class="mt-5 space-y-2 font-mono text-sm">
+          {subdirs.map((sub) => (
+            <li>
+              <a class="link link-hover" href={`/code/${slug}/${prefix}${sub}/`}>
+                {sub}/
+              </a>
+            </li>
+          ))}
+          {siblings.map((entry) => (
+            <li>
+              <a class="link link-hover" href={`/code/${slug}/${entry.path}`}>
+                {entry.path.slice(prefix.length)}
+              </a>
+              <span class="ms-2 text-xs opacity-50">{entry.bytes} 字节</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : (
+      <article class="mt-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 text-sm opacity-70">
+          <span class="font-mono">{file.path}</span>
+          <span>{file.bytes} 字节</span>
+        </div>
+        <div class="prose mt-4 max-w-none" set:html={highlighted} />
+        <p class="mt-8 text-sm">
+          <a class="link link-hover" href={`/code/${slug}/`}>
+            ← 浏览本章全部代码
+          </a>
+        </p>
+      </article>
+    )}
+  </div>
+</TutorialLayout>

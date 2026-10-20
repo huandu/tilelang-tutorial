@@ -1,0 +1,18 @@
+{
+  "name": "TileLang 系统教程",
+  "short_name": "TileLang",
+  "lang": "zh-CN",
+  "display": "browser",
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

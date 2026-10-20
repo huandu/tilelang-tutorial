@@ -1,0 +1,53 @@
+{
+  "id": "04-bottleneck-decision",
+  "title": "瓶颈定位的检查顺序",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "caption": "六步顺序，每一步都能独立否掉上一步；判类结果决定先查哪一条。",
+  "nodes": [
+    { "id": "s0", "label": "慢的 kernel / 慢的一步", "shape": "pill", "tone": "warn" },
+    {
+      "id": "s1",
+      "label": "① 判类",
+      "sub": "算 flops/bytes，与平衡点比大小（第 28 章）",
+      "tone": "accent"
+    },
+    {
+      "id": "s2",
+      "label": "② 哪条 PIPE 满",
+      "sub": "aic_mad / aic_fixpipe / mte2 / aiv_vec（第 12、19 章）"
+    },
+    {
+      "id": "s3",
+      "label": "③ 通信有没有重叠",
+      "sub": "kernel 内 / 调用级 / 流水线级（第 38 章 §9.3）"
+    },
+    { "id": "s4", "label": "④ layout 与对齐", "sub": "ND2NZ / 512 B / bank 冲突（第 21、36 章）" },
+    {
+      "id": "s5",
+      "label": "⑤ 启动开销与小 kernel",
+      "sub": "融合 / 入图 / persistent（第 26、35、38 章）"
+    },
+    {
+      "id": "s6",
+      "label": "⑥ 回头复核模型",
+      "sub": "效率 >100% 就是公式错（第 28 章 M8）",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "s0", "to": "s1" },
+    { "from": "s1", "to": "s2", "label": "compute-bound" },
+    { "from": "s2", "to": "s3" },
+    { "from": "s3", "to": "s4" },
+    { "from": "s4", "to": "s5" },
+    { "from": "s5", "to": "s6" },
+    { "from": "s6", "to": "s1", "dashed": true, "label": "判类变了" }
+  ],
+  "notes": [
+    "这是检查顺序，不是「六件事都要做一遍」；多数情况下前两步就能定位。",
+    "②/③ 的先后取决于 ① 的判类结果：compute-bound 先看 ②，通信占比高的先看 ③。",
+    "走不到 ② 直接进 ⑤，通常意味着这个算子已经接近它的形状能给的极限。"
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "id": "02-mx-block-scale",
+  "title": "MX 块缩放的生产与消费",
+  "caption": "左边是量化（生产 scale），右边是 kernel（消费 scale）；两边必须共享同一个粒度与同一个打包约定，否则结果直接错。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "2.3",
+  "nodes": [
+    { "id": "a1", "label": "X: [MN, K] fp32/fp16", "tone": "default" },
+    { "id": "a2", "label": "按 gran_k 分块求每块 amax", "tone": "default" },
+    {
+      "id": "a3",
+      "label": "scale = ceil_to_ue8m0(amax / 448)",
+      "sub": "即 2^k，clamp 到 [1, 254]",
+      "tone": "accent"
+    },
+    {
+      "id": "a4",
+      "label": "Xq = round_to_e4m3(X / scale)",
+      "sub": "→ A/B tile",
+      "tone": "default"
+    },
+    {
+      "id": "a5",
+      "label": "sf_u8 = fp32 的 biased exponent 字节",
+      "sub": "= log2(scale) + 127",
+      "tone": "store"
+    },
+    {
+      "id": "a6",
+      "label": "每 4 个字节拼 1 个 uint32",
+      "sub": "w0 | w1<<8 | w2<<16 | w3<<24",
+      "tone": "store"
+    },
+    { "id": "a7", "label": "转置成 group-major 扁平数组", "sub": "SFA[g*M + m]", "tone": "store" },
+    {
+      "id": "b1",
+      "label": "TMA 每 sf_load_period 次迭代搬一个 word",
+      "sub": "sf_load_period = gran_k * 4 / block_K",
+      "tone": "default"
+    },
+    {
+      "id": "b2",
+      "label": "tcgen05_sf_warp_transpose",
+      "sub": "4x32 word 视图 → 32x4",
+      "tone": "default"
+    },
+    {
+      "id": "b3",
+      "label": "tcgen05_cp_warpx4",
+      "sub": "每 128 word 块写入 4 个 TMEM 列",
+      "tone": "default"
+    },
+    {
+      "id": "b4",
+      "label": "MMA 由 SFA_ID / SFB_ID 选字节子列",
+      "sub": "id = (k_start / gran_k) % 4",
+      "tone": "accent"
+    },
+    { "id": "b5", "label": "C += (A * SFA) @ (B * SFB)", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "a1", "to": "a2" },
+    { "from": "a2", "to": "a3" },
+    { "from": "a3", "to": "a4" },
+    { "from": "a3", "to": "a5", "label": "取指数" },
+    { "from": "a5", "to": "a6" },
+    { "from": "a6", "to": "a7" },
+    { "from": "a4", "to": "b5", "label": "A/B tile" },
+    { "from": "a7", "to": "b1", "label": "SFA" },
+    { "from": "b1", "to": "b2" },
+    { "from": "b2", "to": "b3" },
+    { "from": "b3", "to": "b4" },
+    { "from": "b4", "to": "b5" }
+  ],
+  "groups": [
+    {
+      "label": "生产者（离线或单独的量化 kernel）",
+      "nodes": ["a1", "a2", "a3", "a4", "a5", "a6", "a7"],
+      "tone": "default"
+    },
+    {
+      "label": "消费者（T.tcgen05_gemm_blockscaled）",
+      "nodes": ["b1", "b2", "b3", "b4", "b5"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "三个必须写进接口的量：sf_granularity_k（示例 128，PTX 原生 32）、一个 word 覆盖的 K（4 × gran_k）、sf_load_period。",
+    "scale 必须是 2 的整数次幂且向上取整；这样 X / scale 一定落在 e4m3 的值域内。"
+  ]
+}

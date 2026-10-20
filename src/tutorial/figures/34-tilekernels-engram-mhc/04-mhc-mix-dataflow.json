@@ -1,0 +1,62 @@
+{
+  "id": "04-mhc-mix-dataflow",
+  "title": "mHC 的 mix 拆分与应用数据流",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "caption": "每个 token 的 24 个 mix 分量拆成 pre(4)、post(4)、comb(4×4) 三块；comb 过 Sinkhorn 成双随机矩阵，pre 把 4 条分支压成层输入，post 与 comb 写出新的 4 条分支。",
+  "nodes": [
+    { "id": "res", "label": "residual", "sub": "[n, 4, h]", "tone": "store" },
+    {
+      "id": "gemm",
+      "label": "prenorm GEMM",
+      "sub": "DeepGEMM + reduce_rmsnorm",
+      "tone": "compute"
+    },
+    { "id": "mixes", "label": "mixes", "sub": "[n, 24] = pre(4) ⊕ post(4) ⊕ comb(16)" },
+    { "id": "split", "label": "split_mixes", "sub": "乘 scale、加 base" },
+    { "id": "pre", "label": "pre", "sub": "sigmoid + eps，[n, 4, 1]" },
+    { "id": "post", "label": "post", "sub": "sigmoid × mult，[n, 4, 1]" },
+    { "id": "comb", "label": "comb", "sub": "[n, 4, 4]" },
+    { "id": "sk", "label": "Sinkhorn", "sub": "repeat 轮行/列归一化", "tone": "accent" },
+    { "id": "apply", "label": "pre_apply_mix", "sub": "Σ_m pre_m · residual_m" },
+    { "id": "li", "label": "layer_input", "sub": "[n, h]" },
+    { "id": "out", "label": "Attention + MoE", "sub": "layer_output[n, h]", "tone": "muted" },
+    {
+      "id": "newres",
+      "label": "新的 residual",
+      "sub": "post ⊙ out + comb^T @ res",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "res", "to": "gemm" },
+    { "from": "gemm", "to": "mixes" },
+    { "from": "mixes", "to": "split" },
+    { "from": "split", "to": "pre" },
+    { "from": "split", "to": "post" },
+    { "from": "split", "to": "comb" },
+    { "from": "comb", "to": "sk" },
+    { "from": "sk", "to": "newres", "label": "comb_norm" },
+    { "from": "pre", "to": "apply" },
+    { "from": "res", "to": "apply" },
+    { "from": "apply", "to": "li" },
+    { "from": "li", "to": "out" },
+    { "from": "out", "to": "newres" },
+    { "from": "post", "to": "newres" }
+  ],
+  "groups": [
+    {
+      "label": "pre 侧",
+      "nodes": ["gemm", "mixes", "split", "pre", "post", "comb", "sk", "apply", "li"],
+      "tone": "default"
+    },
+    { "label": "post 侧", "nodes": ["newres"], "tone": "accent" }
+  ],
+  "notes": [
+    "comb 是唯一被约束到流形上的量：论文把 H^res 投影到双随机矩阵流形（Birkhoff 多胞形）上，信息在 4 条分支间重新分配但总权重受控（论文 §4.1 式 (6)）。",
+    "residual 有两条消费路径：经 pre_apply_mix 变成层输入 F_pre = H^pre x，或经 comb^T 直接进入下一刻的残差 F_post,res = H^res x + H^post^T F(·,·)（论文 §4.3.1）。",
+    "pre_big_fuse 把 reduce_rmsnorm + split_mixes + sinkhorn + pre_apply_mix 融成一个 kernel；昇腾版声明与拆分版本 op-for-op 一致。",
+    "论文与实现的两处差异：论文 H^post = 2σ(·)（式 (8)），代码把它做成参数 mhc_post_mult_value（仓库测试默认 1.0）；代码的 pre 额外加了 mhc_pre_eps。"
+  ]
+}

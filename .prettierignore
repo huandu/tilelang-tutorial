@@ -1,0 +1,25 @@
+# build output
+dist/
+.astro/
+.vercel/
+
+# dependencies
+node_modules/
+
+# tutorial source material, kept in its authored form, plus generated output
+src/tutorial/content/
+src/tutorial/source-figures/
+src/tutorial/notes/
+src/tutorial/code/
+src/tutorial/OUTLINE.md
+src/tutorial/README.md
+src/tutorial/VERSIONS.md
+src/tutorial/source-urls.json
+src/data/tutorial/generated/
+
+# lockfiles and generated files
+pnpm-lock.yaml
+*.min.*
+
+# platform specific
+.DS_Store

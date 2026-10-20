@@ -1,0 +1,49 @@
+{
+  "id": "01-dispatch-combine-flow",
+  "title": "一个 token 的 dispatch / combine 数据流",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 20,
+  "caption": "dispatch 把 token 复制到专家所在的 rank（带来源表），combine 再把 k 份专家输出按路由权重归约回原 rank；反向传播时两者互换。",
+  "nodes": [
+    { "id": "x", "label": "本 rank 的 token", "sub": "x: [num_tokens, hidden]", "tone": "default" },
+    { "id": "router", "label": "路由", "sub": "topk_idx / topk_weights", "tone": "default" },
+    {
+      "id": "dispatch",
+      "label": "dispatch",
+      "sub": "按 topk 复制到专家所在 rank",
+      "tone": "accent"
+    },
+    {
+      "id": "recv",
+      "label": "目标 rank 的展开布局",
+      "sub": "每 token 每槽位一行 + 来源表",
+      "tone": "store"
+    },
+    {
+      "id": "gemm",
+      "label": "专家 grouped GEMM",
+      "sub": "外部库（如 DeepGEMM-Ascend）",
+      "tone": "compute"
+    },
+    { "id": "combine", "label": "combine", "sub": "按 top-k 权重归约回原 rank", "tone": "accent" },
+    { "id": "y", "label": "原 rank 的输出", "sub": "combined_x: bf16", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "x", "to": "router" },
+    { "from": "router", "to": "dispatch" },
+    { "from": "dispatch", "to": "recv", "label": "URMA 单边写" },
+    { "from": "recv", "to": "gemm" },
+    { "from": "gemm", "to": "combine" },
+    { "from": "combine", "to": "y", "label": "URMA 单边写" }
+  ],
+  "groups": [
+    { "label": "本地计算", "nodes": ["x", "router", "gemm", "y"], "tone": "default" },
+    { "label": "网络 all-to-all", "nodes": ["dispatch", "recv", "combine"], "tone": "accent" }
+  ],
+  "notes": [
+    "同一 token 的多个专家落在同一 rank 时只传一次（去重）。",
+    "来源表 = topk_idx + topk_weights + 源 token 全局下标，随 token 一起传。",
+    "combine 的累加在 FP32 里做，最后转回 BF16。"
+  ]
+}

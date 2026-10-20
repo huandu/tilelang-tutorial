@@ -1,0 +1,66 @@
+{
+  "id": "01-layout-as-interface",
+  "title": "三类约束汇聚到同一块 buffer 的物理布局",
+  "caption": "T.copy、T.gemm 与存储对齐各自向 A_shared / C_local 提出约束，编译器要解出一组双方都能接受的物理布局。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "section": "1.2",
+  "nodes": [
+    { "id": "copy", "label": "T.copy 写 A_shared", "sub": "自然顺序 / 向量化", "tone": "default" },
+    {
+      "id": "gemm",
+      "label": "T.gemm 读 A_shared",
+      "sub": "要求 swizzle 消 bank conflict",
+      "tone": "compute"
+    },
+    {
+      "id": "cube",
+      "label": "昇腾：Cube 输入",
+      "sub": "必须是 16 × C0 的分形排布",
+      "tone": "compute"
+    },
+    {
+      "id": "acc",
+      "label": "T.gemm 累加器 C_local",
+      "sub": "要求某条 mma 的 fragment",
+      "tone": "compute"
+    },
+    { "id": "back", "label": "T.copy 回写 C 到 global", "sub": "希望访存合并", "tone": "default" },
+    {
+      "id": "la",
+      "label": "A_shared 的物理布局 L_A",
+      "sub": "是未知量",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "lc",
+      "label": "C_local 的物理布局 L_C",
+      "sub": "是未知量",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "resolve",
+      "label": "包含升级 / swizzle 合并",
+      "sub": "换根重推 / 插入转换",
+      "tone": "store"
+    },
+    { "id": "out", "label": "一组可行布局", "sub": "或编译期硬失败", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "copy", "to": "la" },
+    { "from": "gemm", "to": "la" },
+    { "from": "cube", "to": "la" },
+    { "from": "acc", "to": "lc" },
+    { "from": "back", "to": "lc" },
+    { "from": "la", "to": "resolve", "label": "冲突时" },
+    { "from": "lc", "to": "resolve", "label": "冲突时" },
+    { "from": "resolve", "to": "out" }
+  ],
+  "notes": [
+    "第三类约束来自 T.Parallel：循环必须能寻址到它读写的每一个元素。",
+    "三条出路都走不通时是编译期硬失败（LOG(FATAL)），不是静默降级。"
+  ]
+}

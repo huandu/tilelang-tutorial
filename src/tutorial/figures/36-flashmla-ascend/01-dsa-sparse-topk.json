@@ -1,0 +1,41 @@
+{
+  "id": "01-dsa-sparse-topk",
+  "title": "DSA 的稀疏访问与 TopK 索引",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "section": "2.1",
+  "caption": "KV 在显存里连续，访问却是按 TopK 索引逐 token 稀疏 gather；这是本章后面所有瓶颈（ND2NZ、MTE2 队列、访存合并）的源头。",
+  "nodes": [
+    { "id": "q", "label": "Q token", "sub": "[h_q, d_qk]，按 q token 分开处理", "tone": "default" },
+    {
+      "id": "idx",
+      "label": "TopK 索引表 indices",
+      "sub": "[topk]；非法位置填 -1",
+      "tone": "accent"
+    },
+    {
+      "id": "kv",
+      "label": "KV 显存（ND）",
+      "sub": "[s_kv, d_qk]，stride [d_qk, 1]",
+      "tone": "store"
+    },
+    { "id": "gather", "label": "逐 token 稀疏 gather", "sub": "一次 1 KB，非连续", "tone": "warn" },
+    { "id": "gk", "label": "gathered_kv 块", "sub": "[B_TOPK, d_qk]", "tone": "store" },
+    { "id": "p", "label": "P = Q · gathered_kvᵀ", "sub": "[h_q, B_TOPK]", "tone": "compute" },
+    { "id": "out", "label": "softmax → S · gathered_kv", "sub": "[h_q, d_v]", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "q", "to": "p" },
+    { "from": "idx", "to": "gather", "label": "选位置" },
+    { "from": "kv", "to": "gather", "label": "MTE2" },
+    { "from": "gather", "to": "gk" },
+    { "from": "gk", "to": "p" },
+    { "from": "p", "to": "out" }
+  ],
+  "notes": [
+    "gather 不是矩阵乘：indices 的每个元素是一个行号，gathered_kv[k] = KV[indices[k]]。",
+    "三条后果：无法随路做 ND2NZ（§3.4）；每个 token 一次 MTE2 请求，撞上队列深度 16（§3.3）；源连续/目的不连续时无法合并访存（§3.4）。",
+    "来源：报告 :15-37；FlashMLA/README.md:149-157。"
+  ]
+}

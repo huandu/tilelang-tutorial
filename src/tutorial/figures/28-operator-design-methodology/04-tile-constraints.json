@@ -1,0 +1,54 @@
+{
+  "id": "04-tile-constraints",
+  "title": "tile 尺寸的四条约束",
+  "caption": "tile 尺寸不是一个自由度，是四条约束的交集：指令形状、寄存器压力、片上容量、并行度；任一条不过就记下是哪一条，回上一步。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "4.1",
+  "nodes": [
+    { "id": "root", "label": "block_M, block_N, block_K, stages, threads", "tone": "default" },
+    {
+      "id": "c3",
+      "label": "C3 指令形状（最便宜，先查）",
+      "sub": "mma 16/8/16 · wgmma 64/8/16 · warpgroup=128 · 昇腾 fractal 16x16",
+      "tone": "default"
+    },
+    {
+      "id": "c2",
+      "label": "C2 寄存器压力（最容易忽略）",
+      "sub": "accum/thread + 地址/索引/流水 ≤ 255/线程",
+      "tone": "warn"
+    },
+    {
+      "id": "c1",
+      "label": "C1 片上容量（最硬的墙）",
+      "sub": "stages×(A+B) ≤ 可用 shared（227 KB/block）或 UB/L1 容量",
+      "tone": "warn"
+    },
+    {
+      "id": "c4",
+      "label": "C4 并行度（最容易被忘）",
+      "sub": "grid / (blk/SM × 真实 SM 数) → 波数 + 尾波填充率",
+      "tone": "default"
+    },
+    { "id": "ok", "label": "四条都过 → 进入候选集合", "tone": "accent" },
+    { "id": "no", "label": "任一条不过 → 记下是哪一条，回上一步", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "root", "to": "c3" },
+    { "from": "root", "to": "c2" },
+    { "from": "root", "to": "c1" },
+    { "from": "root", "to": "c4" },
+    { "from": "c3", "to": "ok" },
+    { "from": "c2", "to": "ok" },
+    { "from": "c1", "to": "ok" },
+    { "from": "c4", "to": "ok" },
+    { "from": "ok", "to": "no", "label": "任一条超了", "dashed": true }
+  ],
+  "notes": [
+    "先粗算再微调的顺序：① 从容量允许的最大 tile 开始 → ② 查指令形状是否整除 → ③ 算寄存器与驻留块数 → ④ 算波数与尾波填充率 → ⑤ 只有到这一步才动 block_K / stages。",
+    "第 ⑤ 步的位置很关键：carver 复算显示 block_K 从 16 到 128 完全不改变 traffic 与 priority（前 8 名并列），先定 M/N 再定 K。",
+    "片上容量超了是编译或启动失败，不是变慢；寄存器溢出到 local memory 则是性能断崖。"
+  ]
+}

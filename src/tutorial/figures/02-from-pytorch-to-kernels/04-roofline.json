@@ -1,0 +1,72 @@
+{
+  "id": "04-roofline",
+  "title": "本章算子落在 roofline 的哪一边（算术强度）",
+  "kind": "bars",
+  "section": "2.2",
+  "width": 1120,
+  "max": 2068,
+  "labelWidth": 250,
+  "items": [
+    {
+      "label": "逐元素加 y = x + b（16.8M 元素）",
+      "value": 0.17,
+      "display": "AI≈0.17 · 22.4 µs",
+      "tone": "store"
+    },
+    {
+      "label": "cos → sin（eager 两个 kernel）",
+      "value": 0.25,
+      "display": "AI≈0.25 · 29.8 µs",
+      "tone": "store"
+    },
+    {
+      "label": "cos → sin（融合成一个 kernel）",
+      "value": 0.5,
+      "display": "AI≈0.50 · 14.9 µs",
+      "tone": "store"
+    },
+    {
+      "label": "LayerNorm（同一形状拆成 3 趟）",
+      "value": 1,
+      "display": "AI≈1.00 · 59.6 µs",
+      "tone": "store"
+    },
+    {
+      "label": "attention decode（KV 长 32768）",
+      "value": 1.01,
+      "display": "AI≈1.01 · 119.2 µs",
+      "tone": "store"
+    },
+    {
+      "label": "LayerNorm（8192×4096，融合）",
+      "value": 2,
+      "display": "AI≈2.00 · 29.8 µs",
+      "tone": "store"
+    },
+    {
+      "label": "attention prefill（先落 S×S 分数矩阵）",
+      "value": 42.2,
+      "display": "AI≈42.2 · 1.461 ms",
+      "tone": "compute"
+    },
+    {
+      "label": "GEMM 4096³",
+      "value": 1365.33,
+      "display": "AI≈1365 · 188.5 µs",
+      "tone": "compute"
+    },
+    {
+      "label": "attention prefill（flash 风格，不落 S×S）",
+      "value": 2068,
+      "display": "AI≈2068 · 380.6 µs",
+      "tone": "compute"
+    }
+  ],
+  "caption": "横轴是算术强度（FLOP/Byte，对数），脊点在 AI = 162：左边是 memory-bound 区，右边是 compute-bound 区。",
+  "notes": [
+    "峰值算力天花板 729 TFLOPS（fp16 张量核，标定后）；带宽天花板 y = AI × 4502 GB/s；脊点 AI = 162（H200 标定参数）。",
+    "同一个 attention 同时落在脊的两侧：prefill 落 S×S 掉进 memory-bound（AI≈42），flash 风格回到 compute-bound（AI≈2068）；decode 因为每读一个 KV 元素只做一次乘加，永远在 memory-bound 区（AI≈1）。",
+    "条形按算术强度线性绘制，跨度四个数量级，所以最左边的几条几乎看不见；精确值以右侧数字为准。",
+    "所有数字来自 code/01-op-traffic-model/op_traffic.py 的输出，属公式推导，不是实测。"
+  ]
+}

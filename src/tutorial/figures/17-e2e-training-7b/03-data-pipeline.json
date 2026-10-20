@@ -1,0 +1,32 @@
+{
+  "id": "03-data-pipeline",
+  "title": "数据管线与训练吞吐的关系",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 16,
+  "section": "4",
+  "caption": "HF datasets 流式读取 → 去重 → 带缓冲的 shuffle → tokenize → packing → DataLoader → GPU：管线供不上，GPU 就空转。",
+  "nodes": [
+    { "id": "h", "label": "HF Hub", "sub": "streaming=True · 不落地" },
+    { "id": "d", "label": "去重", "sub": "sha1 精确哈希" },
+    { "id": "s", "label": "shuffle buffer", "sub": "固定容量 + 固定 seed" },
+    { "id": "t", "label": "tokenize", "sub": "Qwen2.5 BPE" },
+    { "id": "p", "label": "packing", "sub": "EOS 分隔 + 定长切块" },
+    { "id": "l", "label": "DataLoader", "sub": "num_workers" },
+    { "id": "g", "label": "GPU 前向/反向", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "h", "to": "d" },
+    { "from": "d", "to": "s" },
+    { "from": "s", "to": "t" },
+    { "from": "t", "to": "p" },
+    { "from": "p", "to": "l" },
+    { "from": "l", "to": "g" },
+    { "from": "g", "to": "l", "dashed": true }
+  ],
+  "notes": [
+    "streaming=True 是「不落盘」的关键：内存占用只与 buffer 有关（FineWeb-Edu 完整版约 5.84 TB）。",
+    "shuffle 是带缓冲的局部 shuffle，不是全局 shuffle；固定 seed 是断点续训能重放的前提。",
+    "packing 后每条样本定长、没有 padding；GPU 利用率周期性掉零时，先查 num_workers 与 tokenizer，而不是去调 kernel。"
+  ]
+}

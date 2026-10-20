@@ -1,0 +1,57 @@
+---
+import { SITE, SITE_URL } from '@lib/site.ts';
+
+interface Props {
+  title?: string | undefined;
+  description?: string | undefined;
+  path?: string | undefined;
+}
+
+const { title, description = SITE.description, path = Astro.url.pathname } = Astro.props;
+
+const pageTitle = title === undefined ? SITE.title : `${title} · ${SITE.title}`;
+const canonical = new URL(path, SITE_URL).href;
+const socialImage = new URL('/og.svg', SITE_URL).href;
+---
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <link href={canonical} rel="canonical" />
+  <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
+  <link href="/site.webmanifest" rel="manifest" />
+  <meta content={description} name="description" />
+  <meta content={SITE.author} name="author" />
+  <meta content={SITE.repository} name="github-repository" />
+
+  <title>{pageTitle}</title>
+
+  <meta content={pageTitle} property="og:title" />
+  <meta content={description} property="og:description" />
+  <meta content={canonical} property="og:url" />
+  <meta content="website" property="og:type" />
+  <meta content={SITE.title} property="og:site_name" />
+  <meta content={SITE.locale} property="og:locale" />
+  <meta content={socialImage} property="og:image" />
+
+  <meta content="summary_large_image" name="twitter:card" />
+  <meta content={pageTitle} name="twitter:title" />
+  <meta content={description} name="twitter:description" />
+  <meta content={socialImage} name="twitter:image" />
+
+  <meta content="#f8fafc" media="(prefers-color-scheme: light)" name="theme-color" />
+  <meta content="#0f1523" media="(prefers-color-scheme: dark)" name="theme-color" />
+
+  <script is:inline>
+    (() => {
+      try {
+        const stored = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored === 'dark' || (stored === null && prefersDark) ? 'night' : 'winter';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch {
+        // The CSS media query supplies a usable first paint without storage.
+      }
+    })();
+  </script>
+</head>

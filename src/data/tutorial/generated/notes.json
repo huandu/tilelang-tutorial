@@ -1,0 +1,16 @@
+{
+  "notes": [
+    {
+      "slug": "knowledge-system",
+      "title": "TileLang 知识体系与学习路径"
+    },
+    {
+      "slug": "compiler-internals-map",
+      "title": "TileLang 编译期内部地图"
+    },
+    {
+      "slug": "ascend-route",
+      "title": "昇腾路线：现状、差异与入手点"
+    }
+  ]
+}

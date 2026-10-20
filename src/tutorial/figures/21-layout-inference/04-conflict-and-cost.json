@@ -1,0 +1,44 @@
+{
+  "id": "04-conflict-and-cost",
+  "title": "布局冲突的三条出路与代价择优",
+  "caption": "同一 buffer 收到两个不同的布局建议时，引擎依次尝试包含升级、swizzle 合并与 free-mode 重推；三条都不通就编译期硬失败。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "3.3",
+  "nodes": [
+    { "id": "x", "label": "同一 buffer 收到两个不同布局", "tone": "default" },
+    {
+      "id": "c1",
+      "label": "新布局包含旧布局？",
+      "sub": "ProveFragmentContains",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    { "id": "ok1", "label": "是 → 升级到更宽的布局", "tone": "store" },
+    { "id": "c2", "label": "否 → 两者都是 swizzle？", "shape": "diamond", "tone": "accent" },
+    { "id": "ok2", "label": "是 → 合并：取更小粒度", "tone": "store" },
+    { "id": "c3", "label": "否 → 在 kFree 阶段？", "shape": "diamond", "tone": "accent" },
+    { "id": "ok3", "label": "是 → 逐根重推整条链路", "sub": "用代价模型择优", "tone": "store" },
+    {
+      "id": "fail",
+      "label": "否 → LOG(FATAL) 硬失败",
+      "sub": "Get different layout for ...",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "x", "to": "c1" },
+    { "from": "c1", "to": "ok1" },
+    { "from": "c1", "to": "c2" },
+    { "from": "c2", "to": "ok2" },
+    { "from": "c2", "to": "c3" },
+    { "from": "c3", "to": "ok3" },
+    { "from": "c3", "to": "fail" }
+  ],
+  "notes": [
+    "三条出路都只在「同一 buffer 的两个建议不兼容」时才启动；任一条成功都无需报错。",
+    "代价是二元组 {mem, regs}，按字典序比较：先比 mem，再比 regs。",
+    "默认 register-count 只数寄存器溢出与 fragment 槽位；可选 io-aware（tl.layout_cost_model）再把触及 global 的访存字节计入 mem。"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "inline-01",
+  "title": "训练一步：算子出现的四个位置",
+  "kind": "flow",
+  "section": "1.1",
+  "inlineQuote": "flowchart LR\n    IN[\"一个 batch\"] --> F[\"前向<br/>norm / GEMM / attention / 激活 / loss\"]",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "in", "label": "一个 batch", "tone": "default" },
+    {
+      "id": "fwd",
+      "label": "前向",
+      "sub": "norm / GEMM / attention / 激活 / loss",
+      "tone": "compute"
+    },
+    {
+      "id": "bwd",
+      "label": "反向",
+      "sub": "逐层镜像，每个前向算子都有对应反向",
+      "tone": "compute"
+    },
+    {
+      "id": "opt",
+      "label": "优化器",
+      "sub": "AdamW：读 grad / param / m / v，写回",
+      "tone": "store"
+    },
+    { "id": "comm", "label": "通信", "sub": "梯度 all-reduce", "tone": "store" },
+    { "id": "out", "label": "下一个 iteration", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "in", "to": "fwd" },
+    { "from": "fwd", "to": "bwd" },
+    { "from": "bwd", "to": "opt" },
+    { "from": "bwd", "to": "comm" },
+    { "from": "opt", "to": "out" },
+    { "from": "comm", "to": "out" }
+  ],
+  "caption": "一次训练迭代里算子出现的四个位置：前向、反向、优化器与通信，四者的瓶颈各不相同。",
+  "notes": [
+    "前向与反向的下界由算力决定，优化器由带宽决定，通信由网络带宽决定。",
+    "含每层内部结构的完整版本见 figures/01-training-step-operator-map.md。"
+  ]
+}

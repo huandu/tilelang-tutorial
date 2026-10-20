@@ -1,0 +1,38 @@
+{
+  "id": "02-three-layers",
+  "title": "三层接口的定位、形态与实现状态",
+  "kind": "compare",
+  "section": "2.5",
+  "width": 1200,
+  "labelWidth": 200,
+  "columns": ["Beginner（未完成）", "Developer（v0.1.15 的主体）", "Expert（已完成）"],
+  "rows": [
+    {
+      "label": "定位",
+      "values": ["不知道硬件也能描述计算", "懂存储层级，用 tile 库", "掌控线程与指令"]
+    },
+    { "label": "官方类比", "values": ["TVM", "Triton", "手写 CUDA/HIP"] },
+    {
+      "label": "v0.1.15 里的可见形态",
+      "values": [
+        "eager 前端：@tilelang.jit + T.const / T.dynamic + T.Tensor[[...]] 注解 + T.empty",
+        "T.Kernel · T.alloc_shared / fragment · T.copy · T.gemm · T.reduce_* · T.Pipelined · T.Parallel · T.annotate_layout",
+        "T.get_thread_binding() · T.alloc_local · T.serial / T.vectorized · T.ldmatrix / T.tma_load / T.mbarrier_* · T.tvm_thread_allreduce"
+      ]
+    },
+    {
+      "label": "状态",
+      "values": [
+        "方向存在、层本身未完成：官方标注 not yet fully implemented",
+        "稳定，示例与文档最厚，日常 90% 的代码在这一层",
+        "稳定，被大量示例使用，也是昇腾侧的主要入口"
+      ]
+    }
+  ],
+  "caption": "三层接口可以混用；最左边那层（beginner）官方文档明确标注尚未完全实现，本章如实标注。",
+  "notes": [
+    "官方类比：Level 1 ≈ TVM，Level 2 ≈ Triton，Level 3 ≈ 手写 CUDA/HIP（docs/deeplearning_operators/matmul.md:17-21）。",
+    "「三层可以混用」是 TileLang 相对 Triton 的官方差异之一（docs/deeplearning_operators/matmul.md:214-218）。",
+    "beginner 那条的两句官方原话：本文档标注「This interface is not yet fully implemented」，且这一层「can incur longer auto-tuning times」。"
+  ]
+}

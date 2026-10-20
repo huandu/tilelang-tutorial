@@ -1,0 +1,58 @@
+{
+  "id": "moe-one-layer",
+  "title": "MoE 一层的数据流",
+  "kind": "flow",
+  "direction": "TB",
+  "section": "2",
+  "nodeMaxEm": 22,
+  "caption": "四段结构，其中 permute 与 combine 两段完全没有矩阵乘。",
+  "nodes": [
+    { "id": "x", "label": "激活 x：T × d", "tone": "default" },
+    {
+      "id": "r",
+      "label": "1 router / gating",
+      "sub": "x @ W_g → T×E；softmax + top-k",
+      "tone": "compute"
+    },
+    {
+      "id": "c",
+      "label": "计数 / 前缀和",
+      "sub": "sizes, offsets, padded_offsets",
+      "tone": "default"
+    },
+    { "id": "p", "label": "2 permute", "sub": "T·k 行 × d；2·T·k·d·b 字节", "tone": "warn" },
+    {
+      "id": "g",
+      "label": "3 grouped GEMM",
+      "sub": "每专家 gate+up+down；6·T·k·d·d_e FLOP",
+      "tone": "compute"
+    },
+    {
+      "id": "s",
+      "label": "4 combine / unpermute",
+      "sub": "scatter-reduce；2·T·k·d·b 字节",
+      "tone": "warn"
+    },
+    { "id": "o", "label": "输出：T × d", "tone": "default" },
+    { "id": "d", "label": "dispatch：all-to-all k 份", "sub": "跨 rank", "tone": "muted" },
+    { "id": "kk", "label": "combine：all-to-all k 份", "sub": "跨 rank", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "x", "to": "r" },
+    { "from": "r", "to": "c" },
+    { "from": "x", "to": "p" },
+    { "from": "c", "to": "p" },
+    { "from": "p", "to": "g" },
+    { "from": "g", "to": "s" },
+    { "from": "c", "to": "s" },
+    { "from": "s", "to": "o" },
+    { "from": "p", "to": "d", "label": "跨 rank", "dashed": true },
+    { "from": "d", "to": "g" },
+    { "from": "s", "to": "kk", "label": "跨 rank", "dashed": true }
+  ],
+  "notes": [
+    "重排 + 通信 = 4·k·d·b 字节/token，全部不是矩阵乘，也不产生任何 FLOP",
+    "重排是可逆的：按原位置 scatter_reduce 求和，与不重排、逐调用专家精确相等（最大误差 0）",
+    "padding 对齐 ceil(size/block_M)·block_M 决定 grid 大小：偏斜分布下 block_M=32 时会浪费 150%"
+  ]
+}

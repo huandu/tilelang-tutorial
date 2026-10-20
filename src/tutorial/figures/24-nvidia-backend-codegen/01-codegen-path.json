@@ -1,0 +1,77 @@
+{
+  "id": "01-codegen-path",
+  "title": "一次编译的产物路径（NVIDIA）",
+  "caption": "TIR 走完 CUDA pass 链后在 SplitHostDevice 分成两棵产物树：device 出 CUDA C（或 CuTe DSL），host 出 wrapper 的 call()。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "1",
+  "nodes": [
+    { "id": "fe", "label": "Python frontend", "sub": "tilelang/language/*", "tone": "default" },
+    { "id": "tir", "label": "TIR module", "sub": "@T.prim_func", "tone": "default" },
+    {
+      "id": "lower",
+      "label": "engine/lower.py::lower",
+      "sub": "create_backend_context → 选后端",
+      "tone": "accent"
+    },
+    {
+      "id": "pipe",
+      "label": "CUDA_PIPELINE",
+      "sub": "tilelang/cuda/pipeline.py",
+      "tone": "accent"
+    },
+    { "id": "passes", "label": "PipelinePlanning → InjectSoftwarePipeline", "tone": "default" },
+    {
+      "id": "tileop",
+      "label": "LayoutInference → LowerTileOp",
+      "sub": "T.gemm / T.copy 的指令选择",
+      "tone": "default"
+    },
+    {
+      "id": "hopper",
+      "label": "LowerHopperIntrin → SplitHostDevice",
+      "sub": "描述符提升 + host/device 切分",
+      "tone": "accent"
+    },
+    { "id": "host", "label": "host_mod", "sub": "TLCUDASourceWrapper → call()", "tone": "store" },
+    {
+      "id": "dev",
+      "label": "device_mod",
+      "sub": "CodeGenTileLangCUDA → CUDA C 源码",
+      "tone": "store"
+    },
+    { "id": "nvcc", "label": "nvcc / NVRTC", "sub": "编出 cubin 或 fatbin", "tone": "compute" },
+    {
+      "id": "w",
+      "label": "source + init() + call()",
+      "sub": "TLCUDASourceWrapper 拼装的模块",
+      "tone": "default"
+    },
+    {
+      "id": "be",
+      "label": "execution_backend",
+      "sub": "cython / tvm_ffi / nvrtc / cutedsl",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "fe", "to": "tir" },
+    { "from": "tir", "to": "lower" },
+    { "from": "lower", "to": "pipe" },
+    { "from": "pipe", "to": "passes" },
+    { "from": "passes", "to": "tileop" },
+    { "from": "tileop", "to": "hopper" },
+    { "from": "hopper", "to": "host" },
+    { "from": "hopper", "to": "dev" },
+    { "from": "dev", "to": "nvcc" },
+    { "from": "host", "to": "w" },
+    { "from": "dev", "to": "w" },
+    { "from": "w", "to": "be" }
+  ],
+  "notes": [
+    "device 与 host 是两棵独立的产物树，在 SplitHostDevice 处分开；device 函数是 calling_conv = kDeviceKernelLaunch 的那一半。",
+    "默认 enable_host_codegen 与 enable_device_compile 都是 False：device 只产源码不调 nvcc，host 由 adapter 自己生成 wrapper。",
+    "三种 execution backend（cython / tvm_ffi / nvrtc）共用同一个 TLCUDASourceWrapper，所以生成的 kernel 源码相同。"
+  ]
+}

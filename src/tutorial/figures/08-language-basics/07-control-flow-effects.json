@@ -1,0 +1,36 @@
+{
+  "id": "07-control-flow-effects",
+  "title": "控制流的三种写法和两种代价",
+  "caption": "语句分支用 if/else，取值分支用 T.if_then_else（只求值一边），T.Select 两边都会求值。",
+  "kind": "flow",
+  "section": "7",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "nodes": [
+    { "id": "q", "label": "我想表达什么？", "tone": "accent" },
+    { "id": "a", "label": "「满足条件才执行」", "sub": "if / elif / else → IfThenElse 语句" },
+    {
+      "id": "b",
+      "label": "「取一个值，只碰其中一边」",
+      "sub": "T.if_then_else：只求值被选中的分支"
+    },
+    { "id": "c", "label": "「取一个值，两边都安全」", "sub": "T.Select：两边都会求值" },
+    { "id": "a1", "label": "可放在 T.Parallel 体内", "sub": "也可能被流水划分看见" },
+    { "id": "b1", "label": "越界访存的正确写法", "sub": "用短路求值保护这一边" },
+    { "id": "c1", "label": "纯数值选择", "sub": "不要用它做越界保护", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "q", "to": "a" },
+    { "from": "q", "to": "b" },
+    { "from": "q", "to": "c" },
+    { "from": "a", "to": "a1" },
+    { "from": "b", "to": "b1" },
+    { "from": "c", "to": "c1" }
+  ],
+  "notes": [
+    "代价一：每次迭代都带谓词会挡住向量化，退化成带条件的标量循环。",
+    "代价二：把守卫拿掉、尾部另起一次 launch，fast path 才能自由向量化。",
+    "T.all_of / T.any_of 接的是 buffer，不是条件列表；多条件要用 and / or（文档落后于源码）。",
+    "常量恒真的 while 会被编译期拒绝；break / continue 在设备循环里可用。"
+  ]
+}

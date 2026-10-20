@@ -1,0 +1,68 @@
+{
+  "id": "02-compile-time-tools",
+  "title": "编译期工具的分层与产物",
+  "caption": "同一个 lowering 过程，按「想看哪一层」选工具：7 个观察工具挂在管线不同位置，且都不需要加速器。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "section": "3.1",
+  "nodes": [
+    {
+      "id": "src",
+      "label": "TileLang 程序",
+      "sub": "@tilelang.jit / T.prim_func",
+      "tone": "default"
+    },
+    { "id": "lower", "label": "lowering", "code": "tilelang.engine.lower", "tone": "accent" },
+    { "id": "tir", "label": "TIR", "sub": "逐步降低", "tone": "accent" },
+    { "id": "codegen", "label": "codegen", "sub": "TIR → C / CUDA / AscendC", "tone": "compute" },
+    { "id": "bin", "label": "device 编译", "sub": "nvcc / bisheng", "tone": "compute" },
+    { "id": "log", "label": "1 日志", "sub": "TVM_LOG_LEVEL / TVM_LOG_DEBUG", "tone": "muted" },
+    { "id": "co", "label": "2 compile_only", "sub": "停在 codegen，不编 device", "tone": "muted" },
+    { "id": "lt", "label": "3 IR Lower Trace", "code": "TL_LOWER_TRACE=1", "tone": "muted" },
+    {
+      "id": "pd",
+      "label": "4 Pass Diff（legacy）",
+      "sub": "TILELANG_PASS_DIFF / pass_diff()",
+      "tone": "muted"
+    },
+    {
+      "id": "pv",
+      "label": "5 Pass Visualizer",
+      "sub": "SBlock 结构树，按字段展开 tile op",
+      "tone": "muted"
+    },
+    {
+      "id": "pl",
+      "label": "6 布局可视化",
+      "sub": "plot_layout / TL_LAYOUT_VISUALIZATION_*",
+      "tone": "muted"
+    },
+    { "id": "pt", "label": "7 pass_timing", "sub": "每个 pass 花多少编译时间", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "src", "to": "lower" },
+    { "from": "lower", "to": "tir" },
+    { "from": "tir", "to": "codegen" },
+    { "from": "codegen", "to": "bin" },
+    { "from": "log", "to": "lower", "dashed": true },
+    { "from": "co", "to": "codegen", "dashed": true },
+    { "from": "lt", "to": "tir", "dashed": true },
+    { "from": "pd", "to": "tir", "dashed": true },
+    { "from": "pv", "to": "tir", "dashed": true },
+    { "from": "pl", "to": "tir", "dashed": true },
+    { "from": "pt", "to": "lower", "dashed": true }
+  ],
+  "groups": [
+    { "label": "编译管线", "nodes": ["src", "lower", "tir", "codegen", "bin"], "tone": "default" },
+    {
+      "label": "观察工具（都不需要加速器）",
+      "nodes": ["log", "co", "lt", "pd", "pv", "pl", "pt"],
+      "tone": "muted"
+    }
+  ],
+  "notes": [
+    "编译期工具都不需要 GPU / NPU（例外：pass_visualizer 的 CLI 目前只覆盖 CUDA 目标）。",
+    "pass_timing 测的是编译器自己花了多久，不是 kernel 跑得多快；两个「性能」不要混用。"
+  ]
+}

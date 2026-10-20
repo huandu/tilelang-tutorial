@@ -1,0 +1,29 @@
+{
+  "id": "05-ascend-fractal",
+  "title": "Cube 的 NZ 分形数据通路",
+  "caption": "数据从 GM 经 L1 再进 L0，以 NZ 分形排布喂给 Cube，结果落在固定 16×16 分形的 L0C，再写回 UB / GM。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 20,
+  "section": "5.1",
+  "nodes": [
+    { "id": "gm", "label": "GM", "sub": "ND 行优先", "tone": "store" },
+    { "id": "l1", "label": "L1", "sub": "NZ 分形", "tone": "store" },
+    { "id": "l0", "label": "L0A / L0B", "sub": "分形操作数", "tone": "store" },
+    { "id": "mad", "label": "Cube MAC", "sub": "矩阵乘", "tone": "compute" },
+    { "id": "l0c", "label": "L0C", "sub": "固定 16×16 分形", "tone": "store" },
+    { "id": "ub", "label": "UB / GM", "sub": "copy / dual_copy 写回", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "gm", "to": "l1", "label": "MTE2 ND2NZ" },
+    { "from": "l1", "to": "l0", "label": "MTE1" },
+    { "from": "l0", "to": "mad", "label": "MAC" },
+    { "from": "mad", "to": "l0c" },
+    { "from": "l0c", "to": "ub", "label": "写回" }
+  ],
+  "notes": [
+    "NZ 物理形状：逻辑 [.., rows, cols] → [.., cols/C0, rows/16, 16, C0]，其中 C0 = 32 字节 / 元素大小。",
+    "C0 取值：fp16/bf16 = 16，fp32 = 8，int8 = 32，int4 = 64。",
+    "昇腾 pass 顺序：AscendLayoutInference → NormalizeAscendFractalStorage → InsertNd2Nz → VFChecker → AscendInsertOOBPadding →（可选）AutoSchedule → InsertSync → MaterializeMultiBuffer。"
+  ]
+}

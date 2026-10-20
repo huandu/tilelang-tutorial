@@ -1,0 +1,47 @@
+{
+  "id": "04-fragment-thread-mapping",
+  "title": "fragment 与线程的对应（MakeGemmFragment8x8）",
+  "caption": "每个格子标 T<线程号> L<槽号>：线程号 = 4×i + j/2，槽号 = j%2，64 个逻辑元素分给 32 个线程、每线程 2 个槽。",
+  "kind": "grid",
+  "section": "2.2",
+  "headers": ["j=0", "j=1", "j=2", "j=3", "j=4", "j=5", "j=6", "j=7"],
+  "rows": [
+    {
+      "label": "i=0",
+      "cells": ["T0 L0", "T0 L1", "T1 L0", "T1 L1", "T2 L0", "T2 L1", "T3 L0", "T3 L1"]
+    },
+    {
+      "label": "i=1",
+      "cells": ["T4 L0", "T4 L1", "T5 L0", "T5 L1", "T6 L0", "T6 L1", "T7 L0", "T7 L1"]
+    },
+    {
+      "label": "i=2",
+      "cells": ["T8 L0", "T8 L1", "T9 L0", "T9 L1", "T10 L0", "T10 L1", "T11 L0", "T11 L1"]
+    },
+    {
+      "label": "i=3",
+      "cells": ["T12 L0", "T12 L1", "T13 L0", "T13 L1", "T14 L0", "T14 L1", "T15 L0", "T15 L1"]
+    },
+    {
+      "label": "i=4",
+      "cells": ["T16 L0", "T16 L1", "T17 L0", "T17 L1", "T18 L0", "T18 L1", "T19 L0", "T19 L1"]
+    },
+    {
+      "label": "i=5",
+      "cells": ["T20 L0", "T20 L1", "T21 L0", "T21 L1", "T22 L0", "T22 L1", "T23 L0", "T23 L1"]
+    },
+    {
+      "label": "i=6",
+      "cells": ["T24 L0", "T24 L1", "T25 L0", "T25 L1", "T26 L0", "T26 L1", "T27 L0", "T27 L1"]
+    },
+    {
+      "label": "i=7",
+      "cells": ["T28 L0", "T28 L1", "T29 L0", "T29 L1", "T30 L0", "T30 L1", "T31 L0", "T31 L1"]
+    }
+  ],
+  "notes": [
+    "T.Fragment = forward_index（逻辑下标 → 物理下标）+ forward_thread（线程号）+ replicate（副本数）。",
+    "T.alloc_fragment((block_M, block_N)) 描述的是整个线程块的寄存器切片，不是每个线程各存一份。",
+    "plot_layout(fragment) 会按线程染色并标上 T/L，把「凭感觉的 fragment」变成看得见的表。"
+  ]
+}

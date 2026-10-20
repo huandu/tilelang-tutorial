@@ -1,0 +1,24 @@
+{
+  "id": "03-inference-pipeline",
+  "title": "推断引擎的 step 0–4 与三级约束",
+  "caption": "引擎按 strict → common → free 三级放宽约束，用工作列表 BFS 传播到不动点，最后按存储 Var 补齐 alias。",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "3.2",
+  "steps": [
+    { "label": "step 0：浮动 fragment 置为全复制", "sub": "在 TileOp 之外被读写的 fragment" },
+    { "label": "step 1：kStrict", "sub": "只接受已定义的布局；结果镜像进 strict_layout_map" },
+    { "label": "step 2：kCommon", "sub": "工作列表 BFS，把常见布局传播到不动点" },
+    { "label": "step 3：kFree", "sub": "并查集分组 → 逐根重推 → 用代价模型择优" },
+    { "label": "step 4：补齐 alias", "sub": "按底层存储 Var 把布局补齐到所有 alias buffer" },
+    {
+      "label": "输出 LayoutInferenceResult",
+      "sub": "layout_map / for_map / predicate_map",
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "工作列表按优先级入队：下游 op 已接触的 buffer 里有已知布局就 push_front，否则 push_back（EnqueueWithPriority）。",
+    "结果是 annotation，不是改写：layout_map 挂在 Block 上，loop layout 挂在 For 上，真正改写发生在后面的 LowerTileOp。"
+  ]
+}

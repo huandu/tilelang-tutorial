@@ -1,0 +1,91 @@
+{
+  "id": "01-decision-map-c",
+  "title": "偶发问题与性能问题的定位路径",
+  "caption": "偶发问题先怀疑同步、先下并发再加回；性能问题先算 roofline 预期，再用 profiler 回答「差在哪一项」。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "section": "2.3",
+  "nodes": [
+    {
+      "id": "f1",
+      "label": "先怀疑同步",
+      "sub": "barrier / pipeline / atomic（3.7）",
+      "tone": "warn"
+    },
+    {
+      "id": "f2",
+      "label": "降为单 block、num_stages=1、关流水",
+      "sub": "把并发去掉再看",
+      "tone": "default"
+    },
+    {
+      "id": "f3",
+      "label": "固定 seed 与输入，重复跑 N 次",
+      "sub": "统计复现率",
+      "tone": "default"
+    },
+    { "id": "f4", "label": "回到对拍流程", "sub": "接正确性链（3.7）", "tone": "accent" },
+    {
+      "id": "p1",
+      "label": "先算 roofline 预期",
+      "sub": "memory_time vs compute_time（3.8）",
+      "tone": "default"
+    },
+    {
+      "id": "p2",
+      "label": "预期是 memory-bound 还是 compute-bound？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "p3",
+      "label": "Nsight Compute：Memory Workload / SOL",
+      "sub": "memory-bound（3.9）",
+      "tone": "default"
+    },
+    {
+      "id": "p4",
+      "label": "Nsight Compute：SOL / Occupancy / Stall",
+      "sub": "compute-bound（3.9）",
+      "tone": "default"
+    },
+    {
+      "id": "p5",
+      "label": "昇腾侧用 msProf",
+      "sub": "msprof op / do_bench(msprof)（3.10）",
+      "tone": "default"
+    },
+    {
+      "id": "p6",
+      "label": "对照预期：差多少？",
+      "sub": "差在多传的内存还是少算的 FLOPs（5.2）",
+      "tone": "default"
+    },
+    { "id": "p7", "label": "改一个变量，重测，记录口径", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "f1", "to": "f2" },
+    { "from": "f2", "to": "f3" },
+    { "from": "f3", "to": "f4" },
+    { "from": "p1", "to": "p2" },
+    { "from": "p2", "to": "p3", "label": "memory-bound" },
+    { "from": "p2", "to": "p4", "label": "compute-bound" },
+    { "from": "p3", "to": "p5" },
+    { "from": "p4", "to": "p5" },
+    { "from": "p5", "to": "p6" },
+    { "from": "p6", "to": "p7" }
+  ],
+  "groups": [
+    { "label": "偶发 / 非确定性（3.7）", "nodes": ["f1", "f2", "f3", "f4"], "tone": "warn" },
+    {
+      "label": "性能问题（3.8–3.10）",
+      "nodes": ["p1", "p2", "p3", "p4", "p5", "p6", "p7"],
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "偶发错误的排查顺序是先去掉并发、再加回并发，而不是直接读代码找 bug。",
+    "性能类一定要先有 roofline 预期再上 profiler，否则只是在看一堆数字。"
+  ]
+}

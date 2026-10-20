@@ -1,0 +1,48 @@
+{
+  "id": "02-unified-gemm-relu-b",
+  "title": "「谁负责什么」：同一件事在五个系统里的归属",
+  "caption": "行是用户要提供的东西，列越往右越自动化；自动化不等于更短，只是把决定权搬进了编译器。",
+  "kind": "grid",
+  "section": "3.7",
+  "headers": ["AI 关注点", "CUDA", "Triton", "TileLang", "Ascend C", "PTO-DSL"],
+  "rows": [
+    {
+      "label": "片上存储",
+      "cells": [
+        "用户手写 __shared__",
+        "编译器决定",
+        "用户声明，pass 布局",
+        "用户 TPipe.InitBuffer",
+        "用户 pto.alloc_tile"
+      ]
+    },
+    {
+      "label": "多缓冲",
+      "cells": [
+        "用户手写",
+        "编译器（流水 pass）",
+        "num_stages",
+        "用户 BUFFER_NUM",
+        "自动 + 可选手写"
+      ]
+    },
+    {
+      "label": "同步",
+      "cells": [
+        "__syncthreads / mbarrier",
+        "编译器插入",
+        "编译器 pass",
+        "用户 EnQue/DeQue",
+        "PTOAS InsertSync"
+      ]
+    },
+    {
+      "label": "融合 ReLU",
+      "cells": ["用户 epilogue", "块级一行", "fragment 上一行", "手写 Vector 段", "手写 Vector 段"]
+    }
+  ],
+  "notes": [
+    "正文 §3.7 的文字表就是这张图的文字版。",
+    "证据：CUDA=R7/R8；Triton=R2/R4；TileLang=S1/S10/S11；Ascend C=R14；PTO-DSL=R18/R19。"
+  ]
+}

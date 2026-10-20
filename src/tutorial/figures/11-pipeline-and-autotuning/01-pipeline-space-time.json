@@ -1,0 +1,29 @@
+{
+  "id": "01-pipeline-space-time",
+  "title": "流水深度与 8 轮总时长（模型输出）",
+  "caption": "随着 num_stages 增加，搬运与计算从串行变成重叠，总时长从 400 降到 190；超过深度 3 之后不再下降，只增加片上占用。",
+  "kind": "bars",
+  "section": "2.2",
+  "max": 400,
+  "items": [
+    {
+      "label": "num_stages = 1（不做流水）",
+      "value": 400,
+      "display": "400 周期 · 1.00×",
+      "tone": "warn"
+    },
+    { "label": "num_stages = 2", "value": 220, "display": "220 周期 · 1.82×" },
+    { "label": "num_stages = 3", "value": 190, "display": "190 周期 · 2.11×", "tone": "accent" },
+    { "label": "num_stages = 4", "value": 190, "display": "190 周期 · 2.11×" },
+    { "label": "num_stages = 5", "value": 190, "display": "190 周期 · 2.11×" },
+    { "label": "num_stages = 6", "value": 190, "display": "190 周期 · 2.11×" },
+    { "label": "num_stages = 7", "value": 190, "display": "190 周期 · 2.11×" },
+    { "label": "num_stages = 8", "value": 190, "display": "190 周期 · 2.11×" }
+  ],
+  "notes": [
+    "模型参数 issue=1、latency=30、compute=20、iterations=8，来自 code/01-pipeline-timeline；这些是模型输出，不是硬件实测。",
+    "不做流水时每轮 = latency + compute = 50 周期，计算单元利用率 43%；2-stage 84%；3-stage 100%。",
+    "最小够用深度 = 1 + ceil(latency / compute) = 1 + ceil(30/20) = 3；再加深只增内存。",
+    "流水改变的是重叠与吞吐，不是单次操作延迟；第一个 copy 的填充（prologue）无法被隐藏。"
+  ]
+}

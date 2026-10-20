@@ -1,0 +1,90 @@
+{
+  "id": "01-format-ladder",
+  "title": "低精度格式阶梯",
+  "caption": "动态范围与相对精度是两个独立维度：bf16 的精度约等于 int8，范围约等于 fp32；fp8 与 int4 只是「相对精度同量级」，范围分配方式完全不同。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "section": "2.1",
+  "nodes": [
+    {
+      "id": "fp32",
+      "label": "fp32",
+      "sub": "1/8/23 · u=6.0e-8 · ±3.4e38 · 83 个数量级",
+      "tone": "default"
+    },
+    {
+      "id": "fp16",
+      "label": "fp16",
+      "sub": "1/5/10 · u=4.9e-4 · ±6.6e4 · 12.0 个数量级",
+      "tone": "default"
+    },
+    {
+      "id": "bf16",
+      "label": "bf16",
+      "sub": "1/8/7 · u=3.9e-3 · ±3.4e38 · 78.6 个数量级",
+      "tone": "default"
+    },
+    {
+      "id": "fp8e4",
+      "label": "fp8 e4m3",
+      "sub": "1/4/3 · u=6.3e-2 · ±448 · 5.4 个数量级",
+      "tone": "accent"
+    },
+    {
+      "id": "fp8e5",
+      "label": "fp8 e5m2",
+      "sub": "1/5/2 · u=1.3e-1 · ±57344 · 9.6 个数量级",
+      "tone": "default"
+    },
+    {
+      "id": "fp4",
+      "label": "fp4 e2m1",
+      "sub": "1/2/1 · u=2.5e-1 · ±6 · 1.1 个数量级",
+      "tone": "warn"
+    },
+    {
+      "id": "int8",
+      "label": "int8",
+      "sub": "qmax=127 · u=1/(2·127)=3.9e-3 · 范围由 absmax 决定",
+      "tone": "default"
+    },
+    {
+      "id": "int4",
+      "label": "int4",
+      "sub": "qmax=7 · u=1/(2·7)=7.1e-2 · 范围由 absmax 决定",
+      "tone": "default"
+    },
+    {
+      "id": "e8m0",
+      "label": "E8M0",
+      "sub": "8 位指数 + 0 位尾数 · 2^-127..2^127，没有 0",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "fp32", "to": "fp16" },
+    { "from": "fp32", "to": "bf16" },
+    { "from": "fp16", "to": "fp8e4" },
+    { "from": "fp16", "to": "fp8e5" },
+    { "from": "fp8e4", "to": "fp4" },
+    { "from": "e8m0", "to": "fp8e4", "label": "缩放 fp8/fp4（MX）", "dashed": true },
+    { "from": "e8m0", "to": "fp4", "label": "缩放 fp8/fp4（MX）", "dashed": true },
+    { "from": "int8", "to": "bf16", "label": "−1 位宽 ⇒ 精度约等于 bf16", "dashed": true },
+    { "from": "int4", "to": "fp8e4", "label": "−1 位宽 ⇒ 精度约等于 fp8", "dashed": true }
+  ],
+  "groups": [
+    {
+      "label": "浮点：有指数，值域随指数走",
+      "nodes": ["fp32", "fp16", "bf16", "fp8e4", "fp8e5", "fp4"],
+      "tone": "default"
+    },
+    { "label": "定点：没有指数，范围靠 scale 撑", "nodes": ["int8", "int4"], "tone": "default" },
+    { "label": "缩放因子：只搬指数，不表示数据", "nodes": ["e8m0"], "tone": "store" }
+  ],
+  "notes": [
+    "动态范围与相对精度是两个独立维度；e4m3 的动态范围只有 5.4 个数量级，所以必须配一个 E8M0 scale。",
+    "fp8 的两种格式是一个显式取舍：e4m3 用范围换精度（前向、权重），e5m2 用精度换范围（反向、梯度）。",
+    "int4 没有指数，离群值会把整个 scale 拉大，所以它更需要细粒度 scale（per-group，甚至 per-channel + group 混合）。"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "id": "05-kv-nd2nz-path",
+  "title": "KV 的 ND → UB → NZ → L1 路径",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "section": "3.4",
+  "caption": "直接 GM→L1 随路 ND2NZ 走不通（稀疏 gather + 访存无法合并），于是改成先到 UB、用 SIMD VF 在片上转 NZ，再 MTE3 推到 L1。",
+  "nodes": [
+    { "id": "gm", "label": "KV 显存（ND）", "sub": "[s_kv, 512]，一次一个 token", "tone": "store" },
+    {
+      "id": "l1x",
+      "label": "L1 随路 ND2NZ（此路不通）",
+      "sub": "源连续、目的不连续 → 无法合并访存",
+      "tone": "warn"
+    },
+    {
+      "id": "ub",
+      "label": "UB: gathered_kv（ND）",
+      "sub": "MTE2 整 token 搬进来",
+      "tone": "store"
+    },
+    { "id": "vf", "label": "SIMD VF: ND → NZ", "sub": "asc_loadalign + vsstb", "tone": "compute" },
+    {
+      "id": "ubnz",
+      "label": "UB: gathered_kv_in_nz",
+      "sub": "NZ 排布，多 pad 一行",
+      "tone": "store"
+    },
+    { "id": "l1", "label": "L1: NZ 缓冲", "sub": "MTE3 推入，供 Cube 用", "tone": "store" },
+    { "id": "cube", "label": "Cube: L1 → L0B", "sub": "Fractal 直接可用", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "gm", "to": "ub", "label": "MTE2" },
+    { "from": "gm", "to": "l1x", "dashed": true, "label": "✗" },
+    { "from": "ub", "to": "vf" },
+    { "from": "vf", "to": "ubnz" },
+    { "from": "ubnz", "to": "l1", "label": "MTE3" },
+    { "from": "l1", "to": "cube" }
+  ],
+  "notes": [
+    "虚线是报告试过并否掉的方案：BIU 只在源和目标都连续时才触发访存合并（报告 :152）。",
+    "NZ buffer 多 pad 一行（(B_TOPK_PER_V+1)*D_VO）以避免 UB bank conflict。",
+    "来源：报告 :146-154；kernel_body.h:1018-1112；config.h:81。"
+  ]
+}

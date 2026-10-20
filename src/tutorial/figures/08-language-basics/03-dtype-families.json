@@ -1,0 +1,67 @@
+{
+  "id": "03-dtype-families",
+  "title": "数据类型家族（v0.1.15）",
+  "caption": "173 个名字分成别名、整数、浮点、bfloat16、tfloat32 与低精度家族，最后都归一到一个 DataType。",
+  "kind": "flow",
+  "section": "4",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "nodes": [
+    {
+      "id": "root",
+      "label": "tilelang.language 上的 dtype 符号",
+      "sub": "共 173 个名字（dtypes.py::_all_dtypes）",
+      "tone": "accent"
+    },
+    { "id": "alias", "label": "7 个规范别名", "sub": "short/int/long/uint/half/float/double" },
+    { "id": "plain", "label": "无向量形", "sub": "bool · int4 · float4_e2m1_unpacked" },
+    { "id": "int", "label": "整数", "sub": "int8/16/32/64 · uint8/16/32/64" },
+    { "id": "fp", "label": "浮点", "sub": "float16 · float32 · float64" },
+    { "id": "bf", "label": "bfloat16", "sub": "只有 bfloat16x2，没有 x4 及以上" },
+    { "id": "tf", "label": "tfloat32", "sub": "有 x2…x64" },
+    { "id": "low", "label": "低精度家族", "tone": "store" },
+    {
+      "id": "f8",
+      "label": "float8（8 种）",
+      "sub": "e3m4 · e4m3 · e4m3fn · e4m3fnuz · e5m2 · e8m0fnu …"
+    },
+    { "id": "f6", "label": "float6（2 种）", "sub": "e2m3fn · e3m2fn" },
+    {
+      "id": "f4",
+      "label": "float4（2 种存储模型）",
+      "sub": "e2m1fn 打包 4 bit；e2m1_unpacked 8 bit 槽"
+    },
+    {
+      "id": "norm",
+      "label": "同一个 tvm.DataType",
+      "sub": "字符串 / TileLang 对象 / 框架 dtype 三种写法归一",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "root", "to": "alias" },
+    { "from": "root", "to": "plain" },
+    { "from": "root", "to": "int" },
+    { "from": "root", "to": "fp" },
+    { "from": "root", "to": "bf" },
+    { "from": "root", "to": "tf" },
+    { "from": "root", "to": "low" },
+    { "from": "low", "to": "f8" },
+    { "from": "low", "to": "f6" },
+    { "from": "low", "to": "f4" },
+    { "from": "alias", "to": "norm", "dashed": true, "label": "normalize" },
+    { "from": "int", "to": "norm", "dashed": true },
+    { "from": "fp", "to": "norm", "dashed": true },
+    { "from": "bf", "to": "norm", "dashed": true },
+    { "from": "tf", "to": "norm", "dashed": true },
+    { "from": "f8", "to": "norm", "dashed": true },
+    { "from": "f6", "to": "norm", "dashed": true },
+    { "from": "f4", "to": "norm", "dashed": true }
+  ],
+  "notes": [
+    "向量形（lane）：多数类型有 x2…x64；bfloat16 只有 x2；bool / int4 / unpacked fp4 没有。",
+    "fp8 的八个拼法不是一回事：e4m3fn 是 CUDA 默认、e4m3fnuz 是 ROCm 默认，e8m0fnu 只有指数。",
+    "fp4 两种存储模型：打包（4 bit，全局张量）与 SMEM 解包（8 bit 槽）。",
+    "混合精度时累加 dtype 必须显式给；A/B 的 dtype 只允许在 f8f6f4 家族内混。"
+  ]
+}

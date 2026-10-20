@@ -1,0 +1,24 @@
+{
+  "id": "02-two-perspectives",
+  "title": "元素 / 线程视角 vs tile 视角",
+  "kind": "compare",
+  "section": "2.4",
+  "columns": ["元素 / 线程视角（CUDA）", "tile 视角（TileLang）"],
+  "rows": [
+    {
+      "label": "第一步",
+      "values": ["for each element：决定属于哪个线程", "声明 tile 的形状与存储位置"]
+    },
+    { "label": "第二步", "values": ["决定访存模式，决定 bank conflict", "用 T.copy 描述搬运"] },
+    { "label": "第三步", "values": ["手写同步点", "用 T.gemm 描述计算"] },
+    {
+      "label": "第四步",
+      "values": ["手写数据搬运", "编译器推导 layout，规划流水与同步"]
+    }
+  ],
+  "caption": "同一件事在两种视角下的描述方式：线程视角全部由人决定，tile 视角把布局、流水与同步留给编译器。",
+  "notes": [
+    "左列是第 4.1 节要讲的 CUDA 路线，右列是第 4.4 节要讲的 TileLang 路线。",
+    "tile 视角里「我」要描述的是：这块 block_M × block_K 的 A 放哪、和哪块 B 相乘、结果累积到哪（见正文 2.4 节）。"
+  ]
+}

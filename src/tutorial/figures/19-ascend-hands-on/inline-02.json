@@ -1,0 +1,32 @@
+{
+  "id": "inline-02",
+  "title": "昇腾软件栈的分层",
+  "kind": "layers",
+  "inlineQuote": " 你的程序（PyTorch / TileLang kernel）\n        │\n   torch_npu  ← PyTorch 的昇腾后端",
+  "caption": "「装昇腾环境」是铺一条链子：从 NPU 硬件往上，驱动、CANN、毕昇编译器与 Ascend 运行时、TileLang 后端、torch_npu 各占一层，你的程序在最上面。",
+  "layers": [
+    {
+      "label": "你的程序（PyTorch / TileLang kernel）",
+      "right": "最上层",
+      "tone": "accent"
+    },
+    { "label": "torch_npu", "sub": "PyTorch 的昇腾后端" },
+    {
+      "label": "TileLang-Ascend / 主干昇腾后端",
+      "sub": "前端 DSL + 编译器",
+      "tone": "accent"
+    },
+    { "label": "毕昇编译器 bisheng + Ascend 运行时" },
+    { "label": "CANN 工具包", "sub": "含算子库、runtime、编译器" },
+    {
+      "label": "昇腾驱动",
+      "sub": "npu-smi、HDC/P2P、资源管理",
+      "tone": "store"
+    },
+    { "label": "NPU 硬件", "right": "最底层", "tone": "store" }
+  ],
+  "notes": [
+    "TileLang 生成的 Ascend C 交给毕昇（Host-Device 异构编译器）编译成 .so，再经 Ascend 运行时装进设备。",
+    "CANN 是与驱动分层安装的：解包加设环境变量，所以每次编译/运行前都要 source 对应的 set_env.sh。"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "id": "01-abstraction-layers",
+  "title": "抽象层次纵轴与 TVM 底盘",
+  "caption": "七个对象不在同一层：tile 级、线程/指令级，再加上横穿两级的 TVM 底盘。",
+  "kind": "layers",
+  "section": "2.1",
+  "layers": [
+    {
+      "label": "tile 级：用户给 tile，编译器管调度 / 布局 / 同步",
+      "sub": "Triton（编译器选调度）· TileLang（数据流留在语言里）· cuTile（资料不足）",
+      "right": "高层",
+      "tone": "accent"
+    },
+    {
+      "label": "线程 / 指令级：用户直接面对线程、存储层级与同步",
+      "sub": "CUDA · CUTLASS / CuTe（含 CuTe DSL） · Ascend C · PTO-DSL",
+      "right": "低层",
+      "tone": "default"
+    },
+    {
+      "label": "硬件 ISA",
+      "sub": "PTX / SASS · PTO-ISA / CCE",
+      "right": "最低",
+      "tone": "default"
+    },
+    {
+      "label": "TVM 底盘（横穿所有层）",
+      "sub": "IR + pass 基础设施 + target/device 抽象",
+      "right": "横切",
+      "tone": "store"
+    }
+  ],
+  "notes": [
+    "TileLang 同时出现在 tile 层（前端）和底盘使用方（自己写 pass）。",
+    "CuTe DSL 虽然用 Python，仍在低层（R5/R27），不要把它归到 tile 级。",
+    "TVM 不是某一层的一员，而是横切面，见 §4。"
+  ]
+}

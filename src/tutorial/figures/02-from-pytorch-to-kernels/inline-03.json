@@ -1,0 +1,30 @@
+{
+  "id": "inline-03",
+  "title": "从 Python 模型到硬件的几层",
+  "kind": "flow",
+  "section": "1.3",
+  "inlineQuote": "你的 Python 模型\n   │  torch.compile / TorchDynamo 捕获计算图（可选）\n   ▼",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "model", "label": "你的 Python 模型" },
+    { "id": "aten", "label": "算子图（aten IR）", "tone": "accent" },
+    {
+      "id": "kernels",
+      "label": "一个个 kernel",
+      "sub": "Inductor 生成的 Triton kernel\n厂商库里的现成 kernel\n或你手写的 TileLang / CUDA / Ascend C",
+      "tone": "compute"
+    },
+    { "id": "hw", "label": "硬件", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "model", "to": "aten", "label": "捕获计算图" },
+    { "from": "aten", "to": "kernels", "label": "生成 kernel" },
+    { "from": "kernels", "to": "hw" }
+  ],
+  "caption": "从 Python 模型到硬件：中间隔着算子图与一个个 kernel，TileLang 负责的是最下面那一层。",
+  "notes": [
+    "第一跳（可选）由 torch.compile / TorchDynamo 捕获计算图；第二跳由 TorchInductor 做图级融合、调度与 kernel 生成。",
+    "TileLang 的位置在这一层：它不管「整张图怎么切」，只负责「一个算子怎么写快」。"
+  ]
+}

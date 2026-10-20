@@ -1,0 +1,32 @@
+{
+  "id": "inline-03",
+  "title": "三阶段硬件演进与新增的管理对象",
+  "kind": "flow",
+  "section": "4.2",
+  "inlineQuote": "flowchart LR\n    P1[\"阶段一<br/>SIMT 线程\"] --> C1[\"管理对象：<br/>线程分工 + 搬运\"]",
+  "direction": "LR",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "p1", "label": "阶段一", "sub": "SIMT 线程", "tone": "muted" },
+    { "id": "c1", "label": "管理对象", "sub": "线程分工 + 搬运" },
+    { "id": "p2", "label": "阶段二", "sub": "张量核", "tone": "muted" },
+    { "id": "c2", "label": "管理对象", "sub": "+ fragment 布局" },
+    { "id": "p3", "label": "阶段三", "sub": "异步 + 专用存储", "tone": "muted" },
+    {
+      "id": "c3",
+      "label": "管理对象",
+      "sub": "+ 多流水同步 + 多缓冲容量\n+ 跨 SM / Cube-Vector 依赖",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "p1", "to": "c1" },
+    { "from": "p2", "to": "c2" },
+    { "from": "p3", "to": "c3" }
+  ],
+  "caption": "每一阶段都在编程模型上新增一层必须人工管理的资源；到第三阶段，要同时正确管理的东西开始互相约束。",
+  "notes": [
+    "NV 侧的三阶段事实来源见正文 4.2 节引用的 Hopper 架构资料；昇腾侧的对照见第 6 章。",
+    "第三阶段是「手写 CUDA 就够了」失效的直接原因：管理对象从线性叠加变成组合爆炸。"
+  ]
+}

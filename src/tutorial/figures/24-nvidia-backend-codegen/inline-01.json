@@ -1,0 +1,80 @@
+{
+  "id": "inline-01",
+  "title": "NVIDIA 后端的全局路径：从 TIR 到可装载产物",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "inlineQuote": "                   Python frontend (tilelang/language)\n                                │\n                        TIR module (@T.prim_func)",
+  "caption": "TIR 先过与后端无关的 pass 链，在 SplitHostDevice 处分成 host 与 device 两棵树：device 出 CUDA C（或 CuTe DSL），host 出 wrapper 的 call()，最后汇到执行后端。",
+  "nodes": [
+    { "id": "fe", "label": "Python frontend", "code": "tilelang/language", "tone": "default" },
+    { "id": "tir", "label": "TIR module", "code": "@T.prim_func" },
+    {
+      "id": "lower",
+      "label": "engine/lower.py::lower",
+      "sub": "选后端、起流水线",
+      "tone": "accent"
+    },
+    {
+      "id": "passes",
+      "label": "backend-agnostic passes",
+      "sub": "PipelinePlanning → InjectSoftwarePipeline → LayoutInference → LowerTileOp(cu tile ops) → …",
+      "code": "tilelang/transform",
+      "tone": "accent"
+    },
+    {
+      "id": "split",
+      "label": "SplitHostDevice",
+      "sub": "把模块切成 host_mod 与 device_mod"
+    },
+    { "id": "host", "label": "host_mod", "tone": "store" },
+    { "id": "dev", "label": "device_mod", "tone": "store" },
+    {
+      "id": "hostgen",
+      "label": "host_codegen（C / LLVM）",
+      "code": "target.build.tilelang_c_host"
+    },
+    {
+      "id": "devgen",
+      "label": "device_codegen（CUDA / CuTeDSL）",
+      "sub": "target.build.tilelang_cuda → src/cuda/codegen/codegen_cuda.cc → CUDA C 源码",
+      "tone": "compute"
+    },
+    {
+      "id": "nvcc",
+      "label": "nvcc / NVRTC",
+      "sub": "Contrib::nvcc.compile_cuda 或运行期编译 → cubin / fatbin",
+      "tone": "compute"
+    },
+    {
+      "id": "wrapper",
+      "label": "TLCUDASourceWrapper",
+      "sub": "jit/adapter/wrapper.py：把 device 源码与 host 的 call() 拼成一份 C 源码",
+      "tone": "accent"
+    },
+    {
+      "id": "backend",
+      "label": "execution_backend",
+      "code": "cython / tvm_ffi / nvrtc / cutedsl",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "fe", "to": "tir" },
+    { "from": "tir", "to": "lower" },
+    { "from": "lower", "to": "passes" },
+    { "from": "passes", "to": "split" },
+    { "from": "split", "to": "host" },
+    { "from": "split", "to": "dev" },
+    { "from": "host", "to": "hostgen" },
+    { "from": "dev", "to": "devgen" },
+    { "from": "devgen", "to": "nvcc" },
+    { "from": "hostgen", "to": "wrapper" },
+    { "from": "nvcc", "to": "wrapper" },
+    { "from": "wrapper", "to": "backend" }
+  ],
+  "notes": [
+    "原块在 host 树下还单列了 extern \"C\" TL_EXPORT int call(...) 与 cuTensorMapEncodeTiled(...) 两个方框（有 TMA 时才有），本图并入 TLCUDASourceWrapper 的说明以免节点过多。",
+    "这张图与正文 §1 引的 figures/01-codegen-path 是同一件事：那份展开到具体文件与函数名，这份是正文里的简版。"
+  ]
+}

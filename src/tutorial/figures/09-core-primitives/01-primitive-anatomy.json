@@ -1,0 +1,48 @@
+{
+  "id": "01-primitive-anatomy",
+  "title": "一个原语的三段式生命周期",
+  "caption": "同一条 T.copy 从 Python 前端到目标指令要走三段：前端组装 IR、IR 记住意图、后端按 target 与注解选指令。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "user", "label": "用户代码", "code": "T.copy(A[i,j], A_s)", "tone": "default" },
+    {
+      "id": "front",
+      "label": "前端函数",
+      "sub": "校验 + extent 归一化",
+      "code": "language/copy_op.py",
+      "tone": "default"
+    },
+    { "id": "tir", "label": "TIR intrinsic", "sub": "tl.tileop.copy", "tone": "accent" },
+    {
+      "id": "ir",
+      "label": "IR 节点",
+      "sub": "CopyNode{src, dst, src_range, dst_range, annotations}",
+      "tone": "accent"
+    },
+    { "id": "sel", "label": "后端指令选择", "sub": "SelectCopyInstForLowering", "tone": "compute" },
+    { "id": "simt", "label": "SIMT 循环", "tone": "compute" },
+    { "id": "cpasync", "label": "cp.async", "tone": "compute" },
+    { "id": "tma", "label": "TMA cp.async.bulk.tensor", "tone": "compute" },
+    { "id": "ldsm", "label": "ldmatrix / stmatrix / tcgen05.ld", "tone": "compute" },
+    { "id": "asc", "label": "tl.tileop.ascend_copy", "tone": "store" },
+    { "id": "ascdma", "label": "DataCopy / ND2NZ / LoadData / Fixpipe", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "user", "to": "front" },
+    { "from": "front", "to": "tir" },
+    { "from": "tir", "to": "ir" },
+    { "from": "ir", "to": "sel" },
+    { "from": "sel", "to": "simt" },
+    { "from": "sel", "to": "cpasync" },
+    { "from": "sel", "to": "tma" },
+    { "from": "sel", "to": "ldsm" },
+    { "from": "ir", "to": "asc", "label": "昇腾", "dashed": true },
+    { "from": "asc", "to": "ascdma" }
+  ],
+  "notes": [
+    "Python 只在最左边一列起作用：越往右，能影响的只剩 annotations 里的几个键。",
+    "前端大部分时候只把参数变成 region；唯一的例外是标量 copy——两边都是无 extent 的 BufferLoad 时，直接退化成 BufferStore。"
+  ]
+}

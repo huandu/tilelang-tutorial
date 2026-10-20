@@ -1,0 +1,89 @@
+{
+  "chapter": "32-deepseek-ascend-release",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "本章把六个组件分成四层。下面哪一组的分层是正确的？",
+      "options": [
+        "语言/编译：TileLang 昇腾版；通信库：DeepEP-Ascend",
+        "语言/编译：DeepJIT；通信库：TileLang 昇腾版",
+        "算子库：DeepGEMM-Ascend；通信库：TileKernels",
+        "计算库：TileKernels；算子库：DeepSelect"
+      ],
+      "answer": 0,
+      "explain": "见 §3.1。TileLang 是语言与编译层，DeepEP-Ascend 是通信层，DeepJIT 是跨层的运行时（不属于四层中的任何一层），TileKernels 是算子库，DeepGEMM-Ascend / FlashMLA / DeepSelect 是计算库。"
+    },
+    {
+      "id": "q2",
+      "stem": "关于官方对「TileLang 昇腾版」的措辞，下面哪一句最准确？",
+      "options": [
+        "官方承诺所有算子都达到硬件峰值性能",
+        "官方说它封装 Ascend C 底层指令、提供高级语言编程方式、同时不损失硬件性能",
+        "官方说它是从 CUDA 版直接编译过来的同一份代码",
+        "官方说它只用于训练，不用于推理"
+      ],
+      "answer": 1,
+      "explain": "见 §2.2。「不损失硬件性能」是设计目标而不是性能承诺，真正的数字在各仓库 README 的性能表里（§6.2、§8）。它还说了「训练中用到的每一个 TileLang 算子，在昇腾上都有对应的高性能实现」，但那是限定范围内的说法。"
+    },
+    {
+      "id": "q3",
+      "stem": "「所有组件与 NVIDIA 侧一一对应」这句话，在工程上最准确的解读是？",
+      "options": [
+        "两边是同一份源码，只是编译目标不同",
+        "接口与开发流程可迁移，但格式、功能子集与语义仍可能不同",
+        "性能数字可以直接互相套用",
+        "昇腾侧一定支持 NVIDIA 侧的所有算子与参数"
+      ],
+      "answer": 1,
+      "explain": "见 §4.2。接口层可迁移，但 §4.3 给出了三类反例：scale factor 的打包格式不同（昇腾是一对 UE8M0 进 int16 且 MN-major，NV SM100 是 4 个 UE8M0 进一个 torch.int）、功能子集不同（FlashMLA 融合 kernel 仅 CUDA）、语义不同（DeepEP-Ascend 的 stream 行为是昇腾特有的）。"
+    },
+    {
+      "id": "q4",
+      "stem": "在 MoE 层的一次训练 step 里，EP dispatch 之后的下一步是哪一组？",
+      "options": [
+        "MoE 路由（TileKernels 的 topk_gate）",
+        "SwiGLU（TileKernels 的融合量化）",
+        "两个 grouped GEMM（DeepGEMM-Ascend）与 SwiGLU",
+        "优化器与 mHC"
+      ],
+      "answer": 2,
+      "explain": "见 §5.1 的七步：路由 → dispatch → grouped GEMM（升维）→ SwiGLU → grouped GEMM（降维）→ combine → mHC 与优化器。DeepGEMM-Ascend 的 MegaMoE 把 dispatch、两个 grouped GEMM、SwiGLU 与 combine 融成一个 kernel。"
+    },
+    {
+      "id": "q5",
+      "stem": "DeepEP-Ascend 的 `Ongoing` 一节说明某些接口「expose the aligned APIs, but … not implemented yet」。遇到这种情况应该怎么做？",
+      "options": [
+        "只要 API 名字对齐就可以直接用于生产",
+        "把它当作已经实现，只是文档没更新",
+        "不要写进生产路径，记录快照并跟踪后续版本是否落地",
+        "换个仓库名字重新 import 就能用"
+      ],
+      "answer": 2,
+      "explain": "见 §8.3。「有 API」不等于「有实现」，也不等于「已验证」。正确做法是把这项依赖从生产路径里去掉，并把「何时能回来」写进跟踪清单（记录 commit，下次升级重读 Ongoing）。"
+    },
+    {
+      "id": "q6",
+      "stem": "本章引用 README 里的性能数字时，哪一项要求是硬性的？",
+      "options": [
+        "只保留百分比，不要写形状",
+        "必须同时给出硬件型号、CANN/CUDA 版本、形状与测量口径",
+        "只要注明「来自 README」就足够",
+        "可以取多个版本里最高的那个数字"
+      ],
+      "answer": 1,
+      "explain": "见 §6.2 与 §8.6。例如 DeepGEMM-Ascend 的 dense GEMM 99.8% 是 Ascend 950DT、CANN 9.20、bench_msprof、cold L2、BF16 4096×7168×16384 下的结果。本机没有 NPU/GPU，不能用这些数字反推任何本机结论。"
+    },
+    {
+      "id": "q7",
+      "stem": "DeepJIT 在整张组件地图里的位置是什么？",
+      "options": [
+        "一个算子库，和 TileKernels 平级",
+        "一个面向 CUDA 与昇腾两套后端的运行时 JIT，被 DeepGEMM-Ascend 与 DeepEP-Ascend 共用",
+        "TileLang 编译器里的一个 pass",
+        "一个昇腾专属的通信库"
+      ],
+      "answer": 1,
+      "explain": "见 §3.3。DeepJIT 是 header-only 的 C++20 JIT 运行时，用同一套 compile/load/launch 流程服务两套后端；它不是算子库，也不是 TileLang 自己的 JIT（那是第 26 章讲的内容）。"
+    }
+  ]
+}

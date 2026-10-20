@@ -1,0 +1,54 @@
+{
+  "id": "04-vf-regions",
+  "title": "SimtVF / SimdVF 两个区域与 2048-bit 约束",
+  "caption": "核内没有 kernel 级线程域：只有 T.SimtVF 内部真的开一个 threadIdx.x 域，T.SimdVF 则完全没有线程，一条指令吃一整个 2048-bit 寄存器。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "4.6",
+  "nodes": [
+    {
+      "id": "k",
+      "label": "T.Kernel(N) as bx",
+      "sub": "一维核网格，无 kernel 级线程域",
+      "tone": "default"
+    },
+    { "id": "c", "label": "T.Cube()", "sub": "AIC 上的工作", "tone": "compute" },
+    { "id": "v", "label": "T.Vector()", "sub": "AIV 上的工作", "tone": "compute" },
+    {
+      "id": "s1",
+      "label": "with T.SimtVF(threads=128)",
+      "sub": "真正的 threadIdx.x 域",
+      "tone": "accent"
+    },
+    { "id": "s2", "label": "with T.SimdVF()", "sub": "没有线程，只有寄存器", "tone": "accent" },
+    { "id": "p1", "label": "T.Parallel over tile", "sub": "迭代映射到线程", "tone": "default" },
+    { "id": "p2", "label": "跨线程竞争 → asc_syncthreads()", "tone": "warn" },
+    {
+      "id": "p3",
+      "label": "T.simd.pset / vld / vadd / vsts",
+      "sub": "一次 2048-bit",
+      "tone": "default"
+    },
+    {
+      "id": "r",
+      "label": "2048-bit = 64×f32 或 128×f16",
+      "sub": "predicate 必须是 boolx256，否则 LOG(FATAL)",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "k", "to": "c" },
+    { "from": "k", "to": "v" },
+    { "from": "v", "to": "s1" },
+    { "from": "v", "to": "s2" },
+    { "from": "s1", "to": "p1" },
+    { "from": "s1", "to": "p2" },
+    { "from": "s2", "to": "p3" },
+    { "from": "p3", "to": "r" }
+  ],
+  "notes": [
+    "两个区域在 IR 里都是不透明 SBlock（SIMT_VF / SIMD_VF），一直活到 codegen。",
+    "两个区域都接受 latency= 作为调度模型输入；不填时由编译器估算，它不是实测周期。"
+  ]
+}

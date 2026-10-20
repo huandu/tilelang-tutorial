@@ -1,0 +1,29 @@
+{
+  "id": "01-design-flow",
+  "title": "新算子的设计流程：代码是第五步",
+  "caption": "拿到一个新算子的固定顺序——建模 → 定 tile → 定流水 → 定特殊路径 → 写代码 → 对账；顺序不能换，先定 tile 再定流水。",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "1.2",
+  "steps": [
+    {
+      "label": "① 建模：算出 (flops, bytes)",
+      "sub": "算术强度 · 访存下界 · 机器平衡点，判 memory-bound 还是 compute-bound"
+    },
+    {
+      "label": "② 定 tile 尺寸与存储位置",
+      "sub": "片上容量 / 寄存器 / 指令形状 / 并行度四条约束的交集"
+    },
+    { "label": "③ 定流水结构", "sub": "哪些迭代可以重叠 · 需要几份缓冲" },
+    {
+      "label": "④ 判断是否需要特殊指令 / 特殊布局",
+      "sub": "张量核 · TMA · 异步 · swizzle · fractal · dual_copy"
+    },
+    { "label": "⑤ 写代码", "sub": "①–④ 的结论变成 tile 尺寸、scope、num_stages 与注解" },
+    { "label": "⑥ 测：与模型对账", "sub": "差多少 · 差在哪一条约束上，回到最可疑的那一步" }
+  ],
+  "notes": [
+    "流程里最容易跳过、也最贵的两步是 ① 建模与 ② 定 tile：跳过建模会花三天调参，跳过定 tile 会写出编不过或掉到 1 block/SM 的配置。",
+    "② 与 ③ 的顺序特别重要：「能加多少 stage 是 tile 尺寸的函数」，为流水优化过的 block_K 如果放不进片上，前面的工作全部作废。"
+  ]
+}

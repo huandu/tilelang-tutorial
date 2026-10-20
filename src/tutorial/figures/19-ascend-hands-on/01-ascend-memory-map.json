@@ -1,0 +1,38 @@
+{
+  "id": "01-ascend-memory-map",
+  "title": "昇腾片上存储与搬运通路",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 16,
+  "section": "2.2",
+  "caption": "GM / L1 / L0A / L0B / L0C / UB 的分工，以及 MTE1/2/3 与 FixPipe 的搬运通路（容量为 Atlas A2 口径）。",
+  "nodes": [
+    { "id": "gmin", "label": "GM（HBM）输入", "sub": "全局内存：读入 A / B", "tone": "store" },
+    { "id": "l1", "label": "L1（CBuf）512 KB", "sub": "Cube 输入的中转与复用", "tone": "store" },
+    { "id": "ub", "label": "UB 192 KB", "sub": "Vector 的输入输出", "tone": "store" },
+    { "id": "l0a", "label": "L0A 64 KB", "sub": "Cube 左输入", "tone": "store" },
+    { "id": "l0b", "label": "L0B 64 KB", "sub": "Cube 右输入", "tone": "store" },
+    { "id": "vec", "label": "Vector（V）", "sub": "向量 / 标量运算", "tone": "compute" },
+    { "id": "cube", "label": "Cube（MAD）", "sub": "矩阵乘", "tone": "compute" },
+    { "id": "l0c", "label": "L0C 128 KB", "sub": "fp32 累加器", "tone": "store" },
+    { "id": "gmout", "label": "GM（HBM）输出", "sub": "全局内存：写回 C", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "gmin", "to": "l1", "label": "MTE2" },
+    { "from": "gmin", "to": "ub" },
+    { "from": "l1", "to": "l0a", "label": "MTE1" },
+    { "from": "l1", "to": "l0b" },
+    { "from": "l0a", "to": "cube" },
+    { "from": "l0b", "to": "cube" },
+    { "from": "ub", "to": "vec" },
+    { "from": "ub", "to": "gmout", "label": "MTE3" },
+    { "from": "cube", "to": "l0c" },
+    { "from": "l0c", "to": "gmout", "label": "FixPipe" }
+  ],
+  "notes": [
+    "Cube 的输入必须先到 L0A/L0B，输出在 L0C；L1 只是中转与复用缓冲。Vector 的输入输出都在 UB。",
+    "Cube 与 Vector 不能直接交换数据，要经过 GM/L2；每条搬运通路都是异步的，跨通路的数据依赖必须显式同步。",
+    "通路与指令对照：GM→L1 / GM→UB 走 MTE2 DataCopy；L1→L0A/L0B 走 MTE1 LoadData；Cube 计算走 M；L0C→GM/L1 走 FixPipe / DataCopy；UB→GM 走 MTE3 DataCopy。",
+    "容量数字为 Atlas A2 口径，Ascend 950 请以平台接口为准。"
+  ]
+}

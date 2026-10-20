@@ -1,0 +1,38 @@
+{
+  "id": "inline-04",
+  "title": "GEMM 的完整数据流：GM→L1→L0A/L0B→Cube→L0C→GM",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "inlineQuote": "  GM(A), GM(B)                                   GM(C)\n     │  MTE2: DataCopy                             ▲\n     ▼                                             │ FixPipe / DataCopy",
+  "caption": "T.gemm_v0 这一行展开后的通路：A/B 经 MTE2 搬进 L1，再由 MTE1 搬进 L0A/L0B，Cube 算到 L0C，最后经 FixPipe 写回 GM(C)。",
+  "nodes": [
+    { "id": "gmin", "label": "GM(A), GM(B)", "tone": "store" },
+    { "id": "l1", "label": "L1（512KB）", "sub": "Cube 输入的中转", "tone": "store" },
+    {
+      "id": "l0",
+      "label": "L0A(64KB) / L0B(64KB)",
+      "sub": "Cube 的左/右输入",
+      "tone": "store"
+    },
+    { "id": "cube", "label": "Cube: MAD", "sub": "矩阵乘，累加到 L0C", "tone": "compute" },
+    {
+      "id": "l0c",
+      "label": "L0C(128KB, fp32 累加)",
+      "sub": "Cube 的输出与累加器",
+      "tone": "store"
+    },
+    { "id": "gmc", "label": "GM(C)", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "gmin", "to": "l1", "label": "MTE2: DataCopy" },
+    { "from": "l1", "to": "l0", "label": "MTE1: LoadData" },
+    { "from": "l0", "to": "cube" },
+    { "from": "cube", "to": "l0c" },
+    { "from": "l0c", "to": "gmc", "label": "FixPipe / DataCopy" }
+  ],
+  "notes": [
+    "累加器在 L0C（128KB、fp32）而不是寄存器：这是「把 C 累加在寄存器里」这个 CUDA 直觉在昇腾上不成立的原因。",
+    "只有 GM → L1 的 DataCopy 与 L0C → GM 的写回是你写出来的；L1 → L0A/L0B 的 LoadData 与 Cube 的 MAD 都包在 T.gemm_v0 里。"
+  ]
+}

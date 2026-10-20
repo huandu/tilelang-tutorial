@@ -1,0 +1,36 @@
+{
+  "id": "inline-06",
+  "title": "testing/ 的目录组织",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "inlineQuote": "testing/\n├─ conftest.py        全局 fixture：固定随机种子、把仓库根塞进 sys.path、\n│                     配置 TORCH_EXTENSIONS_DIR、注册 --run-perf 选项",
+  "caption": "conftest.py 提供全局 fixture，cpp/ 在锁定版本里是空目录，昇腾专属内容集中在 ascend/，主体测试按主题分在 python/ 下。",
+  "nodes": [
+    { "id": "root", "label": "testing/", "tone": "accent" },
+    {
+      "id": "conftest",
+      "label": "conftest.py",
+      "sub": "全局 fixture：固定随机种子、sys.path、\nTORCH_EXTENSIONS_DIR、--run-perf 选项",
+      "tone": "default"
+    },
+    { "id": "cpp", "label": "cpp/", "sub": "空目录（v0.1.15 下没有任何文件）", "tone": "muted" },
+    {
+      "id": "ascend",
+      "label": "ascend/",
+      "sub": "昇腾专属：analysis / auto_schedule\ncache / language / layout / runtime\ntarget / transform",
+      "tone": "default"
+    },
+    { "id": "python", "label": "python/", "sub": "主体：按主题分目录", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "root", "to": "conftest" },
+    { "from": "root", "to": "cpp" },
+    { "from": "root", "to": "ascend" },
+    { "from": "root", "to": "python" }
+  ],
+  "notes": [
+    "conftest.py 把仓库根塞进 sys.path，固定随机种子、配置 TORCH_EXTENSIONS_DIR，并注册 --run-perf 选项",
+    "与三条贡献路径最相关的测试目录都在 testing/python/ 下，本章 9.1 的表格里逐条列出"
+  ]
+}

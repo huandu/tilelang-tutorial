@@ -1,0 +1,60 @@
+{
+  "id": "03-verify-flow",
+  "title": "状态判定的四步流程",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "2.3",
+  "caption": "所有判定都是「在正确的目录里搜符号」：release 命中即 A 档，miss 就与上一版对照看是否新增，再退到 main 快照，最后只剩未合入 PR/RFC。",
+  "nodes": [
+    {
+      "id": "s1",
+      "label": "第 1 步 · 在锁定 release 里找符号",
+      "sub": "rg -n '<symbol>' _vendor/tilelang-v0.1.15/{tilelang,src}"
+    },
+    {
+      "id": "a",
+      "label": "A 档：v0.1.15 已具备",
+      "sub": "再确认它是不是本次新增（见第 2 步）",
+      "tone": "accent"
+    },
+    {
+      "id": "s2",
+      "label": "第 2 步 · 与上一个 release 对照",
+      "sub": "rg -n '<symbol>' _vendor/tilelang-v0.1.14/{tilelang,src}"
+    },
+    { "id": "old", "label": "旧能力", "sub": "别写成「本次新增」", "tone": "muted" },
+    { "id": "new", "label": "本次新增（仍属 A 档）", "tone": "accent" },
+    {
+      "id": "s3",
+      "label": "第 3 步 · 在 corpus 的 main 快照里找",
+      "sub": "rg -n '<symbol>' ../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/{tilelang,src}"
+    },
+    {
+      "id": "b",
+      "label": "B 档：仅 main",
+      "sub": "下个 release 会带上，但现在不能依赖",
+      "tone": "accent"
+    },
+    {
+      "id": "s4",
+      "label": "第 4 步 · 只可能是未合入（C 档）",
+      "sub": "PR / RFC 快照；注明抓取日期，判不了就写「无法确认」（D 档）",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "s1", "to": "a", "label": "命中" },
+    { "from": "s1", "to": "s2", "label": "未命中" },
+    { "from": "s2", "to": "old", "label": "两边都命中" },
+    { "from": "s2", "to": "new", "label": "只在 0.1.15" },
+    { "from": "s2", "to": "s3", "label": "两边都没有" },
+    { "from": "s3", "to": "b", "label": "命中" },
+    { "from": "s3", "to": "s4", "label": "未命中" }
+  ],
+  "notes": [
+    "每一步能证明的都很有限：第 1 步只能证明符号在锁定树里存在，证明不了它在真机跑通或性能好坏；第 3 步也证明不了下个 release 一定会包含它。",
+    "「找到一处提到」不算命中：一个名字可能出现在文档、注释、测试的 xfail 列表甚至一句「暂不支持」里，所以一条能力要求多个探针同时命中。",
+    "例：reducer-v2 要求同时找到 def reducer_update、verify_reducer_epoch.cc、canonicalize_legacy_reducer.cc，单点命中一律不算。"
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "chapter": "15-operators-attention",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "正文把朴素 attention 的瓶颈归结为什么？",
+      "options": [
+        "O(N²d) 的乘加",
+        "O(N²) 的中间结果在 HBM 上来回",
+        "KV cache 太大",
+        "softmax 的分母计算"
+      ],
+      "answer": 1,
+      "explain": "见 §1.3：计算是 O(N²d)、访存是 O(N²)，而 d 只有 64–256、N 可以到 10⁵；S 与 P 各写一次读一次，合计约 4N² 个元素。"
+    },
+    {
+      "id": "q2",
+      "stem": "重标度因子 c = exp(m_prev − m_new) 的取值范围是什么？",
+      "options": ["(1, ∞)", "任意实数", "(0, 1]", "恰好等于 1"],
+      "answer": 2,
+      "explain": "见 §5.1：m_new = max(m_prev, M) ≥ m_prev，所以差值恒 ≤ 0、c ∈ (0, 1]；新块更大就等比缩小旧累加器，没有更大就 c = 1。"
+    },
+    {
+      "id": "q3",
+      "stem": "按 online softmax 递推算出的结果，与「先算完整 softmax 再乘 V」是什么关系？",
+      "options": [
+        "只是近似，误差随 N 增大",
+        "只在 causal 时才等价",
+        "需要 fp64 才等价",
+        "完全等价：exp(−m) 在分子分母上各出现一次、约掉"
+      ],
+      "answer": 3,
+      "explain": "见 §2.4：正文用数学归纳法证明 O⁽ᵗ⁾ = exp(−m⁽ᵗ⁾)·Σexp(s·x_j)·v_j，比值里 exp(−m) 约掉，所以与完整 softmax 逐项相等。"
+    },
+    {
+      "id": "q4",
+      "stem": "attention 里为什么用 policy=T.GemmWarpPolicy.FullRow？",
+      "options": [
+        "因为它在所有硬件上都更快",
+        "因为它能减少 K/V 的读取",
+        "让每个 warp 负责整行，行内 reduce 主要待在 warp 内，跨 warp 的 shared 归约最少",
+        "因为它是 T.gemm 的默认值"
+      ],
+      "answer": 2,
+      "explain": "见 §4.2：reduce_max / reduce_sum 是沿 block_N 的行内归约，FullRow 让归约尽量落在 warp 内部；T.gemm 的默认策略是 Square，不是 FullRow。"
+    },
+    {
+      "id": "q5",
+      "stem": "sliding window / attention sink 里的 check_inf 解决的是什么问题？",
+      "options": [
+        "整行到最后都没有可见 key 时的 0/0",
+        "m_prev = m_new = −∞ 时 c = exp2(−∞−(−∞)) = NaN 污染 acc_o",
+        "越界 key 的读取顺序",
+        "寄存器溢出"
+      ],
+      "answer": 1,
+      "explain": "见 §5.1：check_inf 把 scores_max 里的 −∞ 改成 0，使 c = exp2(−∞−0) = 0；它修不了「整行都看不见」的 0/0，那需要另一处守卫。"
+    },
+    {
+      "id": "q6",
+      "stem": "decode 阶段瓶颈是并行度而不是流量，因此对应的变体是什么？",
+      "options": [
+        "GQA / MQA",
+        "paged KV",
+        "split-KV（FlashDecoding），split 与 combine 两个 kernel",
+        "sliding window"
+      ],
+      "answer": 2,
+      "explain": "见 §4.8 与 §5.4：Sq = 1 时流量比是 1×，split-KV 买到的是并行度，代价是多一个 combine kernel 与一次归约顺序问题。"
+    },
+    {
+      "id": "q7",
+      "stem": "昇腾上 QKᵀ 的结果为什么要绕一趟全局内存（workspace）？",
+      "options": [
+        "因为合法的搬运对里 L0C 只有一条出边 L0C → GM，没有 L0C → UB",
+        "因为 UB 太小装不下分数",
+        "因为 Cube 不支持 fp16",
+        "因为 softmax 必须在 L0C 上做"
+      ],
+      "answer": 0,
+      "explain": "见 §4.5：编程指南的搬运关系表里没有 L0C → UB，于是分数必须走 L0C → GM → UB；workspace 是数据通路的一环，不是调试缓冲。"
+    },
+    {
+      "id": "q8",
+      "stem": "causal attention 把循环上界写成 ceil(((bx+1)·block_M + past_len) / block_N)，为什么？",
+      "options": [
+        "因为不超过本块最大 query 下标的 key 不可能被看到，直接不迭代",
+        "因为不这样写会编译报错",
+        "因为这样可以少占 shared memory",
+        "因为这样能减少 K/V 的重读次数"
+      ],
+      "answer": 0,
+      "explain": "见 §3.4 与 §5.2：causal 是 q ≥ k，(bx+1)·block_M + past_len 是本块 query 的最大下标，比它大的 key 根本不用扫，这一行把算术量砍掉一半。"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "id": "inline-01",
+  "title": "存储层级链条：NVIDIA GPU vs 昇腾 NPU",
+  "kind": "flow",
+  "section": "2.1",
+  "inlineQuote": "flowchart TB\n    subgraph NV[\"NVIDIA GPU（以 Hopper 为例）\"]\n        direction TB",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "reg", "label": "寄存器 / Register File", "sub": "最快，容量最小", "tone": "store" },
+    { "id": "smem", "label": "Shared Memory / 片上 SRAM", "sub": "快，容量有限", "tone": "store" },
+    { "id": "l2", "label": "L2 Cache", "sub": "中等", "tone": "store" },
+    { "id": "hbm", "label": "HBM / 显存", "sub": "最慢，容量最大", "tone": "muted" },
+    { "id": "l0", "label": "L0A / L0B / L0C", "sub": "Cube 专用存储", "tone": "store" },
+    { "id": "l1", "label": "L1（CBuf）", "tone": "store" },
+    { "id": "ub", "label": "UB / Unified Buffer", "sub": "Vector 侧片上存储", "tone": "store" },
+    { "id": "gm", "label": "GM / 全局内存", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "reg", "to": "smem" },
+    { "from": "smem", "to": "l2" },
+    { "from": "l2", "to": "hbm" },
+    { "from": "l0", "to": "l1" },
+    { "from": "l1", "to": "ub" },
+    { "from": "ub", "to": "gm" }
+  ],
+  "groups": [
+    { "label": "NVIDIA GPU（以 Hopper 为例）", "nodes": ["reg", "smem", "l2", "hbm"] },
+    { "label": "华为昇腾 950（对照）", "nodes": ["l0", "l1", "ub", "gm"] }
+  ],
+  "caption": "两台机器各自的存储链条：越靠近计算单元，容量越小、延迟越低、带宽越高。",
+  "notes": [
+    "两台机器的层级不是一一对应的：L0A / L0B / L0C 是 Cube 专用存储，NVIDIA 侧没有同名对应物。",
+    "NVIDIA 的 shared memory 在昇腾侧要拆成 L1 与 UB 两种角色；完整展开见第 6 章。"
+  ]
+}

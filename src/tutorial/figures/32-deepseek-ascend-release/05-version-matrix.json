@@ -1,0 +1,48 @@
+{
+  "id": "05-version-matrix",
+  "title": "昇腾侧组件的硬件与版本要求",
+  "kind": "grid",
+  "inlineQuote": "[fig-05] 昇腾侧组件的硬件与版本要求",
+  "caption": "各仓库 README 的 Requirements / News / Ongoing 摘要；判断可用性时以各自 README 为准。",
+  "cellHeight": 62,
+  "headers": ["组件", "昇腾硬件", "工具链 / 版本", "状态（本快照）"],
+  "rows": [
+    {
+      "cells": ["TileLang 昇腾后端", "Ascend 950", "CANN + bisheng", "随 release tag 发布"]
+    },
+    {
+      "cells": ["TileKernels", "Ascend 950 NPU", "CANN 9.2.0+", "已发布（双后端）"],
+      "tone": "accent"
+    },
+    {
+      "cells": ["DeepGEMM-Ascend", "Ascend 950 系列", "CANN 9.20 + torch_npu", "已发布"]
+    },
+    {
+      "cells": [
+        "FlashMLA（昇腾）",
+        "Ascend 950 NPU",
+        "CANN 9.2.0+",
+        "稀疏 prefill / decode；融合算子仅 CUDA"
+      ]
+    },
+    {
+      "cells": ["DeepSelect（昇腾）", "Ascend NPU", "见仓库 README", "仅 bf16 / int32 输出"]
+    },
+    {
+      "cells": [
+        "DeepEP-Ascend",
+        "Ascend 950 (A5) + UBMEM",
+        "CANN + HCCL/HCOMM",
+        "EP 已发布；PP / Engram / Bucket 实验性"
+      ]
+    },
+    {
+      "cells": ["DeepJIT", "跟随使用方", "bisheng + ld.lld + ACL", "CUDA / 昇腾双后端"]
+    }
+  ],
+  "notes": [
+    "硬件是 950 级别：DeepEP-Ascend 明确说其它昇腾代际与 CANN 版本的可行性尚未由它的测量确认。",
+    "CANN 版本以各 README 为准：9.2.0（TileKernels、FlashMLA）与 9.20（DeepGEMM-Ascend）都出现在原文里。",
+    "状态分三档：已发布（有性能表）、实验性（标 experimental）、未实现（只有 API 预留）；DeepEP-Ascend 的 Ongoing 一节是最完整的例子。"
+  ]
+}

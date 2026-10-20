@@ -1,0 +1,34 @@
+{
+  "id": "01-io-traffic-b",
+  "title": "分块融合的一趟访存",
+  "kind": "flow",
+  "direction": "LR",
+  "section": "1.3",
+  "nodeMaxEm": 20,
+  "caption": "S、P 只在片上：代价是 K/V 每个 Q 块重读一遍，用带宽换片上空间。",
+  "nodes": [
+    { "id": "q", "label": "Q (N·d)", "tone": "default" },
+    { "id": "k", "label": "K (N·d)", "tone": "default" },
+    { "id": "g1", "label": "gemm：S_blk = QKᵀ", "tone": "compute" },
+    { "id": "sram", "label": "片上：fragment", "sub": "S/P 一次都不出片上", "tone": "store" },
+    { "id": "sm", "label": "online softmax", "sub": "m / ℓ / O 递推", "tone": "compute" },
+    { "id": "v", "label": "V (N·d)", "tone": "default" },
+    { "id": "g2", "label": "gemm：O += P·V", "tone": "compute" },
+    { "id": "o", "label": "O (N·d)", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "q", "to": "g1" },
+    { "from": "k", "to": "g1" },
+    { "from": "g1", "to": "sram" },
+    { "from": "sram", "to": "sm" },
+    { "from": "sm", "to": "g2" },
+    { "from": "v", "to": "g2" },
+    { "from": "sram", "to": "g2" },
+    { "from": "g2", "to": "o" }
+  ],
+  "notes": [
+    "每个 Q 块（共 N/block_m = 64 个）把 K/V 各重读一遍，换来 N² 项为 0",
+    "「三趟变一趟」指的是 S/P 的落地次数，不是 K/V 的读取次数——优化后 K/V 反而读得更多",
+    "总流量 = Q(1) + K(64) + V(64) + O(1) 个元素；这个「省」只在 prefill（Sq = Skv = N）形状成立"
+  ]
+}

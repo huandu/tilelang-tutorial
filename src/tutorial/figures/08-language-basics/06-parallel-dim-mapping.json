@@ -1,0 +1,46 @@
+{
+  "id": "06-parallel-dim-mapping",
+  "title": "T.Parallel 的布局推导与校验",
+  "caption": "T.Parallel 的 extents 是逻辑迭代空间；谁当 lane、谁当 thread 由布局推导决定。",
+  "kind": "flow",
+  "section": "6",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "nodes": [
+    { "id": "a", "label": "T.Parallel(e0, …, e_{k-1})", "tone": "accent" },
+    { "id": "b", "label": "有没有 loop_layout= ？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "c",
+      "label": "用你给的 Fragment",
+      "sub": "InputDim 必须等于嵌套深度 k，且只能挂在最外层"
+    },
+    { "id": "d", "label": "布局推导自己推一个", "sub": "并把它挂到最外层循环上" },
+    { "id": "e", "label": "校验通过？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "f",
+      "label": "编译错误",
+      "sub": "最外层缺布局 / 内层非法挂布局 / InputDim 不匹配",
+      "tone": "warn"
+    },
+    {
+      "id": "g",
+      "label": "PartitionLoop + VectorizeLoop",
+      "sub": "落地成真实的线程与向量访问",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "a", "to": "b" },
+    { "from": "b", "to": "c", "label": "给了" },
+    { "from": "b", "to": "d", "label": "没给" },
+    { "from": "c", "to": "e" },
+    { "from": "d", "to": "e" },
+    { "from": "e", "to": "f", "label": "否" },
+    { "from": "e", "to": "g", "label": "是" }
+  ],
+  "notes": [
+    "默认映射：行优先展平 → 按 vector_size 切 lane → % num_thread 轮转到线程 → 剩下变串行。",
+    "同一份工作，nest 形状不同时每线程次数相同，但归属不同，访存会不会合并也不同。",
+    "T.copy 在 lowering 时先展开成 T.Parallel，再由流水 pass 决定属哪一级、开几份 buffer。"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "fig-03-packed-abi",
+  "title": "MakePackedAPI 在 host 入口插入的检查顺序",
+  "caption": "kernel(a, b) 落到 host 侧就是一个签名固定的 packed function；「ABI」的实体就是这一串按序生效的运行时检查。",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "4.8",
+  "steps": [
+    { "label": "num_args 断言", "sub": "\"num_args should be N\" · make_packed_api.cc:473-477" },
+    { "label": "args 指针非空断言", "sub": "仅当 num_args > 0 · :480-482" },
+    {
+      "label": "逐参数 type_index 检查",
+      "sub": "handle ← None/OpaquePtr/DLTensor；bool/int/float 互相放宽 · :615-719"
+    },
+    {
+      "label": "callee-allocated anchor 检查（仅该 ABI）",
+      "sub": "anchor 必须是 Tensor、非空、device 与 target 一致 · :721-758"
+    },
+    { "label": "标量 / 句柄参数绑定", "sub": "binder.Bind · :773-775" },
+    {
+      "label": "binder.InitNest：逐 DLTensor 绑定与校验",
+      "sub": "非空 → ndim → (code,bits,lanes) → 逐维 shape 约束 → stride"
+    },
+    {
+      "label": "seq_check：设置 device 上下文",
+      "sub": "device_id / device_type · :1021-1034",
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "入口签名被改写为 (void* self_handle, TVMFFIAny* args, int32_t num_args, TVMFFIAny* result)，函数签名是 kCPackedFunc。",
+    "走 callee-allocated 输出 ABI 时，输出张量从参数里去掉、末尾补 1 个 allocator anchor。",
+    "dtype 检查有几条放宽规则：float8 e4m3 ↔ e4m3fn/fnuz、tfloat32 ↔ float32、bool ↔ int8/uint8、亚字节 dtype 按总位数相等放行。"
+  ]
+}

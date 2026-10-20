@@ -1,0 +1,52 @@
+{
+  "id": "05-reducer-rfc-phases",
+  "title": "RFC #2897 的四个阶段与落地情况",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "5.1",
+  "caption": "把 RFC #2897 自己列出的阶段与 v0.1.14 / v0.1.15 的实际代码对照，会得到一张与直觉相反的图：这个 RFC 的主体语义已经随 release 发布了。",
+  "nodes": [
+    {
+      "id": "p0",
+      "label": "Phase 0 停止静默错码",
+      "sub": "#2408 / #2623 两个 wrong-code",
+      "tone": "warn"
+    },
+    {
+      "id": "p1",
+      "label": "Phase 1 first-class demo",
+      "sub": "T.reducer_init / T.reducer_update + 状态机验证",
+      "tone": "accent"
+    },
+    {
+      "id": "p2",
+      "label": "Phase 2 canonical ownership-safe lowering",
+      "sub": "representative predicate；承载它的 pass 存在且被调用，未逐行核对内部谓词",
+      "tone": "warn"
+    },
+    {
+      "id": "p3",
+      "label": "Phase 3 独立 finalize 目标",
+      "sub": "finalize_reducer(acc, dst) 已存在；exact-signature 子群快路径未核对",
+      "tone": "warn"
+    },
+    {
+      "id": "p4",
+      "label": "Phase 4 废弃 legacy",
+      "sub": "replication= / T.fill(reducer) 仍在，只发了 DeprecationWarning；稀疏 partial layout 未实现",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "p0", "to": "p1" },
+    { "from": "p1", "to": "p2" },
+    { "from": "p2", "to": "p3" },
+    { "from": "p3", "to": "p4" }
+  ],
+  "notes": [
+    "颜色只分「已发布」与「部分 / 未落地」两态：图中只有 Phase 1 是 shipped，其余四条都是 partial。",
+    "08-frontier-unmerged/ 这个 corpus 目录名描述的是资料的收集动机，不是每一条的落地状态；判断落地只能看代码。",
+    "对读者：不要因为 RFC 还开着就不敢用 reducer，也不要照抄 alloc_reducer(..., replication=\"all\") 这类 legacy 写法——它正是 RFC 里那个错码例子的写法。"
+  ]
+}

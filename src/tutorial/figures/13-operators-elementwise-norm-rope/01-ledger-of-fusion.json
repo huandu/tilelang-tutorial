@@ -1,0 +1,41 @@
+{
+  "id": "01-ledger-of-fusion",
+  "title": "融合的访存账本：y = x·a + b（fp32，长度 N）",
+  "kind": "flow",
+  "direction": "TB",
+  "section": "1.2",
+  "nodeMaxEm": 22,
+  "caption": "同一件事两种写法：逐算子把中间张量 t 落到显存，融合版把它留在片上。",
+  "nodes": [
+    { "id": "e1", "label": "kernel 1：t = x·a", "sub": "读 x 4N + 写 t 4N", "tone": "default" },
+    { "id": "e2", "label": "显存中的中间张量 t", "sub": "写 4N + 读 4N", "tone": "store" },
+    {
+      "id": "e3",
+      "label": "kernel 2：y = t + b",
+      "sub": "读 t 4N + 读 b 4N + 写 y 4N",
+      "tone": "default"
+    },
+    { "id": "f1", "label": "读 x 4N + 读 b 4N", "tone": "default" },
+    { "id": "f2", "label": "同一块片上存储里算完", "tone": "compute" },
+    { "id": "f3", "label": "写 y 4N", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "e1", "to": "e2", "label": "写 t" },
+    { "from": "e2", "to": "e3", "label": "读 t" },
+    { "from": "f1", "to": "f2" },
+    { "from": "f2", "to": "f3" }
+  ],
+  "groups": [
+    {
+      "label": "逐算子写法：2 个 kernel，20N 字节",
+      "nodes": ["e1", "e2", "e3"],
+      "tone": "default"
+    },
+    { "label": "融合写法：1 个 kernel，12N 字节", "nodes": ["f1", "f2", "f3"], "tone": "accent" }
+  ],
+  "notes": [
+    "账本：逐算子 bytes = 20N、AI = 0.100；融合 bytes = 12N、AI = 0.167；比值 1.67×",
+    "归一化类差距更大：RMSNorm 3.50×、LayerNorm 5.00×、RoPE 3.67×、RMSNorm+RoPE+FP8 3.61×",
+    "全部是下界：真实 kernel 还要加 cache 未命中、启动、尾部效应与同步开销"
+  ]
+}

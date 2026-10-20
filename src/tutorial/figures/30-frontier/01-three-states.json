@@ -1,0 +1,65 @@
+{
+  "id": "01-three-states",
+  "title": "三种状态与一条能力的判定流向",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "2.1",
+  "caption": "从 v0.1.15 出发逐档下探：锁定 release 里搜到是 A 档，main 快照里搜到是 B 档，只有未合入 PR/RFC 里才有是 C 档，资料不足或快照互相矛盾时必须写 D 档「无法确认」。",
+  "nodes": [
+    { "id": "q", "label": "问：这个能力能用吗？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "s1",
+      "label": "在 v0.1.15 里搜符号",
+      "sub": "rg -n '<symbol>' _vendor/tilelang-v0.1.15/tilelang 与 src"
+    },
+    {
+      "id": "a",
+      "label": "A 档：v0.1.15 已具备",
+      "sub": "可以写进教材、可以依赖；还要对照上一版看是不是本次新增",
+      "tone": "accent"
+    },
+    {
+      "id": "s2",
+      "label": "在 corpus 的 main 快照里搜符号",
+      "sub": "commit 994b44e；命中说明已进主干但晚于 tag"
+    },
+    {
+      "id": "b",
+      "label": "B 档：仅 main",
+      "sub": "下一个 release 会带上，现在不能依赖",
+      "tone": "accent"
+    },
+    {
+      "id": "s3",
+      "label": "在 PR / RFC 快照里搜符号",
+      "sub": "只可能是未合入方向，必须注明快照抓取日期"
+    },
+    {
+      "id": "c",
+      "label": "C 档：仅未合入",
+      "sub": "方向，不是能力；不能当用法写进正文",
+      "tone": "accent"
+    },
+    {
+      "id": "d",
+      "label": "D 档：无法确认",
+      "sub": "资料没覆盖，或 PR 页面状态与代码快照互相矛盾——写「无法确认」是正确结论",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "q", "to": "s1" },
+    { "from": "s1", "to": "a", "label": "命中" },
+    { "from": "s1", "to": "s2", "label": "未命中" },
+    { "from": "s2", "to": "b", "label": "命中" },
+    { "from": "s2", "to": "s3", "label": "未命中" },
+    { "from": "s3", "to": "c", "label": "命中" },
+    { "from": "s3", "to": "d", "label": "未命中" }
+  ],
+  "notes": [
+    "「文档里有」不等于「release 里有」：章节里出现的能力名，必须在 _vendor/tilelang-v0.1.15/ 里能搜到符号才算 A 档。",
+    "「issue 很老」不等于「早已落地」：issue #2115 的 PR 清单基本都合入了，而更晚的 #2196 完全没动；编号与日期都不构成证据。",
+    "A 档不代表「本次新增」：reducer v2（RFC #2897）在 v0.1.14 里就已经存在，所以判定流程里必须有第 2 步的对照。"
+  ]
+}

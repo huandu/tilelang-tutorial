@@ -1,0 +1,48 @@
+{
+  "id": "05-nv-vs-ascend",
+  "title": "NV 与昇腾后端的结构对照",
+  "caption": "只列结构性事实（谁生成什么、谁编译、同步插在哪个 pass），不比较性能；差异的根因是执行单元、线程模型与同步语义整条链都不同。",
+  "kind": "compare",
+  "section": "5",
+  "labelWidth": 120,
+  "columns": ["NV / CUDA（v0.1.15）", "昇腾 M1（v0.1.15）"],
+  "rows": [
+    {
+      "label": "执行单元",
+      "values": ["SM（SIMT，warp=32 lane）", "AIC（Cube）+ AIV（Vector），物理 1:2 group"]
+    },
+    {
+      "label": "线程模型",
+      "values": ["thread / block / warp 贯穿始终", "核内无线程；只有 T.SimtVF 内部有 threadIdx"]
+    },
+    { "label": "片上存储", "values": ["shared memory / registers", "L1 / L0A / L0B / L0C / UB"] },
+    {
+      "label": "矩阵指令",
+      "values": ["mma → wgmma → tcgen05（按 arch 选择）", "单一 asc_mmad（MAD），M/N/K 是循环维度"]
+    },
+    { "label": "搬运", "values": ["cp.async / TMA", "asc_copy_gm2l1_* / _ub2gm / _l12l0*"] },
+    {
+      "label": "收尾",
+      "values": ["epilogue 在 register 里做", "Fixpipe：asc_copy_l0c2ub / _l0c2gm"]
+    },
+    {
+      "label": "流水 / 多缓冲",
+      "values": [
+        "PipelinePlanning + InjectSoftwarePipeline",
+        "AutoSchedule(Z3) + MaterializeMultiBuffer"
+      ]
+    },
+    {
+      "label": "同步",
+      "values": ["ThreadSync（warp barrier / mbarrier）", "InsertSync → hard_event → 8 槽 flag"]
+    },
+    { "label": "生成物", "values": ["CUDA C++", "CCE/Ascend C（asc_* 内置函数风格）"] },
+    { "label": "编译器", "values": ["nvcc / NVRTC", "bisheng（+ ld.lld 链接）"] },
+    { "label": "产物", "values": ["cubin / fatbin", "linked CCE ELF（aibin）"] }
+  ],
+  "notes": [
+    "一句话：NV 是「一个线程块一组线程 + shared/register」，昇腾被拆成「Cube 核 + 两个 Vector 子核 + 五块片上 buffer + 四条搬运/收尾流水线」。",
+    "同步的语义对象不同：NV 同步线程（要看到同一份 shared），昇腾同步流水线（MTE2 → V 这一对事件完成了吗）。",
+    "把这两件事当成同一种东西，是理解昇腾自动同步时最常见的错误。"
+  ]
+}

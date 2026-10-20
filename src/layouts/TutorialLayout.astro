@@ -1,0 +1,32 @@
+---
+import 'katex/dist/katex.min.css';
+import '@styles/tutorial.css';
+import '@styles/tutorial-reader.css';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import ReaderControls from '@components/tutorial/ReaderControls.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+}
+
+const { title, description, path } = Astro.props;
+---
+
+<BaseLayout description={description} path={path} title={title}>
+  {/*
+    Reading mode is a tutorial-wide feature: printing the controls here means
+    every page — current and future — gets it without any per-page wiring.
+    `reader-client.ts` (inside the component) drives the `data-reader`
+    attributes that `tutorial-reader.css` styles. The controls come before the
+    page content so a keyboard user reaches them right after 「跳到主要内容」;
+    they are `position: fixed`, so the visual order is unchanged.
+  */}
+  <ReaderControls />
+  <slot />
+</BaseLayout>
+
+<script>
+  import '@components/tutorial/tutorial-client.ts';
+</script>

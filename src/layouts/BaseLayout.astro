@@ -1,0 +1,36 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/jetbrains-mono';
+import '@styles/global.css';
+
+import BaseHead from '@components/BaseHead.astro';
+import Footer from '@components/Footer.astro';
+import Header from '@components/Header.astro';
+import { SITE } from '@lib/site.ts';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+}
+
+const { title, description, path } = Astro.props;
+---
+
+<!doctype html>
+<html class="h-full" lang={SITE.locale}>
+  <BaseHead description={description} path={path} title={title} />
+  <body class="flex min-h-full flex-col bg-base-200 text-base-content">
+    <a
+      class="btn btn-primary btn-sm sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50"
+      href="#main"
+    >
+      跳到主要内容
+    </a>
+    <Header />
+    <main class="flex-1" id="main">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

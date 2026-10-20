@@ -1,0 +1,52 @@
+{
+  "id": "inline-05",
+  "title": "选树规则：什么时候用哪棵树",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 17,
+  "inlineQuote": "你的目标设备是什么？\n├─ Ascend 950 / 想要自动调度 / 想用 dual_copy + SimtVF 混核\n│     → M 树（tilelang.ascend.language，target=\"ascend\"）",
+  "caption": "从目标设备出发的四条岔路：950 与自动调度走 M 树，A2/A3 或对接 Ascend C 生态走 A 树，没有 NPU 时用 A 树加 PTO 仿真。",
+  "nodes": [
+    {
+      "id": "ask",
+      "label": "你的目标设备是什么？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "m",
+      "label": "M 树",
+      "sub": "Ascend 950 / 想要自动调度 / 想用 dual_copy + SimtVF 混核",
+      "code": "tilelang.ascend.language，target=\"ascend\"",
+      "tone": "accent"
+    },
+    {
+      "id": "a",
+      "label": "A 树",
+      "sub": "A2 / A3，或要跟现有 tilelang-ascend 算子和 Ascend C 生态对接",
+      "code": "tilelang.language，target=\"ascendc\" 或 \"pto\"",
+      "tone": "accent"
+    },
+    {
+      "id": "pto",
+      "label": "A 树 + PTO 后端",
+      "sub": "只想在无 NPU 的机器上做功能验证（PTO 后端）",
+      "code": "target=\"pto\" + camodel 仿真"
+    },
+    {
+      "id": "read",
+      "label": "先确认是哪棵树",
+      "sub": "要读某篇昇腾调优文章的代码：先查清那篇文章用的是哪棵树，再照抄",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "ask", "to": "m" },
+    { "from": "ask", "to": "a" },
+    { "from": "ask", "to": "pto" },
+    { "from": "ask", "to": "read" }
+  ],
+  "notes": [
+    "两条硬性纪律：一份 kernel 内部不要混用两棵树的 API；版本引用与代码注释都要落到具体某棵树。"
+  ]
+}

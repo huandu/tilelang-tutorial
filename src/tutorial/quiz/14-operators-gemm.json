@@ -1,0 +1,86 @@
+{
+  "chapter": "14-operators-gemm",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "正方形（M=N=K）fp16 GEMM 的算术强度可以化简成什么？",
+      "options": ["AI = 2M / (3b)", "AI = 3b / (2M)", "AI = 2MNK", "AI = b·(MK+KN+MN)"],
+      "answer": 0,
+      "explain": "见 §1.1：AI = 2MNK / [b(MK+KN+MN)]，正方形时退化成 2M/(3b)，随边长线性增长，这正是「换规模判类会翻转」的来源。"
+    },
+    {
+      "id": "q2",
+      "stem": "五级阶梯里，正文说「大多数应用算子的终点」是哪一级？",
+      "options": [
+        "⑤ intrinsic：手写 ldmatrix / mma",
+        "④ swizzle / layout 注解",
+        "③ T.Pipelined 多级流水",
+        "② shared + T.gemm"
+      ],
+      "answer": 2,
+      "explain": "见 §2.6：③ 是「从会写到写得快」的分水岭，也是多数应用算子的终点；④–⑤ 留给生产算子与需要榨最后几个百分点的人。"
+    },
+    {
+      "id": "q3",
+      "stem": "当输出块数小于设备可并行的核数时，应该考虑哪个变体？",
+      "options": ["batched GEMM", "stream-K", "split-K", "grouped GEMM"],
+      "answer": 2,
+      "explain": "见 §4.1 与 §4.5：输出块数 < 核数时 grid 太小、一部分核闲着，用 split-K 把 K 切开换并行度（代价是写出量变成 split_k 倍）；stream-K 解决的是「块数够多、最后一波不满」。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 T.gemm 的累加语义，下面哪一条正确？",
+      "options": [
+        "它默认覆盖写 C",
+        "它默认会自动清零 C",
+        "它只支持 fp16 输入",
+        "它默认是累加（+=），第一次迭代前必须 T.clear / clear_accum 清零"
+      ],
+      "answer": 3,
+      "explain": "见 §8.2：默认是累加而不是赋值；忘了清零会得到「多了前一次的值」的脏数据，昇腾上的 init=(k == 0) 也是同一个道理。"
+    },
+    {
+      "id": "q5",
+      "stem": "T.use_swizzle 改变的是什么？",
+      "options": [
+        "buffer 的物理布局",
+        "block 的遍历顺序，用来提高 L2 命中率",
+        "数据的 dtype",
+        "warp 的划分方式"
+      ],
+      "answer": 1,
+      "explain": "见 §3.2：T.use_swizzle 改「block 按什么顺序跑」，T.annotate_layout 改「数据怎么摆」；两者都不改变 FLOPs。"
+    },
+    {
+      "id": "q6",
+      "stem": "block-scaled（MX 系列）GEMM 在结构上比 fp8 GEMM 多出什么？",
+      "options": [
+        "一对输入 scale factor SFA / SFB，按 K 方向的块施加",
+        "把两个 int4 打包进一个字节",
+        "原子加合并",
+        "一个更大的 block_K 常量"
+      ],
+      "answer": 0,
+      "explain": "见 §5.4：block-scaled 的语义是 C += (A·SFA) @ (B·SFB)，scale 按 K 块施加；打包是 int4 的特征，原子加是 split-K 的特征。"
+    },
+    {
+      "id": "q7",
+      "stem": "要与 cuBLAS / CATLASS「对齐」，正文要求先说死的五件事是哪一组？",
+      "options": [
+        "只看 TFLOP/s 与 shape",
+        "GPU 型号、驱动、CUDA 版本、编译器、操作系统",
+        "基线、同一个 shape、同一个 dtype 与累加精度、同一个 epilogue、同一套测量协议",
+        "block_M/N/K、num_stages、threads、policy、split_k"
+      ],
+      "answer": 2,
+      "explain": "见 §6.3 与 §7.1：只有这五条全部一致，「0.98×」「1.2×」才是可比较的两个数；block 参数与硬件环境是随附信息，不是对齐的前提。"
+    },
+    {
+      "id": "q8",
+      "stem": "编译报 shared memory 超限时，正文建议先调整什么？",
+      "options": ["先降 block_K", "先加 threads", "先换 dtype", "先降 num_stages"],
+      "answer": 3,
+      "explain": "见 §8.3：三张约束表能提前算出占用；超限时先降 num_stages，而不是先动 block_K，否则会连带改变 layout 推断与流水行为。"
+    }
+  ]
+}

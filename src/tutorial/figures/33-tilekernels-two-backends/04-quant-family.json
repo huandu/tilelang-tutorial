@@ -1,0 +1,85 @@
+{
+  "id": "04-quant-family",
+  "title": "量化算子族：三种粒度、共用算术、后端差异",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "5.1",
+  "caption": "三个 cast 的差别在 sf_block 的形状（缩放作用在哪个维度），算术与配置完全共享；三条后端差异会让 sf 张量的形状或取值不同。",
+  "nodes": [
+    { "id": "x", "label": "输入 x", "sub": "[num_tokens, hidden]，bf16 / fp32", "tone": "default" },
+    { "id": "g", "label": "选哪种粒度？", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "pt",
+      "label": "per_token_cast",
+      "sub": "sf_block = (1, C)，C ∈ {16,32,64,128}",
+      "tone": "default"
+    },
+    {
+      "id": "pb",
+      "label": "per_block_cast",
+      "sub": "sf_block = (Rt, C)；昇腾只支持 (32,32)",
+      "tone": "default"
+    },
+    {
+      "id": "pc",
+      "label": "per_channel_cast",
+      "sub": "sf_block = (T, 1)；昇腾只支持 T = 32",
+      "tone": "default"
+    },
+    {
+      "id": "sf",
+      "label": "get_sf_and_inv（共享算术）",
+      "sub": "clamp → amax/max → 幂次化 → 打包",
+      "tone": "accent"
+    },
+    { "id": "q1", "label": "fp8（e4m3）", "tone": "store" },
+    { "id": "q2", "label": "fp4（e2m1）", "sub": "int8 两两打包", "tone": "store" },
+    {
+      "id": "cb",
+      "label": "cast_back / per_token_cast_back",
+      "sub": "反量化 → bf16 / fp32",
+      "tone": "default"
+    },
+    {
+      "id": "sw",
+      "label": "swiglu_forward_and_per_token_cast",
+      "sub": "SwiGLU + 量化融合",
+      "tone": "accent"
+    },
+    {
+      "id": "cfg",
+      "label": "BaseCastConfig（frozen dataclass）",
+      "sub": "sf_block / use_packed_ue8m0 / use_e4m3_sf",
+      "tone": "muted"
+    },
+    {
+      "id": "diff",
+      "label": "后端差异",
+      "sub": "UE8M0 打包：CUDA 4 / 昇腾 2；use_e4m3_sf 只支持 CUDA；列主序 sf 对齐要求不同",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "x", "to": "g" },
+    { "from": "g", "to": "pt" },
+    { "from": "g", "to": "pb" },
+    { "from": "g", "to": "pc" },
+    { "from": "pt", "to": "sf" },
+    { "from": "pb", "to": "sf" },
+    { "from": "pc", "to": "sf" },
+    { "from": "sf", "to": "q1" },
+    { "from": "sf", "to": "q2" },
+    { "from": "q1", "to": "cb" },
+    { "from": "q2", "to": "cb" },
+    { "from": "pt", "to": "sw" },
+    { "from": "sw", "to": "q1" },
+    { "from": "cfg", "to": "sf", "dashed": true },
+    { "from": "sf", "to": "diff", "dashed": true }
+  ],
+  "notes": [
+    "粒度是 sf_block 的形状，不是「块大小」：(1,C) 是 per-token、(Rt,C) 是 per-block、(T,1) 是 per-channel。",
+    "get_sf_and_inv 是两个后端唯一的算术权威，所以舍入与 clamp 的口径不可能不一致。",
+    "融合路径省掉的是「SwiGLU 结果写回 GM、再读回来量化」这一趟往返；代价是多套 UB 缓冲。"
+  ]
+}

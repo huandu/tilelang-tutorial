@@ -1,0 +1,43 @@
+{
+  "id": "05-dsl-lineage",
+  "title": "tile DSL 谱系",
+  "kind": "flow",
+  "section": "5.1",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "halide", "label": "Halide (2012)", "sub": "算法与调度分离" },
+    {
+      "id": "tvm",
+      "label": "TVM / TensorIR (2018-2023)",
+      "sub": "把调度变成可组合的 IR 变换"
+    },
+    {
+      "id": "triton",
+      "label": "Triton (2019-)",
+      "sub": "tile 成为语言第一等公民",
+      "tone": "accent"
+    },
+    {
+      "id": "tilelang",
+      "label": "TileLang (2025-)",
+      "sub": "tile + 显式数据流；调度空间解耦",
+      "tone": "accent"
+    },
+    { "id": "cutile", "label": "cuTile", "sub": "NVIDIA 的 tile DSL", "tone": "muted" },
+    { "id": "pto", "label": "PTO-DSL", "sub": "昇腾原生 tile DSL", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "halide", "to": "tvm" },
+    { "from": "tvm", "to": "triton" },
+    { "from": "triton", "to": "tilelang" },
+    { "from": "tilelang", "to": "cutile" },
+    { "from": "tilelang", "to": "pto" }
+  ],
+  "caption": "tile 这个概念被一步步推出来的谱系：每一代都留下了一个待解决的问题。",
+  "notes": [
+    "Halide：调度仍是人写的，且面向图像 / 数组处理；TVM：需要使用者理解 IR 与调度原语。",
+    "Triton：tile 与调度绑定，硬件资源信息无法显式表达；TileLang：需要更多显式决策，抽象仍在快速演化。",
+    "cuTile 与 PTO-DSL：两条线各自演进，生态尚未统一；cuTile 在 corpus 中无一手资料（未核验）。"
+  ]
+}

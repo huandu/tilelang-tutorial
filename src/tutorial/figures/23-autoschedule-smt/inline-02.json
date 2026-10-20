@@ -1,0 +1,44 @@
+{
+  "id": "inline-02",
+  "title": "AutoSchedule 写回之后的 pass 链",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "inlineQuote": "II / stage / start(K, r)\n        │  AutoSchedule 写回\n        ▼",
+  "caption": "AutoSchedule 把求解出的 II、stage 与相位写回后，整条链依次落到 buffer 份数、同步插入与多缓冲物化，最后 lower 成 AIV/AIC 各自的 body。",
+  "nodes": [
+    {
+      "id": "sched",
+      "label": "II / stage / start(K, r)",
+      "sub": "AutoSchedule 写回",
+      "tone": "accent"
+    },
+    {
+      "id": "buf",
+      "label": "buffer 份数 → PrepareMultiBuffer",
+      "sub": "counter init/advance",
+      "tone": "compute"
+    },
+    {
+      "id": "sync",
+      "label": "依赖 + 流水资源 → InsertSync",
+      "sub": "set_flag / wait_flag(hard_event, event_id)",
+      "tone": "compute"
+    },
+    {
+      "id": "lower",
+      "label": "MaterializeMultiBuffer → buf[version, ...]",
+      "sub": "LowerScheduledTIR → AIV / AIC body",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "sched", "to": "buf" },
+    { "from": "buf", "to": "sync" },
+    { "from": "sync", "to": "lower" }
+  ],
+  "notes": [
+    "链上的每一步都是昇腾 transform 里的一个 pass，顺序与注册点一致",
+    "MaterializeMultiBuffer 把 buf[...] 改写成 buf[version, ...]，连存储 stride 一起算，之后才是 LowerScheduledTIR"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "03-jit-cache-lifecycle",
+  "title": "@tilelang.jit 一次调用的生命周期与缓存",
+  "caption": "先算 cache key，再查内存级与磁盘级缓存；只有未命中才走完整编译，并把结果写回磁盘。",
+  "kind": "flow",
+  "section": "6",
+  "direction": "TB",
+  "nodeMaxEm": 26,
+  "nodes": [
+    { "id": "u", "label": "调用 build_add(N, block_N, threads)" },
+    { "id": "jit", "label": "JITImpl.__call__" },
+    {
+      "id": "key",
+      "label": "算 cache key",
+      "sub": "sha256(func.script + out_idx + args_repr + target + backend + pass_configs + version)"
+    },
+    { "id": "mem", "label": "memory cache 命中？", "shape": "diamond", "tone": "muted" },
+    { "id": "ret", "label": "直接返回旧 JITKernel", "tone": "accent" },
+    {
+      "id": "disk",
+      "label": "disk cache 命中？",
+      "sub": "~/.tilelang/cache",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    { "id": "load", "label": "加载已编译产物" },
+    { "id": "compile", "label": "走完整编译", "sub": "frontend → passes → codegen → host wrapper" },
+    { "id": "save", "label": "写回 disk cache" },
+    { "id": "call", "label": "kernel(a, b)", "sub": "JITKernel.__call__ → adapter.func" },
+    { "id": "run", "label": "在 GPU / NPU 上执行", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "u", "to": "jit" },
+    { "from": "jit", "to": "key" },
+    { "from": "key", "to": "mem" },
+    { "from": "mem", "to": "ret", "label": "命中" },
+    { "from": "mem", "to": "disk", "label": "未命中" },
+    { "from": "disk", "to": "load", "label": "命中" },
+    { "from": "disk", "to": "compile", "label": "未命中" },
+    { "from": "compile", "to": "save" },
+    { "from": "load", "to": "ret" },
+    { "from": "save", "to": "ret" },
+    { "from": "ret", "to": "call" },
+    { "from": "call", "to": "run" }
+  ],
+  "notes": [
+    "只改注释或空白 → func.script() 不变 → 同一 key；改 tile 参数或 pass 开关 → 新 key。",
+    "lazy 模式返回 PrimFunc（拿到 JITKernel 再手动调用）；eager 模式直接返回输出张量。",
+    "清了缓存还不生效，先怀疑缓存：TILELANG_DISABLE_CACHE=1 是最快的排除法。"
+  ]
+}

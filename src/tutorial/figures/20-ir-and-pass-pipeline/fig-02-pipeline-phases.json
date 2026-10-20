@@ -1,0 +1,77 @@
+{
+  "id": "fig-02-pipeline-phases",
+  "title": "九组职责：CUDA 与 Ascend 的 pass 对照",
+  "kind": "compare",
+  "section": "4.1",
+  "columns": ["CUDA（tilelang/cuda/pipeline.py）", "Ascend（tilelang/ascend/pipeline.py）"],
+  "rows": [
+    {
+      "label": "① 前端合法化",
+      "values": [
+        "BindTarget → MaterializeKernelLaunch → AnnotateDeviceBoundTmaCopies → … → WarpSpecialization×3 → LowerBlackwell2SM → IfStmtBinding",
+        "BindTarget → MaterializeKernelLaunch → RewriteDualCopy → LegalizeSimdMerging → … → UnrollLoopSkipVF"
+      ]
+    },
+    {
+      "label": "② 流水",
+      "values": [
+        "UnrollLoop → Simplify → PipelinePlanning → InjectSoftwarePipeline → Simplify",
+        "由 AutoSchedule 段统管（见 ③）"
+      ]
+    },
+    {
+      "label": "③ 布局",
+      "values": [
+        "LayoutInference → ReducerPlanAndMaterialize → LayoutVisual",
+        "AscendLayoutInference → NormalizeAscendFractalStorage → InsertNd2Nz → AscendInsertOOBPadding → 自动调度段"
+      ]
+    },
+    {
+      "label": "④ tile op 降级",
+      "values": [
+        "LowerTileOp → VerifyReducerConsumed → DecoupleTypeCast → … → LowerAccessPtr",
+        "NormalizeBufferVersion → AscendSimdVFLowerParallel → AscendLowerTileOp → LowerAccessPtr"
+      ]
+    },
+    {
+      "label": "⑤ 内存规划",
+      "values": [
+        "HoistGlobalBufferAllocations → LowerOpaqueBlock → FlattenBuffer → … → MergeSharedMemoryAllocations",
+        "HoistGlobalBufferAllocations → … → MergeUBAllocations → RewriteFlagToBuf"
+      ]
+    },
+    {
+      "label": "⑥ 向量化 / 展开",
+      "values": [
+        "VectorizeLoop → LoopUnswitching → UnrollLoop → … → HoistIfThenElse",
+        "VectorizeLoop → RewriteFp4ToFp4x2 → LoopUnswitching → UnrollLoop → …"
+      ]
+    },
+    {
+      "label": "⑦ 同步",
+      "values": [
+        "VerifyMemory → InferFragment → LowerThreadAllreduce → ThreadSync(\"shared\")、ThreadSync(\"shared.dyn\")",
+        "VerifyMemory → InferFragment → … → AscendThreadSync(\"shared\")、AscendThreadSync(\"shared.dyn\")"
+      ]
+    },
+    {
+      "label": "⑧ host/device 切分",
+      "values": [
+        "SplitHostDevice → AnnotateReadOnlyParams → AnnotateDeviceRegions",
+        "SplitHostDevice → AnnotateReadOnlyParams → AnnotateDeviceRegions → MergeIfStmt"
+      ]
+    },
+    {
+      "label": "⑨ API 打包",
+      "values": [
+        "MakePackedAPI → LowerDeviceKernelLaunch → PersistThreadblock",
+        "MakePackedAPI → Simplify → LowerDeviceKernelLaunch"
+      ]
+    }
+  ],
+  "caption": "CUDA（73 次 pass 调用）与 Ascend（80 次）按职责归成九组：①④⑤⑥⑦⑧⑨ 大量重叠（共享 39 个同名 pass），真正的分歧集中在 ② 流水与 ③ 布局。",
+  "notes": [
+    "① ② ③ ④ 是越来越低的抽象阶梯；⑤ ⑥ ⑦ 是物理化（把逻辑 tile 落到寄存器、片上存储与屏障）；⑧ ⑨ 是接口化（切成 host/device 再包成入口）。",
+    "CUDA 用通用 PipelinePlanning + InjectSoftwarePipeline；Ascend 用整段 AutoSchedule（Z3/SMT），把流水、多缓冲、核间分派、同步一起解。"
+  ]
+}

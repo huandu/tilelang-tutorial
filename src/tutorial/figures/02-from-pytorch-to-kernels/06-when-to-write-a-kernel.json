@@ -1,0 +1,81 @@
+{
+  "id": "06-when-to-write-a-kernel",
+  "title": "什么时候需要自己写 kernel（从测量出发的决策树）",
+  "kind": "flow",
+  "section": "5",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "start", "label": "热点算子（profiler 中最耗时）", "tone": "default" },
+    { "id": "q0", "label": "试过 torch.compile 吗？", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "try",
+      "label": "先试：torch.compile + 库算子",
+      "sub": "再看一遍 kernel 表",
+      "tone": "muted"
+    },
+    { "id": "q1", "label": "慢在哪一类？", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "k1",
+      "label": "判据 1：融合缺失",
+      "sub": "相邻算子被拆成很多小 kernel，多趟访存",
+      "tone": "warn"
+    },
+    {
+      "id": "k2",
+      "label": "判据 2：库缺这个算子",
+      "sub": "MLA / NSA / indexer 等新模式",
+      "tone": "warn"
+    },
+    {
+      "id": "k3",
+      "label": "判据 3：精度 / 布局不支持",
+      "sub": "fp8 block scaling、int4、NZ/fractal",
+      "tone": "warn"
+    },
+    {
+      "id": "k4",
+      "label": "判据 4：跨算子数据流重组",
+      "sub": "流水、persistent、多缓冲",
+      "tone": "warn"
+    },
+    { "id": "write", "label": "写 kernel", "tone": "accent" },
+    {
+      "id": "verify",
+      "label": "roofline 利用率 / 库相对效率验收",
+      "sub": "并做数值对比",
+      "tone": "default"
+    },
+    {
+      "id": "bad",
+      "label": "反例：写对也可能慢 300 倍",
+      "sub": "语法与数值都正确的 LayerNorm 比 PyTorch 慢 300 倍以上",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "start", "to": "q0" },
+    { "from": "q0", "to": "try", "label": "还没试" },
+    { "from": "try", "to": "q0" },
+    { "from": "q0", "to": "q1", "label": "试过，还是慢" },
+    { "from": "q1", "to": "k1" },
+    { "from": "q1", "to": "k2" },
+    { "from": "q1", "to": "k3" },
+    { "from": "q1", "to": "k4" },
+    { "from": "k1", "to": "write" },
+    { "from": "k2", "to": "write" },
+    { "from": "k3", "to": "write" },
+    { "from": "k4", "to": "write" },
+    { "from": "write", "to": "verify" },
+    { "from": "verify", "to": "bad" }
+  ],
+  "caption": "四条判据分别对应四种「试过 torch.compile 与厂商库之后仍然要写」的情况；起点永远是先测量。",
+  "notes": [
+    "判据 1 的完整表述：相邻的逐元素 / 归一化算子被拆成很多个小 kernel → memory-bound × 多趟访存。",
+    "判据 2：库算子覆盖不到这个融合模式（MLA / NSA / indexer / RoPE + cache 写入）。",
+    "判据 3：需要库不支持的低精度 / 布局（fp8 block scaling、int4 权重、NZ / fractal 布局）。",
+    "判据 4：单个算子已经贴着下界，但整段流水仍有串行等待（流水、persistent、多缓冲）。",
+    "决策树本身是本书的归纳，判据在正文 5.1–5.4 逐条给出证据；反例来自 A100 / GH200 上 22 个 kernel 的实测（正文 5.5 节）。",
+    "正确的顺序：测量 → 算账 → 先试 torch.compile / 库算子 → 仍然要写，就用 roofline 利用率与库相对效率验收。"
+  ]
+}

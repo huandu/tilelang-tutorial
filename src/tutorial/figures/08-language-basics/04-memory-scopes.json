@@ -1,0 +1,29 @@
+{
+  "id": "04-memory-scopes",
+  "title": "storage scope 与分配函数",
+  "caption": "同一个高层概念换一个 scope 就是换一种物理存储；选择依据是「谁看得到」和「活多久」。",
+  "kind": "grid",
+  "section": "5",
+  "headers": ["分配函数", "默认 scope", "谁看得到 / 用途"],
+  "rows": [
+    {
+      "label": "T.alloc_shared",
+      "cells": ["shared.dyn", "块内共享的片上暂存区，放 tile 的暂存副本"]
+    },
+    {
+      "label": "T.alloc_fragment",
+      "cells": ["local.fragment", "逻辑上是块形状，物理上切到每线程寄存器"]
+    },
+    { "label": "T.alloc_local", "cells": ["local", "每线程私有、可以自己下标的小数组"] },
+    { "label": "T.alloc_var", "cells": ["local.var", "单元素标量（用的时候写 scale[0]）"] },
+    { "label": "T.alloc_global", "cells": ["global", "跨块工作区（少见，优先从 Torch 侧传入）"] },
+    { "label": "T.alloc_tmem", "cells": ["shared.tmem", "Blackwell 的 TMEM 累加器"] },
+    { "label": "T.alloc_barrier", "cells": ["shared.barrier", "mbarrier，参数是 arrive_count"] }
+  ],
+  "notes": [
+    "fragment 写成块形状却落在寄存器：128×128 fp32 = 64 KiB = 128 个 fp32 寄存器 / 线程。",
+    "昇腾侧：alloc_shared 落到 UB，alloc_l1 / l0a / l0b / l0c 落到 L1 与各级 Cube 缓冲。",
+    "主库 v0.1.15 没有 alloc_ub，UB 用 alloc_shared；alloc_ub 是适配器仓库的拼法。",
+    "两侧 scope 名不同（shared.dyn vs shared、shared.l0a vs wmma.matrix_a），片段不能互相搬。"
+  ]
+}

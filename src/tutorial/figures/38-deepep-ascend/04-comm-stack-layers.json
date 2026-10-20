@@ -1,0 +1,49 @@
+{
+  "id": "04-comm-stack-layers",
+  "title": "DeepEP-Ascend 的通信栈分层",
+  "kind": "layers",
+  "caption": "host 侧用 HCCL 建通信域与注册内存、用 HCOMM 建端点与信道；device kernel 直接写 URMA 队列；UBMEM 提供对称内存地址。",
+  "layers": [
+    {
+      "label": "Python 接口",
+      "sub": "EPBuffer.dispatch / combine",
+      "right": "调用方",
+      "tone": "default"
+    },
+    {
+      "label": "device kernel（Ascend C）",
+      "sub": "dispatch_impl / combine_impl，自己写 SQE、敲门铃",
+      "right": "DeepEP-Ascend",
+      "tone": "compute"
+    },
+    {
+      "label": "URMA",
+      "sub": "单边内存访问：WRITE / WRITE_WITH_NOTIFY",
+      "right": "数据路径",
+      "tone": "accent"
+    },
+    {
+      "label": "UBMEM",
+      "sub": "统一总线内存，对端显存可按地址访问",
+      "right": "硬件",
+      "tone": "store"
+    },
+    {
+      "label": "HCOMM",
+      "sub": "Endpoint / Channel / Jetty（SQ / CQ）",
+      "right": "host 侧",
+      "tone": "muted"
+    },
+    {
+      "label": "HCCL",
+      "sub": "通信域、rank graph（netlayer 1）、内存注册、对端地址",
+      "right": "host 侧",
+      "tone": "muted"
+    }
+  ],
+  "notes": [
+    "整个 EP group 是一个 UB 域：物理域与逻辑域都是 {1, num_ranks}。",
+    "要求每对 peer 之间都有直连 UBMEM 链路（否则构造时断言失败）。",
+    "HCCL / HCOMM 的头文件由 CANN 提供，不在 corpus 快照里；本图只描述分工。"
+  ]
+}

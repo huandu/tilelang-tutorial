@@ -1,0 +1,21 @@
+{
+  "id": "04-cube-vector-pipeline",
+  "title": "CUBE 与 VECTOR 的双流水（延后一拍）",
+  "kind": "timeline",
+  "section": "4.1",
+  "caption": "CUBE 侧把 QKᵀ[i+1] 排在 SV[i] 之前，用独立矩阵乘填满 softmax 的延迟；VECTOR 侧是深度 6 的流水，7 个动作按 ACTIVATE 偏移排开。",
+  "items": [
+    { "at": "t0", "label": "CUBE: QKᵀ[i] 发射", "tone": "compute" },
+    { "at": "t1", "label": "FixPipe 把 P[i] 从 L0C 推到 UB", "tone": "store" },
+    { "at": "t2", "label": "VECTOR: softmax[i]，同时 CUBE 去算 QKᵀ[i+1]", "tone": "accent" },
+    { "at": "t3", "label": "VECTOR: S[i] 回写 L1；写 skip-scale 信号", "tone": "accent" },
+    { "at": "t4", "label": "CUBE: SV[i-1] 用上一拍就绪的 S[i-1]", "tone": "compute" },
+    { "at": "t5", "label": "CUBE: SV[i] 延后到下一轮，等 S[i] 就绪", "tone": "compute" },
+    { "at": "t6", "label": "VECTOR: ND2NZ[i+3] + UB→L1；MTE2 拷 KV[i+5]", "tone": "store" }
+  ],
+  "notes": [
+    "P[i] 从就绪到被 SV[i] 用掉大约 1024 周期，刚好够 FixPipe + softmax + S 回写（报告 :184）。",
+    "VECTOR 侧深度 6 对应源码 SYSTOLIC_ARR_DEPTH = 6；7 个动作按 ACTIVATE 偏移 5/3/1/5/0/1/5 排开。",
+    "来源：报告 :166-200；kernel_body.h:1273,1289-1322。"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "01-io-traffic",
+  "title": "朴素 attention 的三趟访存",
+  "kind": "flow",
+  "direction": "LR",
+  "section": "1.2",
+  "nodeMaxEm": 20,
+  "caption": "S 与 P 各写一次读一次：N=8192 时 4N² 就占了总流量的 98.5%。",
+  "nodes": [
+    { "id": "q", "label": "Q (N·d)", "tone": "default" },
+    { "id": "k", "label": "K (N·d)", "tone": "default" },
+    { "id": "g1", "label": "gemm：S = QKᵀ", "tone": "compute" },
+    { "id": "s", "label": "HBM：S (N²)", "tone": "store" },
+    { "id": "sm", "label": "softmax", "tone": "compute" },
+    { "id": "p", "label": "HBM：P (N²)", "tone": "store" },
+    { "id": "g2", "label": "gemm：O = PV", "tone": "compute" },
+    { "id": "v", "label": "V (N·d)", "tone": "default" },
+    { "id": "o", "label": "O (N·d)", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "q", "to": "g1" },
+    { "from": "k", "to": "g1" },
+    { "from": "g1", "to": "s", "label": "写 S (N²)" },
+    { "from": "s", "to": "sm", "label": "读 S (N²)" },
+    { "from": "sm", "to": "p", "label": "写 P (N²)" },
+    { "from": "p", "to": "g2", "label": "读 P (N²)" },
+    { "from": "v", "to": "g2" },
+    { "from": "g2", "to": "o" }
+  ],
+  "notes": [
+    "N=8192 时 S/P 的读写共 268,435,456 个元素，而 Q/K/V/O 一共只有 4,194,304（占 1.5%）",
+    "同一模型下分块融合版把 N² 项降到 0：总流量 272,629,760 → 136,314,880（本模型 2.00×）",
+    "decode 形状（Sq=1）下这个倍数变成 1×：瓶颈是并行度而不是流量"
+  ]
+}

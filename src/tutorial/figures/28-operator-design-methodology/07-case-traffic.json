@@ -1,0 +1,38 @@
+{
+  "id": "07-case-traffic",
+  "title": "案例的流量账：改一个数，流量降到 1/4.5",
+  "caption": "QK-Norm + RoPE + fp8 量化、4096 token；payload 三列完全相同，差别只在 norm 权重与 RoPE 表被重复读了多少次。",
+  "kind": "bars",
+  "section": "6.3",
+  "items": [
+    {
+      "label": "理想下界（payload + 查表）",
+      "value": 67.76,
+      "display": "67.76 MB（1.00×）",
+      "tone": "accent"
+    },
+    {
+      "label": "A：一行一 block",
+      "value": 315.23,
+      "display": "315.23 MB（4.65×）",
+      "tone": "warn"
+    },
+    {
+      "label": "B：8 行一 block",
+      "value": 95.03,
+      "display": "95.03 MB（1.40×）",
+      "tone": "default"
+    },
+    {
+      "label": "C：一 token 一 block",
+      "value": 69.86,
+      "display": "69.86 MB（1.03×）",
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "每一列的分解：payload 都是 63.57 MB；lookup 分别是理想 4.19 MB、A 251.66 MB、B 31.46 MB、C 6.29 MB。",
+    "下界从 15.05 µs 抬到 70.01 µs：调参救不了第一版，只有改设计（一个 block 处理几行）能救它。",
+    "带宽取 H200 标定值 4502.4 GB/s；第二版没有换算法、没有换机器，只把一个 block 的行数从 1 改成 40。"
+  ]
+}

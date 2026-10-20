@@ -1,0 +1,31 @@
+{
+  "id": "01-storage-hierarchy",
+  "title": "存储层级对照：NVIDIA GPU vs 昇腾 NPU",
+  "kind": "compare",
+  "section": "2.1",
+  "columns": ["NVIDIA GPU（以 Hopper 为例）", "华为昇腾 950（对照）"],
+  "rows": [
+    {
+      "label": "最快、容量最小",
+      "values": ["寄存器 / Register File", "L0A / L0B / L0C（Cube 专用存储）"]
+    },
+    {
+      "label": "片上 SRAM",
+      "values": ["Shared Memory（与 L1 合并共 256 KB，shared 可配到 228 KB）", "L1（CBuf）"]
+    },
+    {
+      "label": "片上缓存 / Vector 侧",
+      "values": ["L2 Cache（H100：50 MB）", "UB / Unified Buffer（Vector 侧片上存储）"]
+    },
+    {
+      "label": "最慢、容量最大",
+      "values": ["HBM / 显存（H100 SXM5：HBM3，over 3 TB/sec）", "GM / 全局内存"]
+    }
+  ],
+  "caption": "两台机器的存储层级：越靠近计算单元，容量越小、延迟越低、带宽越高。",
+  "notes": [
+    "越往下：越大、越慢、越便宜。",
+    "两边不是一一对应——L0A/L0B/L0C 在 NV 侧没有同名对应物；NV 的 shared memory 在昇腾侧要拆成 L1 与 UB 两种角色。",
+    "完整抽象对照见第 6 章；NV 侧的容量数字为 H100 厂商公开资料。"
+  ]
+}

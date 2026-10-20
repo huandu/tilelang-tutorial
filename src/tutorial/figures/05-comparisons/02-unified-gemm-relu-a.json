@@ -1,0 +1,40 @@
+{
+  "id": "02-unified-gemm-relu-a",
+  "title": "同一个 GEMM 的各个系统：每个系统内部的数据流顺序",
+  "caption": "CUDA / Triton / TileLang / Ascend C / PTO-DSL 各自把 C = relu(A @ B) 走成一条流水线。",
+  "kind": "grid",
+  "section": "3",
+  "headers": ["系统", "①", "②", "③", "④"],
+  "rows": [
+    {
+      "label": "CUDA",
+      "cells": [
+        "__shared__ aTile/bTile",
+        "thread computes element",
+        "__syncthreads()",
+        "epilogue relu in same kernel"
+      ]
+    },
+    {
+      "label": "Triton",
+      "cells": ["tl.load block", "tl.dot", "tl.maximum(acc, 0)", "tl.store block"]
+    },
+    {
+      "label": "TileLang",
+      "cells": ["T.copy（GM→shared）", "T.gemm", "T.Parallel 里做 relu", "T.copy 写回"]
+    },
+    {
+      "label": "Ascend C",
+      "cells": ["CopyIn（DataCopy）", "Compute / Cube", "手写 Vector 段", "CopyOut"]
+    },
+    {
+      "label": "PTO-DSL",
+      "cells": ["pto.load GM→L1", "tile.extract L1→L0", "tile.matmul(_acc)", "pto.store L0C→GM"]
+    }
+  ],
+  "notes": [
+    "A、B、C 都在 Global memory：GM 是所有系统的共同起点。",
+    "同一件事在不同系统里被切成不同的步数，步与步之间「谁等谁」也不同。",
+    "「片上存储 / 多缓冲 / 同步 / 融合 ReLU 分别由谁负责」的逐项对照见下一张图。"
+  ]
+}

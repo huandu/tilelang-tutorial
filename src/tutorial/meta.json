@@ -1,0 +1,238 @@
+{
+  "chapters": [
+    {
+      "slug": "01-why-tile-dsl",
+      "number": "01",
+      "title": "为什么需要 Tile DSL",
+      "summary": "从「为什么 PyTorch 里一个算子会慢」讲起：存储层级的不对称、算术强度与机器平衡点，然后沿着 SIMT → 张量核 → 异步搬运三代硬件演进，说明为什么 CUDA、Triton、TileLang 会依次出现。"
+    },
+    {
+      "slug": "02-from-pytorch-to-kernels",
+      "number": "02",
+      "title": "从 PyTorch 到 kernel：算子在栈里的位置",
+      "summary": "把「一次训练迭代」和「一次推理请求」拆成算子的清单与账本：每个算子要搬多少字节、算多少次、是 memory-bound 还是 compute-bound，以及 torch.compile 的边界在哪、什么时候必须自己写 kernel。"
+    },
+    {
+      "slug": "03-design-philosophy",
+      "number": "03",
+      "title": "TileLang 的设计哲学与编程模型",
+      "summary": "TileLang 的核心主张：把调度空间（线程绑定、layout、tensorize、流水）从数据流里解耦出来。讲清 tile 的定义、beginner/developer/expert 三层接口，以及可组合（composable）到底是什么意思。"
+    },
+    {
+      "slug": "04-architecture-and-compilation-flow",
+      "number": "04",
+      "title": "架构总览与一次编译的全流程",
+      "summary": "给出一张可随时重画的仓库结构图与一次编译的完整路径：前端 → TIR → pass pipeline → device codegen → host wrapper，并对比 CUDA 与 Ascend 两条管线。"
+    },
+    {
+      "slug": "05-comparisons",
+      "number": "05",
+      "title": "横向对比：CUDA / Triton / CUTLASS-CuTe / TVM / cuTile / Ascend C / PTO-DSL",
+      "summary": "用「用户必须提供的硬件相关决策数量」这把尺子，把 CUDA、Triton、CUTLASS-CuTe、TVM、cuTile、Ascend C、PTO-DSL 放到同一条纵轴上，再用同一个带融合 epilogue 的 GEMM 逐层对照。"
+    },
+    {
+      "slug": "06-hardware-intro-nv-vs-ascend",
+      "number": "06",
+      "title": "芯片导论：NV GPU 与昇腾 NPU 的抽象对照",
+      "summary": "用存储层级、执行单元、数据搬运、同步四个维度描述任意加速器，再分别落到 NVIDIA（grid/warp/Tensor Core/TMA/cluster）与昇腾（Cube/Vector/MTE/UB/L1/L0）上，并解释为什么「GPU 是 SIMT、NPU 是 SIMD」已经过时。"
+    },
+    {
+      "slug": "07-quickstart",
+      "number": "07",
+      "title": "快速上手：安装与第一个 kernel",
+      "summary": "装好 TileLang 并写出第一个 kernel：安装的三条路径、kernel 的四个部件、如何把生成的 CUDA 源码逐行读回来，以及 JIT、编译缓存与 kernel 复用的行为。"
+    },
+    {
+      "slug": "08-language-basics",
+      "number": "08",
+      "title": "语言基础",
+      "summary": "把第 7 章的生成源码往回拆：内核定义与网格、dtype 与内存作用域、T.Parallel/循环/控制流各自对应 IR 里什么、代价是什么，以及 Python 兼容性的边界在哪。"
+    },
+    {
+      "slug": "09-core-primitives",
+      "number": "09",
+      "title": "核心原语详解",
+      "summary": "逐个讲透核心原语：T.copy 的搬运与越界语义、T.gemm 如何选指令、reduce/atomic/fill 的用法与坑，以及昇腾专属的 T.dual_copy、T.SimtVF/T.SimdVF 为什么必须存在。"
+    },
+    {
+      "slug": "10-layout-and-memory-intro",
+      "number": "10",
+      "title": "布局与存储层级入门",
+      "summary": "解释「同一个张量为什么会有摆法问题」：从 fragment 与线程的对应、bank conflict、swizzle 到昇腾的 fractal 与 ND→NZ，并给出把布局画出来观察的可复现步骤。"
+    },
+    {
+      "slug": "11-pipeline-and-autotuning",
+      "number": "11",
+      "title": "流水线与自动调优",
+      "summary": "把搬运与计算重叠起来：T.Pipelined 的 stage/order 语义、多缓冲的容量代价、如何判断一份配置还放不放得下，以及 autotuner 的搜索空间怎么定义、结果怎么读。"
+    },
+    {
+      "slug": "12-debugging-and-profiling",
+      "number": "12",
+      "title": "调试与性能分析",
+      "summary": "把 kernel 问题分成生成、正确性、性能、偶发四类，给出对应的工具链：编译期日志与 IR Lower Trace、运行期打印与异常 dump、对拍容差的来源，以及 Nsight Compute / msProf 的读法。"
+    },
+    {
+      "slug": "13-operators-elementwise-norm-rope",
+      "number": "13",
+      "title": "算子实战 I：逐元素、归一化与 RoPE",
+      "summary": "从最不起眼的逐元素算子讲起：用访存账本说明融合的价值，再逐步实现 scale+add、LayerNorm/RMSNorm 与 RoPE，最后合成 RMSNorm+RoPE+量化的融合算子。"
+    },
+    {
+      "slug": "14-operators-gemm",
+      "number": "14",
+      "title": "算子实战 II：GEMM 全家族",
+      "summary": "GEMM 的性能账本与五级实现阶梯：从朴素分块到 shared memory、软件流水、swizzle 注解与官方 intrinsic 版本，再到 split-K/stream-K/grouped 与低精度变体的选择依据。"
+    },
+    {
+      "slug": "15-operators-attention",
+      "number": "15",
+      "title": "算子实战 III：Attention 家族",
+      "summary": "从朴素 attention 的三趟访存推导到 online softmax 的一趟实现，逐级加上分块、流水与片上复用，并覆盖 causal、varlen、GQA、decode、paged KV 与 split-KV 等变体。"
+    },
+    {
+      "slug": "16-operators-moe-mla",
+      "number": "16",
+      "title": "算子实战 IV：MoE 与 MLA",
+      "summary": "大模型里最贵的两段结构：MoE 的路由、重排与 grouped GEMM，以及 MLA 的 KV 压缩如何改变访存与 kernel 形态；最后给出一次 decode step 的耗时占比与瓶颈类型总结。"
+    },
+    {
+      "slug": "17-e2e-training-7b",
+      "number": "17",
+      "title": "端到端 I：用 HuggingFace 资产从零训练一个 7B 模型",
+      "summary": "用 HuggingFace 的数据、tokenizer 与权重，把 TileLang 算子接进真实的训练循环：显存与算力两本账、数据管线、混合精度与 checkpoint，以及哪些热点算子值得换成自己的 kernel。"
+    },
+    {
+      "slug": "18-e2e-inference-serving",
+      "number": "18",
+      "title": "端到端 II：推理与部署",
+      "summary": "训练完的模型怎么变成服务：prefill 与 decode 的差异、KV cache 的显存账本、paged KV 与 continuous batching，以及 decode attention、量化 GEMM 如何接进 vLLM / TileRT 这类框架。"
+    },
+    {
+      "slug": "19-ascend-hands-on",
+      "number": "19",
+      "title": "昇腾实战：在昇腾上开发与调优算子",
+      "summary": "在昇腾上写第一个算子：环境与 CANN 安装、GM→UB/L1/L0 的数据流、Ascend C 对照实现、msProf 调优、ACLGraph 入图与设备端调试手段。"
+    },
+    {
+      "slug": "20-ir-and-pass-pipeline",
+      "number": "20",
+      "title": "IR 与编译期管线精读",
+      "summary": "把 TileLang 的编译期读成一条可验证的管线：TIR 的基本构件、CUDA 与 Ascend 两条 pass 序列的分组与职责，以及 LayoutInference、LowerTileOp、ThreadSync 这些承重 pass 各自改变了什么。"
+    },
+    {
+      "slug": "21-layout-inference",
+      "number": "21",
+      "title": "布局推导（Layout Inference）原理与实现",
+      "summary": "layout 推导的形式化与实现：约束从哪里来、如何在 tile op 图上传播、冲突时如何权衡转换代价，以及昇腾的 fractal 归一化、ND→NZ 与边界填充为什么是另一类问题。"
+    },
+    {
+      "slug": "22-pipeline-sync-multibuffer",
+      "number": "22",
+      "title": "流水线、多缓冲与同步插入",
+      "summary": "软件流水的算法层：依赖距离与模调度、缓冲版本数的推导、多缓冲的物化与复用，以及从读写集推导同步点（CUDA 的 ThreadSync 与昇腾的 InsertSync）的原理。"
+    },
+    {
+      "slug": "23-autoschedule-smt",
+      "number": "23",
+      "title": "自动调度与约束求解（昇腾）",
+      "summary": "昇腾后端最有技术含量的一步：把 kernel 拆成带资源标签的任务、估计延迟与容量、用 Z3 求解调度与多缓冲，再把解落成真实的 Set/Wait。讲清模型、约束与它失效时的后果。"
+    },
+    {
+      "slug": "24-nvidia-backend-codegen",
+      "number": "24",
+      "title": "NVIDIA 后端：代码生成与硬件特性",
+      "summary": "NVIDIA 后端如何把 tile 程序翻译成 CUDA 与 PTX：指令选择的谓词链、TMA 判定、warp specialization、cluster/DSM，以及 Blackwell 的 tcgen05 与 TMEM 带来的新约束。"
+    },
+    {
+      "slug": "25-ascend-backend-codegen",
+      "number": "25",
+      "title": "昇腾后端：代码生成与硬件特性",
+      "summary": "昇腾后端的四条路线与它们各自的落点：主干 ascend 方言、适配器的 Ascend C&PTO 与 AscendNPU IR，以及 T.alloc_l1/l0a/l0b/l0c、dual_copy 在代码生成里变成了什么。"
+    },
+    {
+      "slug": "26-runtime-jit-abi",
+      "number": "26",
+      "title": "运行时、JIT、ABI 与框架集成",
+      "summary": "从装饰器到可调用 kernel 的完整链路：JIT 生命周期、缓存键与失效、packed ABI 的参数校验、五个 adapter 的分工，以及张量转换、stream 语义与 autograd 的边界。"
+    },
+    {
+      "slug": "27-low-precision-quantization",
+      "number": "27",
+      "title": "低精度、量化与数值正确性",
+      "summary": "低精度的数值基础与工程约束：fp16/bf16/fp8/MXFP4/int4 的表示与误差、block scale 的打包与存储布局，以及如何选参考实现对拍、如何区分数值误差与逻辑错误。"
+    },
+    {
+      "slug": "28-operator-design-methodology",
+      "number": "28",
+      "title": "算子设计方法论与性能模型",
+      "summary": "把前面的经验上升成方法论：先算（性能模型、roofline）、再定 tile、再定流水，最后才写代码；配一个完整的融合算子案例与一份反模式清单。"
+    },
+    {
+      "slug": "29-compiler-engineering",
+      "number": "29",
+      "title": "编译器工程：写 pass、测试与回归",
+      "summary": "把「读编译器」变成「改编译器」：C++ 与 Python pass 的双语结构、写一个新 pass 的完整流程、IR diff 与性能回归怎么测，以及评审时会被问什么。"
+    },
+    {
+      "slug": "30-frontier",
+      "number": "30",
+      "title": "前沿探索：只有 main / 未合入的方向",
+      "summary": "区分「已发布 / 只在 main / 只在未合入 PR」三种状态，逐条核对 TVM 迁移、CuteDSL 后端、Ascend 950 与 PTO、持久化 kernel、AutoSimtVF 等方向的现状，并给出持续跟踪上游的方法。"
+    },
+    {
+      "slug": "31-contributing",
+      "number": "31",
+      "title": "贡献指南",
+      "summary": "把改动变成上游的一部分：写算子、改编译器、加后端三条路径各自的门槛与测试要求，issue→RFC→PR→CI 的流程，以及昇腾双仓库的协作方式与自检清单。"
+    },
+    {
+      "slug": "32-deepseek-ascend-release",
+      "number": "32",
+      "title": "DeepSeek 昇腾全栈：这次开源了什么",
+      "summary": "2026-09-30 DeepSeek 面向昇腾开源了六个组件。本章给出全景地图：每个组件解决什么问题、与 NVIDIA 侧怎么一一对应、在一次训练 step 和一次推理请求里各占哪一段，以及怎么自己核验版本、硬件与可用状态。"
+    },
+    {
+      "slug": "33-tilekernels-two-backends",
+      "number": "33",
+      "title": "TileKernels（上）：一份算法，两个后端",
+      "summary": "TileKernels 是用 TileLang 写的生产算子库，同一份算法提供 CUDA 与 Ascend 两个后端。以 top-k gate 为例逐行对照两种写法，讲清哪些部分平台无关、哪些必须重写，以及量化、RoPE、Rand 这些算子族的接口。"
+    },
+    {
+      "slug": "34-tilekernels-engram-mhc",
+      "number": "34",
+      "title": "TileKernels（下）：Engram 与流形超连接",
+      "summary": "另一类算子：不是矩阵乘，而是访存与小算子为主的结构性算子。以 Engram 论文与 mHC 论文（arXiv:2512.24880）为定义、以 TileKernels 的 mhc/ 与 engram/ 源码为实现，讲透门控融合、Sinkhorn 归一化，以及「除 prenorm GEMM 外都用 TileLang」这条边界。"
+    },
+    {
+      "slug": "35-deepgemm-ascend",
+      "number": "35",
+      "title": "DeepGEMM-Ascend：把 GEMM 压到硬件极限",
+      "summary": "当 TileLang 不够用（或不该用）时，专家怎么在昇腾上把 GEMM 做到 99% 硬件利用率。讲清 MAD 原语抽象包了什么、JIT 与启发式怎么选配置、MegaMoE 为什么能把通信和两个 grouped GEMM 融进一个 kernel，以及哪一类算子反而适合交给 TileLang。"
+    },
+    {
+      "slug": "36-flashmla-ascend",
+      "number": "36",
+      "title": "FlashMLA 昇腾稀疏注意力：算法与流水",
+      "summary": "官方为昇腾稀疏注意力写了一篇技术报告。本章把它讲成一条可跟着走的设计过程：从算存比推出「64 head/AI Core、1C2V、accumulator 放 UB」，再讲 KV 的 ND2NZ 时机、双流水排布、gather2 与 skip-scale，并划清哪些结论能用 TileLang 表达、哪些必须下钻。"
+    },
+    {
+      "slug": "37-deepselect-topk",
+      "number": "37",
+      "title": "DeepSelect：算法先行的 TopK",
+      "summary": "算法先行，硬件随后。用阈值扫描 + 随机块序 + RadixSelect 把 TopK 的额外计算量压到 O(k log(N/k))，并给出期望复杂度的证明；再看 CUDA 侧怎么用 mask 与 PTX 把常数压到极致。它同时回答了「什么类型的算子该手写而不是用 TileLang」。"
+    },
+    {
+      "slug": "38-deepep-ascend",
+      "number": "38",
+      "title": "DeepEP-Ascend：专家并行通信与计算重叠",
+      "summary": "MoE 的专家并行会引入 all-to-all，而通信很容易把算力省下的东西吃回去。本章讲清 EP dispatch/combine 的语义、FP8 dispatch 与延迟 epilogue、HCCL/UBMEM/URMA 的分工、DeepJIT 为什么要在运行时编译，以及 EP8–EP128 的带宽数字怎么读。"
+    },
+    {
+      "slug": "39-deepseek-e2e-supernode",
+      "number": "39",
+      "title": "端到端：128 卡超节点上的训练与推理",
+      "summary": "收口章：把六个组件拼回一条完整链路，分别走一遍训练的一步与推理的 prefill/decode，给出算力、片内带宽、卡间带宽三类资源的预算账与瓶颈定位清单，并把前面所有「未实现 / 实验性」的结论集中成一份诚实的现状清单。"
+    }
+  ]
+}

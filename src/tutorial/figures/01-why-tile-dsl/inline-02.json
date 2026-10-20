@@ -1,0 +1,36 @@
+{
+  "id": "inline-02",
+  "title": "两条流水：元素 / 线程视角 vs tile 视角",
+  "kind": "flow",
+  "section": "2.4",
+  "inlineQuote": "flowchart LR\n    subgraph ELEM[\"元素 / 线程视角（CUDA）\"]",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "e1", "label": "for each element", "sub": "决定属于哪个线程" },
+    { "id": "e2", "label": "决定访存模式", "sub": "决定 bank conflict" },
+    { "id": "e3", "label": "手写同步点" },
+    { "id": "e4", "label": "手写数据搬运" },
+    { "id": "t1", "label": "声明 tile 的形状与存储位置", "tone": "accent" },
+    { "id": "t2", "label": "用 T.copy 描述搬运", "tone": "accent" },
+    { "id": "t3", "label": "用 T.gemm 描述计算", "tone": "accent" },
+    { "id": "t4", "label": "编译器推导 layout", "sub": "规划流水与同步", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "e1", "to": "e2" },
+    { "from": "e2", "to": "e3" },
+    { "from": "e3", "to": "e4" },
+    { "from": "t1", "to": "t2" },
+    { "from": "t2", "to": "t3" },
+    { "from": "t3", "to": "t4" }
+  ],
+  "groups": [
+    { "label": "元素 / 线程视角（CUDA）", "nodes": ["e1", "e2", "e3", "e4"] },
+    { "label": "tile 视角（TileLang）", "nodes": ["t1", "t2", "t3", "t4"], "tone": "accent" }
+  ],
+  "caption": "同一件事在两种视角下的写法：线程视角每一步都由人决定，tile 视角把布局、流水与同步交给编译器。",
+  "notes": [
+    "左列是第 4.1 节的 CUDA 路线，右列是第 4.4 节的 TileLang 路线。",
+    "tile 视角里「我」要说的是：这块 A 放哪、和哪块 B 相乘、结果累积到哪（见正文 2.4 节）。"
+  ]
+}

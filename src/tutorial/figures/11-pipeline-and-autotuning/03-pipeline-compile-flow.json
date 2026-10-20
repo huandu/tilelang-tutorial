@@ -1,0 +1,58 @@
+{
+  "id": "03-pipeline-compile-flow",
+  "title": "从 T.Pipelined 到多缓冲 IR 的编译期两步",
+  "caption": "用户只写一句 T.Pipelined，编译器把它拆成「先规划（只写注解）」与「再改写（加版本维、插同步）」两个 pass。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "4.1",
+  "nodes": [
+    {
+      "id": "u",
+      "label": "用户代码",
+      "code": "for ko in T.Pipelined(n, num_stages=3)",
+      "tone": "default"
+    },
+    {
+      "id": "plan",
+      "label": "① tl.PipelinePlanning",
+      "sub": "分析每条语句的读写与依赖，自动定 stage / order，只写注解、不搬语句",
+      "tone": "accent"
+    },
+    {
+      "id": "anno",
+      "label": "循环注解",
+      "code": "software_pipeline_stage / _order / tl_pipelined_num_stages",
+      "tone": "muted"
+    },
+    {
+      "id": "inject",
+      "label": "② tl.InjectSoftwarePipeline",
+      "sub": "按 order 重排，生成 prologue / body / epilogue，复制 buffer，插异步拷贝与同步",
+      "tone": "accent"
+    },
+    {
+      "id": "out",
+      "label": "pipelined IR",
+      "sub": "buffer 形状 (num_stages, …)，循环体已展开",
+      "tone": "compute"
+    },
+    { "id": "later", "label": "LayoutInference → LowerTileOp → …", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "u", "to": "plan" },
+    { "from": "plan", "to": "anno" },
+    { "from": "anno", "to": "inject" },
+    { "from": "inject", "to": "out" },
+    { "from": "out", "to": "later" }
+  ],
+  "groups": [
+    { "label": "规划（只留注解，可回看）", "nodes": ["plan", "anno"], "tone": "default" },
+    { "label": "改写（不可逆）", "nodes": ["inject"], "tone": "warn" }
+  ],
+  "notes": [
+    "ComputeBufferVersions 算版本数 = use − def + 1；RewriteAllocBuffer 把版本维插到 shape 最前面。",
+    "两步之间只有注解在传递，所以可以在两步之间 dump IR 观察规划结果（第 12 章的 IR diff 调试法就靠这个）。",
+    "手写 stage / order 与只给 num_stages 走同一条下游路径：前者由用户填注解，后者由 planner 填注解。"
+  ]
+}

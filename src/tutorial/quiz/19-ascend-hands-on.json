@@ -1,0 +1,91 @@
+{
+  "chapter": "19-ascend-hands-on",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "在昇腾上做矩阵乘，累加器（accumulator）放在哪一级存储里？",
+      "options": ["线程寄存器 fragment", "UB（Unified Buffer）", "L0C", "L1（CBuf）"],
+      "answer": 2,
+      "explain": "见 §2.2：NVIDIA 的累加器在寄存器里，昇腾的累加器在 L0C（fp32）。所以「把 C 累加在寄存器里」这个 CUDA 直觉不成立——昇腾 GEMM 是读 L1 → 搬进 L0A/L0B → Cube 算出 L0C → 写回 GM。"
+    },
+    {
+      "id": "q2",
+      "stem": "逐元素 add kernel 里第二个 T.barrier_all() 保护的是哪条依赖？",
+      "options": ["MTE2 → V", "V → MTE3", "MTE3 → MTE2", "Cube → Vector"],
+      "answer": 1,
+      "explain": "见 §4.3：第一个 barrier 保护 MTE2→V（读前等写完），第二个保护 V→MTE3（写前等算完）。不写第二个，MTE3 可能把还没算完的 c_ub 写回 GM。"
+    },
+    {
+      "id": "q3",
+      "stem": "昇腾 GEMM 里 A、B、C 三块 tile 分别应该分配在哪一级存储？",
+      "options": [
+        "A、B 在 L1，C（累加器）在 L0C",
+        "A、B 在 UB，C 在 L0C",
+        "A、B 在 L1，C 在 UB",
+        "A、B 在 L0A/L0B，C 在 L1"
+      ],
+      "answer": 0,
+      "explain": "见 §5.4：T.gemm_v0 的 docstring 要求 A、B 必须在 L1（T.alloc_L1）、C 必须在 L0C（T.alloc_L0C）；L1→L0A/L0B 的搬运由 gemm_v0 内部完成。把 C 建在 UB 或 L1 上会编译失败或静默产生错误结果。"
+    },
+    {
+      "id": "q4",
+      "stem": "T.gemm_v0(..., init=(k == 0)) 这个参数的语义是什么？",
+      "options": [
+        "只在 k==0 时执行这次矩阵乘",
+        "把 A、B 的初始值设成 0",
+        "控制本次调用是否写回 L0C",
+        "第一次迭代（k==0）清零累加器、之后累加；写错会把上一次调用的残值混进结果"
+      ],
+      "answer": 3,
+      "explain": "见 §5.2 与坑 P9：L0C 不会自动清零，必须由第一次迭代清；写错会出现「第一次迭代对、后续全错」或「结果里混进上一次调用的残值」这类最难查的错误（M 树对应的是 clear_accum=(k == 0)）。"
+    },
+    {
+      "id": "q5",
+      "stem": "关于昇腾侧的 T.Pipelined，下面哪条约束是真的？",
+      "options": [
+        "它最多只能嵌套两层",
+        "它只对 Cube 核生效，Vector 核必须手写 flag",
+        "它不支持嵌套，且核内流水与核间流水不能同时开（混用要改 flat pattern）",
+        "它会自动把任何 T.Parallel 变成 SIMD 指令"
+      ],
+      "answer": 2,
+      "explain": "见 §7.5：T.Pipelined 不支持嵌套，核内与核间流水不能同时开，要混用时用 flat pattern（Pipelined 管核间、serial + 手写 flag 管核内）。见坑 P14：自动调度只管任务顺序与依赖，不保证把 T.Parallel 张量化。"
+    },
+    {
+      "id": "q6",
+      "stem": "为什么说 T.barrier_all() 不是万能的同步手段？",
+      "options": [
+        "它只等本核此前已发出的异步操作，不是 buffer ownership 的交接；真正的复用要 producer→consumer 与 consumer→producer 两个方向都配对 flag",
+        "它只能用在向量核上，Cube 核里不生效",
+        "它会让 kernel 无法入图，所以不能用在 ACLGraph 里",
+        "它每次都会清空 UB，导致数据丢失"
+      ],
+      "answer": 0,
+      "explain": "见坑 P11：barrier_all（PIPE_ALL 全屏障）只等它之前已发出的本核异步操作，保护不了「屏障之后又出现的新 store 复用同一物理缓冲」的情况。add 那种单块示例够用，多缓冲一旦加入就要显式 flag。"
+    },
+    {
+      "id": "q7",
+      "stem": "关于 ACLGraph 的 capture 阶段，下面哪一句正确？",
+      "options": [
+        "capture 会顺便做图编译与图优化",
+        "capture 阶段会真正执行每个算子，replay 只是重放日志",
+        "capture 与 replay 必须成对调用，且只能重放一次",
+        "capture 阶段只是记录、不执行；真正的执行在 g.replay()"
+      ],
+      "answer": 3,
+      "explain": "见 §9.2：with torch.npu.graph(g): 里的算子只是被记录，g.replay() 才执行，而且可以反复调用。ACLGraph 只降低 Host 侧下发开销，不承载图编译与图优化；确认生效的方式是日志里搜 capture model（0 关 / 1 开）。"
+    },
+    {
+      "id": "q8",
+      "stem": "把 A 树的 T.alloc_L1 放进 M 树的 kernel，或把 TL_ASCEND_* 当成 M 树的 pass config，会发生什么？",
+      "options": [
+        "两棵树可以互换，只是写法不同，运行结果一致",
+        "会报 AttributeError 或因未知键而报错——两套 API 与 PassConfigKey 属于不同命名空间，一份 kernel 只能用一棵树",
+        "只有 target 不同，改一下 target 就能跑",
+        "A 树根本不能在昇腾上运行，只有 M 树可以"
+      ],
+      "answer": 1,
+      "explain": "见 §2.6、§7.1 与坑 P4：A 树用 T.alloc_L1/L0A/L0B/L0C（大写）与 TL_ASCEND_*（PassConfigKey），M 树用 T.alloc_l1/l0a/l0b/l0c（小写）与 TL_ENABLE_AUTO_SCHEDULE；target 也不同。把两边片段拼在一起是最常见的「照抄跑不通」。"
+    }
+  ]
+}

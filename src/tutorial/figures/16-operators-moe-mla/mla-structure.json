@@ -1,0 +1,39 @@
+{
+  "id": "mla-structure",
+  "title": "MHA → GQA → MLA 与 KV 预算",
+  "kind": "compare",
+  "section": "3",
+  "caption": "GQA 少缓存几个 KV 头；MLA 换一个被缓存的对象——低秩潜向量。",
+  "columns": ["MHA", "GQA", "MLA"],
+  "rows": [
+    {
+      "label": "缓存什么",
+      "values": ["每个 head 的 K、V", "H_kv 个 KV 头的 K、V", "低秩 c_KV + 解耦 RoPE key k_R"]
+    },
+    {
+      "label": "每 token 每层（fp16）",
+      "values": [
+        "2·H_q·d：128×128 时 65536 B",
+        "2·H_kv·d：8 个 kv-head 时 4096 B",
+        "d_c + d_r：512+64 时 1152 B（MHA 的 1.76%）"
+      ]
+    },
+    {
+      "label": "decode 算术强度",
+      "values": ["1.0 FLOP/Byte", "16.0 FLOP/Byte", "241.8 FLOP/Byte"]
+    },
+    {
+      "label": "关键机制",
+      "values": [
+        "每个 head 独立 KV",
+        "kv_head_idx = head_idx // groups",
+        "矩阵结合律把上投影吸收进 Q 与输出侧"
+      ]
+    }
+  ],
+  "notes": [
+    "d_c = kv_lora_rank、d_r = qk_rope_head_dim；qk_nope_head_dim / v_head_dim 是每个 head 各自的上投影宽度，不进 KV cache",
+    "decode 算术强度高，是因为分母只有一份潜向量，而 128 个 query head 都在复用它（H100 平衡点约 333）",
+    "官方 kernel 里 Q 是 512 维、KV head 只有 1 个：128 个 query head 共享同一份潜向量"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "05-ascend-fractal-nz",
+  "title": "昇腾 fractal 存储、ND→NZ 与 OOB padding（入门示意）",
+  "caption": "Cube 要求 L1 里的操作数是分形（NZ）摆放：GM/UB 的行主序要重排，边界不整除时还要在 region 外补零。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "section": "2.5",
+  "nodes": [
+    { "id": "nd", "label": "GM / UB：ND 行主序", "sub": "逻辑 [rows, cols]", "tone": "store" },
+    {
+      "id": "oob",
+      "label": "AscendInsertOOBPadding",
+      "sub": "rows/16、cols/C0 不整除时在 region 外补零",
+      "tone": "warn"
+    },
+    {
+      "id": "nz",
+      "label": "InsertNd2Nz 重排搬运",
+      "sub": "同一次搬运，把目标地址换成 NZ 公式",
+      "tone": "accent"
+    },
+    {
+      "id": "frac",
+      "label": "L1：NZ 分形",
+      "sub": "物理 [cols/C0, rows/16, 16, C0]，C0 = 32B / 元素位宽",
+      "tone": "store"
+    },
+    {
+      "id": "cube",
+      "label": "Cube 直接吃",
+      "sub": "分形是硬件规定，不是编译器自由选择",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "nd", "to": "oob" },
+    { "from": "oob", "to": "nz" },
+    { "from": "nz", "to": "frac" },
+    { "from": "frac", "to": "cube" }
+  ],
+  "notes": [
+    "正映射 (r, c) → [c/C0, r/16, r%16, c%C0]；C0 由位宽决定：bf16/fp16 = 16，fp8 = 32，fp32 = 8。",
+    "三种分形方向：MajorK [MN, K]、MajorMN [K, MN]、L0C 累加器的固定布局；T.alloc_l0c 在分配时自动挂上 L0C 布局。",
+    "补零区在正确的计算里不会被写进输出，它只是为了让物理块完整、能走固定的分形搬运指令。"
+  ]
+}

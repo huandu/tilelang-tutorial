@@ -1,0 +1,101 @@
+{
+  "chapter": "26-runtime-jit-abi",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "装饰阶段 @tilelang.jit 实际做了什么？",
+      "options": [
+        "立刻编译并返回一个 JITKernel",
+        "把 kernel 编成 cubin 并写进磁盘缓存",
+        "只把函数包成 JITImpl，抓住源码文本与签名，此时不编译",
+        "在装饰时就判定这个 kernel 是 lazy 还是 eager 模式"
+      ],
+      "answer": 2,
+      "explain": "见 §2.1 与 §4.1：装饰只做 prim_func(func, eager_jit=True) 并记录 func_source 与 signature；mode=\"auto\"，真正的模式要等第一次调用拿到实参才能定。"
+    },
+    {
+      "id": "q2",
+      "stem": "关于缓存查询在生命周期里的位置，下列哪一项正确？",
+      "options": [
+        "缓存查询发生在 lower 之后、codegen 之前",
+        "缓存命中时会跳过 lower / codegen / adapter，直接拿到上一轮落盘并重新加载的库",
+        "缓存只对 eager 模式的 kernel 生效",
+        "缓存查询要等 kernel launch 之后才发生"
+      ],
+      "answer": 1,
+      "explain": "见 §2.1 与 §4.5：命中时 ④⑤⑥ 全部跳过，你拿到的是上一轮的 kernel_lib.so / executable.so；正因如此，「改了东西却不生效」多半是 key 没变，而不是缓存坏了。"
+    },
+    {
+      "id": "q3",
+      "stem": "改了 src/transform/*.cc 里的 C++ pass 本体，为什么默认不会让缓存失效？",
+      "options": [
+        "因为 key 只包含 Python 源码",
+        "因为改完 pass 必须重新安装 tilelang 才生效",
+        "因为默认 key 里只有 version 与 platform，tilelang_lib 只在 TILELANG_KERNEL_CACHE_USE_LIB_STAMP=1 时才进 key",
+        "因为磁盘缓存有 24 小时的有效期"
+      ],
+      "answer": 2,
+      "explain": "见 §4.4 与 §5.3：tilelang_lib 是库文件内容的 sha256，但默认不开；输入 TIR 一个字节没变时 key 也不变。要绕开用 TILELANG_DISABLE_CACHE=1，或打开 lib stamp。"
+    },
+    {
+      "id": "q4",
+      "stem": "编译期参数（比如 M、block_N）是通过什么进入磁盘 cache key 的？",
+      "options": [
+        "通过 args_repr",
+        "通过 Python 源码的 sha256",
+        "通过函数名",
+        "通过 TIR 文本（func.script）：参数已被 get_tir 烧进 TIR，而 args_repr 在这条链上恒为 ()"
+      ],
+      "answer": 3,
+      "explain": "见 §4.4：tilelang.compile() 的两个调用点都以关键字参数调用，所以 args_repr 恒为空。推论是：只在 Python 侧起作用、又不体现在 TIR 上的参数不会进 key。"
+    },
+    {
+      "id": "q5",
+      "stem": "MakePackedAPI 生成的 host 入口签名，以及它插入检查的顺序是？",
+      "options": [
+        "(self_handle, args, num_args, result)；顺序是 num_args → args 非空 → 逐参数 type_index → anchor → 逐个 DLTensor 绑定",
+        "(A, B, C) 三个 DLTensor 指针，没有额外检查",
+        "(grid, block, smem, stream) 四个 launch 参数",
+        "(self_handle, args)；先检查 dtype 再检查 num_args"
+      ],
+      "answer": 0,
+      "explain": "见 §2.3、§4.8、§4.9：入口被改写成 kCPackedFunc；DLTensor 绑定顺序是非空 → ndim → (code, bits, lanes) → 逐维 shape 约束 → stride。"
+    },
+    {
+      "id": "q6",
+      "stem": "关于 tvm_ffi adapter 与 stream，下列哪一项正确？",
+      "options": [
+        "它把 stream 当最后一个实参显式传给 kernel",
+        "它不把 stream 当参数传，而是让 TVM-FFI 通过 PyTorch 的 DLPack Exchange 去问当前的 work stream",
+        "它总是使用默认 stream（stream 0）",
+        "它要求用户显式创建 CUDA Graph 才能正确对齐 stream"
+      ],
+      "answer": 1,
+      "explain": "见 §4.10 与 §4.11：cython / nvrtc 才把 stream 当参数传；昇腾的 tvm_ffi 路径还会装一个交换表，让 TVM-FFI 走 torch_npu 的当前 stream。跨 stream 出错通常是比较操作没跟在同一条 stream 上。"
+    },
+    {
+      "id": "q7",
+      "stem": "v0.1.15 里 TileLang 对 autograd 的支持是？",
+      "options": [
+        "前向自动建图，反向自动求导",
+        "只要给输入张量设 requires_grad，就会自动记录梯度",
+        "不做自动微分：输出是 torch.empty 出来的、没有 grad_fn，反向 kernel 与 autograd.Function 包装都要自己写",
+        "通过 torch.library 自动注册反向"
+      ],
+      "answer": 2,
+      "explain": "见 §4.11：grep torch.autograd / register_autograd 在 tilelang 与 src 下无输出；官方做法是写一个成对的反向 kernel，再自己包进 torch.autograd.Function。"
+    },
+    {
+      "id": "q8",
+      "stem": "判断自己是不是 Host Bound，最直接的量化做法是？",
+      "options": [
+        "把同一个 kernel 分别用 backend=\"event\" 与 backend=\"cudagraph\" 计时，差距越大说明 launch / 下发占比越高",
+        "看 kernel 的 FLOPs 是否达到张量核峰值",
+        "把 num_stages 调大再测一遍",
+        "用 nvcc -O3 重新编译一次"
+      ],
+      "answer": 0,
+      "explain": "见 §5.1：cudagraph 把整段录成图后回放，把 launch 开销压掉，所以两者之差就是 host bound 的量化指标。测之前先确认自己没在测编译时间（TILELANG_JIT_DIAGNOSTICS=1）。"
+    }
+  ]
+}

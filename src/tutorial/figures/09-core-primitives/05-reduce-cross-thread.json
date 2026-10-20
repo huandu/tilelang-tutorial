@@ -1,0 +1,51 @@
+{
+  "id": "05-reduce-cross-thread",
+  "title": "两级归约与 XOR-butterfly",
+  "caption": "T.reduce_* 先在线程内串行累加，再用 tl::AllReduce 做跨线程 butterfly：宽归约走 shared，窄归约走 shuffle。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "in", "label": "输入 tile", "tone": "default" },
+    {
+      "id": "l1",
+      "label": "① 线程内归约",
+      "sub": "每个线程串行累加自己负责的元素",
+      "tone": "compute"
+    },
+    {
+      "id": "l2",
+      "label": "② 跨线程归约",
+      "sub": "tl::AllReduce<Reducer, threads, scale>",
+      "tone": "accent"
+    },
+    {
+      "id": "shared",
+      "label": "offset ≥ 32",
+      "sub": "shared memory + __syncthreads()",
+      "tone": "store"
+    },
+    { "id": "shfl", "label": "offset < 32", "sub": "shfl_xor_sync", "tone": "store" },
+    { "id": "all", "label": "所有参与者得到同一个归约值", "tone": "default" },
+    {
+      "id": "out",
+      "label": "写回 out",
+      "sub": "或与已有 out 合并（clear=False）",
+      "tone": "default"
+    }
+  ],
+  "edges": [
+    { "from": "in", "to": "l1" },
+    { "from": "l1", "to": "l2" },
+    { "from": "l2", "to": "shared" },
+    { "from": "l2", "to": "shfl" },
+    { "from": "shared", "to": "all" },
+    { "from": "shfl", "to": "all" },
+    { "from": "all", "to": "out" }
+  ],
+  "notes": [
+    "offset 从 threads/2 逐级减半，直到等于 scale；threads=256、scale=1 时是 3 级 shared + 5 级 shuffle。",
+    "(threads/scale) 与 scale 都必须是 2 的幂，否则编译期 static_assert 直接失败。",
+    "clear=False 表示在已有 out 上再合并一次：out_new = out_old ⊕ reduce(src)。"
+  ]
+}

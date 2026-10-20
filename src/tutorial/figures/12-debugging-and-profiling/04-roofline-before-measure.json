@@ -1,0 +1,39 @@
+{
+  "id": "04-roofline-before-measure",
+  "title": "先建立 roofline 预期，再测量",
+  "caption": "性能分析的正确顺序是先算理论上下界，再用 profiler 回答「差在哪一项」，而不是先测一堆数字再想它意味着什么。",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "3.8",
+  "steps": [
+    { "label": "算子 + 形状 + 精度", "sub": "先固定问题" },
+    { "label": "算 FLOPs", "sub": "如 GEMM: 2 × M × N × K" },
+    { "label": "算必须搬运的字节", "sub": "每个输入存储读一次、每个公开输出写一次" },
+    {
+      "label": "compute_time = FLOPs / peak_flops；memory_time = bytes / bandwidth",
+      "tone": "accent"
+    },
+    {
+      "label": "sol_time = max(memory_time, compute_time)",
+      "sub": "较大的一项决定 bound",
+      "tone": "accent"
+    },
+    { "label": "efficiency = sol_time / 实测时间", "tone": "accent" },
+    { "label": "效率接近 1 → 已到硬件上限", "sub": "换算法 / 换精度，不要调参数", "tone": "warn" },
+    { "label": "差很多 → 看 bound 属于哪一类", "tone": "warn" },
+    {
+      "label": "memory-bound：先查是否多搬了字节",
+      "sub": "未融合的中间张量、重复读写、非合并访问"
+    },
+    {
+      "label": "compute-bound：先查 tensor core 利用率",
+      "sub": "tile 形状、K 维切分、occupancy、指令停顿"
+    },
+    { "label": "改一个变量 → 重测 → 用同一口径复算 efficiency", "tone": "accent" }
+  ],
+  "notes": [
+    "bytes 用的是算法最小搬运量，不是 profiler 测到的 DRAM 流量；两者之差本身就是「多搬了」的证据。",
+    "TileLang 的 tilelang.tools.Analyzer 是这个流程的静态实现：数 T.gemm 的 FLOPs、数 T.copy 跨 global 边界的字节，返回 total_flops / total_global_bytes / estimated_time；它是估算，不是实测。",
+    "昇腾侧 AIC 的 mad/mte1/mte2/fixpipe 与 AIV 的 vec/mte2/mte3 分母各自不同，不能相加成一个「总利用率」。"
+  ]
+}

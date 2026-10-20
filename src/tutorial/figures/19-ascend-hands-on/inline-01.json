@@ -1,0 +1,41 @@
+{
+  "id": "inline-01",
+  "title": "本章路线图：从装环境到避坑",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 15,
+  "inlineQuote": "§3 环境      §4 add（UB/Vector）      §5 GEMM（L1/L0/Cube）\n   │                │                          │\n   └────────► §6 Ascend C 对照 ◄───────────────┘",
+  "caption": "本章按「装环境 → 跑最小 kernel → 对照 Ascend C → 认全原语 → 调优 → 入图部署 → 调试 → 避坑」推进，每一步都能独立执行。",
+  "nodes": [
+    { "id": "env", "label": "§3 环境准备", "sub": "驱动 / CANN / torch_npu / 两棵树" },
+    { "id": "add", "label": "§4 add", "sub": "UB + Vector 的最小算子", "tone": "compute" },
+    { "id": "gemm", "label": "§5 GEMM", "sub": "L1 + L0 + Cube 的最小算子", "tone": "compute" },
+    { "id": "ascendc", "label": "§6 Ascend C 对照", "sub": "同一个算子手写一遍", "tone": "accent" },
+    {
+      "id": "prims",
+      "label": "§7 原语与「哪棵树」",
+      "sub": "昇腾专属原语 + A 树/M 树选择规则",
+      "tone": "accent"
+    },
+    { "id": "tune", "label": "§8 调优", "sub": "msprof 与瓶颈判读" },
+    { "id": "graph", "label": "§9 入图部署", "sub": "ACLGraph 与 PyTorch 集成" },
+    { "id": "debug", "label": "§10 调试", "sub": "printf / dump_tensor / 异常" },
+    { "id": "pits", "label": "§11 常见坑清单", "sub": "14 条昇腾特有的坑", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "env", "to": "ascendc" },
+    { "from": "add", "to": "ascendc" },
+    { "from": "gemm", "to": "ascendc" },
+    { "from": "ascendc", "to": "prims" },
+    { "from": "prims", "to": "tune" },
+    { "from": "prims", "to": "graph" },
+    { "from": "prims", "to": "debug" },
+    { "from": "tune", "to": "pits" },
+    { "from": "graph", "to": "pits" },
+    { "from": "debug", "to": "pits" }
+  ],
+  "notes": [
+    "节点上的 §N 就是正文小节号：§3–§5 建立机器模型与两个最小 kernel，§6–§7 把它对到 Ascend C 与两棵树的原语，§8–§11 才进入调优、部署、调试与避坑。",
+    "§10 的调试三件套：T.printf（要开 compile_flags）、T.dump_tensor（UB/L1/L0C/GM 都能 dump）、AICore exception dump（要求 CANN ≥ 9.3.0）。"
+  ]
+}

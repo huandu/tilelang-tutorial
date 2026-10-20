@@ -1,0 +1,42 @@
+{
+  "id": "02-nv-ascend-mapping",
+  "title": "NVIDIA 侧与昇腾侧的一一对应",
+  "kind": "compare",
+  "inlineQuote": "[fig-02] NVIDIA 侧与昇腾侧的一一对应",
+  "caption": "七个能力在两边的落点与「对应方式」；注意接口对应不等于行为等价。",
+  "labelWidth": 150,
+  "columns": ["NVIDIA 侧", "昇腾侧", "对应方式"],
+  "rows": [
+    {
+      "label": "GEMM / MQA logits / MegaMoE",
+      "values": ["DeepGEMM", "DeepGEMM-Ascend", "同包名、API 兼容"]
+    },
+    {
+      "label": "专家并行通信",
+      "values": ["DeepEP", "DeepEP-Ascend", "公开 buffer API 对齐"]
+    },
+    {
+      "label": "注意力",
+      "values": ["FlashMLA（NV 侧）", "FlashMLA（昇腾侧）", "同仓库、构建期选平台"]
+    },
+    {
+      "label": "算子库",
+      "values": ["TileKernels（CUDA）", "TileKernels（Ascend）", "同一 Python API，运行期选后端"]
+    },
+    {
+      "label": "TopK",
+      "values": ["DeepSelect（CUDA）", "DeepSelect（Ascend）", "同一 Python API，运行期选后端"]
+    },
+    {
+      "label": "语言 / 编译",
+      "values": ["TileLang 主干", "TileLang 昇腾后端", "主干 tilelang/ascend/ 与适配器仓库两条路线"]
+    },
+    {
+      "label": "运行时 JIT",
+      "values": ["DeepJIT（CUDA）", "DeepJIT（Ascend）", "同一运行时、两套后端"]
+    }
+  ],
+  "notes": [
+    "并不对应的三处：scaling factor 打包格式（NV SM100 把 4 个 UE8M0 打包进一个 torch.int；昇腾把一对 UE8M0 打包进一个 int16 且按 MN-major 存）、功能子集（FlashMLA 的融合 kernel 仅 CUDA、DeepSelect 昇腾侧仅 bf16/int32）、语义（DeepEP-Ascend 的 stream 行为与支持模式是昇腾特有的）。"
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "chapter": "08-language-basics",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "下面关于 T.Kernel 的说法，哪一句是对的？",
+      "options": [
+        "位置参数按顺序对应 x / y / z 轴的块数，省略 threads= 时 SIMT 后端默认 128",
+        "位置参数按 y / x / z 的顺序对应各轴，省略 threads= 时默认 256",
+        "threads= 表示这次 launch 的总线程数",
+        "省略 threads= 也不影响 T.get_thread_extent() 的使用"
+      ],
+      "answer": 0,
+      "explain": "见 §3.1 与 §11.1：位置参数的顺序就是轴的顺序，省略 threads= 时用 DEFAULT_SIMT_THREADS = 128；threads= 是每块线程数；没写 threads= 时 trace 期调 get_thread_extent() 会抛错。"
+    },
+    {
+      "id": "q2",
+      "stem": "关于 dtype，下面哪一句符合本章的说明？",
+      "options": [
+        "bfloat16 有 x2、x4、x8 等完整的向量形",
+        "int4 与 float4 的每个元素都占一个字节",
+        "只要写在 kernel 里，dtype 一定会被自动推导，不需要声明",
+        "'float16'、T.float16、torch.float16 三种写法会归一成同一个 tvm.DataType"
+      ],
+      "answer": 3,
+      "explain": "见 §4.1、§4.2 与 §9.3：三种写法等价；bfloat16 只有 x2，没有 x4 及以上；int4 与 float4_e2m1fn 是 4 bit，一个字节存两个值。"
+    },
+    {
+      "id": "q3",
+      "stem": "同一份 E4M3 在 tilelang 里有多个拼法，下面哪句是对的？",
+      "options": [
+        "八个 fp8 名字只是别名，数值范围完全相同",
+        "float8_e8m0fnu 有 8 位尾数，用来提高精度",
+        "float8_e4m3fn 是 CUDA 侧的默认拼法，float8_e4m3fnuz 是 ROCm 侧的默认拼法",
+        "混合精度时累加 dtype 可以由编译器自动推导"
+      ],
+      "answer": 2,
+      "explain": "见 §4.3：E4M3 与 E5M2 数值范围不同，同族还分 NaN 规则；e8m0fnu 只有指数，用作 MX 的块 scale；混合精度时 accum_dtype 必须显式给。"
+    },
+    {
+      "id": "q4",
+      "stem": "写 C_f = T.alloc_fragment((128, 128), \"float32\")，本章给出的寄存器账是？",
+      "options": [
+        "它落在 shared memory，占 64 KiB 的片上共享存储",
+        "64 KiB 分给 128 个线程，等于每线程 128 个 fp32 寄存器",
+        "它只是逻辑形状，不占任何物理存储",
+        "它会被自动降级成 alloc_local，每线程只有 1 个元素"
+      ],
+      "answer": 1,
+      "explain": "见 §5.3：fragment 的默认 scope 是 local.fragment，布局推导把它切到每线程寄存器；128×128×4 B = 64 KiB，除以 128 线程就是 128 寄存器/线程，这正是 BM×BN 成为 occupancy 第一杀手的原因。"
+    },
+    {
+      "id": "q5",
+      "stem": "在主干 v0.1.15 的昇腾方言里，UB（Unified Buffer）应该怎么分配？",
+      "options": [
+        "用 T.alloc_ub(shape, dtype)，scope 是 shared.ub",
+        "用 T.alloc_L1(shape, dtype)，scope 是 shared.l1",
+        "用 T.alloc_l0c(shape, dtype)，scope 是 shared.l0c",
+        "用 T.alloc_shared(shape, dtype)，落到 UB"
+      ],
+      "answer": 3,
+      "explain": "见 §5.6：主库没有 alloc_ub，昇腾 README 明确说 UB 用 T.alloc_shared、L1 用 T.alloc_l1、Cube 缓冲用 alloc_l0a/l0b/l0c。alloc_ub 与大驼峰那套是适配器仓库的拼法，两套不能互换。"
+    },
+    {
+      "id": "q6",
+      "stem": "关于 T.Parallel 的默认维度映射，下面哪句是对的？",
+      "options": [
+        "extents 的个数与顺序直接声明了哪个维度给线程",
+        "先按行优先展平，再按 lane → thread → 每线程串行切分，所以 nest 形状会影响访存能否合并",
+        "所有迭代都会平均分给线程，nest 形状无所谓",
+        "必须手写 loop_layout= 才能通过编译"
+      ],
+      "answer": 1,
+      "explain": "见 §6.3 与 §11.2：extents 是逻辑迭代空间；同一份工作换成不同 nest 形状时每线程次数相同，但 thread 0 拿到的逻辑下标不同，合并与否也就不同。不写 loop_layout= 时布局推导会自己推一个。"
+    },
+    {
+      "id": "q7",
+      "stem": "要在 kernel 里做越界保护，例如只在该下标合法时才读取 X[gi]，应该怎么写？",
+      "options": [
+        "Y[gi] = T.Select(gi < N, X[gi], 0.0)，因为它更接近硬件 select",
+        "Y[gi] = T.if_then_else(gi < N, X[gi], 0.0)，它只求值被选中的那一边",
+        "两种写法都可以，Select 在越界时会自动短路",
+        "先用 Python 的 if X[gi] is None: 判空再读"
+      ],
+      "answer": 1,
+      "explain": "见 §7.2 与 §11.3：Select 的两个操作数都会被求值，用它做越界保护照样会读越界。文档明确要求分支有副作用或涉及越界访存时用 if_then_else。"
+    },
+    {
+      "id": "q8",
+      "stem": "文档里写的 if T.all_of(i < M, j < N) 在 v0.1.15 里为什么是错的？",
+      "options": [
+        "因为 all_of 已经被删除，只能用 T.Select 代替",
+        "因为 all_of 只能用在 while 里",
+        "因为 all_of 只接受一个 buffer 或 buffer 切片，多条件的与要用 and",
+        "因为 all_of 需要先用 T.dynamic 声明符号"
+      ],
+      "answer": 2,
+      "explain": "见 §7.3：v0.1.15 的 all_of(buffer) 语义是「这个切片是否全为真」，测试里的用法是 T.all_of(BlockMask[by, bx, k, :])；多条件用 and / or 会降级成 tir.And / tir.Or。这是文档落后于源码的一处。"
+    }
+  ]
+}

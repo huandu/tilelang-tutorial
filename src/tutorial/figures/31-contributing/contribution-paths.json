@@ -1,0 +1,64 @@
+{
+  "id": "contribution-paths",
+  "title": "三种贡献路径：改动落在哪一层",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "2.1",
+  "caption": "同一个改动先看它碰到哪一层：算子/示例、编译器还是后端；三条路径的落点、门槛与评审关注点都不同，但最后都要过维护者评审才进 main。",
+  "nodes": [
+    { "id": "a", "label": "你的改动", "shape": "pill", "tone": "accent" },
+    { "id": "b", "label": "改的是什么？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "c",
+      "label": "路径 1：算子 / 示例",
+      "sub": "examples/<op>/"
+    },
+    {
+      "id": "d",
+      "label": "路径 2：编译器",
+      "sub": "src/transform/, src/layout/, tilelang/<backend>/pipeline.py"
+    },
+    {
+      "id": "e",
+      "label": "路径 3：后端",
+      "sub": "tilelang/<backend>/ + src/<backend>/"
+    },
+    {
+      "id": "c1",
+      "label": "门槛：examples 能在 CI 矩阵里跑",
+      "sub": "+ 正确性对照 + 形状 / 精度覆盖"
+    },
+    {
+      "id": "d1",
+      "label": "门槛：testing/python/transform/",
+      "sub": "+ 布局改动跑 maint/layout_inference/ + 必要时性能回归"
+    },
+    {
+      "id": "e1",
+      "label": "门槛：backend manifest 契约",
+      "sub": "+ testing/python/backend/ + 源码级 codegen 测试 + 打包与文档"
+    },
+    { "id": "f", "label": "维护者评审", "shape": "diamond", "tone": "muted" },
+    { "id": "g", "label": "main", "shape": "pill", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "a", "to": "b" },
+    { "from": "b", "to": "c", "label": "一个算子或一个示例" },
+    { "from": "b", "to": "d", "label": "pass / layout / codegen" },
+    { "from": "b", "to": "e", "label": "新芯片或新执行模式" },
+    { "from": "c", "to": "c1" },
+    { "from": "d", "to": "d1" },
+    { "from": "e", "to": "e1" },
+    { "from": "c1", "to": "f" },
+    { "from": "d1", "to": "f" },
+    { "from": "e1", "to": "f" },
+    { "from": "f", "to": "g", "label": "合入" },
+    { "from": "f", "to": "a", "label": "要求补充", "dashed": true }
+  ],
+  "notes": [
+    "上手难度：路径一低（会 TileLang 即可）、路径二中（要读 TIR 与 pass 顺序）、路径三高（要同时懂 lowering、codegen、构建）。",
+    "需要硬件：路径一视算子而定；路径二通常不需要（可做 IR 级测试）；路径三通常需要在目标硬件上冒烟。",
+    "最容易卡在哪：路径一没有测试、只在本地能跑；路径二把风格改动和语义改动混在一个 PR；路径三在 tilelang/engine/lower.py 里加 target 分支。"
+  ]
+}

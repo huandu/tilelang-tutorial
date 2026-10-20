@@ -1,0 +1,36 @@
+{
+  "id": "inline-02",
+  "title": "推理请求：prompt → prefill → decode 的循环",
+  "kind": "flow",
+  "section": "1.2",
+  "inlineQuote": "flowchart LR\n    P[\"prompt\"] --> PRE[\"prefill：S 个 token 一次性算完<br/>大 GEMM + attention，compute-bound\"]",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "p", "label": "prompt", "tone": "muted" },
+    {
+      "id": "pre",
+      "label": "prefill",
+      "sub": "S 个 token 一次性算完\n大 GEMM + attention，compute-bound",
+      "tone": "compute"
+    },
+    { "id": "kv", "label": "新的 K/V 写进 KV cache", "tone": "store" },
+    {
+      "id": "dec",
+      "label": "decode",
+      "sub": "每步 1 个 token，读全部权重\n+ 整段 KV cache，memory-bound",
+      "badge": "循环",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "p", "to": "pre" },
+    { "from": "pre", "to": "kv" },
+    { "from": "kv", "to": "dec" }
+  ],
+  "caption": "prefill 一次把整个 prompt 算完（compute-bound），decode 每步只出一个 token 却要读全部权重与 KV cache（memory-bound）。",
+  "notes": [
+    "prefill（整段 prompt）：66.1 TFLOP / 28.5 GB → compute-bound；decode（每个 token）：16.1 GFLOP / 14.5 GB → memory-bound。",
+    "decode 段是一个循环：每产出一个 token 后回到下一步，直到结束。"
+  ]
+}

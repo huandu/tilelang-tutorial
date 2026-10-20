@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <circle cx="1110" cy="70" r="250" fill="#2563eb" opacity=".22"/>
+  <circle cx="70" cy="610" r="180" fill="#0d9488" opacity=".16"/>
+  <rect x="72" y="70" width="88" height="88" rx="20" fill="#2563eb"/>
+  <path d="M90 98h52M116 98v40M100 118h32" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="7"/>
+  <text x="72" y="236" fill="#93c5fd" font-family="ui-monospace, monospace" font-size="28">FROM ZERO TO ONE</text>
+  <text x="72" y="330" fill="#f8fafc" font-family="ui-sans-serif, sans-serif" font-size="76" font-weight="700">TileLang 系统教程</text>
+  <text x="72" y="402" fill="#cbd5e1" font-family="ui-sans-serif, sans-serif" font-size="32">算子 · 编译期 · NVIDIA · 昇腾</text>
+  <text x="72" y="540" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="25">39 chapters · interactive exercises · local progress</text>
+  <text x="1128" y="552" fill="#93c5fd" font-family="ui-monospace, monospace" font-size="22" text-anchor="end">tilelang-tutorial.huandu.me</text>
+</svg>

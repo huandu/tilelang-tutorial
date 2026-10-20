@@ -1,0 +1,43 @@
+{
+  "id": "inline-01",
+  "title": "GEMM 变体判断树",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "inlineQuote": "flowchart TD\n    A[要做一个 GEMM] --> B{是不是多个 GEMM?}\n    B -- 否 --> C{输出块数 >= 核数?}",
+  "caption": "从一个 GEMM 往下判断：单个 GEMM 按输出块数与尾波是否满选普通 GEMM、stream-K 或 split-K，多个 GEMM 按形状是否一致选 batched 或 grouped。",
+  "nodes": [
+    { "id": "a", "label": "要做一个 GEMM：是不是多个？", "shape": "diamond", "tone": "default" },
+    { "id": "c", "label": "输出块数 ≥ 核数？", "shape": "diamond", "tone": "default" },
+    { "id": "d", "label": "最后一波是否明显不满？", "shape": "diamond", "tone": "default" },
+    { "id": "e", "label": "普通 GEMM", "sub": "阶梯 ③ / ④", "tone": "accent" },
+    { "id": "f", "label": "stream-K", "tone": "compute" },
+    { "id": "g", "label": "形状小且 K 大？", "shape": "diamond", "tone": "default" },
+    { "id": "h", "label": "split-K", "tone": "compute" },
+    { "id": "i", "label": "各 GEMM 形状一致？", "shape": "diamond", "tone": "default" },
+    { "id": "j", "label": "batched GEMM", "tone": "accent" },
+    { "id": "k", "label": "需要各自独立张量？", "shape": "diamond", "tone": "default" },
+    { "id": "l", "label": "grouped GEMM：拼接 + 偏移表", "tone": "compute" },
+    { "id": "m", "label": "grouped GEMM：指针表", "sub": "单级流水", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "a", "to": "c", "label": "否" },
+    { "from": "a", "to": "i", "label": "是" },
+    { "from": "c", "to": "d", "label": "是" },
+    { "from": "c", "to": "g", "label": "否" },
+    { "from": "d", "to": "e", "label": "否" },
+    { "from": "d", "to": "f", "label": "是" },
+    { "from": "g", "to": "h", "label": "是" },
+    { "from": "g", "to": "e", "label": "否" },
+    { "from": "i", "to": "j", "label": "是" },
+    { "from": "i", "to": "k", "label": "否 / 动态" },
+    { "from": "k", "to": "l", "label": "否" },
+    { "from": "k", "to": "m", "label": "是" }
+  ],
+  "notes": [
+    "原块的起点「要做一个 GEMM」与本图的根节点合并，判断从「是不是多个 GEMM」开始；其余节点与分支和原块一一对应",
+    "输出块数比可并行核数还少就是 split-K 的场景；块数够多但最后一波明显不满才是 stream-K",
+    "只有被切开的块才需要原子合并，其余保持确定性写出",
+    "多个形状不同的 GEMM（MoE）用 grouped；形状完全一致的批量用 batched，比指针表的间接寻址更简单也更快"
+  ]
+}

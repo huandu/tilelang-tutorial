@@ -1,0 +1,66 @@
+{
+  "id": "06-nv-vs-ascend",
+  "title": "NV 与昇腾的方法论差异",
+  "caption": "三条线——容量、执行体、同步——如何改变设计选择；同一个算子、同一套判据，在两边会得出不同答案。",
+  "kind": "compare",
+  "section": "5.4",
+  "labelWidth": 150,
+  "columns": ["NVIDIA（sm_90）", "昇腾（Ascend 950）"],
+  "rows": [
+    {
+      "label": "谁来算",
+      "values": [
+        "warp / warpgroup（SIMT，同一段代码所有线程）",
+        "一个 AI Core = 1 Cube + 2 Vector（两块执行体）"
+      ]
+    },
+    {
+      "label": "片上容量谁决定 tile",
+      "values": [
+        "shared memory 容量 + 寄存器堆 65536/SM + 每线程 255 个上限",
+        "L1 / L0A / L0B / L0C / UB 各自独立、各有对齐（L0A/L0B 512 B、L0C 64 B、UB 32 B）"
+      ]
+    },
+    { "label": "第一约束通常是谁", "values": ["寄存器（累加器）与 shared", "GM→L1 的 MTE2 带宽"] },
+    {
+      "label": "平衡判据",
+      "values": [
+        "每线程寄存器数 ≤ 255，每 SM 驻留块数 ≥ 2",
+        "M*N/(M+N) ≥ cube_throughput/mte2_bw（本例 81.92，方形 tile 边长 ≥ 164）"
+      ]
+    },
+    {
+      "label": "调度怎么做",
+      "values": [
+        "数据流注解（stage/order）+ InjectSoftwarePipeline",
+        "任务 + latency + II + 资源掩码 → Z3 求解 → PrepareMultiBuffer/Materialize"
+      ]
+    },
+    {
+      "label": "同步",
+      "values": [
+        "异步拷贝自带等待 + barrier，用户基本不写",
+        "InsertSync 统一插成对 Set/Wait flag，用户也基本不写"
+      ]
+    },
+    {
+      "label": "特殊的并行手段",
+      "values": [
+        "cluster / DSM / TMA multicast / warp specialization",
+        "Cube 与 Vector 的核间流水 / dual_copy / SimtVF / SimdVF"
+      ]
+    },
+    {
+      "label": "超低精度",
+      "values": [
+        "fp8（mma e4m3/e5m2，m16n8k16）、MX 块缩放",
+        "fp8 走 Cube（16384 ops/cycle）；mxfp4 走 MX MAD（32768 ops/cycle）"
+      ]
+    }
+  ],
+  "notes": [
+    "容量差异改变的是「每条数据该住在哪一块」；执行体差异让「把 epilogue 融进 GEMM」在昇腾上还多一层意思——用 Vector 的时间盖住 Cube 的时间。",
+    "同步差异：昇腾是 pipe 到 pipe 的事件，加一条新数据流 = 加一对 flag，要问「这条依赖值得一次同步吗」。",
+    "同一个大 tile 在两边成立的理由不一样：128x128x32 在 NV 侧是 2 blk/SM，在昇腾侧是 MTE2 II 164 > Cube II 128（GM→L1 是瓶颈）。"
+  ]
+}

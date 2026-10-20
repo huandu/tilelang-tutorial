@@ -1,0 +1,23 @@
+{
+  "id": "inline-01",
+  "title": "改动先看它碰到哪一层",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 20,
+  "inlineQuote": "flowchart LR\n    A[改动] --> B{碰到哪一层}\n    B --> C[\"路径一 算子/示例\"]",
+  "caption": "同一个改动先看它碰到哪一层，再决定走算子/示例、编译器还是后端这三条路径。",
+  "nodes": [
+    { "id": "a", "label": "改动", "shape": "pill", "tone": "accent" },
+    { "id": "b", "label": "碰到哪一层？", "shape": "diamond", "tone": "muted" },
+    { "id": "c", "label": "路径一 · 算子/示例", "tone": "default" },
+    { "id": "d", "label": "路径二 · 编译器", "tone": "default" },
+    { "id": "e", "label": "路径三 · 后端", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "a", "to": "b" },
+    { "from": "b", "to": "c" },
+    { "from": "b", "to": "d" },
+    { "from": "b", "to": "e" }
+  ],
+  "notes": ["三条路径的落点、需要的测试与评审关注点都不同，完整版图见本章 2.1 的对照表。"]
+}

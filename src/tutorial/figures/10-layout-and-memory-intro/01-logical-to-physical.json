@@ -1,0 +1,66 @@
+{
+  "id": "01-logical-to-physical",
+  "title": "逻辑张量到物理存储的映射",
+  "caption": "你写下的 [M, N] 是逻辑形状；数据最终落在哪个线程、哪条字节偏移、哪个 bank 上，由布局决定。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "section": "2.1",
+  "nodes": [
+    {
+      "id": "l",
+      "label": "逻辑张量 A[M, N]",
+      "sub": "你写在 T.Tensor / T.copy 里的形状",
+      "tone": "default"
+    },
+    { "id": "q", "label": "布局由谁决定？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "frag",
+      "label": "线程映射 thread(i, j)",
+      "sub": "fragment / local：layout inference，可被 T.annotate_layout 覆盖",
+      "tone": "compute"
+    },
+    {
+      "id": "shared",
+      "label": "片上地址 offset(i, j)",
+      "sub": "shared：swizzle / padding，可被 T.annotate_layout 覆盖",
+      "tone": "store"
+    },
+    {
+      "id": "global",
+      "label": "HBM 地址 base + i*stride + j",
+      "sub": "global：stride 由你给",
+      "tone": "store"
+    },
+    {
+      "id": "reg",
+      "label": "每个线程的寄存器槽",
+      "sub": "(thread, local_index)",
+      "tone": "compute"
+    },
+    {
+      "id": "bank",
+      "label": "Shared Memory 的 bank",
+      "sub": "offset 决定 bank，bank 决定冲突",
+      "tone": "store"
+    },
+    { "id": "gm", "label": "Global Memory", "tone": "store" },
+    { "id": "x", "label": "T.gemm / T.copy / T.reduce 读写的都是这个物理视图", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "l", "to": "q" },
+    { "from": "q", "to": "frag", "label": "fragment / local" },
+    { "from": "q", "to": "shared", "label": "shared" },
+    { "from": "q", "to": "global", "label": "global" },
+    { "from": "frag", "to": "reg" },
+    { "from": "shared", "to": "bank" },
+    { "from": "global", "to": "gm" },
+    { "from": "reg", "to": "x" },
+    { "from": "bank", "to": "x" },
+    { "from": "gm", "to": "x" }
+  ],
+  "notes": [
+    "布局是接口：生产者（T.copy）按一种布局写、消费者（T.gemm）按另一种布局读，不一致时要么插入转换、要么编译失败。",
+    "同一数组的三条映射路径会同时存在，不是三选一。"
+  ]
+}

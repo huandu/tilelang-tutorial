@@ -1,0 +1,60 @@
+{
+  "id": "05-mhc-kernel-map",
+  "title": "mHC 各 kernel 与一次训练 step 的对应",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "caption": "mHC 的一半算子在每层的前向/反向里，另一半是因为「反向要重算」才存在的；prenorm GEMM 走 DeepGEMM（Ascend C 主体 + TileLang），其余 mix/Sinkhorn 算子是纯 TileLang。",
+  "nodes": [
+    { "id": "expand", "label": "expand", "sub": "首层：单流 → 4 条分支" },
+    { "id": "prenorm", "label": "prenorm GEMM", "sub": "DeepGEMM-Ascend", "tone": "compute" },
+    { "id": "normfn", "label": "reduce + rmsnorm", "sub": "得到 mixes[n,24]" },
+    {
+      "id": "bigfuse",
+      "label": "pre_big_fuse",
+      "sub": "split + Sinkhorn + apply",
+      "tone": "accent"
+    },
+    { "id": "layer", "label": "Attention + MoE", "sub": "layer_output", "tone": "muted" },
+    { "id": "post", "label": "post", "sub": "写出新的 residual" },
+    { "id": "head", "label": "head_compute_mix", "sub": "sigmoid(x·scale + base) + eps" },
+    { "id": "bpre", "label": "pre_apply_mix bwd", "sub": "x_grad 与 mix_grad" },
+    { "id": "bsk", "label": "sinkhorn bwd", "sub": "逆序回放行列归一化" },
+    { "id": "bsplit", "label": "pre_split_mixes bwd", "sub": "写参数梯度部分和" },
+    { "id": "breduce", "label": "bwd reduce", "sub": "跨 CTA 归约 scale/base" },
+    {
+      "id": "recompute",
+      "label": "multilayer_recompute",
+      "sub": "重算 layer_input 与 residual",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "expand", "to": "prenorm" },
+    { "from": "prenorm", "to": "normfn" },
+    { "from": "normfn", "to": "bigfuse" },
+    { "from": "bigfuse", "to": "layer" },
+    { "from": "layer", "to": "post" },
+    { "from": "post", "to": "head" },
+    { "from": "head", "to": "bpre" },
+    { "from": "bpre", "to": "bsk" },
+    { "from": "bsk", "to": "bsplit" },
+    { "from": "bsplit", "to": "breduce" },
+    { "from": "breduce", "to": "recompute", "dashed": true }
+  ],
+  "groups": [
+    {
+      "label": "前向",
+      "nodes": ["expand", "prenorm", "normfn", "bigfuse", "layer", "post", "head"],
+      "tone": "default"
+    },
+    { "label": "反向（逆序）", "nodes": ["bpre", "bsk", "bsplit", "breduce"], "tone": "compute" },
+    { "label": "重算换显存", "nodes": ["recompute"], "tone": "warn" }
+  ],
+  "notes": [
+    "论文 §4.3 的三条基础设施设计与图里的三组 kernel 一一对应：§4.3.1 Kernel Fusion ↔ pre_big_fuse 与两个应用 kernel；§4.3.2 Recomputing ↔ multilayer_recompute；§4.3.3 DualPipe 上的重叠 ↔ 流水边界（属第 38 章）。",
+    "multilayer_recompute 不减少计算，反而多做一遍前向；换来的是不必保存每层的 residual（[n,4,h]，是 layer_input 的 4 倍）。论文给出最优块长 L*_r ≈ sqrt(nL/(n+2))，并要求重算块与流水级对齐。",
+    "参数梯度总是「先写部分和、再单独归约」：pre_split_mixes_bwd → *_bwd_reduce，与 Engram 的 grad_w_reduce 同一种模式。",
+    "prenorm GEMM 是论文明确划在 TileLang 之外的那一段（式 (14)–(15)）；它的性能表在 DeepGEMM-Ascend README 里（厂商自报：算力 3–82 TFLOPS，带宽 519–3463 GB/s），本图不含实测数据。"
+  ]
+}

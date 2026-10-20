@@ -1,0 +1,101 @@
+{
+  "chapter": "16-operators-moe-mla",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "MoE 一层拆成的四段里，哪两段完全没有矩阵乘？",
+      "options": [
+        "router 与 combine",
+        "dispatch 与 grouped GEMM",
+        "permute 与 combine",
+        "router 与 grouped GEMM"
+      ],
+      "answer": 2,
+      "explain": "见 §2.1 与 §2.6：router 是极小的 GEMM，grouped GEMM 是主力；permute（重排）与 combine（scatter-reduce）是零 FLOP 的纯搬运，字节量却与 GEMM 同量级。"
+    },
+    {
+      "id": "q2",
+      "stem": "当 batch 小、专家数多时，MoE 的 grouped GEMM 会怎样？",
+      "options": [
+        "仍然是 compute-bound",
+        "与 batch 大小无关",
+        "由 top-k 决定瓶颈",
+        "被权重流量压成 memory-bound：每个专家分到的 token 太少，摊不薄 3·d·d_e 的权重"
+      ],
+      "answer": 3,
+      "explain": "见 §2.4：tokens_for_expert 从 16 涨到 512，AI 才从 15.8 涨到 384 并跨过平衡点；专家越多、每个越瘦，小 M 问题越严重。"
+    },
+    {
+      "id": "q3",
+      "stem": "MLA 相比 MHA / GQA 改变的是「缓存什么」。它缓存的是？",
+      "options": [
+        "低秩潜向量 c_KV（d_c 维）加一份解耦的 RoPE key k_R（d_r 维）",
+        "每个 head 的 K、V",
+        "只有 V",
+        "完整的 Q"
+      ],
+      "answer": 0,
+      "explain": "见 §3.1：GQA 是少缓存几个 head 的 KV，MLA 是换一个被缓存的对象——缓存 c_KV + k_R，K/V 在用的时候从它长出来。"
+    },
+    {
+      "id": "q4",
+      "stem": "正文说 MLA 对 kernel「不友好」，主要原因是什么？",
+      "options": [
+        "KV cache 太大",
+        "不能用 T.gemm",
+        "head 维 576/512 太大，acc_o 吃掉约 128 个寄存器/线程，且 wgmma 要求 M ≥ 64",
+        "不支持 split-KV"
+      ],
+      "answer": 2,
+      "explain": "见 §3.5：acc_o（block_H × 512）在 threads=256 时就是 128 个 fp32/线程，逼近 255 的上限；而 block_H 因 wgmma 的 M ≥ 64 不能随便降。"
+    },
+    {
+      "id": "q5",
+      "stem": "为什么不能直接把 MLA 的一个 head 写成一个 K=576 的 GEMM？",
+      "options": [
+        "因为 576 超过了 shared memory",
+        "因为 576 不是 2 的幂，官方做法是拆成 512 + 64 两段、累加到同一个 acc_s",
+        "因为 T.gemm 不接受 576",
+        "因为 fp8 不支持 576"
+      ],
+      "answer": 1,
+      "explain": "见 §3.4 与 §8.5：官方把潜向量 512 与解耦 RoPE 的 64 分成两次 T.gemm，累加到同一个 acc_s，从而避开 576 的对齐问题。"
+    },
+    {
+      "id": "q6",
+      "stem": "在 L=131072 时，indexer 自己的 FLOP 与被它选中的 attention 相比如何？",
+      "options": [
+        "indexer 远小于 attention",
+        "约等于 attention",
+        "indexer 是被选中 attention 的约 3.76 倍——稀疏省的是访存，不是 FLOP",
+        "两者无法比较"
+      ],
+      "answer": 2,
+      "explain": "见 §4.5：盈亏平衡点约为 0.0588·L，而配置里只选 topk=2048，远没到打平；所以稀疏算子的设计目标是算术强度平衡，而不是省 FLOP。"
+    },
+    {
+      "id": "q7",
+      "stem": "MLA 的 split-KV 为什么用「写 Output_partial + 第二个 kernel 合并」而不是原子加？",
+      "options": [
+        "为了省显存",
+        "为了回避原子加、买到确定性，代价是多一份中间显存",
+        "因为不支持 fp32 累加",
+        "为了减少 FLOP"
+      ],
+      "answer": 1,
+      "explain": "见 §3.5 与 §6.4：确定性是可以买到的，只是要付显存或时间；原子加的顺序不定，会影响末位结果。"
+    },
+    {
+      "id": "q8",
+      "stem": "昇腾侧 routed GEMM 用来定位数据（专家、起始行、有效行数）的路由表是什么形式？",
+      "options": [
+        "三张表 batch_sizes / offsets / padded_offsets",
+        "一张 block_metadata[total_m_blocks, 3] = [expert, m_start, valid_m]",
+        "cu_seqlens 前缀和",
+        "block_table 页表"
+      ],
+      "answer": 1,
+      "explain": "见 §5.1：昇腾把路由信息收进一张 [total_m_blocks, 3] 的 block_metadata，第三列 valid_m 保证写回时只写有效行、不写脏 padding。"
+    }
+  ]
+}

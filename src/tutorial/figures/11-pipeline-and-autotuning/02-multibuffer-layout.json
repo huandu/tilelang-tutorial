@@ -1,0 +1,19 @@
+{
+  "id": "02-multibuffer-layout",
+  "title": "多缓冲的槽位轮转（num_stages = 3）",
+  "caption": "编译器把一份 buffer 变成 num_stages 份，每轮访问 buffer[ko % num_stages]；「写 ← 覆盖」这一格必须等上一轮的消费者读完。",
+  "kind": "grid",
+  "section": "2.3",
+  "headers": ["ko=0", "ko=1", "ko=2", "ko=3", "ko=4", "ko=5"],
+  "rows": [
+    { "label": "槽位 0", "cells": ["写", "读", "读", "写 ← 覆盖", "读", "读"] },
+    { "label": "槽位 1", "cells": ["—", "写", "读", "读", "写 ← 覆盖", "读"] },
+    { "label": "槽位 2", "cells": ["—", "—", "写", "读", "读", "写 ← 覆盖"] }
+  ],
+  "notes": [
+    "形状改写：(block_M, block_K) → (num_stages, block_M, block_K)，版本维插在 shape 最前面；每个访问点写成 buffer[ko % num_stages]。",
+    "版本数 = use_stage − def_stage + 1（上界）：典型「stage 0 写、stage num_stages−1 读」得到 num_stages；同一 stage 内写后即读则退化成 1，即不做多缓冲。",
+    "只读的、或定义 stage 为 −1 的 buffer 不会被复制。",
+    "片上占用 ≈ num_stages ×（A tile 字节 + B tile 字节），这是上界；MergeSharedMemoryAllocations 会复用 live range 不重叠的存储。"
+  ]
+}

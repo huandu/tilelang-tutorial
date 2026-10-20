@@ -1,0 +1,89 @@
+{
+  "chapter": "30-frontier",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "issue #2115「多后端解耦」的实际落地状态是？",
+      "options": [
+        "仍在进行中，issue 标题里的 RoadMap 说明它还没开始",
+        "已在 v0.1.15 具备，而且 v0.1.14 里就有；正文那串 PR 是已完成清单，不是计划",
+        "只在 corpus 的 main 快照里",
+        "无法确认"
+      ],
+      "answer": 1,
+      "explain": "见 §3.1 与 §2.4 的误判一：issue 标题里的「RoadMap」容易让人以为它还在进行中，但它列出的 PR（#2114、#2121、#2138……）都是已完成清单，可见形态是 tilelang/backend/ 注册表加每后端一个 pipeline.py。"
+    },
+    {
+      "id": "q2",
+      "stem": "为什么本章不把 PR #3310 页面快照显示为 draft 当作「PTO 后端未合入」的唯一依据？",
+      "options": [
+        "PR 页面快照与代码快照指向同一天的不同时刻，事实陈述应以代码为准，PR 的评审状态标为无法确认",
+        "draft 标记一定等于未合入，所以这条依据是可靠的",
+        "PR 编号越大越新，所以它一定已经合入",
+        "只要 PR 标题带 [Ascend] 前缀就一定已经合入"
+      ],
+      "answer": 0,
+      "explain": "见 §4.1.2 与 §2.1：corpus 的 PR 页面快照抓于 2026-09-30 显示 draft，而同一份 corpus 的 main 源码快照里有 994b44e 这个合并 commit。处理方式是「事实陈述用代码、PR 评审状态标为无法确认」。"
+    },
+    {
+      "id": "q3",
+      "stem": "在 v0.1.15 上写 target=\"pto\" 会怎样？",
+      "options": [
+        "可以正常编译运行",
+        "只在昇腾硬件上不可用，编译没问题",
+        "编译失败——PTO 后端的文件只在 corpus 的 main 快照（commit 994b44e）里，不在 v0.1.15",
+        "需要设置 USE_ASCEND=ON 就能用"
+      ],
+      "answer": 2,
+      "explain": "见 §4.1.2 与 §9：PTO codegen、tilelang/contrib/ptodsl/、tilelang/jit/adapter/pto/ 这 20 个文件只在 main 快照里，rg '\"pto\"' 在 v0.1.15 的 tilelang/ 与 src/ 里无输出。想在 950 上用 PTO，只能等下一个 release、用主干或走适配器路线。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 RFC #2897（reducer 的 ownership-safe 延迟归约），下面哪句正确？",
+      "options": [
+        "议题还开着，所以它的主体语义也还没落地",
+        "它已经全部落地，包括 Phase 4 废弃 legacy 写法",
+        "它只在 main 快照里，不在 v0.1.15",
+        "v2 语义、epoch 状态机验证、legacy 规范化早已随 v0.1.14 / v0.1.15 发布；真正没做的是稀疏 partial layout 与废弃 legacy 写法"
+      ],
+      "answer": 3,
+      "explain": "见 §5.1：这是最容易被误判的一条——议题还开着，但 alloc_reducer / reducer_init / reducer_update / finalize_reducer(acc, dst)、verify_reducer_epoch.cc、canonicalize_legacy_reducer.cc 都已存在，且 v0.1.14 就有；只发了 DeprecationWarning 的 Phase 4 与稀疏 partial layout 仍未实现。"
+    },
+    {
+      "id": "q5",
+      "stem": "在 v0.1.15 里使用非 relaxed 的内存序（如 T.atomic_add(..., memory_order=\"acquire\")）时，下面哪个结论正确？",
+      "options": [
+        "API 接受了这个参数，就说明所有 lowering 路径都遵守它",
+        "必须同时确认目标架构与所选 lowering 路径——标量 pre-Hopper、标量非 fp16/bf16 的 Hopper 路径、fp32 x2/x4 的 pre-SM90 回退都会丢参数，HIP 与 CuteDSL codegen 也忽略它",
+        "只有 CUDA 会忽略 memory_order，其它后端都会遵守",
+        "memory_order 参数已经从 v0.1.15 移除"
+      ],
+      "answer": 1,
+      "explain": "见 §5.2：atomic.h 里 AtomicAdd/AtomicAddRet 使用该参数，而 AtomicAddx2/x4Scalar 家族不接收它、内部逐个调 atomicAdd；atomic.py 的文档字符串也写明 HIP 与 CuteDSL codegen 目前忽略 memory_order。所以不能只看 API 是否接受该参数。"
+    },
+    {
+      "id": "q6",
+      "stem": "本地的 _vendor/ 快照是 git clone --depth 1 拉下来的，这带来的限制是什么？",
+      "options": [
+        "无法在本地执行 git diff v0.1.14..v0.1.15，也无法用 git log -S 追符号；要比较两个 tag 只能建完整 clone 或做文件级比较",
+        "无法 import tilelang",
+        "无法读取源码内容，只能读 commit 哈希",
+        "无法确定每个 checkout 的 commit 哈希"
+      ],
+      "answer": 0,
+      "explain": "见 §8.3：三个 _vendor/ checkout 每个只有一个 commit，所以本地 diff 不出来。这正是 code/02-tree-diff/tree_diff.py 存在的原因（本章 §4.1 那条「main 比 v0.1.15 多 20 个文件」就是文件级比较的产物）。先跑 git rev-list --count HEAD 确认手里是快照还是完整历史。"
+    },
+    {
+      "id": "q7",
+      "stem": "PR/RFC 正文属于哪一级证据，风险是什么？",
+      "options": [
+        "强证据，可以直接引用并写进行号",
+        "弱证据，只能用来找线索、不能作为结论",
+        "中档证据：是作者自述、可能滞后于代码；PR 正文描述的可能是那条分支的中间状态，而不是主干的最终状态",
+        "不算证据，可以忽略"
+      ],
+      "answer": 2,
+      "explain": "见 §2.2 与 §4.1.2：PR #3308 的改动列表里有「Remove the PTO and VMI content」，只读它会得出「主干放弃了 PTO」，但 PR #3310 又把 PTO 作为独立后端加了回来。强证据是锁定版本的源码、目录与 commit；弱证据是二手转述。"
+    }
+  ]
+}

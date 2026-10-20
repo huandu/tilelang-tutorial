@@ -1,0 +1,21 @@
+{
+  "id": "02-train-step-timeline",
+  "title": "训练一步里通信的位置",
+  "kind": "timeline",
+  "caption": "dispatch 先发起、后等待，中间塞共享专家等独立计算；更外层的重叠交给 DualPipe。三层重叠可以叠加。",
+  "items": [
+    { "label": "attention / MLP 前向", "at": "①" },
+    { "label": "发起 dispatch（async + defer）", "at": "②", "tone": "accent" },
+    { "label": "共享专家 / 其它计算（重叠）", "at": "③", "tone": "compute" },
+    { "label": "wait：拿到 recv_x / weights / handle", "at": "④" },
+    { "label": "专家 grouped GEMM", "at": "⑤", "tone": "compute" },
+    { "label": "发起 combine（bias 可融合共享专家）", "at": "⑥", "tone": "accent" },
+    { "label": "其它计算（重叠）", "at": "⑦", "tone": "compute" },
+    { "label": "wait：拿到 combined_x", "at": "⑧" }
+  ],
+  "notes": [
+    "不重叠时，dispatch → GEMM → combine 之间串行等待，等待时间由最慢的 rank 决定。",
+    "调用级重叠靠 defer_epilogue + async_with_compute_stream。",
+    "流水线级重叠靠 DualPipe 把前后向 chunk 的计算-通信错开。"
+  ]
+}

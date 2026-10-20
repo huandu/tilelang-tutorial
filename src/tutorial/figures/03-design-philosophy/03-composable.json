@@ -1,0 +1,70 @@
+{
+  "id": "03-composable",
+  "title": "composable：一个 kernel 里的两层",
+  "kind": "flow",
+  "section": "2.6",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "k", "label": "with T.Kernel(grid, threads=threads)", "tone": "accent" },
+    {
+      "id": "s",
+      "label": "T.annotate_layout",
+      "sub": "给 B_shared 指定 swizzle 布局（layout 维度）",
+      "tone": "compute"
+    },
+    {
+      "id": "p",
+      "label": "T.Pipelined(..., num_stages=N)",
+      "sub": "流水循环（pipeline 维度）",
+      "tone": "compute"
+    },
+    { "id": "c1", "label": "T.copy(A[...], A_shared)", "tone": "default" },
+    { "id": "c2", "label": "T.copy(B[...], B_shared)", "tone": "default" },
+    {
+      "id": "dq",
+      "label": "dequant 走哪条路？",
+      "sub": "同一个位置的两种实现",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "f1",
+      "label": "expert 层 macro",
+      "sub": "fast_dequant=True：T.get_thread_binding() · T.call_extern(...)",
+      "tone": "store"
+    },
+    {
+      "id": "f2",
+      "label": "developer 层 macro",
+      "sub": "fast_dequant=False：T.alloc_fragment · T.Parallel",
+      "tone": "default"
+    },
+    {
+      "id": "g",
+      "label": "T.gemm(..., transpose_B=True)",
+      "sub": "tensorize 维度",
+      "tone": "compute"
+    },
+    { "id": "out", "label": "T.copy(C_local, C_shared) → C[...]", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "k", "to": "s" },
+    { "from": "s", "to": "p" },
+    { "from": "p", "to": "c1" },
+    { "from": "c1", "to": "c2" },
+    { "from": "c2", "to": "dq" },
+    { "from": "dq", "to": "f1" },
+    { "from": "dq", "to": "f2" },
+    { "from": "f1", "to": "g" },
+    { "from": "f2", "to": "g" },
+    { "from": "g", "to": "out" }
+  ],
+  "caption": "同一个 T.Pipelined 循环体里，一个是 thread 级 macro，一个是 tile 级 T.gemm，中间没有任何模式切换。",
+  "notes": [
+    "同一份代码里四个调度维度全部出现过：thread binding（threads=、macro 内 T.get_thread_binding()）、layout（T.annotate_layout + make_swizzled_layout）、tensorize（T.gemm(..., transpose_B=True)）、pipeline（T.Pipelined(..., num_stages=)）。",
+    "两个 macro 的分工：fast_dequant 用 T.get_thread_binding() / T.alloc_local / T.serial / T.vectorized / T.call_extern，走 expert 层；simple 版用 T.alloc_fragment / T.copy / T.Parallel，走 developer 层。",
+    "第二个例子（低层写在高层的旁边）见 examples/gemm/example_gemm_intrinsics.py:122-142：T.Parallel 搬运与 mma_emitter.ldmatrix_a/b、mma 直接相邻。",
+    "来源：examples/dequantize_gemm/example_dequant_gemm_bf16_mxfp4_hopper.py:366-373 的结构简化。"
+  ]
+}

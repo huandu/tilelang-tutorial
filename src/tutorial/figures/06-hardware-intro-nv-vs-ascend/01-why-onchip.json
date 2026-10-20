@@ -1,0 +1,39 @@
+{
+  "id": "01-why-onchip",
+  "title": "为什么需要片上存储：延迟与容量的取舍",
+  "caption": "越靠近计算单元的存储越小、越快；一次未缓存访存要等上百个时钟周期，而算术只要几个周期。",
+  "kind": "layers",
+  "section": "1.1",
+  "layers": [
+    {
+      "label": "HBM / GM（外部显存）",
+      "sub": "离计算单元最远，未缓存访存要等数百个时钟周期",
+      "right": "数百周期",
+      "tone": "store"
+    },
+    {
+      "label": "L2 cache",
+      "sub": "所有 SM 共享；延迟量级低于 HBM（本章不给具体数字）",
+      "right": "更低",
+      "tone": "store"
+    },
+    {
+      "label": "shared memory / UB（可显式分配的片上 SRAM）",
+      "sub": "块内共享的可编程暂存区，延迟量级再低一级（具体值未确认）",
+      "right": "更低",
+      "tone": "store"
+    },
+    {
+      "label": "寄存器 / Register File",
+      "sub": "最快、最小；由编译器分配，算术指令约 4 周期",
+      "right": "几个周期",
+      "tone": "compute"
+    }
+  ],
+  "notes": [
+    "容量：越靠近计算单元越小；带宽：越靠近计算单元越高。",
+    "可编程性：shared / UB / L0 可显式分配，寄存器由编译器分配。",
+    "延迟对比来自 CUDA Best Practices Guide（未缓存访存与 compute capability 7.0 的算术延迟）。",
+    "标注「未确认」的地方，本章不填估计值。"
+  ]
+}

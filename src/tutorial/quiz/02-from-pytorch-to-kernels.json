@@ -1,0 +1,91 @@
+{
+  "chapter": "02-from-pytorch-to-kernels",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "对一个线性层 C = AB（A∈R^{M×K}，B∈R^{K×N}），反向的 FLOPs 与前向是什么关系？",
+      "options": [
+        "反向 = 前向，精确相等",
+        "反向 = 2 × 前向，对 GEMM 精确成立",
+        "反向 = 前向 ÷ 2",
+        "反向 = 4 × 前向"
+      ],
+      "answer": 1,
+      "explain": "前向是 2MNK FLOP，反向要算 dA = dC·Bᵀ 与 dB = Aᵀ·dC，各 2MNK，所以反向是前向的 2 倍（见 §1.1）。注意这只对 GEMM 主导的部分精确成立，attention 反向还要额外处理 softmax 中间量。"
+    },
+    {
+      "id": "q2",
+      "stem": "按 §1.1 的口径，优化器状态用 fp32、梯度用 bf16 时，AdamW 每个参数要搬多少字节？",
+      "options": ["26 字节", "12 字节", "4 字节", "182 字节"],
+      "answer": 0,
+      "explain": "读 grad(2) + param/m/v(3×4)，再写回 param/m/v(3×4)，合计 26 字节/参数（见 §1.1）。D 是最容易误选的数字：182 GB 是 70 亿参数模型一步的总搬运量，不是每参数字节数。"
+    },
+    {
+      "id": "q3",
+      "stem": "本书账本口径下的「访存量」指的是什么？",
+      "options": [
+        "profiler 里实测的 DRAM 流量",
+        "所有中间张量读写字节的总和",
+        "每个输入读一次、每个输出写一次，中间张量不单独计",
+        "CPU 与 GPU 之间搬动的字节数"
+      ],
+      "answer": 2,
+      "explain": "§2.1 的四条规则里，第 1 条就是「每个输入读一次、每个输出写一次，被读写的中间张量不单独计」。正因如此它给的是下界，不是实测值（A 是常见误选）。"
+    },
+    {
+      "id": "q4",
+      "stem": "同样是 S=4096、32 head 的 prefill，落 S×S 分数矩阵与 flash 风格的算术强度分别是多少？",
+      "options": ["42.2 与 2068", "2068 与 42.2", "1.01 与 42.2", "1365 与 2068"],
+      "answer": 0,
+      "explain": "落 S×S 时中间量的读写（约 6.44 GB）成为主体，AI≈42.2，是 memory-bound；flash 风格只有 Q/K/V/O 四趟，AI≈2068，回到 compute-bound（见 §2.3）。1.01 是 decode，1365 是 GEMM 4096³，别把三个数字记混。"
+    },
+    {
+      "id": "q5",
+      "stem": "decode 段为什么落在 memory-bound 区？",
+      "options": [
+        "因为 decode 的 FLOPs 比 prefill 更大",
+        "因为每读一个 KV 元素只做一次乘加，且每产出一个 token 要读整套权重与整段 KV cache",
+        "因为 decode 无法使用张量核",
+        "因为 decode 的序列长度比 prefill 更长"
+      ],
+      "answer": 1,
+      "explain": "§1.2 与 §2.3 的账：decode 每个 token 只有 16.1 GFLOP，却要读 14.5 GB，AI≈1.01。A 说反了——decode 的算术量远小于 prefill，长的是它要读的字节数。"
+    },
+    {
+      "id": "q6",
+      "stem": "下面哪一项是 torch.compile / TorchInductor 覆盖不到的？",
+      "options": [
+        "把相邻的逐元素算子垂直融合成一个 kernel",
+        "用 AOTAutograd 把反向也捕获成图",
+        "用 CUDA Graph 消掉逐 kernel 的启动开销",
+        "单个复杂算子内部「tile 多大、数据放在哪一级存储、几条流水怎样重叠」的排布"
+      ],
+      "answer": 3,
+      "explain": "§4.4 给的边界是：Inductor 的融合是图级的，它不发明代价模型驱动的跨层数据流；attention、MLA、MoE、paged decode 的决策不在它的融合抽象里。A、B、C 恰好都是它确实做的事。"
+    },
+    {
+      "id": "q7",
+      "stem": "本章用哪两个判据来验收「已经写出来的 kernel」？",
+      "options": [
+        "与 cuBLAS 对比 + 与 PyTorch 对比",
+        "roofline 利用率 + 库相对效率",
+        "FLOPs 总量 + 峰值内存占用",
+        "编译时间 + kernel 启动次数"
+      ],
+      "answer": 1,
+      "explain": "§5 给出的两个轻量判据是 roofline 利用率（与本章算出的下界比）和库相对效率（与 PyTorch / 厂商库比），它们能标记出「功能正确但效率低」的 kernel。A 只说了库相对效率那一半。"
+    },
+    {
+      "id": "q8",
+      "stem": "按 §5.1 的常见陷阱，融合的收益正比于什么？",
+      "options": [
+        "融合掉的算子个数",
+        "省下的字节数占原本访存量的比例",
+        "kernel 数量的减少比例",
+        "算术强度提高的倍数"
+      ],
+      "answer": 1,
+      "explain": "§5.1 第 3 条明确说：收益取决于省下的字节占比，不是省下的算子个数。一条 10 个算子的链理论上最多把访存降到 1/10，但如果它只占整个模型访存的 1%，端到端收益仍然不到 1%（A、C 都是这个误解）。"
+    }
+  ]
+}

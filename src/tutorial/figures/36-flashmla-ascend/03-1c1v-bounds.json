@@ -1,0 +1,37 @@
+{
+  "id": "03-1c1v-bounds",
+  "title": "1C1V 的三条 bound 与 1C2V 的结论",
+  "kind": "compare",
+  "section": "3.3",
+  "caption": "MTE2 队列深度、反量化吞吐、FixPipe 带宽三条 bound 互相加重，官方因此否掉 1C1V，给每个 Cube 配两个 Vector。",
+  "columns": ["1C1V（报告否掉）", "1C2V（最终采用）"],
+  "rows": [
+    {
+      "label": "MTE2 队列深度",
+      "values": [
+        "单 VECTOR Core 未完成请求上限 16；gather2 后一轮最多 32 个 token，装不下 B_TOPK = 64",
+        "每核只搬 B_TOPK_PER_V = 32 个 token"
+      ]
+    },
+    {
+      "label": "反量化吞吐",
+      "values": ["微基准显示反量化赶不上 Cube 计算，成为瓶颈", "两个 VECTOR Core 分摊反量化"]
+    },
+    {
+      "label": "FixPipe 带宽",
+      "values": [
+        "128 B/cycle；B_TOPK·16 > 1024 + B_TOPK·2 → B_TOPK > 73.14",
+        "MMA_M_PER_V = 32、B_TOPK_PER_V = 32，FixPipe 压力不同"
+      ]
+    },
+    {
+      "label": "结论",
+      "values": ["三条 bound 互相加重，不可行", "分摊 MTE2 发射、反量化、FixPipe 搬运、softmax"]
+    }
+  ],
+  "notes": [
+    "B_TOPK > 73.14 是 1C1V 的条件；最终代码用 1C2V + B_TOPK = 64（config.h:53-55），两者不矛盾。",
+    "MTE2 队列深度是指令级硬上限，与带宽无关；FixPipe 那条是一条可解的等式。",
+    "来源：报告 :132-144；config.h:53-55。"
+  ]
+}

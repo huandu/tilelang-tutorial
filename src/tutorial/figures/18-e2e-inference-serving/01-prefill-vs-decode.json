@@ -1,0 +1,30 @@
+{
+  "id": "01-prefill-vs-decode",
+  "title": "一次请求的两个阶段：prefill 与 decode",
+  "kind": "compare",
+  "section": "2.1",
+  "columns": ["prefill（处理整段 prompt）", "decode（每次生成 1 个 token）"],
+  "rows": [
+    { "label": "一次处理多少 token", "values": ["prompt 的全部 N 个", "每个请求 1 个"] },
+    { "label": "矩阵乘的 M", "values": ["N（几百到几十万）", "batch（1 到几百）"] },
+    {
+      "label": "attention 的 query 长度",
+      "values": ["N（要算 N×N 的分数矩阵）", "1（只有一行分数）"]
+    },
+    {
+      "label": "KV 访问",
+      "values": ["读入并与当前 prompt 一起写入 cache", "从 cache 读已有的全部 KV"]
+    },
+    { "label": "主要瓶颈", "values": ["张量核利用率、N² 中间结果的搬运", "HBM 带宽：权重 + KV"] },
+    {
+      "label": "优化手段",
+      "values": ["分块 + online softmax + 流水（第 15 章）", "批量、KV 分块并行、量化"]
+    }
+  ],
+  "caption": "prefill 的 M = N、算术强度高，是 compute-bound；decode 的 M = batch、算术强度远低于平衡点，是 memory-bound。写出的 KV cache 供 decode 反复读取。",
+  "notes": [
+    "prefill 与 decode 不是 compute 与 memory 的二分，而是算术强度高低的连续谱：M ≪ N, K 时 AI ≈ 2M/b。",
+    "bf16、H100 公开规格下平衡点约 333 FLOP/Byte；Qwen2.5-7B 权重 15.23 GB 在 3 TB/s 上读一遍约 5.08 ms，对应单请求上界约 197 tok/s（下界模型，非实测）。",
+    "decode 的每个 step 还会把新 token 的 K/V 写回 cache；权重流量固定，KV 流量随 context 线性增长。"
+  ]
+}

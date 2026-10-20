@@ -1,0 +1,61 @@
+---
+import { chapterPath } from '@lib/tutorial.ts';
+import type { TutorialChapterMeta } from '@lib/tutorial.ts';
+
+interface Props {
+  chapter: TutorialChapterMeta;
+}
+
+const { chapter } = Astro.props;
+const topics = chapter.toc.slice(0, 4);
+---
+
+<article
+  class="chapter-card card border border-base-300 bg-base-100 transition-colors hover:border-primary"
+  data-chapter-card={chapter.slug}
+  data-read="false"
+>
+  <div class="card-body gap-3">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="chapter-card__number flex h-9 w-9 items-center justify-center rounded-lg bg-base-200 font-mono text-sm font-semibold">
+          {chapter.number}
+        </span>
+        <h3 class="text-base font-semibold leading-snug">
+          <a class="link-hover link" href={chapterPath(chapter.slug)}>
+            {chapter.title}
+          </a>
+        </h3>
+      </div>
+      <span class="badge badge-success badge-sm badge-outline" data-card-status></span>
+    </div>
+
+    <p class="text-sm leading-relaxed opacity-70">{chapter.summary}</p>
+
+    {topics.length > 0 && (
+      <ul class="flex flex-wrap gap-1.5">
+        {topics.map((topic) => (
+          <li class="badge badge-ghost badge-sm">{topic.text}</li>
+        ))}
+      </ul>
+    )}
+
+    <div class="mt-auto flex flex-wrap items-center gap-3 pt-1 font-mono text-xs opacity-60">
+      <span>{chapter.readingMinutes} 分钟</span>
+      <span aria-hidden="true">·</span>
+      <span>{chapter.exerciseCount} 习题</span>
+      {chapter.quizCount > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{chapter.quizCount} 自测</span>
+        </>
+      )}
+      {chapter.figureCount > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{chapter.figureCount} 图</span>
+        </>
+      )}
+    </div>
+  </div>
+</article>

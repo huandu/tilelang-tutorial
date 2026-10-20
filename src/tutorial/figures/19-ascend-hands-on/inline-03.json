@@ -1,0 +1,49 @@
+{
+  "id": "inline-03",
+  "title": "逐元素 add 的数据流与两个同步点",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "inlineQuote": "                MTE2                      V                     MTE3\n  GM(A) ──────────────► a_ub ┐\n  GM(B) ──────────────► b_ub ┤",
+  "caption": "三条 PIPE、两个 barrier、一条数据流：GM(A)/GM(B) 经 MTE2 搬进 UB，Vector 算 c_ub = a_ub + b_ub，再经 MTE3 写回 GM(C)。",
+  "nodes": [
+    { "id": "gma", "label": "GM(A)", "tone": "store" },
+    { "id": "gmb", "label": "GM(B)", "tone": "store" },
+    { "id": "a", "label": "a_ub", "tone": "store" },
+    { "id": "b", "label": "b_ub", "tone": "store" },
+    {
+      "id": "bar1",
+      "label": "barrier_all() ⑨",
+      "sub": "等两次 MTE2 全部完成",
+      "shape": "pill",
+      "tone": "warn"
+    },
+    {
+      "id": "add",
+      "label": "c_ub = a_ub + b_ub",
+      "sub": "⑩ Vector 计算（T.tile.add）",
+      "tone": "compute"
+    },
+    {
+      "id": "bar2",
+      "label": "barrier_all() ⑪",
+      "sub": "等 Vector 全部完成",
+      "shape": "pill",
+      "tone": "warn"
+    },
+    { "id": "gmc", "label": "GM(C)", "sub": "⑫ MTE3 写回", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "gma", "to": "a", "label": "MTE2" },
+    { "from": "gmb", "to": "b", "label": "MTE2" },
+    { "from": "a", "to": "bar1" },
+    { "from": "b", "to": "bar1" },
+    { "from": "bar1", "to": "add" },
+    { "from": "add", "to": "bar2" },
+    { "from": "bar2", "to": "gmc", "label": "MTE3" }
+  ],
+  "notes": [
+    "两个 barrier 保护的是不同方向的依赖：⑨ 是 MTE2 → V，⑪ 是 V → MTE3；写错方向或漏掉任一个，结果都会错。",
+    "barrier_all 等价于 PIPE_ALL 全屏障，最小示例够用，代价是 MTE2 与 V 无法并行。"
+  ]
+}

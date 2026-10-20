@@ -1,0 +1,57 @@
+{
+  "id": "01-stack-map",
+  "title": "DeepSeek 昇腾全栈的组件分层",
+  "kind": "layers",
+  "inlineQuote": "[fig-01] DeepSeek 昇腾全栈：组件的分层位置",
+  "caption": "从语言与编译，到运行时、计算/算子库、通信库的四层，以及每层在 NVIDIA 侧的对应物。",
+  "layers": [
+    {
+      "label": "语言与编译：TileLang 昇腾版",
+      "sub": "对 Ascend C 底层指令封装，提供高级语言编程方式，同时不损失硬件性能",
+      "right": "↔ TileLang 主干",
+      "tone": "accent"
+    },
+    {
+      "label": "运行时：DeepJIT",
+      "sub": "运行时编译 / 缓存 / 装载 / 启动 kernel，CUDA 与昇腾两个后端",
+      "right": "两平台共用",
+      "tone": "muted"
+    },
+    {
+      "label": "计算库：DeepGEMM-Ascend",
+      "sub": "GEMM（BF16/FP8/FP4）、MQA logits、MegaMoE；主体 Ascend C",
+      "right": "↔ DeepGEMM",
+      "tone": "compute"
+    },
+    {
+      "label": "注意力：FlashMLA",
+      "sub": "DSA 稀疏 prefill / decode；昇腾侧这一版不含融合 kernel",
+      "right": "同仓库双平台",
+      "tone": "compute"
+    },
+    {
+      "label": "筛选：DeepSelect",
+      "sub": "TopK（DSA 索引器与 sampler）；昇腾侧只支持 bf16 / int32",
+      "right": "同一 API 双平台",
+      "tone": "compute"
+    },
+    {
+      "label": "算子库：TileKernels",
+      "sub": "MoE 路由、量化、RoPE、Rand、Engram、mHC；用 TileLang 写",
+      "right": "同一 API 双后端",
+      "tone": "accent"
+    },
+    {
+      "label": "通信：DeepEP-Ascend",
+      "sub": "EP dispatch / combine，PP / Bucket / Engram；走 HCCL/HCOMM、UBMEM、URMA",
+      "right": "↔ DeepEP",
+      "tone": "store"
+    }
+  ],
+  "notes": [
+    "只有 TileKernels 是纯 TileLang 的：每个算子一份共享的 *_kernel.py 加 *_cuda.py / *_asc.py 两个后端。",
+    "DeepGEMM-Ascend 整库只有一个算子用 TileLang 写（mHC prenorm），其余是 Ascend C。",
+    "FlashMLA / DeepSelect / DeepEP-Ascend 在这份快照里不用 TileLang。",
+    "DeepJIT 是跨层的共享件：DeepGEMM-Ascend 与 DeepEP-Ascend 的 kernel 都由它运行时编译。"
+  ]
+}

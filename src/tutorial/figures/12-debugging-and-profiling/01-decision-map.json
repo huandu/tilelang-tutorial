@@ -1,0 +1,48 @@
+{
+  "id": "01-decision-map",
+  "title": "问题分类：先看清是哪一类",
+  "caption": "四类问题靠「有没有报错 / 结果对不对 / 快不快 / 稳不稳」四个可观测信号分开，分类之后才谈工具。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "section": "2.3",
+  "nodes": [
+    { "id": "start", "label": "kernel 出问题了", "shape": "pill", "tone": "default" },
+    { "id": "q1", "label": "哪一类？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "gen",
+      "label": "1 跑不起来 / 编译失败",
+      "sub": "generation：手上只有一段报错文本",
+      "tone": "accent"
+    },
+    {
+      "id": "cor",
+      "label": "2 能跑但结果错",
+      "sub": "correctness：有对不上的数值",
+      "tone": "accent"
+    },
+    {
+      "id": "perf",
+      "label": "3 结果对但慢",
+      "sub": "performance：有一个耗时数字",
+      "tone": "accent"
+    },
+    {
+      "id": "flaky",
+      "label": "4 只在某些时候错",
+      "sub": "偶发 / 非确定性：有一份复现率",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "start", "to": "q1" },
+    { "from": "q1", "to": "gen", "label": "有报错" },
+    { "from": "q1", "to": "cor", "label": "结果不对" },
+    { "from": "q1", "to": "perf", "label": "太慢" },
+    { "from": "q1", "to": "flaky", "label": "不稳" }
+  ],
+  "notes": [
+    "排查第一步永远是把信号拿到手：抄完整报错、构造最小可复现输入、先算预期、先统计复现率。",
+    "本图不区分 NVIDIA / 昇腾；两侧工具的对应关系见正文 5.3 的对照表。"
+  ]
+}

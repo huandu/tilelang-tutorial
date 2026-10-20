@@ -1,0 +1,40 @@
+{
+  "id": "02-memory-and-dma",
+  "title": "存储层级、DMA 通路与硬件流水线",
+  "caption": "昇腾把片上存储拆成 L1/L0A/L0B/L0C/UB 五块，T.copy 按 src/dst 的 scope 选出一条 DMAPath，再归到 MTE1/MTE2/MTE3/MAD/FIX/V 之一。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 20,
+  "section": "4.3",
+  "nodes": [
+    { "id": "gm", "label": "GM (HBM)", "sub": "Global Memory", "tone": "store" },
+    { "id": "l1", "label": "L1 (CBuf)", "sub": "__cbuf__ · scope shared.l1", "tone": "store" },
+    { "id": "l0a", "label": "L0A (CA)", "sub": "__ca__ · Cube 左矩阵", "tone": "store" },
+    { "id": "l0b", "label": "L0B (CB)", "sub": "__cb__ · Cube 右矩阵", "tone": "store" },
+    { "id": "l0c", "label": "L0C (CC)", "sub": "__cc__ · Cube 累加器", "tone": "store" },
+    { "id": "ub", "label": "UB", "sub": "__ubuf__ · scope shared.dyn", "tone": "store" },
+    { "id": "aic", "label": "AIC / Cube", "sub": "PIPE_M（MAD）", "tone": "compute" },
+    { "id": "aiv", "label": "AIV / Vector", "sub": "PIPE_V（SIMT / SIMD）", "tone": "compute" },
+    { "id": "fix", "label": "Fixpipe", "sub": "PIPE_FIX（收尾）", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "gm", "to": "l1", "label": "MTE2 kGMToL1" },
+    { "from": "gm", "to": "ub", "label": "MTE2 kGMToUB" },
+    { "from": "l1", "to": "l0a", "label": "MTE1 kL1ToL0A" },
+    { "from": "l1", "to": "l0b", "label": "MTE1 kL1ToL0B" },
+    { "from": "l0a", "to": "aic" },
+    { "from": "l0b", "to": "aic" },
+    { "from": "aic", "to": "l0c", "label": "MAD" },
+    { "from": "l0c", "to": "ub", "label": "FIX kL0CToUB（双目的）" },
+    { "from": "l0c", "to": "gm", "label": "FIX kL0CToGM" },
+    { "from": "ub", "to": "gm", "label": "MTE3 kUBToGM" },
+    { "from": "ub", "to": "l1", "label": "MTE3 kUBToL1" },
+    { "from": "aiv", "to": "ub", "label": "SIMT / SIMD" },
+    { "from": "fix", "to": "l0c", "label": "归属", "dashed": true }
+  ],
+  "notes": [
+    "T.alloc_shared 在 M 树方言里就是 UB（scope=\"shared.dyn\" → __ubuf__）；T.alloc_l1/l0a/l0b/l0c 分别是 __cbuf__/__ca__/__cb__/__cc__。",
+    "GM→L1 默认走 nd2nz（顺带做 ND→NZ），transpose=True 时改走 dn2nz；UB→L1 的 ND→NZ 先被 InsertNd2Nz 改写成 scatter + asc_copy_ub2l1。",
+    "kL1ToL0A / kL1ToL0B 还有 _transpose 变体；kL0CToUB 带 asc_dual_dst_mode。"
+  ]
+}

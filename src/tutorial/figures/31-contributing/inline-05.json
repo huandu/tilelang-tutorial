@@ -1,0 +1,39 @@
+{
+  "id": "inline-05",
+  "title": "后端的实现区与共享执行链",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "inlineQuote": "Language Dialect\n  -> target/BackendContext contribution\n  -> PassPipeline",
+  "caption": "后端由四块编译器自有的实现区组成，从语言方言一路到兼容性契约，再由 BackendContext 选出一个共享的 ExecutionBackend 完成 Build → Load → Launch。",
+  "nodes": [
+    { "id": "dialect", "label": "Language Dialect", "tone": "default" },
+    { "id": "ctx", "label": "target/BackendContext contribution", "tone": "accent" },
+    { "id": "pipeline", "label": "PassPipeline", "tone": "default" },
+    { "id": "codegen", "label": "HostCodegen + DeviceCodegen", "tone": "compute" },
+    { "id": "contract", "label": "compatibility contract", "tone": "muted" },
+    {
+      "id": "exec",
+      "label": "共享的 ExecutionBackend",
+      "sub": "由 BackendContext 选出",
+      "tone": "accent"
+    },
+    { "id": "build", "label": "Build", "tone": "compute" },
+    { "id": "load", "label": "Load", "tone": "compute" },
+    { "id": "launch", "label": "Launch", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "dialect", "to": "ctx" },
+    { "from": "ctx", "to": "pipeline" },
+    { "from": "pipeline", "to": "codegen" },
+    { "from": "codegen", "to": "contract" },
+    { "from": "ctx", "to": "exec", "label": "selects" },
+    { "from": "exec", "to": "build" },
+    { "from": "build", "to": "load" },
+    { "from": "load", "to": "launch" }
+  ],
+  "notes": [
+    "「目标后端」「Python 包名」「TVM target kind」「执行后端名」是四个不同的东西，指南要求不要把四者混为一谈",
+    "新目标后端 = 四块实现区 + 声明兼容的执行后端 + 原生构建/打包 + 测试 + 文档"
+  ]
+}

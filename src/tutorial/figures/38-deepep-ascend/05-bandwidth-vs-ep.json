@@ -1,0 +1,23 @@
+{
+  "id": "05-bandwidth-vs-ep",
+  "title": "带宽随 EP 规模变化",
+  "kind": "bars",
+  "caption": "数据照抄 DeepEP-Ascend README 的性能表（每条取区间上限）：dispatch 从 EP8 的 375 GB/s 降到 EP128 的 320 GB/s，combine 从 347 降到 278。",
+  "items": [
+    { "label": "EP8 dispatch", "value": 375, "display": "375 GB/s", "tone": "accent" },
+    { "label": "EP8 combine", "value": 347, "display": "347 GB/s", "tone": "store" },
+    { "label": "EP16 dispatch", "value": 352, "display": "352 GB/s", "tone": "accent" },
+    { "label": "EP16 combine", "value": 341, "display": "341 GB/s", "tone": "store" },
+    { "label": "EP32 dispatch", "value": 340, "display": "340 GB/s", "tone": "accent" },
+    { "label": "EP32 combine", "value": 324, "display": "324 GB/s", "tone": "store" },
+    { "label": "EP64 dispatch", "value": 327, "display": "327 GB/s", "tone": "accent" },
+    { "label": "EP64 combine", "value": 298, "display": "298 GB/s", "tone": "store" },
+    { "label": "EP128 dispatch", "value": 320, "display": "320 GB/s", "tone": "accent" },
+    { "label": "EP128 combine", "value": 278, "display": "278 GB/s", "tone": "store" }
+  ],
+  "notes": [
+    "条件：Ascend 950DT + CANN 9.2.0 + PoC HDK，netlayer 1；16384 tokens/rank、hidden 7168、top-6/256 experts、expert alignment 128；dispatch FP8 + row-major scale，combine BF16。",
+    "柱值取区间上限，仅用于看趋势；精确区间见 README。",
+    "EP≤32 时 dispatch 达到物理 payload 带宽上限的 90–95%。"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "id": "inline-01",
+  "title": "MoE 一层的四段结构",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "inlineQuote": "flowchart TD\n    X[\"激活 x: T x d\"] --> R[\"1 router/gating<br/>x @ W_g -> T x E<br/>softmax + top-k\"]\n    R --> C[\"计数 / 前缀和<br/>sizes, offsets, padded_offsets\"]",
+  "caption": "激活先过 router/gating，再由计数与前缀和把 token 重排给各专家做 grouped GEMM，最后 combine 回输出。",
+  "nodes": [
+    { "id": "x", "label": "激活 x：T × d", "tone": "default" },
+    {
+      "id": "r",
+      "label": "1 router / gating",
+      "sub": "x @ W_g → T × E\nsoftmax + top-k",
+      "tone": "compute"
+    },
+    {
+      "id": "c",
+      "label": "计数 / 前缀和",
+      "sub": "sizes, offsets, padded_offsets",
+      "tone": "default"
+    },
+    { "id": "p", "label": "2 permute", "sub": "T·k 行 × d", "tone": "warn" },
+    { "id": "g", "label": "3 grouped GEMM", "sub": "每专家 gate+up+down", "tone": "compute" },
+    { "id": "s", "label": "4 combine", "sub": "scatter-reduce + 乘路由权重", "tone": "warn" },
+    { "id": "o", "label": "输出：T × d", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "x", "to": "r" },
+    { "from": "r", "to": "c" },
+    { "from": "x", "to": "p" },
+    { "from": "c", "to": "p" },
+    { "from": "p", "to": "g" },
+    { "from": "g", "to": "s" },
+    { "from": "c", "to": "s" },
+    { "from": "s", "to": "o" }
+  ],
+  "notes": [
+    "四段里只有 router/gating 与 grouped GEMM 是矩阵乘；permute 与 combine 只搬数据，FLOP 为 0",
+    "计数与前缀和给出 sizes / offsets / padded_offsets，permute 与 combine 都要靠它定位每一行属于哪个专家"
+  ]
+}

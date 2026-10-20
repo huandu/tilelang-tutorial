@@ -1,0 +1,101 @@
+{
+  "chapter": "35-deepgemm-ascend",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "DeepGEMM-Ascend 说它「完全兼容 DeepGEMM 的 API」，这个承诺覆盖的是哪一部分？",
+      "options": [
+        "kernel 接口：包名、函数名、参数形态与后缀含义",
+        "全部工具函数，包括 set_tc_util / set_pdl 等设置项",
+        "编译产物：两边的设备二进制完全一致",
+        "数值结果：同一输入必须逐位相等"
+      ],
+      "answer": 0,
+      "explain": "README 明确说「kernel API 见 DeepGEMM 的接口」，兼容承诺只覆盖 kernel 接口；工具函数两边并不相同（NVIDIA 有 set_tc_util/set_pdl，Ascend 换成 set_npu_arch 等）。数值上 BF16 因累加顺序不同最多差约 1 ULP，测试用阈值而不是逐位相等。见 §2.1。"
+    },
+    {
+      "id": "q2",
+      "stem": "昇腾侧 scaling factor 的存储格式是哪一种？",
+      "options": [
+        "每个 scale 一个 fp32，按 K-major 存放",
+        "每 4 个 UE8M0 打进一个 int，按 MN-major 存放",
+        "每 2 个 UE8M0 打进一个 int16，按 MN-major 存放",
+        "每个 scale 一个 fp8，按 K-major 存放"
+      ],
+      "answer": 2,
+      "explain": "README 的 NOTE 写明：K 方向每两个 UE8M0 打包成 int16、按 MN-major 存放。每 4 个打进一个 int 是 NVIDIA SM100 的格式，fp32 是 SM90 的格式。见 §2.2。"
+    },
+    {
+      "id": "q3",
+      "stem": "在 MAD 抽象层的 mad() 里，走 asc_mmad_mx 而不是 asc_mmad 的判据是什么？",
+      "options": [
+        "操作数是否 MN-major",
+        "sizeof(TA) == 1 || sizeof(TB) == 1，也就是 fp8 或打包后的 fp4",
+        "block_k 是否大于 256",
+        "是否开启了 dual_aiv_dequant"
+      ],
+      "answer": 1,
+      "explain": "mad() 用 sizeof 判断：fp8 是 1 字节、fp4 打包成 float4_e2m1x2_t 也是 1 字节，都走带 scale 的 asc_mmad_mx；bf16 是 2 字节，走 asc_mmad。走 mx 是因为要带 scale，不代表更快。见 §2.3。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 README 表里的 Hardware limit 列（bf16 432 / fp8 865 / fp4 1730 TFLOPS），下面哪个说法正确？",
+      "options": [
+        "它们是厂商规格书上的芯片峰值，与源码无关",
+        "它们由 get_mad_flops_per_cycle × 主频 × 核数算出，与元素位宽成反比",
+        "它们是本机实测出来的最大值",
+        "它们与量化格式无关，只由矩阵形状决定"
+      ],
+      "answer": 1,
+      "explain": "heuristics.hpp 里 get_mad_flops_per_cycle(elem_bits) = 8192 × 16 / elem_bits，乘 1650 MHz 与 32 核正好得到 432.5 / 865.0 / 1730.1，与表格列吻合。它是源码里的硬件模型，而不是实测或规格书宣传。见 §4.4 与 §5.1。"
+    },
+    {
+      "id": "q5",
+      "stem": "同一个 FP8 GEMM（N=7168, K=16384），为什么 M=128 时算力利用率只有约 63%，而 M=4096 时能到 99.5%？",
+      "options": [
+        "因为 M=128 时 kernel 没有开 direct_store",
+        "因为 M=128 时权重 B 只被用一次，算术强度贴着机器平衡点，瓶颈是带宽",
+        "因为 M=128 会退化成 fp16 路径",
+        "因为 M=128 时核数被限制成了 8"
+      ],
+      "answer": 1,
+      "explain": "算术强度 ≈ 2MN/((M+N)·elem_bytes)：M=128 约 251 FLOP/byte，贴着平衡点 865e12/3500e9≈247，读 B 与算的时间同量级，所以是带宽主导；M=4096 约 5213 FLOP/byte，完全 compute-bound。见 §5.3。"
+    },
+    {
+      "id": "q6",
+      "stem": "官方说 MQA logits 是 FIX-pipe bound 而不是 compute bound，最合理的解释是下面哪一条？",
+      "options": [
+        "它的 head_dim 只有 64/128，单次 MAD 换来的计算少，而输出 logits 是稠密大矩阵，卡在 L0C→out 这条唯一的出口流水线上",
+        "它没有用 Cube，只用 Vector 计算",
+        "它的 scale factor 没有按 MN-major 存放",
+        "它必须走 ACLNN 参考实现，不能走 JIT"
+      ],
+      "answer": 0,
+      "explain": "FixPipe 是唯一一条 L0C 出去的流水线（KernelProfile.aic_fixpipe = L0C -> out）。MQA 的 head_dim 小、每点积产出的可复用计算少，输出 logits 却是 [Q, max_seqlen_k] 的稠密矩阵，搬出量成为上界。见 §5.5。"
+    },
+    {
+      "id": "q7",
+      "stem": "使用 MegaMoE 融合 kernel 时，下面哪一条是它必须接受的约束？",
+      "options": [
+        "必须把 num_sms 设成 16 才能启动",
+        "每次 launch 都会自动重新编译 kernel",
+        "runtime->get_num_sms() 必须等于 32，否则直接断言失败",
+        "只能用于 EP128 以上的集群"
+      ],
+      "answer": 2,
+      "explain": "csrc/apis/mega_moe.hpp:159 有 DJ_HOST_ASSERT(runtime->get_num_sms() == kNumAICores)，kNumAICores = 32。它的核间分工与 pipe event 编号都是按 32 核静态排好的。性能表是在 EP8、top-k=6 的设置下测的，不是 EP128。见 §5.6。"
+    },
+    {
+      "id": "q8",
+      "stem": "为什么同一份代码里，mHC prenorm GEMM 用 TileLang 写，而 GEMM / MQA / MegaMoE 用 Ascend C + MAD 写？最符合本章分析的答案是：",
+      "options": [
+        "因为 prenorm 用 TileLang 写是遗留代码，官方计划重写",
+        "因为 prenorm 是 memory-bound 且形状规整（N=24、K=28672），TileLang 已接近 HBM 峰值带宽；而 GEMM 要榨 Cube 的最后 1%，必须手工调 mad/L1/L0/stage 参数",
+        "因为 TileLang 不支持 fp8/fp4，只能写 bf16",
+        "因为 prenorm 不需要 correctness 验证，用哪种都行"
+      ],
+      "answer": 1,
+      "explain": "hc_prenorm 的算术强度 ≈ 24 FLOP/byte，带宽已到 3463/3500 ≈ 98.9%，下钻收益极小；dense GEMM 的 98.3%–99.8% 是靠 mad_m/n/k、L1/L0 stage、L2 hint、resident_*、dual_aiv_dequant 等编译期常量拿到的。见 §5.7、§6.6 与 §7.3。"
+    }
+  ]
+}

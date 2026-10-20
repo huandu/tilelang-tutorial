@@ -1,0 +1,32 @@
+{
+  "id": "08-python-boundary",
+  "title": "Python 在 kernel 里的可用边界",
+  "caption": "同一个 with 块里混着 Python 语义与设备语义；分清「编译期值」与「设备值」是关键。",
+  "kind": "layers",
+  "section": "8",
+  "layers": [
+    {
+      "label": "直接可用",
+      "sub": "for i in range(n) → 设备侧 T.serial；list / tuple / enumerate / zip → trace 期展开；while（TIR 条件）；if / elif / else；break / continue；a[i] 与切片、负索引；+ - * / % 与增强赋值；列表/字典/集合推导式",
+      "right": "可用",
+      "tone": "compute"
+    },
+    {
+      "label": "可用但有限制",
+      "sub": "with 只认 T.Kernel 这类 DSL 上下文；assert 要用 T.device_assert 或 T.assert；print() 只在 Python 表达式上有效，设备侧用 T.print()",
+      "right": "有限制",
+      "tone": "store"
+    },
+    {
+      "label": "不可用",
+      "sub": "kernel 里不能 def / class（要复用就写 @T.macro）；不能 a = b = c 链式赋值；没有 len()（用 buffer.shape[dim]）；没有 type() / isinstance()",
+      "right": "不可用",
+      "tone": "warn"
+    }
+  ],
+  "notes": [
+    "编译期值：N（@jit 工厂的参数）、A.shape[0]；设备值：T.dynamic、bx、X[i]。",
+    "对设备值用 Python 的 if / for / len 会出错；对编译期值写 T.serial 会把该展开的东西变成设备循环。",
+    "Python list 不是设备 buffer：用运行期下标去索引 list 不会生成设备侧查表。"
+  ]
+}

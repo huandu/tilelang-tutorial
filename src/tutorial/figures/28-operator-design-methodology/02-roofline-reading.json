@@ -1,0 +1,38 @@
+{
+  "id": "02-roofline-reading",
+  "title": "H200 标定后的四条 roof 与平衡点",
+  "caption": "同一个算子只有一个真实的位置（它的 AI），但有若干条可能的 roof；把 AI 落在哪条 roof 下面，是设计者要声明的判断。",
+  "kind": "bars",
+  "section": "2.2",
+  "items": [
+    {
+      "label": "tensor_core.fp8",
+      "value": 306.67,
+      "display": "306.67 FLOP/Byte（1380.75 TFLOPS）",
+      "tone": "accent"
+    },
+    {
+      "label": "tensor_core.bf16",
+      "value": 168.78,
+      "display": "168.78 FLOP/Byte（759.94 TFLOPS）",
+      "tone": "default"
+    },
+    {
+      "label": "tensor_core.fp16",
+      "value": 161.97,
+      "display": "161.97 FLOP/Byte（729.26 TFLOPS）",
+      "tone": "default"
+    },
+    {
+      "label": "cuda_core.fp32",
+      "value": 12.72,
+      "display": "12.72 FLOP/Byte（57.27 TFLOPS）",
+      "tone": "warn"
+    }
+  ],
+  "notes": [
+    "带宽 = 4800 GB/s × 0.9380 = 4502.4 GB/s；平衡点 = effective 峰值算力 / 带宽。",
+    "案例算子（QK-Norm + RoPE + fp8 量化）AI = 2.79 FLOP/Byte，远低于任何一条平衡点——它是极端的 memory-bound。",
+    "roof 必须由设计者声明：它说的是「最优实现会用哪个单元」，永远不从运行中的 kernel 推断。"
+  ]
+}

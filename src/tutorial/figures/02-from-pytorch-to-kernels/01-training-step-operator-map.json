@@ -1,0 +1,58 @@
+{
+  "id": "01-training-step-operator-map",
+  "title": "一次训练迭代的算子地图",
+  "kind": "flow",
+  "section": "1.1",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "data", "label": "一个 batch", "sub": "input_ids / labels", "tone": "default" },
+    {
+      "id": "fwd",
+      "label": "前向（forward）",
+      "sub": "norm · GEMM · attention · 激活 · loss",
+      "badge": "下界由算力决定",
+      "tone": "compute"
+    },
+    { "id": "loss", "label": "标量 loss", "tone": "default" },
+    {
+      "id": "bwd",
+      "label": "反向（backward）",
+      "sub": "与前向逐层镜像；每个前向 GEMM 的反向是它的 2 倍 FLOPs",
+      "badge": "下界由算力决定",
+      "tone": "compute"
+    },
+    {
+      "id": "opt",
+      "label": "优化器（optimizer）",
+      "sub": "AdamW：读 grad / param / m / v，写回三份",
+      "badge": "下界由带宽决定",
+      "tone": "store"
+    },
+    {
+      "id": "comm",
+      "label": "通信（数据并行）",
+      "sub": "梯度 all-reduce，无算术，纯搬运",
+      "badge": "网络带宽决定",
+      "tone": "store"
+    },
+    { "id": "next", "label": "下一个 iteration", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "data", "to": "fwd" },
+    { "from": "fwd", "to": "loss" },
+    { "from": "loss", "to": "bwd" },
+    { "from": "bwd", "to": "opt" },
+    { "from": "bwd", "to": "comm" },
+    { "from": "opt", "to": "next" },
+    { "from": "comm", "to": "next" }
+  ],
+  "caption": "一次 loss.backward(); optimizer.step() 里算子出现的四个位置，以及每个阶段在 roofline 上的典型判据。",
+  "notes": [
+    "前向的完整算子：norm（RMSNorm / LayerNorm）→ 投影 GEMM（QKV / O / gate / up / down）→ attention（QKᵀ → softmax → PV）→ 逐元素与融合（RoPE、残差加、SiLU、mask）→ loss（cross entropy / logits）。",
+    "反向：dY = dOut · Wᵀ（每个前向 GEMM 的 2 倍 FLOPs）、dW = Xᵀ · dOut、norm / 激活 / mask 的反向、attention 反向（需要重算或保存 softmax 中间量）。",
+    "优化器是完整的算子而不是一行 Python：每参数读 grad / param / m / v、写回 param / m / v，合计 ±26 字节；通信没有算术，ring all-reduce 搬的是梯度的 2(N−1)/N 倍。",
+    "各阶段的判据：前向与反向由算力决定（长序列下 FLOPs 远大于字节数），优化器由带宽决定，通信由网络带宽决定。",
+    "占比由 code/02-step-budget/step_budget.py 的粗模型复算（8B 级模型、seq_len=4096、batch=1、8 卡、H200 标定参数），属公式推导，不是实测。"
+  ]
+}

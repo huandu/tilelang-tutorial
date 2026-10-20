@@ -1,0 +1,74 @@
+{
+  "id": "06-v015-changes",
+  "title": "v0.1.14 → v0.1.15 在 NV codegen 上的变化图",
+  "caption": "用 diff -rq 对比两棵浅克隆的 vendor 树得到的文件级改动；因为仓库没有提交历史，结论全部来自文件 diff。",
+  "kind": "grid",
+  "section": "4.10",
+  "headers": ["目录", "文件", "变化"],
+  "rows": [
+    {
+      "cells": [
+        "src/cuda/op",
+        "gemm_blockscaled.cc",
+        "新增：blockscaled 专用分派（从 gemm.cc 移出）"
+      ]
+    },
+    {
+      "cells": [
+        "src/cuda/op",
+        "copy_analysis.cc",
+        "CopyInstIsTMA 拆成 Load/Store 两个；ClassifyWarpSpecializedCopy 泛化"
+      ]
+    },
+    {
+      "cells": [
+        "src/cuda/transform",
+        "auto_schedule.cc",
+        "新增：自动 warp specialization 入口与 role_based 调度器"
+      ]
+    },
+    {
+      "cells": [
+        "src/cuda/transform",
+        "ws_analysis.{h,cc}",
+        "新增：TileStmtKind 分类（从 producer_consumer_ws.cc 抽出）"
+      ]
+    },
+    {
+      "cells": [
+        "src/cuda/transform",
+        "materialize_ws_schedule.cc",
+        "大幅扩容（该文件 diff 有 3312 行）"
+      ]
+    },
+    {
+      "cells": [
+        "src/cuda/codegen",
+        "codegen_cuda.{cc,h}",
+        "新增 EmitPackedX2Call / EmitPerLaneScalarCall；int8x64 改为 longlong4"
+      ]
+    },
+    {
+      "cells": [
+        "tilelang/cuda",
+        "pipeline.py",
+        "插入 AutoWarpSpecialization；MaterializeKernelLaunch 参数化"
+      ]
+    },
+    {
+      "cells": ["tilelang/transform", "pass_config.py", "新增 tl.enable_auto_warp_specialization"]
+    },
+    {
+      "cells": [
+        "tilelang/jit",
+        "adapter/wrapper.py",
+        "NV 部分只有 uint64 类型映射；其余变化来自 Ascend"
+      ]
+    },
+    { "cells": ["tilelang/contrib", "nvcc.py / nvrtc.py", "两版之间无差异（diff -rq 未列出）"] }
+  ],
+  "notes": [
+    "TMEM 判断从字面量 scope 改成谓词：op.c_.scope() == \"shared.tmem\" 变成 IsTmemBuffer(op.c_)。",
+    "两个 vendor 树都是浅克隆，没有提交历史，无法用 git log 看改动原因。"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "inline-03",
+  "title": "ci.yml：三个层级、四个 job",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "inlineQuote": "lint (ubuntu-latest)                        ci.yml:37-76\n  ├─ compileall -q -f tilelang             （Python 3.10 AST 检查）\n  ├─ audit_cpp_api_style.py --github-warnings --limit 20   （仅告警，不阻断）",
+  "caption": "lint 先跑；tests 与 ascend 依赖 lint，cutedsl 又依赖 tests，所以 NVIDIA 矩阵不过时 cutedsl 根本不会启动。",
+  "nodes": [
+    {
+      "id": "lint",
+      "label": "lint（ubuntu-latest）",
+      "sub": "compileall + audit_cpp_api_style\npre-commit run --all-files",
+      "badge": "ci.yml:37-76",
+      "tone": "default"
+    },
+    {
+      "id": "tests",
+      "label": "tests（matrix）",
+      "sub": "nvidia CUDA-auto → ../examples\namd ROCm-7.2 / macos Metal",
+      "badge": "ci.yml:77-441",
+      "tone": "compute"
+    },
+    {
+      "id": "ascend",
+      "label": "ascend",
+      "sub": "self-hosted, USE_ASCEND=ON\npytest -n 4 ../examples/ascend",
+      "badge": "ci.yml:442-508",
+      "tone": "compute"
+    },
+    {
+      "id": "cutedsl",
+      "label": "cutedsl",
+      "sub": "TILELANG_TARGET=cutedsl\n../examples（排除 examples/ascend）",
+      "badge": "ci.yml:509-663",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "lint", "to": "tests", "label": "needs" },
+    { "from": "lint", "to": "ascend", "label": "needs" },
+    { "from": "tests", "to": "cutedsl", "label": "needs" }
+  ],
+  "notes": [
+    "lint：compileall -q -f tilelang、audit_cpp_api_style.py --github-warnings --limit 20（仅告警，不阻断）、pre-commit run --all-files（ci.yml:37-76）",
+    "tests 矩阵：nvidia/CUDA-auto 先跑 ../examples（排除 grouped_gemm 与 examples/ascend）再跑 ./python；amd/ROCm-7.2 跑 ./python 加 4 个 portable example；macos-latest/Metal 只跑 ./python -k metal（ci.yml:77-441）",
+    "ascend：self-hosted + USE_ASCEND=ON，pytest -n 4 ../examples/ascend 与 pytest -n 32 ascend（ci.yml:442-508）；cutedsl：TILELANG_TARGET=cutedsl 跑 ../examples（排除 examples/ascend）（ci.yml:509-663）",
+    "tests / ascend / cutedsl 的 if 都带 github.repository_owner == 'tile-ai'，fork 仓库同步代码时不会白跑 self-hosted runner",
+    "if 里还有 !github.event.pull_request.draft：草稿 PR 不跑测试矩阵，「CI 没绿」有时只是因为它还是 draft"
+  ]
+}

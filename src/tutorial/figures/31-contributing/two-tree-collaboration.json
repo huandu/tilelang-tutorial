@@ -1,0 +1,68 @@
+{
+  "id": "two-tree-collaboration",
+  "title": "两棵树的协作",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "section": "7",
+  "caption": "左边是适配器仓库、右边是主干：适配器有独立的 VERSION、AGENTS.md、format.sh 与 PR 模板，主干侧有一个独立的 ascend CI job 持续回归。",
+  "nodes": [
+    {
+      "id": "a1",
+      "label": "tilelang/ascend/ + src/ascend/",
+      "sub": "主干里的昇腾后端与方言"
+    },
+    {
+      "id": "a2",
+      "label": ".github/workflows/ci.yml（job: ascend）",
+      "sub": "self-hosted ascend，USE_ASCEND=ON"
+    },
+    {
+      "id": "a3",
+      "label": "testing/ascend/ + examples/ascend/",
+      "sub": "按 transform / layout / auto_schedule / runtime 等分区"
+    },
+    {
+      "id": "b1",
+      "label": "默认分支 ascendc_pto；VERSION 0.1.4",
+      "sub": "tag 是 v0.1.2.000-release，两者不一致，以 tag 为准"
+    },
+    {
+      "id": "b2",
+      "label": "AGENTS.md：算子开发编排 / Skills",
+      "sub": "含 Pass 分析与设计、tilelang-ascend-op 等"
+    },
+    {
+      "id": "b3",
+      "label": "format.sh：YAPF + Ruff",
+      "sub": "并校验工具版本必须等于 requirements-lint.txt"
+    },
+    {
+      "id": "b4",
+      "label": ".github/pull_request_template.md",
+      "sub": "双后端 + 性能门槛 + 2 分钟用例预算"
+    }
+  ],
+  "edges": [
+    {
+      "from": "b1",
+      "to": "a1",
+      "label": "能力在适配器里先验证（观察到的事实：PR #3308/#3310/#3325 等以 [Ascend] 前缀进入主干）"
+    },
+    { "from": "a1", "to": "a2", "label": "主干侧 CI 有独立 ascend job，持续回归" },
+    { "from": "b4", "to": "b1", "label": "提交规范" }
+  ],
+  "groups": [
+    { "label": "tile-ai/tilelang（主干）", "nodes": ["a1", "a2", "a3"], "tone": "default" },
+    {
+      "label": "tile-ai/tilelang-ascend（适配器）",
+      "nodes": ["b1", "b2", "b3", "b4"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "这张图要诚实读：箭头方向是从 corpus 快照与 PR 标题观察到的事实，不是仓库里写死的流程。",
+    "两个仓库的 CONTRIBUTING.md、AGENTS.md、.github/ 都没有写下「适配器先行、再回主干」这条规定，正文第 7 节把它标为「无法确认（无成文依据）」。",
+    "适配器仓库的默认目标是 ascendc_pto 分支而不是 main；两个仓库的行宽也不同（主干 C++ 80 列，适配器 Python/C++ 都是 100）。"
+  ]
+}

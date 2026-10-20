@@ -1,0 +1,93 @@
+{
+  "id": "04-hazard-to-sync",
+  "title": "从读写集到同步点的两条路径",
+  "caption": "CUDA 与昇腾的输入是同一个东西（带距离的访问冲突），但输出不是同一个东西：一边落成 barrier 与 parity，一边落成有向的 SetFlag / WaitFlag。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "4",
+  "nodes": [
+    {
+      "id": "in",
+      "label": "共享内存 / UB / L1 的读写集",
+      "sub": "+ 迭代距离（loop-carried edge）",
+      "tone": "default"
+    },
+    {
+      "id": "cuda",
+      "label": "CUDA 侧 tl.ThreadSync",
+      "sub": "src/transform/thread_storage_sync.cc",
+      "tone": "accent"
+    },
+    {
+      "id": "asc",
+      "label": "昇腾侧 tl.InsertSync",
+      "sub": "src/ascend/transform/insert_sync.cc",
+      "tone": "accent"
+    },
+    { "id": "c1", "label": "收集 AccessEntry", "sub": "逐语句记下谁、访问哪里", "tone": "default" },
+    {
+      "id": "c2",
+      "label": "FindConflict",
+      "sub": "同 buffer + 下标相交，否则 Z3 证不相交",
+      "tone": "default"
+    },
+    {
+      "id": "c3",
+      "label": "插 barrier 并收窄",
+      "sub": "收窄到真正参与的 warp 集合",
+      "tone": "default"
+    },
+    { "id": "a1", "label": "SyncInsertionSite", "sub": "core / PIPE / 循环位置", "tone": "muted" },
+    {
+      "id": "a2",
+      "label": "SyncPoint + GetHardEvent",
+      "sub": "{edge, distance, num_versions}",
+      "tone": "muted"
+    },
+    {
+      "id": "a3",
+      "label": "FlagAllocator",
+      "sub": "每 hard_event 8 槽，id = i % nv + base",
+      "tone": "muted"
+    },
+    {
+      "id": "a4",
+      "label": "SyncMaterializer",
+      "sub": "SetFlag / WaitFlag；溢出交给 RewriteFlagToBuf",
+      "tone": "muted"
+    },
+    {
+      "id": "o1",
+      "label": "生成 CUDA",
+      "sub": "__syncthreads / ptx_wait_group / mbarrier_wait_parity",
+      "tone": "compute"
+    },
+    {
+      "id": "o2",
+      "label": "生成 Ascend C",
+      "sub": "SetFlag / WaitFlag / PipeBarrier / CrossCore*Flag",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "in", "to": "cuda" },
+    { "from": "in", "to": "asc" },
+    { "from": "cuda", "to": "c1" },
+    { "from": "c1", "to": "c2" },
+    { "from": "c2", "to": "c3" },
+    { "from": "c3", "to": "o1" },
+    { "from": "asc", "to": "a1" },
+    { "from": "a1", "to": "a2" },
+    { "from": "a2", "to": "a3" },
+    { "from": "a3", "to": "a4" },
+    { "from": "a4", "to": "o2" }
+  ],
+  "notes": [
+    "上半支：CUDA 按「位置」表达同步，barrier 本身不区分生产者与消费者。",
+    "下半支：昇腾按「有向事件」表达同步，HardEvent = PROD_CONS 天生区分方向。",
+    "CUDA 的 FindConflict 排除规则：不同 buffer 无关、两个 atomic 之间无关、下标恒等且参与者相同无关；否则用 Z3 证字节区间不相交，证不出来就保守认定冲突。",
+    "昇腾的 event_id = iteration % num_versions + base：一个版本一个事件槽，版本数直接乘在 flag 需求上。",
+    "cp.async 的完成由 wait_group 负责，__syncthreads() 不会等它；mbarrier 靠 parity 把第 k 圈的 arrive 与第 k 圈的 wait 配对。"
+  ]
+}

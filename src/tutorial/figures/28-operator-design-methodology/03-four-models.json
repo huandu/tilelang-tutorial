@@ -1,0 +1,64 @@
+{
+  "id": "03-four-models",
+  "title": "四种性能模型的定位",
+  "caption": "从成本最低、粒度最粗的手工账本，到唯一能给出真实时间的测量层，四个层次回答不同的问题，也会在不同的地方给出错误答案。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "section": "3.5",
+  "nodes": [
+    { "id": "a1", "label": "手工账本", "sub": "(flops, bytes) → AI → 平衡点", "tone": "default" },
+    {
+      "id": "a2",
+      "label": "成本：几分钟 · 粒度：整个算子",
+      "sub": "误差：一个数量级以内",
+      "tone": "default"
+    },
+    {
+      "id": "b1",
+      "label": "TileSight",
+      "sub": "intra-tile / inter-tile / cross-device",
+      "tone": "accent"
+    },
+    {
+      "id": "b2",
+      "label": "carver-roller",
+      "sub": "traffic + smem + regs → waves",
+      "tone": "accent"
+    },
+    {
+      "id": "b3",
+      "label": "粒度：tile 与 schedule",
+      "sub": "来源只有摘要，无源码",
+      "tone": "muted"
+    },
+    { "id": "c1", "label": "tilelang.tools.Analyzer", "sub": "NV，静态", "tone": "default" },
+    { "id": "c2", "label": "EstimateLatency + Z3", "sub": "昇腾，cycle 级", "tone": "default" },
+    { "id": "d1", "label": "Nsight Compute / msProf", "sub": "测量", "tone": "compute" },
+    { "id": "d2", "label": "唯一能给出真实时间的层", "tone": "compute" },
+    { "id": "e", "label": "对账：模型差在哪一条约束上", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "a1", "to": "a2" },
+    { "from": "a2", "to": "b1" },
+    { "from": "b1", "to": "b2" },
+    { "from": "b2", "to": "b3" },
+    { "from": "b3", "to": "c1" },
+    { "from": "b3", "to": "c2" },
+    { "from": "c1", "to": "d1" },
+    { "from": "c2", "to": "d2" },
+    { "from": "d1", "to": "e" },
+    { "from": "d2", "to": "e" }
+  ],
+  "groups": [
+    { "label": "层 1：手工账本（本章第 2 节）", "nodes": ["a1", "a2"], "tone": "default" },
+    { "label": "层 2：tile 级解析模型", "nodes": ["b1", "b2", "b3"], "tone": "default" },
+    { "label": "层 3：编译器内建估计器", "nodes": ["c1", "c2"], "tone": "default" },
+    { "label": "层 4：测量", "nodes": ["d1", "d2"], "tone": "default" }
+  ],
+  "notes": [
+    "手工账本能答「是不是 memory-bound、下界是多少」，答不了具体 tile 配置与绝对时间；出错时长这样：用错 roof。",
+    "carver 能挡掉不可行配置并给排序，但在 block_K 上没有分辨率、会大量并列；Analyzer 只统计 tl.gemm 与跨 global 的 tl.copy，sm_90/sm_100 上 estimated_time 会静默退化成访存时间。",
+    "昇腾的 EstimateLatency + Z3 能算每条 pipe 的 latency 与 II，但换芯片要重新标定常量。"
+  ]
+}

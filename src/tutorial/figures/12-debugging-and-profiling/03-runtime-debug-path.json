@@ -1,0 +1,52 @@
+{
+  "id": "03-runtime-debug-path",
+  "title": "运行期调试路径（一）：对拍与差异分流",
+  "caption": "「能跑但结果错」的标准流程：先找到一个能稳定复现的输入，与参考对拍，再按差异形状分流。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "section": "3.5",
+  "nodes": [
+    {
+      "id": "r0",
+      "label": "找到一个能稳定复现的输入",
+      "sub": "固定 seed、固定 shape",
+      "tone": "default"
+    },
+    { "id": "r1", "label": "结果对不对？（与参考实现对拍）", "shape": "diamond", "tone": "muted" },
+    { "id": "done", "label": "正确性通过", "shape": "pill", "tone": "accent" },
+    { "id": "r2", "label": "差异形状？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "r3",
+      "label": "先回编译期：IR 与 layout 是否如预期",
+      "sub": "整块错位 / 大面积错（图 2）",
+      "tone": "default"
+    },
+    {
+      "id": "r4",
+      "label": "先核对容差口径",
+      "sub": "整体偏移 / 少量离群：累加类型、饱和、NaN（3.7）",
+      "tone": "default"
+    },
+    { "id": "r5", "label": "进入「偶发」分支", "sub": "每次不一样", "tone": "warn" },
+    {
+      "id": "r6",
+      "label": "用 fp64 参考重算同一输入",
+      "sub": "看误差是系统性还是随机的",
+      "tone": "default"
+    }
+  ],
+  "edges": [
+    { "from": "r0", "to": "r1" },
+    { "from": "r1", "to": "done", "label": "对" },
+    { "from": "r1", "to": "r2", "label": "错" },
+    { "from": "r2", "to": "r3", "label": "整块错位 / 大面积错" },
+    { "from": "r2", "to": "r4", "label": "整体偏移 / 少量离群" },
+    { "from": "r2", "to": "r5", "label": "每次不一样" },
+    { "from": "r4", "to": "r6" }
+  ],
+  "notes": [
+    "先在 CPU 上把参考算对，再上卡跑 kernel，永远比反过来便宜。",
+    "打印是核武器，不是第一手段——它会改变 kernel 的时序与性能。"
+  ]
+}

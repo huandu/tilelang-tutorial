@@ -1,0 +1,34 @@
+{
+  "id": "03-buffer-lifecycle",
+  "title": "EPBuffer 的生命周期",
+  "kind": "steps",
+  "direction": "TB",
+  "caption": "一个 EP group 只建一个长生命周期 buffer；容量必须所有 rank 一致；用完显式 destroy() 之后才能拆进程组。",
+  "steps": [
+    {
+      "label": "① 规划容量",
+      "sub": "get_buffer_size_hint()，返回 2 MB 对齐字节数",
+      "tone": "default"
+    },
+    {
+      "label": "② 构造",
+      "sub": "注册对称内存 [ workspace | buffer ]，建信道与 Jetty，barrier 对齐",
+      "tone": "accent"
+    },
+    {
+      "label": "③ 使用（可循环）",
+      "sub": "dispatch → 专家 GEMM → combine；handle 可缓存",
+      "tone": "compute"
+    },
+    {
+      "label": "④ 销毁",
+      "sub": "destroy() → 注销 workspace → finalize，然后才拆进程组",
+      "tone": "warn"
+    }
+  ],
+  "notes": [
+    "每层建一个 buffer 是反模式：一个 EP group 只应有一个。",
+    "改容量/对齐/topk 之前必须等在途操作全部结束。",
+    "explicitly_destroy=True 且忘记 destroy() 会打印泄漏警告并真的泄漏。"
+  ]
+}

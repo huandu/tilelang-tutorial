@@ -1,0 +1,18 @@
+{
+  "id": "01-gemm-ledger",
+  "title": "GEMM 的算术强度与判类翻转（fp16，fp32 累加）",
+  "kind": "bars",
+  "section": "1.1",
+  "caption": "AI 随边长线性增长：规模一变大，判类从 memory-bound 翻到 compute-bound。",
+  "items": [
+    { "label": "M=128（memory-bound）", "value": 42.7, "display": "42.7 F/B", "tone": "store" },
+    { "label": "M=512（memory-bound）", "value": 171, "display": "171 F/B", "tone": "store" },
+    { "label": "机器平衡点（H100 fp16）", "value": 333, "display": "≈333 F/B", "tone": "warn" },
+    { "label": "M=4096（compute-bound）", "value": 1365, "display": "1365 F/B", "tone": "accent" }
+  ],
+  "notes": [
+    "计算量 2MNK；最小访存 b(MK+KN+MN)；正方形退化成 AI = 2M/(3b)",
+    "翻转点 M≈10³：曲线斜率来自 AI ∝ M，与平衡点的交点就是「可以靠调 tile 提性能」的下限规模",
+    "compute-bound 瓶颈在张量核，memory-bound 瓶颈在 HBM，两者的优化方向完全不同"
+  ]
+}

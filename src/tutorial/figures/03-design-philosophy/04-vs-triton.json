@@ -1,0 +1,35 @@
+{
+  "id": "04-vs-triton",
+  "title": "Triton 与 TileLang 把决定放在哪里",
+  "kind": "compare",
+  "section": "5",
+  "labelWidth": 260,
+  "columns": ["Triton 的路线：编译器选调度", "TileLang 的路线：决定留在语言里"],
+  "rows": [
+    {
+      "label": "用户写什么",
+      "values": ["块级程序（tile 是有形状的值）", "数据流（tile 有形状 + 归属 + 存储位置）"]
+    },
+    {
+      "label": "布局 / 访存 / 流水由谁定",
+      "values": [
+        "编译器：intra-tile 布局、合并访存、流水、专用硬件使用",
+        "不介入 → LayoutInference / PipelinePlanning / LowerTileOp；介入 → 注解与原语"
+      ]
+    },
+    {
+      "label": "介入方式",
+      "values": [
+        "用户看不到这些决定（论文原文用词：hiding）",
+        "annotate_layout · policy= · num_stages · stage/order · get_thread_binding"
+      ]
+    },
+    { "label": "产物", "values": ["GPU 代码", "GPU / NPU 代码"] }
+  ],
+  "caption": "同样写块级程序，「tile 里的布局、搬运机制、流水深度」这些决定最终是谁做的：两条路线的答案不同。",
+  "notes": [
+    "上表的 Triton 观点来自 2019 年原始论文（MAPL'19），只用来说明两条路线的设计取向，不做「今天的 Triton 还是不是这样」的断言。",
+    "TileLang developer 层官方类比 Triton（docs/deeplearning_operators/matmul.md:19）；Triton 自己也有更低层的 Gluon 编程模型。",
+    "Triton 2019 版语言里「CUDA-like concurrency primitives … are inexistent」，这正是 TileLang 保留 expert 层的理由之一。"
+  ]
+}

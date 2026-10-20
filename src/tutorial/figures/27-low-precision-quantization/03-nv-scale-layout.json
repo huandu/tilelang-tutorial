@@ -1,0 +1,28 @@
+{
+  "id": "03-nv-scale-layout",
+  "title": "NVIDIA 侧 scale 的 TMEM 布局",
+  "caption": "scale 住在 TMEM 而不是 SMEM；TMEM 一个 32 位单元格正好放 4 个 8 位 E8M0，所以「每 4 个 K 块打包」是指令编码决定的，不是工程偏好。",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "4.1",
+  "steps": [
+    {
+      "label": "SMEM：一个 word = 4 个 E8M0 字节",
+      "sub": "b0..b3 各覆盖 gran_k 个 K；128 word 一个 chunk"
+    },
+    { "label": "tcgen05_sf_warp_transpose", "sub": "把 4x32 的 word 视图改写成 32x4" },
+    { "label": "tcgen05_cp_warpx4", "sub": "一个 128 word 的 chunk → 4 个 TMEM 列" },
+    { "label": "TMEM：SFA [128 lanes, 4 columns]", "sub": "每个 lane 一行，4 列 = 4 个 K32 子块" },
+    {
+      "label": "SFB 复制到全部 32 个 lane 分区",
+      "sub": "SFB 的 TMEM 列数是 SFA 的 2 倍（示例 4 列 vs 8 列）",
+      "tone": "warn"
+    },
+    { "label": "MMA 选子列", "sub": "SFA_ID = SFB_ID = (k_start / gran_k) % 4", "tone": "accent" }
+  ],
+  "notes": [
+    "指令描述符里用 SFA_ID / SFB_ID 两个 2 位字段选子列：runtime_instr_desc | (sf_a_id << 29) | (sf_b_id << 4)。",
+    "粒度：PTX 原生 32；SM100 示例加粗到 128（4 个字节覆盖 4×128 = 512 个 K）；昇腾 CATLASS 固定 32，没有加粗自由度。",
+    "加粗合法、细过 32 不行——scale_vec::1X 只有 4 个子列可用。"
+  ]
+}

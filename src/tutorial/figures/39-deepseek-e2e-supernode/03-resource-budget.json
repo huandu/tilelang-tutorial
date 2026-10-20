@@ -1,0 +1,47 @@
+{
+  "id": "03-resource-budget",
+  "title": "三类资源的预算与口径",
+  "kind": "compare",
+  "labelWidth": 130,
+  "caption": "算力与片内带宽是源码里的硬件模型常量（本书复算），卡间带宽是厂商实测——三者性质不同，不能互相运算。",
+  "columns": ["算力", "片内带宽", "卡间带宽"],
+  "rows": [
+    {
+      "label": "本次引用到的量",
+      "values": [
+        "bf16 432.5 / fp8 865 / fp4 1730.1 TFLOPS（单卡）",
+        "HBM 3500 GB/s、L2 4500 GB/s（单卡）",
+        "dispatch 313–375、combine 272–347 GB/s"
+      ]
+    },
+    {
+      "label": "来源性质",
+      "values": ["本书复算（源码硬件模型）", "源码里的模型常量", "厂商实测（PoC HDK）"]
+    },
+    {
+      "label": "测量条件",
+      "values": [
+        "flops_per_cycle × 1650 MHz × 32 核",
+        "同一份 HWDesc",
+        "Ascend 950DT + CANN 9.2.0 + netlayer 1，刷 cache"
+      ]
+    },
+    {
+      "label": "谁先到瓶颈",
+      "values": [
+        "大 M 的 GEMM（98.3%–99.8%）",
+        "小 M 的 GEMM、逐元素、超连接",
+        "EP 越大越先到（EP≥64 明显）"
+      ]
+    },
+    {
+      "label": "只在同源内比较",
+      "values": ["与同一形状的 Hardware limit 比", "与同一份 HWDesc 比", "与同一 README 的其它行比"]
+    }
+  ],
+  "notes": [
+    "唯一的跨类比较：3500 GB/s ÷ 374 GB/s ≈ 9.4，只用于「跨卡搬一次约等于本卡搬十次」这一量级判断。",
+    "「90–95% 的物理 payload 带宽上限」用的是逻辑 payload 口径，不含 padding、不含 barrier。",
+    "这些数字都不能与 NVIDIA 侧的旧数字（例如 H800 上的 1550 TFLOPS）放在一起比。"
+  ]
+}

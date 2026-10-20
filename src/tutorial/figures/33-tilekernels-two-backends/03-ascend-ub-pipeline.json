@@ -1,0 +1,35 @@
+{
+  "id": "03-ascend-ub-pipeline",
+  "title": "Ascend 版 UB 流水的三个在飞迭代",
+  "kind": "layers",
+  "width": 1000,
+  "bandHeight": 64,
+  "section": "4.6",
+  "caption": "num_stages = 6 让同一时刻有多个迭代同时在飞：一个正在搬进来、一个正在算、一个正在写回去。每一类数据要放几份，必须由 annotate_buffer_versions 显式声明。",
+  "layers": [
+    {
+      "label": "第 w+5 行：GM → scores_ub",
+      "sub": "PIPE: MTE2；T.copy(scores[row, :], scores_ub[:num_experts])",
+      "right": "MTE2",
+      "tone": "store"
+    },
+    {
+      "label": "第 w 行：UB → SIMD 计算",
+      "sub": "S.vld ─► vmax/vmin 归约 ─► S.vsts(out_ub[2*k], idx, one)",
+      "right": "Vector（V）",
+      "tone": "compute"
+    },
+    {
+      "label": "第 w-1 行：out_ub → GM",
+      "sub": "PIPE: MTE3；T.copy(out_ub[:num_topk*2], topk_idx_view[row, :])",
+      "right": "MTE3",
+      "tone": "store"
+    }
+  ],
+  "notes": [
+    "缓冲版本数由 T.annotate_buffer_versions 显式声明：scores_ub = num_stages(6)、out_ub = num_stages(6)、invalid_logits_ub = 1。",
+    "invalid_logits_ub 只有 1 份，因为它是「跨所有迭代共享的累积器」，不是流水数据；所以 T.device_assert 在循环之外执行（:155）。",
+    "annotations.py:19-45 的语义：1 = 退出多缓冲资格；num_versions >= 2 = 固定份数；也可只给模式（auto / iteration / counter）。",
+    "调度器求的是「依赖上至少要几份」，num_stages 表达的是「我想重叠多深」——后者是性能意图，必须由写 kernel 的人给出。"
+  ]
+}

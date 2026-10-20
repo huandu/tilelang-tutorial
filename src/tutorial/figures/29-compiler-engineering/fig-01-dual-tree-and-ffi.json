@@ -1,0 +1,64 @@
+{
+  "id": "fig-01-dual-tree-and-ffi",
+  "title": "双语结构：一条 pass 从 C++ 到 Python 的通路",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "2.2",
+  "caption": "C++ 与 Python 两个入口最终都产出 tvm.transform.Pass：C++ 需要注册进 FFI，Python 直接 import，两者再由 _ffi_api 统一变成 tilelang.transform.*，供各后端 pipeline 挂载。",
+  "nodes": [
+    {
+      "id": "cpp",
+      "label": "C++ 入口（主体）",
+      "sub": "src/transform/*.cc（42 个）+ src/ascend/transform/*.cc（31 个）"
+    },
+    {
+      "id": "py",
+      "label": "Python 入口",
+      "sub": "tilelang/transform/ 下 3 个 pass + tilelang/analysis/ 检查器"
+    },
+    {
+      "id": "reg",
+      "label": "③ 注册（只有 C++ 需要）",
+      "sub": "TVM_FFI_STATIC_INIT_BLOCK + refl::GlobalDef().def(\"tl.transform.X\", X)",
+      "tone": "accent"
+    },
+    {
+      "id": "ffi",
+      "label": "④ _ffi_api 自动生成属性",
+      "sub": "tvm_ffi.init_ffi_api(\"tl.transform\", __name__)：注册名去掉前缀变成 _ffi_api.X",
+      "tone": "accent"
+    },
+    {
+      "id": "init",
+      "label": "tilelang/transform/__init__.py",
+      "sub": "薄包装 def X(): return _ffi_api.X()；纯 Python pass 在这里直接 import"
+    },
+    {
+      "id": "facade",
+      "label": "对外唯一门面 tilelang.transform.*",
+      "sub": "读者从 Python 侧看到的 pass 名字都在这里出现",
+      "tone": "accent"
+    },
+    {
+      "id": "pipe",
+      "label": "backend pipeline.py",
+      "sub": "mod = tilelang.transform.X()(mod)；CUDA 与昇腾各有一段",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "cpp", "to": "reg", "label": "③ 注册" },
+    { "from": "reg", "to": "ffi", "label": "④ 自动挂属性" },
+    { "from": "py", "to": "init", "label": "from .mod import X" },
+    { "from": "ffi", "to": "init", "label": "薄包装" },
+    { "from": "init", "to": "facade", "label": "导出" },
+    { "from": "facade", "to": "pipe", "label": "挂载（每条 pipeline 一行）" }
+  ],
+  "notes": [
+    "_ffi_api 不写逻辑：整个文件 6 行，只有一次 init_ffi_api；逻辑要么在 C++，要么在 tilelang/transform/ 下的 Python 模块里。",
+    "注册名是唯一契约：C++ 的字符串 \"tl.transform.X\" 与 Python 的 _ffi_api.X 必须逐字对应，改名会让所有调用点在 import 期或首次调用期炸掉。",
+    "挂载只有一行：没有注册表、没有插件机制，pipeline 就是一串 mod = pass()(mod)，要改顺序就改这串调用的位置。",
+    "昇腾适配器仓库用的是旧接口 tvm._ffi._init_api 与 TVM_REGISTER_GLOBAL，别把适配器里的 pass 代码直接拷进 v0.1.15。"
+  ]
+}

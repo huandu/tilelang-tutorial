@@ -1,0 +1,204 @@
+/*
+  Reading mode for the tutorial.
+
+  `reader-client.ts` turns the mode on by putting `data-reader="on"` on <html>,
+  next to `data-reader-theme="light|dark|sepia"`. Everything below is keyed on
+  those attributes, so the mode is a pure CSS change and the whole site stays
+  untouched when the reader is off.
+
+  The three colour styles build on DaisyUI's semantic tokens, so they keep the
+  no-raw-palette rule from AGENTS.md: 浅色 / 深色 are just the site's `winter` /
+  `night` themes, and 护眼 re-declares the same tokens with a warm Safari-Reader
+  palette. No component needs a `data-reader` variant to keep working.
+*/
+
+/* -------------------------------------------------------------------------- */
+/* Layout: bigger, centred, distraction-free                                  */
+/* -------------------------------------------------------------------------- */
+
+html[data-reader='on'] {
+  /* Percentage, not px, so a reader who raised the browser's default font size
+     keeps that choice; the mode only scales it up further. */
+  font-size: 112.5%;
+  /* The sticky header is gone, so anchors only need a little breathing room. */
+  scroll-padding-top: 2rem;
+  --reader-measure: 40rem;
+}
+
+@media (min-width: 640px) {
+  html[data-reader='on'] {
+    font-size: 118.75%;
+  }
+}
+
+@media (min-width: 1024px) {
+  html[data-reader='on'] {
+    font-size: 125%;
+  }
+}
+
+/*
+  Everything outside <main> is site chrome: the header, the mobile drawer, the
+  footer and the skip link. Hiding them by position rather than by name keeps
+  this working for new chrome added to `BaseLayout`.
+*/
+html[data-reader='on'] body > :not(main) {
+  display: none;
+}
+
+/*
+  Pages opt further elements out with `data-reader-hide` (breadcrumbs, the
+  chapter TOC, the progress panel, …). `!important` lets a page hide something
+  that a utility class otherwise shows.
+*/
+html[data-reader='on'] [data-reader-hide] {
+  display: none !important;
+}
+
+/* Belt and braces for the chapter sidebar TOC. */
+html[data-reader='on'] .tutorial-toc {
+  display: none;
+}
+
+/*
+  Centre the page inside a single comfortable measure. The page's own
+  `max-w-*` and padding are overridden here, so every tutorial page — chapter,
+  note, reference list, code listing, index — lands on the same column.
+  `[data-reader-controls]` is the floating toolbar and `<script>` is the
+  inlined reader module; neither is page content.
+*/
+html[data-reader='on'] main > :not(script):not([data-reader-controls]) {
+  width: 100%;
+  max-width: var(--reader-measure);
+  margin-inline: auto;
+  padding-block: clamp(2.5rem, 8vh, 5rem) 7rem;
+  padding-inline: clamp(1.25rem, 6vw, 2.75rem);
+}
+
+/* The chapter page is a two-column grid; reading mode is a single column. */
+html[data-reader='on'] .tutorial-shell {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+/* Roomier leading, which reads better for the long Chinese prose. */
+html[data-reader='on'] :where(.prose, .chapter-prose) {
+  line-height: 1.85;
+}
+
+/* Anchors no longer have to clear a sticky header. */
+html[data-reader='on'] .chapter-prose :where(h2, h3, h4) {
+  scroll-margin-top: 2rem;
+}
+
+/*
+  Keep the floating entry button from sitting on the footer's GitHub link. Only
+  the button state needs this, but the extra space is harmless in reader mode,
+  where the footer is hidden.
+*/
+body:has([data-reader-controls]) footer {
+  padding-bottom: 3.5rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Floating controls                                                          */
+/* -------------------------------------------------------------------------- */
+
+[data-reader-controls] {
+  position: fixed;
+  inset-inline: 0;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  /* The entry button keeps to the usual bottom-right corner of a floating
+     action; the toolbar overrides this below. */
+  justify-content: flex-end;
+  padding-inline: 1rem;
+  /* The row itself is click-through; the buttons inside it are not. */
+  pointer-events: none;
+}
+
+/*
+  The toolbar is centred while the reading column still fills the viewport
+  (phones and tablets), where right-aligning it next to nothing looks lopsided.
+  From `lg` up the column is narrower than the window, so the toolbar moves back
+  to the right-hand gutter — centred it would sit on top of the text instead.
+*/
+html[data-reader='on'] [data-reader-controls] {
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  html[data-reader='on'] [data-reader-controls] {
+    justify-content: flex-end;
+  }
+}
+
+/*
+  The `hidden` attribute drives visibility, so it must win over the `display`
+  values set below.
+*/
+[data-reader-controls][hidden],
+[data-reader-controls] [hidden] {
+  display: none !important;
+}
+
+[data-reader-controls] > * {
+  pointer-events: auto;
+}
+
+[data-reader-enter] {
+  box-shadow: 0 10px 30px -10px color-mix(in oklch, var(--color-base-content) 45%, transparent);
+}
+
+[data-reader-toolbar] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--color-base-100) 92%, transparent);
+  padding: 0.35rem 0.5rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 34px -12px color-mix(in oklch, var(--color-base-content) 50%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 护眼 mode: a warm Safari-Reader palette on top of `winter`                  */
+/* -------------------------------------------------------------------------- */
+
+/*
+  `html[data-reader-theme='sepia']` out-specifies DaisyUI's `[data-theme]` block,
+  so re-declaring the tokens here is enough — no third site theme to maintain,
+  and the site toggle is unaffected.
+*/
+html[data-reader-theme='sepia'] {
+  color-scheme: light;
+  --color-base-100: oklch(97.5% 0.018 85);
+  --color-base-200: oklch(93.5% 0.028 85);
+  --color-base-300: oklch(87% 0.034 83);
+  --color-base-content: oklch(33% 0.025 70);
+  --color-primary: oklch(52% 0.1 60);
+  --color-primary-content: oklch(97% 0.02 85);
+  --color-secondary: oklch(45% 0.06 45);
+  --color-secondary-content: oklch(97% 0.02 85);
+  --color-accent: oklch(58% 0.11 55);
+  --color-accent-content: oklch(20% 0.03 55);
+  --color-neutral: oklch(42% 0.03 70);
+  --color-neutral-content: oklch(96% 0.02 85);
+  /* The winter semantic colours are near-white surfaces; deepen them a touch
+     so borders and badges stay visible on the warmer background. */
+  --color-info: oklch(78% 0.07 225);
+  --color-info-content: oklch(22% 0.03 225);
+  --color-success: oklch(74% 0.09 155);
+  --color-success-content: oklch(22% 0.03 155);
+  --color-warning: oklch(82% 0.09 78);
+  --color-warning-content: oklch(24% 0.04 78);
+  --color-error: oklch(70% 0.13 28);
+  --color-error-content: oklch(97% 0.02 85);
+}
+
+/* Shiki still ships the light syntax colours; only the paper changes. */
+html[data-reader-theme='sepia'] .shiki {
+  background: oklch(96% 0.02 85) !important;
+}

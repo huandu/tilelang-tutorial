@@ -1,0 +1,52 @@
+{
+  "id": "03-gemm-dataflow",
+  "title": "GEMM 的数据流与两级同步",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "section": "5.3",
+  "caption": "GM → L1 → L0A/L0B → Cube → L0C → GM：T.gemm_v0 一行把 L1→L0 搬运与 Cube 的 MAD 全包了，你写的只有搬进 L1 与写回 L0C。",
+  "nodes": [
+    { "id": "gma", "label": "GM(A)", "tone": "store" },
+    { "id": "gmb", "label": "GM(B)", "tone": "store" },
+    { "id": "la", "label": "A_L1", "sub": "block_M × K_L1", "tone": "store" },
+    { "id": "lb", "label": "B_L1", "sub": "K_L1 × block_N", "tone": "store" },
+    {
+      "id": "bar1",
+      "label": "barrier_all() ①",
+      "sub": "L1 数据就绪（MTE2 → MTE1/M）",
+      "shape": "pill",
+      "tone": "warn"
+    },
+    {
+      "id": "gemm",
+      "label": "T.gemm_v0(A_L1, B_L1, C_L0, init=(k==0))",
+      "sub": "内部：L1→L0A/L0B→Cube→L0C",
+      "tone": "compute"
+    },
+    { "id": "l0c", "label": "C_L0（L0C）", "sub": "fp32 累加", "tone": "store" },
+    {
+      "id": "bar2",
+      "label": "barrier_all() ②",
+      "sub": "Cube 算完，L1 可被下一轮覆盖（M → MTE2）",
+      "shape": "pill",
+      "tone": "warn"
+    },
+    { "id": "gmc", "label": "GM(C)", "sub": "FixPipe / DataCopy", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "gma", "to": "la", "label": "MTE2" },
+    { "from": "gmb", "to": "lb", "label": "MTE2" },
+    { "from": "la", "to": "bar1" },
+    { "from": "lb", "to": "bar1" },
+    { "from": "bar1", "to": "gemm" },
+    { "from": "gemm", "to": "l0c" },
+    { "from": "l0c", "to": "bar2" },
+    { "from": "bar2", "to": "gmc", "label": "FixPipe" }
+  ],
+  "notes": [
+    "整段放在 for k in T.serial(ceildiv(K, K_L1)) 里：L1 缓冲沿 K 反复复用——「沿 K 分块」是写进代码结构的，不是编译器的优化。",
+    "三个硬约束：A/B 必须在 L1、C 必须在 L0C；两棵树的转置/布局默认约定不同；tile 尺寸受 L1（512 KB）与 L0C（128 KB）容量约束。",
+    "128×256 的 fp32 累加恰好 128 KB，顶到 L0C 上限；要继续加 block_N 就要靠 kL0Size 调 L0 双缓冲。"
+  ]
+}

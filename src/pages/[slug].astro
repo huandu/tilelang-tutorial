@@ -1,0 +1,362 @@
+---
+/*
+  `set:html` is used three times below: the chapter body, each exercise prompt
+  and each exercise solution. All three are produced at build time by
+  `scripts/tutorial/build.mjs` from this repository's own reviewed markdown, so
+  there is no user-controlled HTML here.
+*/
+/* eslint-disable astro/no-set-html-directive */
+import { CHAPTERS } from '@data/tutorial/generated/chapters.ts';
+import TutorialLayout from '@layouts/TutorialLayout.astro';
+import { chapterPath, partOf, siblings } from '@lib/tutorial.ts';
+
+import type { GetStaticPaths } from 'astro';
+import type { TutorialChapter } from '@lib/tutorial.ts';
+
+interface Props {
+  chapter: TutorialChapter;
+}
+
+export const getStaticPaths = (() =>
+  Object.entries(CHAPTERS).map(([slug, chapter]) => ({
+    params: { slug },
+    props: { chapter },
+  }))) satisfies GetStaticPaths;
+
+const { chapter }: Props = Astro.props;
+const part = partOf(chapter.slug);
+const { previous, next } = siblings(chapter.slug);
+
+const toc = chapter.toc.filter((entry) => entry.level === 2 || entry.level === 3);
+const topLevel = toc.filter((entry) => entry.level === 2);
+const difficulty = (value: number): string => '★'.repeat(Math.min(Math.max(value, 1), 3));
+---
+
+<TutorialLayout
+  description={chapter.summary}
+  path={chapterPath(chapter.slug)}
+  title={`第 ${chapter.number} 章 ${chapter.title}`}
+>
+  <div class="mx-auto w-full max-w-[80rem] px-5 py-10 sm:px-8" data-chapter-slug={chapter.slug}>
+    <nav aria-label="面包屑" class="breadcrumbs text-sm opacity-70" data-reader-hide>
+      <ul>
+        <li>
+          <a class="link link-hover" href="/">
+            TileLang 教程
+          </a>
+        </li>
+        {part !== undefined && <li>{part.label}</li>}
+        <li>第 {chapter.number} 章</li>
+      </ul>
+    </nav>
+
+    <header class="mt-6 border-b border-base-300 pb-8">
+      <div class="flex flex-wrap items-center gap-2 text-sm opacity-70">
+        <span class="badge badge-primary badge-outline font-mono">第 {chapter.number} 章</span>
+        {part !== undefined && <span>{part.title}</span>}
+        <span aria-hidden="true">·</span>
+        <span>{chapter.readingMinutes} 分钟</span>
+        <span aria-hidden="true">·</span>
+        <span>{chapter.exercises.length} 习题</span>
+        {chapter.quiz.length > 0 && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{chapter.quiz.length} 自测题</span>
+          </>
+        )}
+      </div>
+      <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{chapter.title}</h1>
+      <p class="mt-4 max-w-3xl text-lg leading-relaxed opacity-70">{chapter.summary}</p>
+    </header>
+
+    <section
+      class="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-base-300 bg-base-100 px-5 py-4 text-sm"
+      data-chapter-progress
+      data-exercise-total={String(chapter.exercises.length)}
+      data-reader-hide
+    >
+      <span class="font-semibold">本章进度</span>
+      <span class="font-mono opacity-70">
+        状态 <span data-read-state>未读完</span>
+      </span>
+      <span class="font-mono opacity-70">
+        习题 <span data-exercise-count>0 / {chapter.exercises.length}</span>
+      </span>
+      <span class="font-mono opacity-70">
+        自测 <span data-quiz-score>未作答</span>
+      </span>
+      <button class="btn btn-outline btn-xs ml-auto" data-mark-read type="button">
+        标记本章已读完
+      </button>
+      <button class="btn btn-ghost btn-xs" data-reset-progress type="button">
+        重置全部进度
+      </button>
+    </section>
+
+    <div class="tutorial-shell mt-10">
+      <nav aria-label="本章目录" class="tutorial-toc hidden lg:block" data-reader-hide data-toc>
+        <p class="mb-3 text-xs font-semibold tracking-wider opacity-50">本章目录</p>
+        <ul>
+          {toc.map((entry) => (
+            <li>
+              <a data-level={String(entry.level)} href={`#${entry.id}`}>
+                {entry.text}
+              </a>
+            </li>
+          ))}
+          <li>
+            <a data-level="2" href="#exercises">
+              习题（{chapter.exercises.length}）
+            </a>
+          </li>
+          {chapter.quiz.length > 0 && (
+            <li>
+              <a data-level="2" href="#quiz">
+                章节自测
+              </a>
+            </li>
+          )}
+          {chapter.codeFiles.length > 0 && (
+            <li>
+              <a data-level="2" href="#code">
+                本章代码
+              </a>
+            </li>
+          )}
+          {chapter.referencesHtml !== '' && (
+            <li>
+              <a data-level="2" href="#references">
+                本章引用
+              </a>
+            </li>
+          )}
+        </ul>
+      </nav>
+
+      <div class="min-w-0">
+        <article
+          class="chapter-prose prose max-w-none prose-headings:scroll-mt-24 prose-headings:font-semibold prose-a:no-underline hover:prose-a:underline prose-code:before:content-none prose-code:after:content-none"
+          set:html={chapter.html}
+        />
+
+        <!-- Exercises -->
+        <section class="mt-16" id="exercises">
+          <div class="flex flex-wrap items-baseline gap-3 border-b border-base-300 pb-3">
+            <h2 class="text-2xl font-semibold tracking-tight">习题</h2>
+            <span class="font-mono text-xs opacity-50">
+              {chapter.exercises.length} 题 · 答案在提交后展开
+            </span>
+          </div>
+          <p class="mt-3 text-sm leading-relaxed opacity-70">
+            先在纸上或输入框里写下你的答案，再展开参考答案对照。客观判断请自己打勾：这三颗按钮
+            只影响本机保存的学习进度。
+          </p>
+
+          <div class="mt-6 space-y-5">
+            {chapter.exercises.map((exercise) => (
+              <article
+                class="exercise-item card border border-base-300 bg-base-100"
+                data-exercise={exercise.id}
+                data-state=""
+                id={`ex-${exercise.id}`}
+              >
+                <div class="card-body gap-3">
+                  <header class="flex flex-wrap items-center gap-2 text-sm">
+                    <span class="badge badge-neutral badge-sm font-mono">{exercise.id}</span>
+                    <span class="badge badge-ghost badge-sm">{exercise.kind}</span>
+                    <span class="font-mono text-xs opacity-70">
+                      难度 {difficulty(exercise.difficulty)}
+                    </span>
+                    <span class="font-mono text-xs opacity-50">
+                      {exercise.hardware ? '需要加速器' : '无需硬件'}
+                    </span>
+                    {exercise.title !== '' && (
+                      <span class="text-sm font-medium opacity-80">{exercise.title}</span>
+                    )}
+                  </header>
+
+                  <div
+                    class="prose prose-sm max-w-none prose-headings:font-semibold prose-code:before:content-none prose-code:after:content-none"
+                    set:html={exercise.prompt}
+                  />
+
+                  <textarea
+                    class="textarea textarea-bordered min-h-24 w-full font-mono text-sm"
+                    data-exercise-notes={exercise.id}
+                    placeholder="在这里写你的答案（只保存在本机浏览器）"
+                    rows="3"
+                  ></textarea>
+
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button class="btn btn-sm btn-primary" data-reveal type="button">
+                      查看参考答案
+                    </button>
+                    <div class="join">
+                      <button class="btn btn-sm join-item" data-verdict="correct" type="button">
+                        做对了
+                      </button>
+                      <button class="btn btn-sm join-item" data-verdict="partial" type="button">
+                        部分对
+                      </button>
+                      <button class="btn btn-sm join-item" data-verdict="wrong" type="button">
+                        没做对
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    class="exercise-answer prose prose-sm max-w-none prose-headings:font-semibold prose-code:before:content-none prose-code:after:content-none"
+                    data-answer
+                    hidden
+                    set:html={exercise.solution}
+                  />
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <!-- Quiz -->
+        {chapter.quiz.length > 0 && (
+          <section class="mt-16" data-quiz id="quiz">
+            <div class="flex flex-wrap items-baseline gap-3 border-b border-base-300 pb-3">
+              <h2 class="text-2xl font-semibold tracking-tight">章节自测</h2>
+              <span class="font-mono text-xs opacity-50">
+                {chapter.quiz.length} 题 · 提交后本地评分
+              </span>
+            </div>
+            <p class="mt-3 text-sm leading-relaxed opacity-70">
+              单选题。提交后立即给出分数与逐题解析；重做会清空选择，但会保留上一次的成绩记录。
+            </p>
+
+            <ol class="mt-6 space-y-6">
+              {chapter.quiz.map((item, index) => (
+                <li
+                  class="card border border-base-300 bg-base-100"
+                  data-answer={String(item.answer)}
+                  data-quiz-question
+                >
+                  <div class="card-body gap-3">
+                    <p class="font-medium">
+                      <span class="font-mono opacity-50">{index + 1}.</span> {item.stem}
+                    </p>
+                    <div class="space-y-2">
+                      {item.options.map((option, optionIndex) => (
+                        <label class="quiz-option" data-option={String(optionIndex)}>
+                          <input
+                            class="radio radio-sm"
+                            name={`${chapter.slug}-${item.id}`}
+                            type="radio"
+                            value={String(optionIndex)}
+                          />
+                          <span class="text-sm leading-relaxed">{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p
+                      class="prose prose-sm max-w-none rounded-lg bg-base-200 px-4 py-3 text-sm prose-code:before:content-none prose-code:after:content-none"
+                      data-quiz-explain
+                      hidden
+                    >
+                      {item.explain}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <button class="btn btn-primary" data-quiz-submit type="button">
+                提交并评分
+              </button>
+              <button class="btn btn-ghost" data-quiz-reset type="button">
+                重做
+              </button>
+              <p class="text-sm font-medium" data-quiz-result hidden></p>
+            </div>
+          </section>
+        )}
+
+        {chapter.codeFiles.length > 0 && (
+          <section class="mt-16" id="code">
+            <div class="flex flex-wrap items-baseline gap-3 border-b border-base-300 pb-3">
+              <h2 class="text-2xl font-semibold tracking-tight">本章代码</h2>
+              <span class="font-mono text-xs opacity-50">{chapter.codeFiles.length} 个文件</span>
+            </div>
+            <p class="mt-3 text-sm leading-relaxed opacity-70">
+              正文里提到的每个示例都能在这里直接阅读（带语法高亮），也可以整章浏览。
+            </p>
+            <ul class="mt-5 grid gap-2 font-mono text-sm sm:grid-cols-2">
+              {chapter.codeFiles.map((file) => (
+                <li>
+                  <a class="link link-hover" href={`/code/${chapter.slug}/${file.path}/`}>
+                    {file.path}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p class="mt-4 text-sm">
+              <a class="link link-hover" href={`/code/${chapter.slug}/`}>
+                浏览本章全部代码 →
+              </a>
+            </p>
+          </section>
+        )}
+
+        {chapter.referencesHtml !== '' && (
+          <section class="mt-16" id="references">
+            <div class="flex flex-wrap items-baseline gap-3 border-b border-base-300 pb-3">
+              <h2 class="text-2xl font-semibold tracking-tight">本章引用</h2>
+              <span class="font-mono text-xs opacity-50">源码链接指向锁定 tag</span>
+            </div>
+            <p class="mt-3 text-sm leading-relaxed opacity-70">
+              本章写到的每个源码位置与外部资料都在下面列出：源码链接指向锁定 tag 的 GitHub 文件，
+              资料链接指向原文。
+              <a class="link link-hover" href="/references/">
+                查看全部资料索引 →
+              </a>
+            </p>
+            <details class="mt-4 rounded-xl border border-base-300 bg-base-100 px-4 py-3">
+              <summary class="cursor-pointer text-sm font-medium">展开引用清单</summary>
+              <div
+                class="prose prose-sm mt-4 max-w-none prose-code:before:content-none prose-code:after:content-none"
+                set:html={chapter.referencesHtml}
+              />
+            </details>
+          </section>
+        )}
+
+        <!-- Prev / next -->
+        <nav
+          aria-label="章节导航"
+          class="mt-16 grid gap-4 border-t border-base-300 pt-8 sm:grid-cols-2"
+        >
+          {previous !== undefined ? (
+            <a class="btn btn-outline justify-start" href={chapterPath(previous.slug)}>
+              ← 第 {previous.number} 章 {previous.title}
+            </a>
+          ) : (
+            <a class="btn btn-outline justify-start" href="/">
+              ← 返回教程首页
+            </a>
+          )}
+          {next !== undefined ? (
+            <a class="btn btn-outline justify-end sm:col-start-2" href={chapterPath(next.slug)}>
+              第 {next.number} 章 {next.title} →
+            </a>
+          ) : (
+            <a class="btn btn-outline justify-end sm:col-start-2" href="/">
+              回到教程首页 →
+            </a>
+          )}
+        </nav>
+
+        {topLevel.length > 0 && (
+          <p class="mt-6 text-xs opacity-50" data-reader-hide>
+            本章共 {topLevel.length} 个二级小节；右上角目录在桌面端会跟随滚动高亮。
+          </p>
+        )}
+      </div>
+    </div>
+  </div>
+</TutorialLayout>

@@ -1,0 +1,77 @@
+{
+  "id": "inline-07",
+  "title": "E9 答案：GEMM 之后接 Vector 做 ReLU 的数据流",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 16,
+  "section": "E9",
+  "caption": "Cube 的结果落在 L0C，Vector 读不到它：先经 L0C→UB 的通路搬进 UB，在 UB 上做 ReLU，再经 MTE3 写回 GM(C)。",
+  "nodes": [
+    {
+      "id": "gmab",
+      "label": "GM(A), GM(B)",
+      "tone": "store"
+    },
+    {
+      "id": "l1",
+      "label": "L1",
+      "sub": "Cube 输入中转",
+      "tone": "store"
+    },
+    {
+      "id": "l0",
+      "label": "L0A / L0B",
+      "sub": "Cube 的输入",
+      "tone": "store"
+    },
+    {
+      "id": "l0c",
+      "label": "L0C",
+      "sub": "Cube 输出/累加器",
+      "tone": "store"
+    },
+    {
+      "id": "ub",
+      "label": "UB",
+      "sub": "Vector 原地做 ReLU",
+      "tone": "compute"
+    },
+    {
+      "id": "gmc",
+      "label": "GM(C)",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    {
+      "from": "gmab",
+      "to": "l1",
+      "label": "MTE2"
+    },
+    {
+      "from": "l1",
+      "to": "l0",
+      "label": "MTE1"
+    },
+    {
+      "from": "l0",
+      "to": "l0c",
+      "label": "Cube"
+    },
+    {
+      "from": "l0c",
+      "to": "ub",
+      "label": "L0C→UB"
+    },
+    {
+      "from": "ub",
+      "to": "gmc",
+      "label": "MTE3"
+    }
+  ],
+  "notes": [
+    "对应习题 E9 的参考答案：原块里 UB 出现两次（Vector 在原地把结果写回 UB），这里合成一个节点表达「搬进 UB → ReLU → 写回 GM(C)」。",
+    "M 树里这一整段是 T.dual_copy(C_l0c, C_ub) + T.SimtVF 做 ReLU + T.dual_copy(C_ub, C[...]) 写回，set/wait 由编译器自动插入。"
+  ],
+  "inlineQuote": "GM(A), GM(B) --MTE2--> L1 --MTE1--> L0A/L0B --Cube--> L0C\n                                                        │  (L0C→UB 的通路)\n                                                        ▼"
+}

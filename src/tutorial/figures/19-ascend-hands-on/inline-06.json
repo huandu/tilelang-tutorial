@@ -1,0 +1,93 @@
+{
+  "id": "inline-06",
+  "title": "瓶颈判读：从 dur_ns 走到具体那一侧",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "inlineQuote": "先看 dur_ns 与算术强度 —— 是 memory-bound 还是 compute-bound？（第 2 章的账要重算一遍）\n        │\n   ┌────┴─────────────────────────────────────────────┐",
+  "caption": "拿到 KernelProfile 后按这条顺序读：先分 compute-bound 与 memory-bound，再用 aic_mad、aic_mte1/2、aic_fixpipe、aiv_mte2/3 定位瓶颈在 Cube、搬运还是同步。",
+  "nodes": [
+    {
+      "id": "d",
+      "label": "dur_ns 与算术强度",
+      "sub": "第 2 章的账在这里重算一遍",
+      "tone": "accent"
+    },
+    {
+      "id": "p",
+      "label": "compute-bound 还是 memory-bound？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "m",
+      "label": "compute-bound：aic_mad 高不高？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "v",
+      "label": "memory-bound：aiv_mte2/mte3 高不高？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "alg",
+      "label": "Cube 已经打满",
+      "sub": "aic_mad 高、dur 也高 → 只能靠更优算法 / tile / dtype，别再叠流水",
+      "tone": "compute"
+    },
+    {
+      "id": "wait",
+      "label": "aic_mad 低：Cube 在等谁？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "gm2",
+      "label": "GM→L1 带宽是瓶颈",
+      "sub": "aic_mte2 高 → L2 命中提示、swizzle、减少重复读",
+      "tone": "warn"
+    },
+    {
+      "id": "l0l1",
+      "label": "L1→L0 太频繁",
+      "sub": "aic_mte1 高 → 调 kL0Size / L0 tile",
+      "tone": "warn"
+    },
+    {
+      "id": "fix",
+      "label": "L0C 写回太慢",
+      "sub": "aic_fixpipe 高 → 调 L0C 使用方式/写回策略",
+      "tone": "warn"
+    },
+    {
+      "id": "band",
+      "label": "搬运带宽吃满",
+      "sub": "aiv_mte2 高 → 减少搬运量（融合/量化/复用）",
+      "tone": "warn"
+    },
+    {
+      "id": "vsync",
+      "label": "可能在等同步",
+      "sub": "aiv_mte2 低但 dur 高 → 检查 flag 配对/多缓冲",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "d", "to": "p" },
+    { "from": "p", "to": "m" },
+    { "from": "p", "to": "v" },
+    { "from": "m", "to": "alg" },
+    { "from": "m", "to": "wait" },
+    { "from": "wait", "to": "gm2" },
+    { "from": "wait", "to": "l0l1" },
+    { "from": "wait", "to": "fix" },
+    { "from": "v", "to": "band" },
+    { "from": "v", "to": "vsync" }
+  ],
+  "notes": [
+    "分支的判据写在节点上：compute-bound 侧看 aic_mad，memory-bound 侧看 aiv_mte2 / aiv_mte3。",
+    "AIC 与 AIV 的比值各自相对自己的 total_cycles，不要相加当成一个统一时间轴的占比；本图是判读方法，不含任何实测数字。"
+  ]
+}

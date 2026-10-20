@@ -1,0 +1,64 @@
+{
+  "id": "upstream-flow",
+  "title": "从 issue 到合入的主线",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "3",
+  "caption": "上游流程是 issue →（大改动先走 RFC）→ PR → 本地预检 → CI → review → 合入；性能回归只在 maintainer 认为改动触及热点路径时按需触发。",
+  "nodes": [
+    {
+      "id": "issue",
+      "label": "issue",
+      "sub": ".github/ISSUE_TEMPLATE/ 的 bug-report / feature-request / questions；允许空白 issue"
+    },
+    { "id": "q", "label": "改动大吗？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "rfc",
+      "label": "RFC",
+      "sub": "以普通 issue 提交（无专用模板）；例 #2196、#3178、#2897、#2708"
+    },
+    { "id": "disc", "label": "讨论收敛：范围、非目标、兼容性" },
+    { "id": "pr", "label": "PR：fork → 分支 → 提交" },
+    {
+      "id": "pc",
+      "label": "本地预检",
+      "sub": "bash format.sh / pre-commit run --all-files / python -m pytest testing"
+    },
+    {
+      "id": "ci",
+      "label": "CI：lint + tests + ascend + cutedsl",
+      "sub": "草稿 PR 不跑测试矩阵；self-hosted job 只对 tile-ai/tilelang 的 PR",
+      "tone": "compute"
+    },
+    { "id": "rev", "label": "review：逐条回复；改动后重跑", "tone": "accent" },
+    { "id": "perf", "label": "改动触及热点路径？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "prb",
+      "label": "pr-regression-test-bot",
+      "sub": "对照 main 跑基准，把 Markdown + PNG 回帖到 PR"
+    },
+    { "id": "m", "label": "合入 main", "shape": "pill", "tone": "store" },
+    { "id": "docs", "label": "publish-docs.yml：merge 后构建文档" }
+  ],
+  "edges": [
+    { "from": "issue", "to": "q" },
+    { "from": "q", "to": "rfc", "label": "改公共语义 / 改构建基座 / 加后端" },
+    { "from": "q", "to": "pr", "label": "小改动" },
+    { "from": "rfc", "to": "disc" },
+    { "from": "disc", "to": "pr" },
+    { "from": "pr", "to": "pc" },
+    { "from": "pc", "to": "ci" },
+    { "from": "ci", "to": "rev" },
+    { "from": "rev", "to": "perf" },
+    { "from": "perf", "to": "prb", "label": "maintainer 评论 @regression-perf" },
+    { "from": "perf", "to": "m", "label": "否" },
+    { "from": "prb", "to": "m" },
+    { "from": "m", "to": "docs" }
+  ],
+  "notes": [
+    "图里每个方框都对应仓库里的实际文件；「RFC 无专用模板」与「性能回归要 maintainer 触发」是两条容易踩空的规则。",
+    "CI 的四个 job 展开在下一张图（upstream-flow-b）里。",
+    "文档构建不在 PR 阶段验证：文档改动要先在本地 bash maint/scripts/build_docs.sh 跑一遍。"
+  ]
+}

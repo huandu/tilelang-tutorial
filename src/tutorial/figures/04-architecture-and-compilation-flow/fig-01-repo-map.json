@@ -1,0 +1,74 @@
+{
+  "id": "fig-01-repo-map",
+  "title": "v0.1.15 仓库地图（模块 → 职责）",
+  "kind": "flow",
+  "section": "2.2",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "nodes": [
+    {
+      "id": "lang",
+      "label": "tilelang/language/",
+      "sub": "语言表面：tile op、frame、parser；两条前端在 eager/ 与 ast/",
+      "tone": "default"
+    },
+    {
+      "id": "eng",
+      "label": "tilelang/engine/lower.py",
+      "sub": "编译入口：lower / semantic_check / param",
+      "tone": "accent"
+    },
+    {
+      "id": "be",
+      "label": "tilelang/backend/",
+      "sub": "后端注册与上下文解析",
+      "tone": "compute"
+    },
+    {
+      "id": "pipe",
+      "label": "tilelang/<backend>/pipeline.py",
+      "sub": "pass 的「顺序」写在这里（Python）",
+      "tone": "compute"
+    },
+    { "id": "ir", "label": "TIR IRModule", "sub": "pass 反复改写的中间表示", "tone": "accent" },
+    {
+      "id": "cpp",
+      "label": "src/transform/*.cc",
+      "sub": "pass 的本体：42 个 .cc",
+      "tone": "store"
+    },
+    { "id": "lay", "label": "src/layout/", "sub": "layout inference 的 C++ 实现", "tone": "store" },
+    {
+      "id": "cg",
+      "label": "src/<backend>/codegen/",
+      "sub": "CUDA C / Ascend C codegen",
+      "tone": "store"
+    },
+    {
+      "id": "ad",
+      "label": "tilelang/jit/adapter/",
+      "sub": "tvm_ffi / nvrtc / cython / torch",
+      "tone": "muted"
+    },
+    { "id": "out", "label": "可调用 kernel", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "lang", "to": "eng" },
+    { "from": "eng", "to": "be" },
+    { "from": "be", "to": "pipe" },
+    { "from": "pipe", "to": "ir" },
+    { "from": "ir", "to": "cpp" },
+    { "from": "ir", "to": "lay" },
+    { "from": "ir", "to": "cg" },
+    { "from": "cg", "to": "ad" },
+    { "from": "ad", "to": "out" }
+  ],
+  "caption": "v0.1.15 的仓库地图：语言表面 → 编译入口 → 后端注册 → pass pipeline → codegen → adapter → 可调用 kernel。",
+  "notes": [
+    "最反直觉、但一定要接受的安排：pass 的「顺序」写在后端包的 Python 里，pass 的「行为」写在 C++ 的 src/transform/ 里。",
+    "Python 侧：language/（语言表面，47 个 .py）、engine/（编译入口，5 个 .py）、transform/（通用 pass 的 Python 包装，7 个 .py）、layout/（Layout / Fragment / swizzle 代数，10 个 .py）、backend/（多后端抽象，9 个 .py + pass_pipeline/）、jit/（装饰器、JITKernel、adapter，31 个 .py）。",
+    "后端包：cuda/（language / op / intrinsics / pipeline / codegen，55 个 .py）、ascend/（language / op / transform / pipeline / codegen，35 个 .py）、{rocm,metal,cpu,webgpu}/。",
+    "C++ 侧：src/ir.cc 与 src/op/（IR 定义与 tile op 实现）、src/transform/（42 个 .cc）、src/layout/layout_inference/、src/cuda/ 与 src/ascend/（codegen + runtime module，共 384 个 .cc/.h）。",
+    "横向支撑：cache/（kernel 级 + 二进制级缓存，5 个 .py）、autotuner/（参数搜索）、carver/（tile 配置推荐，34 个 .py）、tools/（lower_trace / plot_layout / pass_timing，20 个 .py）、examples/（54 个子目录）、docs/（37 个 Markdown）。"
+  ]
+}

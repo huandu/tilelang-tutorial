@@ -1,0 +1,89 @@
+{
+  "chapter": "03-design-philosophy",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "TileLang 论文点名的「调度空间」包含哪四个维度？",
+      "options": [
+        "thread binding / layout / tensorize / pipeline",
+        "forward / backward / optimizer / communication",
+        "shape / storage scope / layout / dtype",
+        "fusion / vectorization / unroll / sync"
+      ],
+      "answer": 0,
+      "explain": "论文摘要括号里逐字列出了 thread binding、layout、tensorize、pipeline（见 §2.1、§2.3）。B 是第 2 章训练迭代的四个阶段，C 是 tile 的三要素加上 dtype，都不是调度空间。"
+    },
+    {
+      "id": "q2",
+      "stem": "如果用户完全不写 T.annotate_layout，v0.1.15 会怎么处理布局？",
+      "options": [
+        "直接编译报错，要求用户必须写布局",
+        "一律退化成行优先布局",
+        "由 LayoutInference pass 推导 Fragment 布局与 T.Parallel 的循环布局",
+        "留到运行时由 driver 决定"
+      ],
+      "answer": 2,
+      "explain": "§2.3 的表格里 layout 一行的缺省行为就是「由 LayoutInference pass 推导」；§4.2 还说明它还负责给 T.Parallel 推循环布局。A 混淆了「布局写错会报错」与「不写布局」。"
+    },
+    {
+      "id": "q3",
+      "stem": "T.alloc_fragment((block_M, block_N), accum_dtype) 申请到的到底是什么？",
+      "options": [
+        "每个线程各有一块 block_M × block_N 的寄存器",
+        "一块逻辑缓冲，物理上由 LayoutInference 摊到每个线程的寄存器",
+        "shared memory 里的一块缓冲",
+        "显存里的一块缓冲"
+      ],
+      "answer": 1,
+      "explain": "§2.4 说得很清楚：你申请的是一块逻辑缓冲，物理上它并不存在，编译期会推导出 Fragment 布局把它切成每个线程的碎片。A 是最容易误选的选项——它把「整块 tile」和「每线程持有量」搞反了。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 beginner 层在 v0.1.15 里的状态，哪一句是如实的？",
+      "options": [
+        "已完成，是官方推荐的入门入口",
+        "就是 developer 层的别名",
+        "已废弃并从代码里移除",
+        "官方文档标注「not yet fully implemented」，方向体现为 eager 前端"
+      ],
+      "answer": 3,
+      "explain": "官方文档在 beginner 那条下面直接写了「This interface is not yet fully implemented」，现存雏形是 eager 前端（见 §2.5、§3.4）。A 是本章特意纠正的期待，千万不要按它来选题。"
+    },
+    {
+      "id": "q5",
+      "stem": "论文标题里的 composable（可组合）在 TileLang 里的确切含义是什么？",
+      "options": [
+        "同一个 kernel 里高层 tile 原语与低层 thread 原语可以共存，中间不需要模式切换",
+        "可以把多个独立 kernel 自动融合成一个",
+        "一个 kernel 只能使用三层接口中的一层",
+        "所有原语都必须成对使用"
+      ],
+      "answer": 0,
+      "explain": "§2.6 指出它指的是「同一个 kernel 里高层与低层原语共存，甚至同一段循环体里相邻」。B 把它误读成编译器的自动融合，A 之外的三个选项都是对「可组合」的字面误解。"
+    },
+    {
+      "id": "q6",
+      "stem": "关于 T.const，下面哪一句与 §2.5 的说明一致？",
+      "options": [
+        "在任何上下文里都能用，等价于 Python 常量",
+        "它决定 kernel 用多少个线程",
+        "只在 eager 模式（配合 @tilelang.jit）下有意义，非 eager 上下文调用会抛 JITNoBuilderError",
+        "它是 T.Pipelined 的参数，用来指定流水级数"
+      ],
+      "answer": 2,
+      "explain": "T.const 的 docstring 写明是 eager mode only，非 eager 上下文调用会直接抛 JITNoBuilderError；它虽然在 T 命名空间里可见，但只有配合 eager 模式才有意义。D 把 T.const 与 T.Pipelined 的 num_stages 弄混了。"
+    },
+    {
+      "id": "q7",
+      "stem": "官方文档总结的 TileLang 相对 Triton 的三条差异是什么？",
+      "options": [
+        "允许显式布局注解、流水既可自动推导也可手工指定、同一程序里可混用不同层次",
+        "完全隐藏 tile 内部布局、禁止用户介入调度",
+        "不允许用户写线程级代码、只暴露 tile 级原语",
+        "只支持 NVIDIA 一种硬件、不提供多后端"
+      ],
+      "answer": 0,
+      "explain": "§5.2 列的三条差异正是：显式布局注解（make_swizzled_layout）、流水既有自动路径也有 stage/order 手工路径、允许混用层次。B、C 描述的其实是 Triton 那一侧的取向（论文原文用词是 hiding）。"
+    }
+  ]
+}

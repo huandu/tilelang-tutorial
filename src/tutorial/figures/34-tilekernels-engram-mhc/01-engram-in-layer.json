@@ -1,0 +1,54 @@
+{
+  "id": "01-engram-in-layer",
+  "title": "Engram 在一个 Transformer 层里的位置与数据流",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "caption": "Engram 用 token id 走一条旁路：哈希查表拿到静态记忆，再用当前 hidden state 给它打一个闸门，最后通过残差连接加回主干。",
+  "nodes": [
+    { "id": "ids", "label": "输入 token id", "sub": "x_1 … x_T" },
+    { "id": "comp", "label": "词表压缩", "sub": "NFKC + 小写（论文 2.2）" },
+    { "id": "hash", "label": "多头乘法-XOR 哈希", "sub": "每个 n-gram order 一个 head" },
+    { "id": "idx", "label": "确定性 index", "sub": "只依赖 token id", "tone": "accent" },
+    { "id": "tbl", "label": "Embedding 表 E", "sub": "O(1) 查表，可放 host", "tone": "store" },
+    { "id": "e", "label": "memory 向量 e_t", "sub": "拼接各 head" },
+    { "id": "proj", "label": "W_K / W_V 投影", "sub": "得到 k_t 与 v_t" },
+    { "id": "h", "label": "hidden state H^(ℓ)", "sub": "已经过前面的 Attention" },
+    { "id": "gate", "label": "门控 α_t", "sub": "σ(RMSNorm(h)ᵀ RMSNorm(k)/√d)", "tone": "compute" },
+    { "id": "add", "label": "残差相加", "sub": "H^(ℓ) ← H^(ℓ) + α·v", "tone": "accent" },
+    { "id": "attn", "label": "Attention", "tone": "muted" },
+    { "id": "moe", "label": "MoE", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "ids", "to": "comp" },
+    { "from": "comp", "to": "hash", "label": "N-gram" },
+    { "from": "hash", "to": "idx" },
+    { "from": "idx", "to": "tbl" },
+    { "from": "tbl", "to": "e" },
+    { "from": "e", "to": "proj" },
+    { "from": "proj", "to": "gate" },
+    { "from": "h", "to": "gate" },
+    { "from": "gate", "to": "add" },
+    { "from": "h", "to": "add" },
+    { "from": "add", "to": "attn" },
+    { "from": "attn", "to": "moe" }
+  ],
+  "groups": [
+    {
+      "label": "检索 retrieval（只看 token id）",
+      "nodes": ["comp", "hash", "idx", "tbl", "e"],
+      "tone": "store"
+    },
+    {
+      "label": "融合 fusion（要 hidden state）",
+      "nodes": ["proj", "gate", "add"],
+      "tone": "compute"
+    },
+    { "label": "层主体", "nodes": ["attn", "moe"], "tone": "muted" }
+  ],
+  "notes": [
+    "MoE = conditional computation（用 hidden state 动态选专家）；Engram = conditional memory（用 token id 确定性取记忆）。",
+    "index 在前向开始前就确定，所以可以提前把 embedding 行从 host memory 预取上来。",
+    "论文明确说 Engram 不是每层都挂：放置位置要同时满足建模与系统延迟两个约束（论文 2.5）。"
+  ]
+}

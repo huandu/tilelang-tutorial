@@ -1,0 +1,51 @@
+{
+  "id": "04-two-trees",
+  "title": "两棵树的选择",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "section": "7.1",
+  "caption": "A 树（适配器，Ascend C & PTO）与 M 树（主干 950 后端）的 API 不通用：按目标设备与生态选一棵，一份 kernel 只用一棵树。",
+  "nodes": [
+    { "id": "a0", "label": "你要在昇腾上写算子", "tone": "accent" },
+    { "id": "b0", "label": "目标设备与生态？", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "m",
+      "label": "M 树",
+      "sub": "Ascend 950 / 想用自动调度 → tilelang.ascend.language · target=ascend"
+    },
+    {
+      "id": "ad",
+      "label": "A 树",
+      "sub": "A2 / A3 / 对接 Ascend C 生态 → tilelang.language · target=ascendc 或 pto"
+    },
+    { "id": "sim", "label": "A 树 + target=pto", "sub": "无 NPU，只做功能验证 → A5 camodel 仿真" },
+    {
+      "id": "mapi",
+      "label": "M 树 API",
+      "sub": "T.alloc_l1/l0a/l0b/l0c · T.dual_copy · AutoSchedule 默认开"
+    },
+    {
+      "id": "aapi",
+      "label": "A 树 API",
+      "sub": "T.alloc_L1/L0A/L0B/L0C · T.gemm_v0 · TL_ASCEND_*"
+    },
+    { "id": "x", "label": "不要在一份 kernel 里混用两棵树的 API", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "a0", "to": "b0" },
+    { "from": "b0", "to": "m" },
+    { "from": "b0", "to": "ad" },
+    { "from": "b0", "to": "sim" },
+    { "from": "m", "to": "mapi" },
+    { "from": "ad", "to": "aapi" },
+    { "from": "mapi", "to": "x" },
+    { "from": "aapi", "to": "x" }
+  ],
+  "notes": [
+    "子核：A 树 T.Kernel(..., is_npu=True) as (cid, vid)；M 树 T.Kernel(N) as bx，或 T.MixedKernel(N, sids=2) as (bx, sid)。",
+    "UB 分配：A 树 T.alloc_ub、M 树 T.alloc_shared；矩阵乘：A 树 T.gemm_v0、M 树 T.gemm(..., unit_flag_ctrl=...)。",
+    "多缓冲版本注解：M 树用 T.annotate_buffer_versions；同步：A 树 barrier_all / set_flag / wait_flag，M 树默认自动插入。",
+    "调试：A 树 T.printf / T.dump_tensor，M 树 T.print（无 dump_tensor）；配置开关：A 树 TL_ASCEND_*，M 树 TL_ENABLE_AUTO_SCHEDULE。"
+  ]
+}

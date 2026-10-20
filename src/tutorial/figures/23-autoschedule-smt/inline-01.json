@@ -1,0 +1,43 @@
+{
+  "id": "inline-01",
+  "title": "模序调度：相邻两个迭代的相位",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "inlineQuote": "flowchart LR\n  subgraph Iter0[\"迭代 0\"]\n    A0[\"loadA<br/>MTE2\"] --> B0[\"L1→L0<br/>MTE1\"] --> C0[\"Cube\"] --> D0[\"L0C→GM<br/>Fixpipe\"]",
+  "caption": "相邻两个迭代之间错开一个 II，各自按同一串流水级推进；虚线标出跨迭代的 WAR 约束——下一轮 loadA 会覆盖上一轮还没读走的 L1。",
+  "nodes": [
+    { "id": "a0", "label": "迭代 0：loadA", "sub": "MTE2", "tone": "default" },
+    { "id": "b0", "label": "迭代 0：L1→L0", "sub": "MTE1", "tone": "default" },
+    { "id": "c0", "label": "迭代 0：Cube", "tone": "compute" },
+    { "id": "d0", "label": "迭代 0：L0C→GM", "sub": "Fixpipe", "tone": "compute" },
+    {
+      "id": "a1",
+      "label": "迭代 1：loadA",
+      "sub": "MTE2",
+      "badge": "offset = II",
+      "tone": "default"
+    },
+    { "id": "b1", "label": "迭代 1：L1→L0", "sub": "MTE1", "tone": "default" },
+    { "id": "c1", "label": "迭代 1：Cube", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "a0", "to": "b0" },
+    { "from": "b0", "to": "c0" },
+    { "from": "c0", "to": "d0" },
+    { "from": "a1", "to": "b1" },
+    { "from": "b1", "to": "c1" },
+    {
+      "from": "a0",
+      "to": "b0",
+      "label": "WAR：覆盖前一轮的 L1，需先读走",
+      "dashed": true
+    }
+  ],
+  "notes": [
+    "原块把 WAR 的虚线画在同一对节点（loadA → L1→L0）上，本图沿用同一画法：它表示的是跨迭代约束，不是迭代内的直线依赖",
+    "II 是相邻两轮迭代的最小启动间隔，也是求解器要最小化的目标；迭代 1 整体相对迭代 0 偏移 II",
+    "start = k × II + r：k 是任务的流水级（stage），r 是稳态相位（0 ≤ r < II）",
+    "跨迭代的 WAR 靠相位解决不了，要交给求解器用 buffer 份数（ring 宽度）解决"
+  ]
+}

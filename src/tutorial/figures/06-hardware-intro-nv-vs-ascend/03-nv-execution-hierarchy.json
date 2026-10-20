@@ -1,0 +1,48 @@
+{
+  "id": "03-nv-execution-hierarchy",
+  "title": "NVIDIA 的执行层次与 SIMT",
+  "caption": "grid → block → warp → thread；Hopper/Blackwell 又加了 cluster 一层，让多个 block 保证同时调度。",
+  "kind": "flow",
+  "section": "3.1",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "nodes": [
+    { "id": "grid", "label": "Grid", "sub": "一次 kernel launch 的全部分块" },
+    {
+      "id": "block",
+      "label": "Thread Block / CTA",
+      "sub": "最多 1024 线程；每 SM 最多 32 个 block"
+    },
+    { "id": "warp", "label": "Warp", "sub": "32 个线程；SIMT 的最小调度单位" },
+    {
+      "id": "thread",
+      "label": "Thread",
+      "sub": "同一 warp 执行同一条指令，但每个线程可访问不同地址",
+      "tone": "compute"
+    },
+    {
+      "id": "cluster",
+      "label": "Thread Block Cluster",
+      "sub": "portable 最大 8；opt-in 最大 16",
+      "tone": "accent"
+    },
+    {
+      "id": "dsm",
+      "label": "分布式共享内存（DSM）",
+      "sub": "cluster 内多个 block 可直接读写彼此的 shared memory",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "grid", "to": "block" },
+    { "from": "block", "to": "warp" },
+    { "from": "warp", "to": "thread" },
+    { "from": "cluster", "to": "block", "label": "保证同时调度" },
+    { "from": "cluster", "to": "dsm" }
+  ],
+  "notes": [
+    "SIMT = 每个线程独立寻址 + warp 级合并发射。",
+    "代价：warp 内分支发散会串行执行，访存必须合并才高效。",
+    "层次越高，共享越强、同步越粗：thread → warp → block → cluster。"
+  ]
+}

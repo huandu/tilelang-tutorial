@@ -1,0 +1,114 @@
+---
+/*
+  The floating controls for the tutorial reading mode.
+
+  Rendered by `TutorialLayout`, so every tutorial page gets them. Two states
+  share one fixed row: the entry button (bottom-right) and, once reading mode
+  is on, the colour/exit toolbar (bottom-centre). `reader-client.ts` switches
+  between them by toggling `hidden`; the styles live in
+  `src/styles/tutorial-reader.css`.
+*/
+import { READER_THEMES, READER_THEME_LABELS } from '@lib/tutorial-reader.ts';
+---
+
+{/*
+  `hidden` here means "nothing renders without JavaScript": the script unhides
+  the wrapper once it has wired the buttons up.
+*/}
+<div data-reader-controls hidden>
+  <button
+    aria-label="进入阅读模式：全屏、隐藏导航、放大正文"
+    class="btn btn-primary btn-sm gap-1.5"
+    data-reader-enter
+    type="button"
+  >
+    <svg
+      aria-hidden="true"
+      class="size-4"
+      fill="none"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="1.75"
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 6.5A5.5 5.5 0 0 0 3 6v11a5.5 5.5 0 0 1 9 3.5V6.5Z"></path>
+      <path d="M21 6a5.5 5.5 0 0 0-9 -.5v14A5.5 5.5 0 0 1 21 17Z"></path>
+    </svg>
+    <span>阅读模式</span>
+  </button>
+
+  <div aria-label="阅读模式" data-reader-toolbar hidden role="toolbar" tabindex="-1">
+    <div aria-label="配色" class="join" role="group">
+      {READER_THEMES.map((theme) => (
+        <button
+          aria-pressed="false"
+          class="btn btn-sm join-item gap-1"
+          data-reader-theme-option={theme}
+          type="button"
+        >
+          {theme === 'light' ? (
+            <svg
+              aria-hidden="true"
+              class="size-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.75"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+            </svg>
+          ) : theme === 'dark' ? (
+            <svg
+              aria-hidden="true"
+              class="size-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.75"
+              viewBox="0 0 24 24"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"></path>
+            </svg>
+          ) : (
+            <svg
+              aria-hidden="true"
+              class="size-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.75"
+              viewBox="0 0 24 24"
+            >
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+              <circle cx="12" cy="12" r="2.5"></circle>
+            </svg>
+          )}
+          <span>{READER_THEME_LABELS[theme]}</span>
+        </button>
+      ))}
+    </div>
+    <button class="btn btn-ghost btn-sm gap-1" data-reader-exit type="button">
+      <svg
+        aria-hidden="true"
+        class="size-4"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-width="1.75"
+        viewBox="0 0 24 24"
+      >
+        <path d="M6 6l12 12M18 6 6 18"></path>
+      </svg>
+      <span>退出</span>
+    </button>
+  </div>
+</div>
+
+<script>
+  import './reader-client.ts';
+</script>

@@ -1,0 +1,36 @@
+{
+  "id": "03-train-step",
+  "title": "一次训练 step 里各组件的位置",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "inlineQuote": "[fig-03] 一次训练 step 里各组件的位置",
+  "caption": "MoE 层的七步：TileLang 覆盖路由、激活与超连接，Ascend C 覆盖 GEMM 与通信。",
+  "nodes": [
+    { "id": "route", "label": "① MoE 路由", "sub": "TileKernels topk_gate（TileLang）" },
+    { "id": "dispatch", "label": "② EP dispatch", "sub": "DeepEP-Ascend EPBuffer.dispatch" },
+    { "id": "gemm1", "label": "③ Grouped GEMM 升维", "sub": "DeepGEMM-Ascend" },
+    { "id": "swiglu", "label": "④ SwiGLU", "sub": "TileKernels（融合量化）", "tone": "accent" },
+    { "id": "gemm2", "label": "⑤ Grouped GEMM 降维", "sub": "DeepGEMM-Ascend" },
+    { "id": "combine", "label": "⑥ combine", "sub": "DeepEP-Ascend EPBuffer.combine" },
+    {
+      "id": "mhc",
+      "label": "⑦ mHC 与优化器",
+      "sub": "TileKernels mHC + DeepGEMM-Ascend HC prenorm",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "route", "to": "dispatch" },
+    { "from": "dispatch", "to": "gemm1" },
+    { "from": "gemm1", "to": "swiglu" },
+    { "from": "swiglu", "to": "gemm2" },
+    { "from": "gemm2", "to": "combine" },
+    { "from": "combine", "to": "mhc" }
+  ],
+  "notes": [
+    "②–⑥ 这一整段可以被 MegaMoE 融成一个 kernel：deepseek-ai/DeepGEMM-Ascend 的 README 写它 fuses EP dispatch、两个 grouped GEMM、SwiGLU 与 combine。",
+    "通信是异步的：② 与 ⑥ 都是「发起 → 算别的 → wait()」的形式，用于把通信与计算重叠。",
+    "DualPipe（流水并行）与 EPLB（专家负载均衡）不在这份发布清单里，但 DeepEP-Ascend 为 EPLB 预留了 lb_prefetch_weights / lb_reduce_grads（Ascend kernel 尚未实现）。"
+  ]
+}

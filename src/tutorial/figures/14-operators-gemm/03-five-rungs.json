@@ -1,0 +1,31 @@
+{
+  "id": "03-five-rungs",
+  "title": "GEMM 的五级阶梯",
+  "kind": "flow",
+  "direction": "LR",
+  "section": "2",
+  "nodeMaxEm": 20,
+  "caption": "每一级把一个被暴露出来的瓶颈收进编译器；生产算子多数停在 ③–④ 级。",
+  "nodes": [
+    { "id": "r0", "label": "① 朴素分块", "sub": "直接读 global", "tone": "default" },
+    { "id": "r1", "label": "② shared + T.gemm", "sub": "片上复用", "tone": "compute" },
+    { "id": "r2", "label": "③ T.Pipelined", "sub": "多级流水", "tone": "compute" },
+    { "id": "r3", "label": "④ swizzle + layout 注解", "sub": "物理布局 + 调度", "tone": "accent" },
+    { "id": "r4", "label": "⑤ intrinsic", "sub": "ldmatrix / mma / tcgen05", "tone": "accent" },
+    { "id": "p", "label": "PyTorch：a @ b", "sub": "正确性基准", "tone": "muted" },
+    { "id": "c", "label": "CUTLASS warp-level MMA", "sub": "手写基线", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "r0", "to": "r1", "label": "访存 O(MNK)" },
+    { "from": "r1", "to": "r2", "label": "搬运/计算串行" },
+    { "from": "r2", "to": "r3", "label": "片上带宽/L2" },
+    { "from": "r3", "to": "r4", "label": "指令级细节" },
+    { "from": "r0", "to": "p", "dashed": true },
+    { "from": "r4", "to": "c", "dashed": true }
+  ],
+  "notes": [
+    "①→② 把访存降一个数量级；②→③ 掩盖搬运延迟；③→④ 提片上带宽与 L2 命中；④→⑤ 逼近手写上限",
+    "图里不含任何性能数字：「主要收益」是对机制的定性描述，具体倍数必须在真机上按第 7 节的口径测",
+    "⑤ 在 Hopper 是手动 ldmatrix + mma，在 Blackwell 是手动 TMEM + mbarrier 协议"
+  ]
+}

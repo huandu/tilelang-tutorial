@@ -1,0 +1,36 @@
+{
+  "id": "07-ascend-primitive-flow",
+  "title": "昇腾一次 GEMM+ReLU 的原语与存储层级",
+  "caption": "每个存储层级之间的搬运都对应一条具体的 tile 原语；T.dual_copy 的职责是把 L0C 累加器按 M 或 N 切给两个 AIV。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "nodes": [
+    { "id": "gm", "label": "GM", "shape": "pill", "tone": "store" },
+    { "id": "l1", "label": "L1 Buffer", "tone": "store" },
+    { "id": "l0a", "label": "L0A", "tone": "store" },
+    { "id": "l0b", "label": "L0B", "tone": "store" },
+    { "id": "cube", "label": "Cube / AIC", "sub": "T.gemm → ascend.mad", "tone": "compute" },
+    { "id": "l0c", "label": "L0C", "tone": "store" },
+    {
+      "id": "ubvf",
+      "label": "UB ⇄ Vector / AIV",
+      "sub": "T.SimtVF / T.SimdVF 就地做 ReLU",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "gm", "to": "l1", "label": "T.copy" },
+    { "from": "l1", "to": "l0a", "label": "T.copy" },
+    { "from": "l1", "to": "l0b", "label": "T.copy" },
+    { "from": "l0a", "to": "cube" },
+    { "from": "l0b", "to": "cube" },
+    { "from": "cube", "to": "l0c" },
+    { "from": "l0c", "to": "ubvf", "label": "T.dual_copy（M/N 各半）" },
+    { "from": "ubvf", "to": "gm", "label": "T.dual_copy / T.copy" }
+  ],
+  "notes": [
+    "T.dual_copy 在这里把 L0C 累加器按 M 或 N 切开交给两个 AIV，否则 Vector 侧只有一半并行度。",
+    "它不是「把纯 Vector kernel 变成双 AIV」的开关：用户必须同时提供 Cube 侧的工作。"
+  ]
+}

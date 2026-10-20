@@ -1,0 +1,16 @@
+%% 第 23 章 图 2：AutoSchedule 的输入是一个带标签的任务图（本章自绘）
+flowchart LR
+  subgraph 任务["TaskNode（每个任务带 latency / ii / pipe_mask）"]
+    T0["T0 loadA<br/>pipe = MTE2"]
+    T1["T1 hif8→l0<br/>pipe = MTE1"]
+    T2["T2 cube<br/>pipe = Cube"]
+    T3["T3 l0c→ub<br/>pipe = Fixpipe"]
+    T4["T4 relu<br/>pipe = Vector"]
+  end
+  T0 -->|"数据依赖 latency=190"| T1
+  T1 -->|"数据依赖 latency=5"| T2
+  T2 -->|"数据依赖 latency=200"| T3
+  T3 -->|"数据依赖 latency=58"| T4
+  T0 -.-|"资源冲突（同 MTE2）"| T0b["T0' 下一轮"]
+  T2 -.->|"owner-exclusion<br/>共享 L0C 生命周期"| T3
+  cap["片上容量<br/>shared / shared.l1 / l0a / l0b / l0c"] --> 任务

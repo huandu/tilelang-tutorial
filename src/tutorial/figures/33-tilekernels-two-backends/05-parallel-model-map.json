@@ -1,0 +1,61 @@
+{
+  "id": "05-parallel-model-map",
+  "title": "两种并行模型的映射：SIMT 与 SIMD",
+  "kind": "grid",
+  "width": 1000,
+  "cellHeight": 58,
+  "section": "4.5",
+  "caption": "CUDA 的并行是「32 个独立的小计算」，SIMD 宽度由编译器在向量化时决定；昇腾的并行是「一条 64 宽度的向量指令」，宽度必须由你写出来。",
+  "headers": ["维度", "NVIDIA GPU（SIMT）", "昇腾 NPU（SIMD）"],
+  "rows": [
+    {
+      "label": "你必须指定的",
+      "cells": ["网格尺寸 + 每 block 线程数", "只用网格（核）尺寸"],
+      "tone": "cell"
+    },
+    {
+      "label": "「线程」存在吗",
+      "cells": ["是：threads=32，线程有独立寄存器", "核这一层不存在；只在 T.SimtVF 里出现"],
+      "tone": "cell"
+    },
+    {
+      "label": "一条指令作用于",
+      "cells": ["32 个线程，各算 1 个标量", "64 条 lane，一次算 64 个标量"],
+      "tone": "cell"
+    },
+    {
+      "label": "一行怎么分",
+      "cells": [
+        "token → block → warp → 每线程几个专家",
+        "token → Vector 核 → vreg × 64 lane → 分组"
+      ],
+      "tone": "cell"
+    },
+    {
+      "label": "跨单位通信",
+      "cells": [
+        "__shfl / shared / T.alloc_reducer（编译器实现）",
+        "S.vcmax / S.vcmin（显式跨 lane 归约指令）"
+      ],
+      "tone": "cell"
+    },
+    {
+      "label": "代码里看得见宽度吗",
+      "cells": [
+        "看不见：T.Parallel(n) 只是一个循环",
+        "看得见：vector_length = 64、T.int32x64、PAT_ALL"
+      ],
+      "tone": "cell"
+    },
+    {
+      "label": "超出宽度怎么办",
+      "cells": ["编译器在向量化时自行决定", "自己分组：快路径（一组装下） / 慢路径（多组）"],
+      "tone": "cell"
+    }
+  ],
+  "notes": [
+    "昇腾的 T.Kernel(N) 只给一个主索引：想用线程就进 T.SimtVF(threads=...)（见 rand/randn_asc.py:34）。",
+    "「专家数超过一组」只有昇腾版需要处理（topk_gate_asc.py 的 num_groups > 1 慢路径），因为每条 SIMD 指令的宽度是硬件固定的。",
+    "推论：在昇腾上，tile 大小不是性能参数而是语法参数——vector_length / max_vregs_per_group 直接决定走哪条分支。"
+  ]
+}

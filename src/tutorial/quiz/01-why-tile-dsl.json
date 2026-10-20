@@ -1,0 +1,84 @@
+{
+  "chapter": "01-why-tile-dsl",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "本书把「机器平衡点」定义为峰值算力与峰值带宽的比值。它的单位是什么？",
+      "options": ["FLOP/Byte", "Byte/FLOP", "秒/FLOP", "无量纲的比值"],
+      "answer": 0,
+      "explain": "平衡点 = 峰值算力 ÷ 峰值带宽，单位是 FLOP/Byte（见 §1.3）；H100 的粗估约 333 FLOP/Byte。B 是最容易误选的选项，它把分子分母写反了。"
+    },
+    {
+      "id": "q2",
+      "stem": "按 §1.3 的口径，softmax（AI≈0.75）与 4096³ MatMul（AI≈1365）相比，正确的判断是哪一项？",
+      "options": [
+        "两者都是 memory-bound，优化方向都是减少访存",
+        "两者都是 compute-bound，优化方向都是喂满张量核",
+        "softmax 是 memory-bound，MatMul 是 compute-bound，两者的优化方向完全不同",
+        "softmax 是 compute-bound，MatMul 是 memory-bound，两者的优化方向完全相同"
+      ],
+      "answer": 2,
+      "explain": "softmax 的算术强度比平衡点低两个数量级，天生 memory-bound（要减少访存）；大矩阵乘高一个数量级，属 compute-bound（要把数据留在片上喂满张量核）。A 把两者的判据混为一谈。"
+    },
+    {
+      "id": "q3",
+      "stem": "按 §2.3 的三要素定义，如果一块数据只有形状与存储位置、缺了「物理布局（归属）」，它退化成了什么？",
+      "options": [
+        "一个循环分块（loop tiling）",
+        "一个 fragment",
+        "只是一块数据，编译器还得替你在物理上重新排列一遍",
+        "一个 memory-bound 的算子"
+      ],
+      "answer": 2,
+      "explain": "§2.3 明确写了：少了第 3 条（物理布局），tile 就只是「一块数据」；少的是第 2 条（存储位置）时才退化成「循环分块」。A 正是常见误选，两句话很容易记反。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 NVIDIA 与昇腾两套存储层级的对应关系，下面哪一句与 §2.1 一致？",
+      "options": [
+        "NV 的 shared memory 与昇腾的 L1 一一对应",
+        "昇腾的 L0A/L0B/L0C 对应 NV 的寄存器文件",
+        "两边层级完全一样，只是叫法不同",
+        "两边不是一一对应：L0A/L0B/L0C 在 NV 侧没有同名对应物，NV 的 shared memory 在昇腾侧要拆成 L1 与 UB 两种角色"
+      ],
+      "answer": 3,
+      "explain": "§2.1 的第一个「值得记住的细节」就是两边不一一对应。把两套层级当成同一张图（A、C）是最常见的误解，也是第 6 章要展开的内容。"
+    },
+    {
+      "id": "q5",
+      "stem": "按 §4.5 的三代对照表，Triton 留下的主要问题是什么？",
+      "options": [
+        "复杂度随硬件代际指数增长，正确性难验证",
+        "tile 与调度绑定，硬件资源信息无法显式表达",
+        "beginner 层尚未完全实现",
+        "需要更多显式决策，抽象仍在快速演化"
+      ],
+      "answer": 1,
+      "explain": "「tile 与调度绑定、硬件资源信息无法显式表达」是 Triton 的遗留问题；A 属于 CUDA，D 属于 TileLang。B 之所以容易误选，是因为它听起来像对所有块级方案都成立。"
+    },
+    {
+      "id": "q6",
+      "stem": "TileLang 论文摘要说的「解耦」，究竟是把什么从什么里解耦出来？",
+      "options": [
+        "把 scheduling space（thread binding / layout / tensorize / pipeline）从 dataflow 里解耦出来",
+        "把反向计算从正向计算里解耦出来",
+        "把 host 代码从 device 代码里解耦出来",
+        "把 Python 前端从 C++ 后端里解耦出来"
+      ],
+      "answer": 0,
+      "explain": "原文是「decouples scheduling space (thread binding, layout, tensorize and pipeline) from dataflow」（见 §4.4）。B、C、D 描述的都是软件栈里真实存在的分层，但它们不是这篇论文说的那一次解耦。"
+    },
+    {
+      "id": "q7",
+      "stem": "关于 v0.1.15 里三层接口的状态，下面哪一句与 §4.4 的表格一致？",
+      "options": [
+        "beginner 层已经完成，是官方推荐的入门入口",
+        "developer 层稳定，日常 90% 的代码写在这一层",
+        "expert 层只在昇腾上可用，CUDA 上不能写线程原语",
+        "三层互斥，一个 kernel 只能用其中一层"
+      ],
+      "answer": 1,
+      "explain": "§4.4 的表格写明 developer 层「稳定，日常 90% 的代码在这一层」，beginner 层则是「not yet fully implemented」。A 是本章反复提醒的坑（见 §5.2 第 6 条）。"
+    }
+  ]
+}

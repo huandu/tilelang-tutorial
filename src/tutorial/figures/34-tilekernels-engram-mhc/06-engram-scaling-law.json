@@ -1,0 +1,24 @@
+{
+  "id": "06-engram-scaling-law",
+  "title": "Engram 论文报告的主要收益（相对 iso-parameter / iso-FLOPs 的 MoE-27B）",
+  "kind": "bars",
+  "labelWidth": 260,
+  "max": 5.5,
+  "caption": "所有数字都来自 Engram 论文（Table 1 / 摘要），测量条件是论文自述的 262B tokens、激活参数 3.8B；本章作者未复现。",
+  "items": [
+    { "label": "BBH（EM）", "value": 5.0, "display": "+5.0", "tone": "accent" },
+    { "label": "CMMLU（Acc.）", "value": 4.0, "display": "+4.0" },
+    { "label": "ARC-Challenge（Acc.）", "value": 3.7, "display": "+3.7", "tone": "accent" },
+    { "label": "MMLU（Acc.）", "value": 3.4, "display": "+3.4" },
+    { "label": "DROP（EM）", "value": 3.3, "display": "+3.3", "tone": "accent" },
+    { "label": "HumanEval（Pass@1）", "value": 3.0, "display": "+3.0", "tone": "accent" },
+    { "label": "MATH（EM）", "value": 2.4, "display": "+2.4", "tone": "accent" },
+    { "label": "GSM8K（EM）", "value": 2.2, "display": "+2.2" },
+    { "label": "MMLU-Pro（Acc.）", "value": 1.8, "display": "+1.8" }
+  ],
+  "notes": [
+    "论文的核心结论是 U 型分配律：把约 20%–25% 的稀疏容量让给 Engram 最好，最优分配比例在 ρ ≈ 75%–80%（10B 档验证 loss 1.7248 → 1.7109）。",
+    "推理/代码/数学的涨幅大于纯知识题，论文把这归因于「Engram 让早期层不必再做静态模式重建，等于加长了有效深度」。",
+    "长上下文：Multi-Query NIAH 84.2 → 97.0；把 100B 参数的表卸载到 host memory 的开销 < 3%。以上全部为论文自报。"
+  ]
+}

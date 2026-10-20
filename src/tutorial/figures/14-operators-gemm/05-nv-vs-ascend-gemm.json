@@ -1,0 +1,32 @@
+{
+  "id": "05-nv-vs-ascend-gemm",
+  "title": "NV 与昇腾的 GEMM 数据通路对照",
+  "kind": "compare",
+  "section": "6",
+  "caption": "同一套 tile 抽象，两条硬件主线：片上复用单元、累加器与同步方式都不同。",
+  "columns": ["NVIDIA（CUDA 后端）", "昇腾（Ascend 后端）"],
+  "rows": [
+    {
+      "label": "数据通路",
+      "values": ["GM → shared memory → fragment(reg)", "GM → L1 → L0A/L0B → L0C → UB"]
+    },
+    { "label": "片上复用单元", "values": ["shared memory（每 SM 可配到 228 KB）", "L1（512 KB）"] },
+    { "label": "累加器", "values": ["fragment（寄存器）", "L0C（128 KB，fp32 累加）"] },
+    { "label": "向量 / 后处理缓冲", "values": ["fragment / shared", "UB（192 KB，Vector）"] },
+    {
+      "label": "tile 级矩阵乘",
+      "values": ["T.gemm（MMA）", "T.gemm_v0 / T.gemm（Cube，unit_flag_ctrl）"]
+    },
+    {
+      "label": "同步",
+      "values": [
+        "隐式（cp.async / mbarrier 由 pass 处理）",
+        "显式 flag（Set/Wait；主干由 InsertSync 自动插入）"
+      ]
+    }
+  ],
+  "notes": [
+    "昇腾侧还有两条 NV 上没有的等式：m0=m1、n0=n1（L0 层不再细分 M/N）",
+    "L1 相当于 NV 的 shared memory，L0A/L0B 是 Cube 输入缓冲，L0C 是 Cube 的累加输出"
+  ]
+}

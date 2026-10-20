@@ -1,0 +1,16 @@
+---
+import TutorialLayout from '@layouts/TutorialLayout.astro';
+---
+
+<TutorialLayout description="没有找到这个页面。" path="/404/" title="页面不存在">
+  <div class="mx-auto flex min-h-[55vh] w-full max-w-3xl flex-col items-center justify-center px-5 py-16 text-center">
+    <p class="font-mono text-sm opacity-50">404</p>
+    <h1 class="mt-3 text-3xl font-semibold">没有找到这个页面</h1>
+    <p class="mt-4 max-w-lg leading-relaxed opacity-70">
+      链接可能已经失效，或者章节地址写错了。可以从教程首页重新进入目录。
+    </p>
+    <a class="btn btn-primary mt-7" href="/">
+      返回教程首页
+    </a>
+  </div>
+</TutorialLayout>

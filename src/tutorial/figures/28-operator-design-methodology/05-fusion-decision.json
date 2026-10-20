@@ -1,0 +1,65 @@
+{
+  "id": "05-fusion-decision",
+  "title": "fusion / split 的四个问题",
+  "caption": "融合的收益只有一个来源——少搬一趟中间量，但代价有三样；所以判据是四个问题，而不是一个结论。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "5.1",
+  "nodes": [
+    { "id": "q0", "label": "要不要把这两步合成一个 kernel？", "shape": "pill", "tone": "default" },
+    {
+      "id": "q1",
+      "label": "① 融合能省多少字节？",
+      "sub": "bytes_split − bytes_fused",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    { "id": "s1", "label": "不要为了省流量而融", "sub": "去看 ②③④ 是不是别的原因", "tone": "warn" },
+    {
+      "id": "q2",
+      "label": "② 融合后要同时活着多少片上数据？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    { "id": "s2", "label": "拆：容量是硬约束", "sub": "不是可以调的参数", "tone": "warn" },
+    {
+      "id": "q3",
+      "label": "③ 融合会不会把 grid 缩到装不满设备？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "s3",
+      "label": "两条路：保持拆分，或融合 + 在别的轴上切",
+      "sub": "split-K / split-KV",
+      "tone": "default"
+    },
+    {
+      "id": "q4",
+      "label": "④ 融合引入了什么新工作？",
+      "sub": "额外输出 · 额外归约 · 额外同步",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    { "id": "s4", "label": "拆", "tone": "warn" },
+    { "id": "f1", "label": "融合", "tone": "accent" },
+    { "id": "f2", "label": "按 ②③④ 决定", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "q0", "to": "q1" },
+    { "from": "q1", "to": "s1", "label": "省得很少或为负" },
+    { "from": "q1", "to": "q2", "label": "省得多" },
+    { "from": "q2", "to": "s2", "label": "超过预算" },
+    { "from": "q2", "to": "q3", "label": "还放得下" },
+    { "from": "q3", "to": "s3", "label": "会" },
+    { "from": "q3", "to": "q4", "label": "不会" },
+    { "from": "q4", "to": "s4", "label": "新工作 ≥ 省下的流量" },
+    { "from": "q4", "to": "f1", "label": "新工作 < 省下的流量" },
+    { "from": "s1", "to": "f2" }
+  ],
+  "notes": [
+    "六个真实取舍里有两行是「故意多搬字节但装得满设备」的一方胜出：瘦长 GEMM 的 split-K（多搬 67.1 MB，64 → 512 块）、decode attention 的 split-KV（多搬 2.1 MB，32 → 2048 块）。",
+    "同一个判据在并行度不足时会给出与流量相反的答案——这就是判据必须写出来的原因。"
+  ]
+}

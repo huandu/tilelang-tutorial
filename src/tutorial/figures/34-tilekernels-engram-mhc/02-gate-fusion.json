@@ -1,0 +1,40 @@
+{
+  "id": "02-gate-fusion",
+  "title": "一次门控前向：融合前后",
+  "kind": "compare",
+  "labelWidth": 170,
+  "caption": "未融合时要跑六个算子、把两个归一化张量写出去再读回来；融合后是一个 kernel、两遍扫描，只用三个标量累加器。",
+  "columns": ["未融合（逐算子）", "融合后（engram_gate_fwd）"],
+  "rows": [
+    {
+      "label": "第一次归一化",
+      "values": ["RMSNorm(x, w_h) → normed_x 落 HBM", "Pass 1：Σx²、Σk²、Σx·w_f·k 全在寄存器"]
+    },
+    {
+      "label": "第二次归一化",
+      "values": ["RMSNorm(k, w_e) → normed_k 落 HBM", "与上一行在同一次扫描里完成"]
+    },
+    {
+      "label": "门控系数",
+      "values": ["dot → signed-sqrt → sigmoid → α", "rsqrt + copysign·sqrt(clamp) + sigmoid"]
+    },
+    {
+      "label": "输出",
+      "values": ["x + α·v（第六个 kernel）", "Pass 2：out = x + α·v"],
+      "tone": "accent"
+    },
+    {
+      "label": "中间张量",
+      "values": ["normed_x / normed_k：2×[T,4,d]，写一遍读一遍", "0；只有 3 个标量累加器"]
+    },
+    {
+      "label": "供反向使用",
+      "values": ["无（要重算）", "按需写出 dot / α / rstd_x / rstd_k，各 [T,4] fp32"]
+    }
+  ],
+  "notes": [
+    "融合的合法性来自恒等式：RMSNorm(x,w_h)ᵀ·RMSNorm(k,w_e) = rstd_x·rstd_k·Σ x·(w_h⊙w_e)·k。",
+    "w_h⊙w_e 由单独的 fused_weight kernel 提前算成 fp32，门控 kernel 只读一个权重。",
+    "两遍是必须的：Pass 1 先得到完整的 rstd 与 dot，才算得出 α；Pass 2 才能把 α 乘到每个 v 上。"
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "id": "05-ecosystem-status",
+  "title": "这套生态的能力状态",
+  "kind": "grid",
+  "headers": ["组件", "状态", "依据"],
+  "cellHeight": 46,
+  "caption": "2026-09-30 这次发布时点的状态；依据是各仓库 README 与源码断言，随 commit 变化。",
+  "rows": [
+    { "label": "EP dispatch / combine", "cells": ["可用", "DeepEP README:60-74"], "tone": "cell" },
+    {
+      "label": "DeepGEMM dense / grouped / MQA / MegaMoE",
+      "cells": ["可用", "DeepGEMM README:95-176"],
+      "tone": "cell"
+    },
+    {
+      "label": "FlashMLA 昇腾稀疏 prefill / decode",
+      "cells": ["可用", "FlashMLA README:13,53,63"],
+      "tone": "cell"
+    },
+    {
+      "label": "DeepSelect Lightning Indexer",
+      "cells": ["可用（bf16）", "DeepSelect README:17-28"],
+      "tone": "cell"
+    },
+    {
+      "label": "TileKernels 双后端算子族",
+      "cells": ["可用", "TileKernels README:9-19"],
+      "tone": "cell"
+    },
+    {
+      "label": "PPBuffer / EngramBuffer / Bucket all-gather",
+      "cells": ["实验性", "DeepEP README:67-69,80-82"],
+      "tone": "store"
+    },
+    { "label": "两个后端是否语义等价", "cells": ["未对拍", "第 33 章 §8.3"], "tone": "store" },
+    {
+      "label": "Bucket reduce-scatter / all-reduce",
+      "cells": ["未实现", "DeepEP README:80"],
+      "tone": "warn"
+    },
+    {
+      "label": "lb_prefetch_weights / lb_reduce_grads",
+      "cells": ["未实现", "Ep.hpp:79,85"],
+      "tone": "warn"
+    },
+    { "label": "EP 入 graph capture", "cells": ["不支持", "DeepEP README:84"], "tone": "warn" },
+    { "label": "masked grouped GEMM", "cells": ["未实现", "gemm.hpp:591,615"], "tone": "warn" },
+    {
+      "label": "昇腾上的融合 norm-RoPE-attn-RoPE-cast",
+      "cells": ["CUDA only", "FlashMLA README:43"],
+      "tone": "warn"
+    },
+    {
+      "label": "DeepSelect 的非 bf16 路径",
+      "cells": ["不支持", "DeepSelect README:37"],
+      "tone": "warn"
+    },
+    {
+      "label": "DeepJIT 缓存预热 / Python 编译 API",
+      "cells": ["WIP", "DeepJIT README:18-21"],
+      "tone": "warn"
+    }
+  ],
+  "notes": [
+    "「不支持」多数是「昇腾侧 kernel 还没写」，不是原理上做不到。",
+    "清单会过期；按「硬件指令集 / 编译器边界 / README 成熟度标注」三类分别维护（正文 §7.3）。"
+  ]
+}

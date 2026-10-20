@@ -1,0 +1,84 @@
+{
+  "chapter": "18-e2e-inference-serving",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "同一个模型、同一块卡，为什么 prefill 要优化张量核利用率、decode 要优化访存与批量？",
+      "options": [
+        "prefill 的 M 是 prompt 长度，AI 高于机器平衡点；decode 的 M 是 batch，AI 远低于平衡点",
+        "prefill 是纯 compute、decode 是纯 memory，两者完全互补",
+        "prefill 靠 KV cache 复用，decode 靠张量核吃满",
+        "decode 的瓶颈是张量核利用率，prefill 的瓶颈是 HBM 带宽"
+      ],
+      "answer": 0,
+      "explain": "见 §2.2：M ≪ N, K 时 AI ≈ 2M/b，所以 decode 的 M 只是 batch 大小、AI 比平衡点低两个半数量级；prefill 的 M 是 prompt 长度，稳落在 compute-bound 一侧。二者是算术强度高低的连续谱，不是 compute 与 memory 的二分。"
+    },
+    {
+      "id": "q2",
+      "stem": "按 Qwen2.5-7B 的配置（28 层、4 个 KV head、head_dim 128、bf16），KV cache 每 token 每层占多少字节？",
+      "options": ["512 B", "1 KiB", "2 KiB", "56 KiB"],
+      "answer": 2,
+      "explain": "见 §2.5：每 token 每层 = 2·H_kv·head_dim·b = 2·4·128·2 B = 2048 B = 2 KiB；再乘 28 层，每 token 全模型 56 KiB。"
+    },
+    {
+      "id": "q3",
+      "stem": "GQA 把 KV head 从 28 压到 4，这枚硬币的另一面是什么？",
+      "options": [
+        "几乎没有代价，只是实现更复杂",
+        "省 7 倍显存，而且算术强度不变",
+        "省 7 倍显存，代价是 prefill 从 compute-bound 变成 memory-bound",
+        "省 7 倍显存，但 decode attention 的 AI = 2H_q/(H_kv·b) 只有 MHA 的 1/7"
+      ],
+      "answer": 3,
+      "explain": "见 §2.5：GQA 让 4 个 KV head 被 28 个 query head 复用，省 7 倍显存，代价是 decode attention 的算术强度只有 MHA 的 1/7——省显存与「每字节能算多少」是同一枚硬币的两面。"
+    },
+    {
+      "id": "q4",
+      "stem": "paged KV 换来显存效率，为此 attention kernel 要付出什么代价？",
+      "options": [
+        "要按最大可能长度预留显存，浪费巨大",
+        "KV 地址要查 block_table，间接寻址破坏了 TMA 的静态描述符",
+        "必须把整份 KV cache 复制一份做 block_table",
+        "block_size 只能设成 1，否则碎片无法消除"
+      ],
+      "answer": 1,
+      "explain": "见 §2.6：地址从 k·block_N 变成「查表 + 偏移」，查表结果是运行期的，而 TMA 描述符要在编译期确定。浪费上界变成「最后一块最多空 block_size−1 个槽位」加 block_table 元数据，而不是按最大长度预留；block_size=16 时全模型每块 896 KiB。"
+    },
+    {
+      "id": "q5",
+      "stem": "continuous batching 为什么能显著提高吞吐？",
+      "options": [
+        "它把 prefill 与 decode 合并成一个 kernel，减少 launch 次数",
+        "它让每条序列的 KV 更短，从而减少 KV 流量",
+        "一个 decode step 的耗时基本不随 batch 变化，让完成的序列立刻退出、新请求立刻补进，槽位利用率接近 1",
+        "它给每个请求固定一条连续显存，消除了碎片"
+      ],
+      "answer": 2,
+      "explain": "见 §3.2：权重流量被摊薄，所以 decode step 的耗时基本不随 batch 变化，空槽位是纯浪费；static batching 里早完成的序列要陪跑到整批结束，continuous batching 每个 step 就能换人。代价是 kernel 必须接受 varlen、paged KV 与 prefill/decode 混步。"
+    },
+    {
+      "id": "q6",
+      "stem": "用 TTFT、E2E 与输出 token 数报告 TPOT，下面哪个公式是对的？",
+      "options": [
+        "(E2E − TTFT) / (输出 token 数 − 1)",
+        "E2E / 输出 token 数",
+        "(E2E − TTFT) / 输出 token 数",
+        "TTFT / 输出 token 数"
+      ],
+      "answer": 0,
+      "explain": "见 §7.1：TPOT 是 (E2E − TTFT) / (n − 1)；E2E / n 把 TTFT 摊进每个 token，不能叫 TPOT（示例里 17.58 ms 对比推荐的 16.79 ms）。报 TPOT 必须写出公式、n 是否含 EOS、以及 TTFT 的起点。"
+    },
+    {
+      "id": "q7",
+      "stem": "下列哪一项最能避免「首次编译 / autotune 落进测量窗口」造成的假数字？",
+      "options": [
+        "把采样次数从 20 次增加到 100 次",
+        "报告 p99 而不是平均数",
+        "把 batch 调大到 32 再测",
+        "先做一次预热（并先完成 autotune、显存池首次增长与 graph capture）再开始计时"
+      ],
+      "answer": 3,
+      "explain": "见 §7.2：首次编译会把均值抬高数量级（示例 0.350 ms 变 32.350 ms，92.43 倍）；预热只能吃掉一次性开销，autotune 搜索、显存池首次增长与 graph capture 都必须先做一遍再计时。另外 L2 cache 命中也要 flush（do_bench 默认 flush 256 MB）。"
+    }
+  ]
+}

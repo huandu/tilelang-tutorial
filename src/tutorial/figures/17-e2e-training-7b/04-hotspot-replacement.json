@@ -1,0 +1,31 @@
+{
+  "id": "04-hotspot-replacement",
+  "title": "一次训练迭代里，谁归 TileLang 管",
+  "kind": "layers",
+  "section": "7",
+  "caption": "上层（数据、优化器、并行、状态、评测）属于 PyTorch/HF 生态；TileLang 只负责把模型前向里的热点算子写成 tile kernel。",
+  "layers": [
+    {
+      "label": "PyTorch / HF 生态（不归 TileLang）",
+      "sub": "DataLoader · AdamW / LR · bf16 autocast · 梯度累积 / DDP·FSDP · checkpoint · 评测",
+      "right": "不归 TileLang"
+    },
+    {
+      "label": "模型前向（部分可换）",
+      "sub": "Embedding（别碰）· RMSNorm · QKV/O · RoPE · FlashAttention · SwiGLU 三 GEMM · LM head / CE",
+      "right": "热点算子战场",
+      "tone": "accent"
+    },
+    {
+      "label": "TileLang 的职责",
+      "sub": "写成 tile kernel；产出的是前向 device 函数，不产生 autograd 图——反向要自己补",
+      "right": "TileLang",
+      "tone": "compute"
+    }
+  ],
+  "notes": [
+    "值得换（依收益排序）：attention（fusion 收益最大）→ GEMM 家族 → RMSNorm / RoPE → fused cross-entropy；MoE 只在模型里有 MoE 时才值得。",
+    "别碰：Embedding lookup（纯查表）、optimizer 步骤（逐元素、状态多，收益低风险高）、通信原语（DDP/FSDP 的 all-gather/reduce-scatter）。",
+    "边界：TileLang 产出的是前向 device 函数，不会自动建 autograd 图——换完算子必须自己补反向（torch.autograd.Function 或另写 kernel）。"
+  ]
+}

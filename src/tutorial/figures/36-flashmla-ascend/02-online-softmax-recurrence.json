@@ -1,0 +1,38 @@
+{
+  "id": "02-online-softmax-recurrence",
+  "title": "online softmax 的递推（含 skip-scale 分支）",
+  "kind": "steps",
+  "direction": "LR",
+  "section": "2.2",
+  "caption": "每个 KV 块更新四个 float32 状态量；只有当 running_max 超过 running_max_for_softmax 的幅度大于 RESCALE_THRES 时才做 rescale，否则直接跳过。",
+  "steps": [
+    { "label": "读入第 k 个 KV 块", "sub": "按 indices 稀疏 gather" },
+    { "label": "P = Q · gathered_kvᵀ", "sub": "[h_q, B_TOPK]" },
+    {
+      "label": "更新 running_max",
+      "sub": "running_max = max(running_max, cur_max)",
+      "tone": "accent"
+    },
+    {
+      "label": "判断滞后是否超阈值",
+      "sub": "running_max − running_max_for_softmax > RESCALE_THRES ?",
+      "tone": "warn"
+    },
+    {
+      "label": "是：rescale",
+      "sub": "out_accum 与 running_sumexp 同乘 exp(m_s − m*)",
+      "tone": "compute"
+    },
+    { "label": "否：skip-scale", "sub": "跳过 rescale，省 FixPipe/UB/VF 带宽", "tone": "accent" },
+    { "label": "S = exp(P − running_max_for_softmax)", "sub": "cast 成 bfloat16 后参与 PV" },
+    {
+      "label": "累加 out_accum 与 running_sumexp",
+      "sub": "out_accum += S · gathered_kv；sumexp += S.sum(-1)"
+    }
+  ],
+  "notes": [
+    "阈值作用在 P * sm_scale 上；代码把阈值预先除以 sm_scale（config.h:43、kernel_body.h:1660-1662）。",
+    "取 RESCALE_THRES = 6 的动机是 exp(6) 量级安全、且 rescale 次数最少（报告 :57,67-68）。",
+    "来源：报告 :39-73。"
+  ]
+}

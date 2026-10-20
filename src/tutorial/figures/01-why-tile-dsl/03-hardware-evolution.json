@@ -1,0 +1,31 @@
+{
+  "id": "03-hardware-evolution",
+  "title": "硬件三阶段与「必须人工管理的资源」的增长",
+  "kind": "compare",
+  "section": "4.2",
+  "width": 1200,
+  "columns": ["阶段一：SIMT 线程", "阶段二：张量核", "阶段三：异步 + 专用存储"],
+  "rows": [
+    {
+      "label": "本阶段新增",
+      "values": [
+        "线程分工 + 片上搬运",
+        "+ fragment 布局（矩阵指令约束）",
+        "+ 多流水同步协议 + 多缓冲容量约束 + 跨核 / 跨 SM 依赖"
+      ]
+    },
+    {
+      "label": "人管资源数",
+      "values": ["2 类资源", "3 类资源", "5+ 类资源（互相约束 → 组合爆炸）"]
+    },
+    {
+      "label": "代表硬件",
+      "values": ["Kepler / Pascal", "Volta 起", "Hopper / Blackwell；昇腾 950"]
+    }
+  ],
+  "caption": "每一阶段都在编程模型上新增一层必须显式管理的资源；到第三阶段，「手写 CUDA 就够了」这个前提不再成立。",
+  "notes": [
+    "NV 侧事实来源：NVIDIA Hopper 架构公开资料（TMA、thread block cluster、distributed shared memory）。",
+    "昇腾侧来源：社区一手文章（非厂商官方文档）与 _vendor/tilelang-v0.1.15/tilelang/ascend/pipeline.py:108-114。"
+  ]
+}

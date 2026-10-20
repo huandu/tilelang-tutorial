@@ -1,0 +1,89 @@
+{
+  "chapter": "23-autoschedule-smt",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "本章把昇腾 kernel 的排程建模成调度问题，模型包含哪五个要素？",
+      "options": [
+        "任务、资源标签（pipe）、依赖边、延迟（latency / II）、片上容量",
+        "线程、warp、block、grid、stream",
+        "stage、order、depth、num_versions、parity",
+        "GM、L1、L0A、L0B、L0C"
+      ],
+      "answer": 0,
+      "explain": "见 §1.2、§2：五个要素分别对应 MaterializeScheduleUnits、ResourcePipe、dependency_analysis、EstimateLatency 与 memory_groups。B、D 是别的章节的硬件术语，C 是第 22 章流水线的概念。"
+    },
+    {
+      "id": "q2",
+      "stem": "关于 latency 与 ii（issue interval）的区别，下列哪一项正确？",
+      "options": [
+        "两者是同一个数，都表示任务执行需要多久",
+        "latency 约束消费者拿到结果的时刻，ii 约束同一条流水再次发射的间隔，且必须 latency ≥ ii",
+        "ii 越大说明这条流水越快",
+        "latency 只对 Cube 有效，ii 只对 MTE 有效"
+      ],
+      "answer": 1,
+      "explain": "见 §2.4：一条指令要 30 个 cycle 才出结果，不代表这条流水 30 个 cycle 内都不能接下一项任务；两者是两个字段，task_annotations.h 会 ICHECK latency ≥ ii。"
+    },
+    {
+      "id": "q3",
+      "stem": "依赖边上的 distance = −1 表示什么？",
+      "options": [
+        "同一轮迭代内的依赖，可以直接忽略",
+        "这条依赖已经由用户写死跨越 1 轮",
+        "这是一条资源冲突边，与 buffer 版本无关",
+        "跨迭代依赖尚未定版，交给求解器用 ring 宽度解决，于是「跨几轮」和「开几份 buffer」是同一个未知数"
+      ],
+      "answer": 3,
+      "explain": "见 §2.3、§4.2：distance 的取值是 0（同迭代）、−1（未解析的跨迭代）、≥1（手工多缓冲写死的距离）；−1 这一档把 buffer 份数耦合进了调度问题。"
+    },
+    {
+      "id": "q4",
+      "stem": "循环版 Z3 求解器解的是什么？",
+      "options": [
+        "变量是线程号，目标是最小化寄存器用量",
+        "变量只有 buffer 份数，目标是最小化片上容量",
+        "变量是 k[i]、r[i]、buf[j]、O_i_j，start = k×II + r，目标是最小化 II",
+        "目标是最小化各任务 latency 之和，与 II 无关"
+      ],
+      "answer": 2,
+      "explain": "见 §4.2：变量是流水级 k、稳态相位 r、buffer 份数与资源冲突的布尔量；约束有数据依赖、资源冲突（含绕回）、容量、owner-exclusion、stage 顺序，目标是对 II 做二分取最小可行值。"
+    },
+    {
+      "id": "q5",
+      "stem": "关于这条 13 个 pass 的自动调度链，下列哪一项正确？",
+      "options": [
+        "每个 pass 都会调用一次 Z3 求解",
+        "只有 AutoSchedule 真正调 Z3 求解，前后都是准备模型与落地结果",
+        "Z3 在 InsertSync 里求解 buffer 份数",
+        "LowerScheduledTIR 负责求解最小 II"
+      ],
+      "answer": 1,
+      "explain": "见 §4.1：13 个 pass 里只有第 6 个 AutoSchedule 调 Z3；EstimateLatency、AnnotateMultiBufferEligible 在准备模型，InsertSync / MaterializeMultiBuffer / LowerScheduledTIR 在落地结果。"
+    },
+    {
+      "id": "q6",
+      "stem": "自动模式下找不到任何可行的 II，会发生什么？",
+      "options": [
+        "编译直接失败并报错",
+        "自动把 num_stages 调大后重试",
+        "静默退化成串行调度（buffer 份数全为 1），编译成功但性能可能塌回完全不重叠",
+        "自动切换成手动调度"
+      ],
+      "answer": 2,
+      "explain": "见 §5.2：自动模式的回退分支只在 verbose=True 时打印，默认 FFI 路径看不到；手动模式才抛异常。所以「加了 num_stages 却一点没变快」要先怀疑掉进了这个分支。"
+    },
+    {
+      "id": "q7",
+      "stem": "为什么说「模型不准」会让结果从慢变成错？",
+      "options": [
+        "估得偏小（把任务估得比真实快）会让消费者提前启动，结果就是错的；估得偏大只是更保守、更慢",
+        "因为估得偏大才危险，估得偏小只会变慢",
+        "模型只影响性能，永远不会影响正确性",
+        "因为 Z3 会拒绝任何不准确的模型"
+      ],
+      "answer": 0,
+      "explain": "见 §5.1：灵敏度实验里把 MTE2 的 40 估成 16，就会得到一个「比生产者早 24 cycle」的非法时间表；estimate_latency.h 里的带宽常量是按芯片世代手工标定的，换芯片/ dtype 不会自动跟着变。"
+    }
+  ]
+}

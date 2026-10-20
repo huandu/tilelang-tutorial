@@ -1,0 +1,60 @@
+{
+  "id": "fig-04-adapter-selection",
+  "title": "五个 adapter 的差异",
+  "caption": "adapter 的名字说的是「用什么把 host 和框架接起来」，不是「用什么生成设备代码」；差别集中在产物形态、stream 怎么传、缓存里存什么。",
+  "kind": "grid",
+  "section": "4.10",
+  "headers": ["adapter", "host 侧产物", "设备侧产物", "stream 从哪来", "适用场景"],
+  "rows": [
+    {
+      "cells": [
+        "TVMFFIKernelAdapter",
+        "TVM runtime module → executable.so",
+        "codegen 回调产出的 cubin/fatbin 或 aibin，编进模块",
+        "不传；TVM-FFI 通过 PyTorch 的 DLPack Exchange 读当前 work stream",
+        "默认路径；CUDA 与 Ascend 都是它"
+      ]
+    },
+    {
+      "cells": [
+        "CythonKernelAdapter",
+        "C wrapper + .pyx，编成 .so",
+        "同左（wrapper 里用 <<<grid, block, smem, stream>>> 启动）",
+        "显式传参：Python 侧取 raw stream 当最后一个实参",
+        "需要显式传 stream，或没有 TVM 运行时的环境"
+      ]
+    },
+    {
+      "cells": [
+        "NVRTCKernelAdapter",
+        "Py wrapper + launcher",
+        "运行期用 NVRTC 编译 CUDA C",
+        "缺省取 torch.cuda.current_stream().cuda_stream",
+        "运行期改源码 / 编译选项，避开 nvcc"
+      ]
+    },
+    {
+      "cells": [
+        "MetalKernelAdapter（注册名 torch）",
+        "无",
+        "torch.mps.compile_shader(...)",
+        "无显式 stream",
+        "只有 Metal 后端用；不支持缓存"
+      ]
+    },
+    {
+      "cells": [
+        "CuTeDSLKernelAdapter",
+        "生成 Python 模块而不是 C",
+        "CuTeDSL 生成的 Python 执行器",
+        "由生成模块处理",
+        "走 CuTe DSL 的 NVIDIA 新路线"
+      ]
+    }
+  ],
+  "notes": [
+    "「auto」不是最聪明的那一个，而是后端声明列表里第一个当前可用的；CUDA 与 Ascend 的第一位都是 tvm_ffi。",
+    "同一个 CUDA 设备源码可以被 tvm_ffi / nvrtc / cython 三种 adapter 包装：生成设备代码的是 codegen，决定怎么调用它的是 adapter。",
+    "v0.1.15 里没有 pto adapter（ls tilelang/jit/adapter/ 看不到 pto），它只存在于 main 快照 994b44e。"
+  ]
+}

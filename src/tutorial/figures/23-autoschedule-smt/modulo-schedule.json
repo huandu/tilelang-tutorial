@@ -1,0 +1,33 @@
+{
+  "id": "modulo-schedule",
+  "title": "模序调度：直线依赖与跨迭代依赖",
+  "caption": "同一轮迭代内的直线依赖决定任务的相位，跨迭代的 WAR 依赖（distance = -1）交给求解器用 buffer 份数解决。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "2.6",
+  "nodes": [
+    {
+      "id": "loada",
+      "label": "loadA（MTE2 GM→L1）",
+      "sub": "latency 190, ii 64",
+      "tone": "default"
+    },
+    { "id": "l1l0", "label": "L1→L0A（MTE1）", "sub": "latency 5, ii 1", "tone": "default" },
+    { "id": "cube", "label": "Cube MAD", "sub": "latency 8 + M·K·N/8192", "tone": "compute" },
+    { "id": "fix", "label": "L0C→GM（Fixpipe）", "sub": "latency 200", "tone": "compute" },
+    { "id": "next", "label": "下一轮 loadA", "sub": "WAR：覆盖同一块 L1", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "loada", "to": "l1l0", "label": "直线依赖" },
+    { "from": "l1l0", "to": "cube" },
+    { "from": "cube", "to": "fix" },
+    { "from": "next", "to": "l1l0", "label": "distance = -1", "dashed": true }
+  ],
+  "notes": [
+    "loadA → L1→L0A → Cube MAD → L0C→GM 这一串是同一轮迭代内的直线依赖，决定任务的相位。",
+    "虚线来自「下一轮 loadA」：跨迭代 WAR 依赖 distance = -1，交给求解器用 buffer 份数（ring 宽度）解决。",
+    "start = k × II + r：k 是任务的流水级，r 是稳态相位（0 ≤ r < II），II 是最小启动间隔。",
+    "跨迭代 WAR 约束 start(下一轮) − start(本轮) ≥ 15 − II × buf：依赖跨几轮由求解器选定的 buffer 份数决定。"
+  ]
+}

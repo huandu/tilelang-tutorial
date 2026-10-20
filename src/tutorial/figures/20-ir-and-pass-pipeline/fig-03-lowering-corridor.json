@@ -1,0 +1,46 @@
+{
+  "id": "fig-03-lowering-corridor",
+  "title": "共享的 lowering 走廊与两处分岔",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "section": "2.4",
+  "caption": "两条 pipeline 呈「工字形」：两端各有一段特有处理，中间是双方共用、顺序基本一致的标准 lowering 走廊（39 个同名 pass）。",
+  "nodes": [
+    {
+      "id": "cuda",
+      "label": "CUDA 特有段",
+      "sub": "WarpSpecialization 三连 · LowerBlackwell2SM · LowerSharedTmem/Barrier",
+      "tone": "accent"
+    },
+    {
+      "id": "asc",
+      "label": "ASCEND 特有段",
+      "sub": "RewriteDualCopy / SimdMerging · UnrollLoopSkipVF · InsertNd2Nz · 自动调度段",
+      "tone": "accent"
+    },
+    {
+      "id": "corr",
+      "label": "共享走廊（39 个同名 pass）",
+      "sub": "顺序基本一致；中点是 LowerTileOp",
+      "tone": "compute"
+    },
+    {
+      "id": "split",
+      "label": "host IRModule + device IRModule",
+      "sub": "engine 用两次 Filter 把它们分开"
+    },
+    { "id": "out", "label": "codegen → 可调用对象", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "cuda", "to": "corr" },
+    { "from": "asc", "to": "corr" },
+    { "from": "corr", "to": "split" },
+    { "from": "split", "to": "out" }
+  ],
+  "notes": [
+    "走廊里的标准 pass（顺序基本一致）：BindTarget → MaterializeKernelLaunch → 前端合法化 →(流水/布局)→ LowerTileOp → DecoupleTypeCast → LegalizeVectorizedLoop → LegalizeSafeMemoryAccess → LowerAccessPtr → HoistNonRestrictParams → FlattenBuffer → ConfigIndexBitwidth → VectorizeLoop → UnrollLoop → VerifyMemory → InferFragment → SplitHostDevice → MakePackedAPI。",
+    "共享走廊的中点是 LowerTileOp：在它之前 IR 里还有 tile op（T.copy / T.gemm），在它之后只剩 TIR 语句与硬件内建——调试 tile 语义问题时在这一步前后做 diff 信息量最大。",
+    "唯一的分岔点是 context.lower(mod)（tilelang/engine/lower.py:136）；pipeline 之上的一切（前端、缓存、codegen 调度、adapter）都是共享的。"
+  ]
+}

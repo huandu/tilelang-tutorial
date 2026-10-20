@@ -1,0 +1,52 @@
+{
+  "id": "01-install-paths",
+  "title": "安装的三条路径",
+  "caption": "按机器上有没有 host CUDA、是不是昇腾，在 wheel / 源码构建 / 昇腾三条路里选一条。",
+  "kind": "flow",
+  "section": "3",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "nodes": [
+    { "id": "q", "label": "你的机器上有什么？", "shape": "diamond", "tone": "muted" },
+    { "id": "a", "label": "有 host CUDA 工具链", "sub": "nvcc 在 PATH" },
+    { "id": "b", "label": "没有 host CUDA", "sub": "但能出网" },
+    { "id": "c", "label": "昇腾 NPU + CANN" },
+    {
+      "id": "a1",
+      "label": "路径①：pip 安装 wheel",
+      "sub": "pip install tilelang",
+      "tone": "accent"
+    },
+    {
+      "id": "b1",
+      "label": "路径②：源码构建",
+      "sub": "git clone --recursive + pip install . -v",
+      "tone": "accent"
+    },
+    {
+      "id": "c1",
+      "label": "路径③：昇腾",
+      "sub": "Ascend 版 wheel / build_wheel_ascend.sh / install_ascend.sh",
+      "tone": "accent"
+    },
+    { "id": "v", "label": "import tilelang 成功", "tone": "compute" },
+    { "id": "v2", "label": "import tilelang.ascend.language 成功", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "q", "to": "a" },
+    { "from": "q", "to": "b" },
+    { "from": "q", "to": "c" },
+    { "from": "a", "to": "a1" },
+    { "from": "b", "to": "b1" },
+    { "from": "c", "to": "c1" },
+    { "from": "a1", "to": "v" },
+    { "from": "b1", "to": "v" },
+    { "from": "c1", "to": "v2" }
+  ],
+  "notes": [
+    "两条硬门槛：Python ≥ 3.10、glibc ≥ 2.28。",
+    "路径① 需要 host CUDA ≥ 10.0，或 pip 提供的 CUDA ≥ 13.0。",
+    "路径③ 需要 CANN ≥ 8.3.RC1、torch-npu ≥ 2.6.0.RC1（独立仓库路线另需 ASCEND_HOME_PATH）。",
+    "要复现本书：把版本钉住，不要用没钉版本的 pip install tilelang。"
+  ]
+}

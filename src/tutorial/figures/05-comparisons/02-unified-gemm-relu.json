@@ -1,0 +1,49 @@
+{
+  "id": "02-unified-gemm-relu",
+  "title": "统一例子 C = relu(A @ B)：五个系统的共同起点与终点",
+  "caption": "同一道题（M = N = K = 1024，tile 128×128×32）在五个系统里有不同的写法，但起点和终点相同。",
+  "kind": "flow",
+  "section": "3",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "nodes": [
+    {
+      "id": "gm",
+      "label": "Global memory",
+      "sub": "A、B、C（fp16 输入，fp32 累加与输出）",
+      "tone": "store"
+    },
+    { "id": "cuda", "label": "CUDA", "sub": "手写 shared memory 与同步" },
+    { "id": "triton", "label": "Triton", "sub": "tl.dot，让编译器管调度" },
+    {
+      "id": "tilelang",
+      "label": "TileLang",
+      "sub": "T.gemm + T.copy + T.Pipelined",
+      "tone": "accent"
+    },
+    { "id": "ascend", "label": "Ascend C", "sub": "TPipe / TQue 三段流水" },
+    { "id": "pto", "label": "PTO-DSL", "sub": "pto.load / tile.matmul" },
+    {
+      "id": "out",
+      "label": "C = relu(A @ B)",
+      "sub": "融合 epilogue 省掉一次 HBM 往返",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "gm", "to": "cuda" },
+    { "from": "gm", "to": "triton" },
+    { "from": "gm", "to": "tilelang" },
+    { "from": "gm", "to": "ascend" },
+    { "from": "gm", "to": "pto" },
+    { "from": "cuda", "to": "out" },
+    { "from": "triton", "to": "out" },
+    { "from": "tilelang", "to": "out" },
+    { "from": "ascend", "to": "out" },
+    { "from": "pto", "to": "out" }
+  ],
+  "notes": [
+    "选「带融合 epilogue 的 GEMM」是为了同时暴露三件事：矩阵乘、融合、搬运与计算的衔接。",
+    "每个系统内部的具体步骤见下一张图；逐项责任划分见 §3.7 的对照表。"
+  ]
+}

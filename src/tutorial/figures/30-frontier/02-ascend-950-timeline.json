@@ -1,0 +1,38 @@
+{
+  "id": "02-ascend-950-timeline",
+  "title": "昇腾 950 相关改动的落点",
+  "kind": "timeline",
+  "section": "4",
+  "caption": "横轴只有四个可核验的 commit 锚点：v0.1.14、适配器 release、v0.1.15 的 tag、corpus 的 main 快照；#3308 的 AscendC 后端进 v0.1.15，#3310 的 PTO 后端只在 main。",
+  "items": [
+    { "label": "v0.1.14", "sub": "commit 7e3bbf37", "at": "2026-09-02" },
+    {
+      "label": "tilelang-ascend v0.1.2.000-release",
+      "sub": "A2/A3 适配器线（另一棵树）",
+      "at": "2026-09-08"
+    },
+    {
+      "label": "PR #3308 昇腾进主干（AscendC 路线）",
+      "sub": "tilelang/ascend/、src/ascend/、msprof.py",
+      "at": "2026-09-29",
+      "tone": "accent"
+    },
+    {
+      "label": "v0.1.15 tag",
+      "sub": "commit a35f8ddf（#3309）",
+      "at": "2026-09-30",
+      "tone": "accent"
+    },
+    {
+      "label": "corpus 的 main 快照",
+      "sub": "commit 994b44e（#3310）——PTO 后端只在 main",
+      "at": "2026-09-30",
+      "tone": "warn"
+    }
+  ],
+  "notes": [
+    "「在 v0.1.15」是结论不是位置：箭头指向它，代表对应文件确实出现在 _vendor/tilelang-v0.1.15/ 里。",
+    "corpus 未收录快照的那组 PR（#3325 T.PersistentKernel、#3320 AutoSimtVF、#3329 算子生成 agent，以及 #3328/#3322/#3324/#3321）只有编号与标题，不要把它们画进任一列。",
+    "昇腾 950 的两条后端路线：ascend 走 Ascend C / Bisheng，pto 走 PTO-DSL + ptoas；后者的文件只出现在 main 快照里。"
+  ]
+}

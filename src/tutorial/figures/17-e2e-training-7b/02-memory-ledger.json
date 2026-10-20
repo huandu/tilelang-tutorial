@@ -1,0 +1,20 @@
+{
+  "id": "02-memory-ledger",
+  "title": "7B 的显存账本分解",
+  "kind": "bars",
+  "section": "2.1",
+  "caption": "Qwen2.5-7B（7.61B 参数）在 bf16 混合精度 + fp32 Adam 下各分量的显存占用（GiB），合计 113.40 GiB。",
+  "max": 30,
+  "items": [
+    { "label": "bf16 权重", "value": 14.17, "display": "14.17 GiB", "tone": "default" },
+    { "label": "bf16 梯度", "value": 14.17, "display": "14.17 GiB", "tone": "default" },
+    { "label": "Adam 一阶矩 m（fp32）", "value": 28.35, "display": "28.35 GiB", "tone": "accent" },
+    { "label": "Adam 二阶矩 v（fp32）", "value": 28.35, "display": "28.35 GiB", "tone": "accent" },
+    { "label": "fp32 主权重（可选）", "value": 28.35, "display": "28.35 GiB", "tone": "accent" }
+  ],
+  "notes": [
+    "优化器状态才是大头：权重+梯度仅 28 GiB，Adam m/v 与 fp32 主权重合计 85 GiB（约 75%）。",
+    "分片后每卡「权重+梯度+优化器」：1 卡 113.40 GiB（80GB 卡直接 OOM）、8 卡 14.17 GiB、16 卡 7.09 GiB。",
+    "图里没有激活值——它随 batch token 数线性增长，必须实测（§2.2）。"
+  ]
+}

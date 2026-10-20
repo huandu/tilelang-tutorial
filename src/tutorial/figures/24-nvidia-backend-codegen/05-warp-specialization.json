@@ -1,0 +1,29 @@
+{
+  "id": "05-warp-specialization",
+  "title": "warp specialization 的角色与握手",
+  "caption": "producer warp group 只发 TMA、consumer warp group 只算，两者用 data_is_ready 与 compute_is_done 两个 mbarrier 交替握手。",
+  "kind": "compare",
+  "section": "4.5",
+  "labelWidth": 150,
+  "columns": ["producer：T.ws(0)，tx < 128", "consumer：T.ws(1)，128 ≤ tx < 256"],
+  "rows": [
+    {
+      "label": "第 1 步：等待",
+      "values": ["barrier_wait(compute_is_done, (ko+1)%2)", "barrier_wait(data_is_ready, ko%2)"]
+    },
+    {
+      "label": "第 2 步：发射 / 计算",
+      "values": ["tma_copy(A_g → A_s, barrier=data_is_ready)", "T.gemm(A_s, B_s, C_local)"]
+    },
+    {
+      "label": "第 3 步：发射 / 通知",
+      "values": ["tma_copy(B_g → B_s, barrier=data_is_ready)", "barrier_arrive(compute_is_done)"]
+    },
+    { "label": "第 4 步：通知", "values": ["barrier_arrive(data_is_ready)", "下一轮回到第 1 步"] }
+  ],
+  "notes": [
+    "T.ws(i) 的 i 是 warp group 序号，一个 warp group = 128 线程；T.ws(0) 展开成 tx < 128。",
+    "两个 mbarrier 交替握手：producer 等 compute_is_done、发 data_is_ready，consumer 等 data_is_ready、发 compute_is_done。",
+    "编译期顺序：AutoWarpSpecialization → MaterializeWSSchedule → ProducerConsumerWarpSpecialized → … → AnnotateWarpGroupRegAlloc；WS 只在 CUDA 且 have_tma(target)（arch ≥ 9）时开启。"
+  ]
+}

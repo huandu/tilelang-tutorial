@@ -1,0 +1,25 @@
+{
+  "id": "05-ascend-ub-pipeline",
+  "title": "昇腾上一次「逐元素 + 归约」的 UB 用法",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "3.4",
+  "caption": "数据流方向：GM → UB → 计算 → 归约 → 广播 → GM，整段包在 T.Pipelined + T.annotate_buffer_versions 里。",
+  "steps": [
+    { "label": "GM → UB：输入 tile", "sub": "T.copy / DataCopy（MTE2 流水）" },
+    {
+      "label": "UB：逐元素计算",
+      "sub": "T.SimtVF + T.Parallel 或 T.tile.*（Vector 流水）",
+      "tone": "compute"
+    },
+    { "label": "UB：累加 / 中间结果", "sub": "在 UB 上原地读写", "tone": "compute" },
+    { "label": "UB：行和 / rstd", "sub": "T.reduce_sum（归约在 UB 上做）", "tone": "compute" },
+    { "label": "UB：广播回整行", "sub": "T.tile.broadcast → 回到第 2 步的整行", "tone": "accent" },
+    { "label": "UB → GM：输出", "sub": "T.copy / DataCopy（MTE3 流水）" }
+  ],
+  "notes": [
+    "三个与 CUDA 侧不同的点：UB 就是 T.alloc_shared（主干没有 alloc_ub）；线程域要显式开 T.SimtVF；tile 大小由 UB 容量反向决定",
+    "Pipelined 循环让「搬下一块」和「算这一块」重叠；UB 放不下就得减 tile 或减缓冲份数",
+    "适配器版还多 real_shape / tmp 参数与 T.Scope(\"V\")"
+  ]
+}

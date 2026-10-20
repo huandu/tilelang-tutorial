@@ -1,0 +1,101 @@
+{
+  "chapter": "22-pipeline-sync-multibuffer",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "在流水线的形式化里，依赖距离 d（distance）描述的是什么？",
+      "options": [
+        "这条语句在流水体里被重复执行的次数",
+        "它等于 num_stages，两者是同一个量",
+        "c 的第 k+d 次迭代用到 p 的第 k 次迭代的结果；d=0 是同迭代依赖，d≥1 是循环携带依赖",
+        "buffer 的字节数与元素个数之比"
+      ],
+      "answer": 2,
+      "explain": "见 §2.1。d=0 的边在同一迭代内即可满足，d≥1 的边必须靠多一份版本或等一轮来满足；它就是「buffer 至少要几个版本」的依据。"
+    },
+    {
+      "id": "q2",
+      "stem": "关于 num_versions = use_stage − def_stage + 1，下列哪一项正确？",
+      "options": [
+        "它一定等于 num_stages",
+        "它是上界；算出为 2 时源码会检查是否存在真正的晚写早读相交，不需要就减 1",
+        "def_stage 是最晚写它的 stage，use_stage 是最早读它的 stage",
+        "在流水体外分配、流水体内不被写的 buffer 也按这个公式加版本"
+      ],
+      "answer": 1,
+      "explain": "见 §2.4：def 取最早写的 stage、use 取最晚读的 stage，公式给的是上界；源码在 num_versions ≥ 2 时检查 order/stage 与访问区间，没有真正需要的碰撞就减 1。def == -1（流水体外定义）的 buffer 不改。"
+    },
+    {
+      "id": "q3",
+      "stem": "关于 stage、深度与 num_versions 三者的关系，哪一项正确？",
+      "options": [
+        "它们是三个不同的量：num_versions ≤ depth，一个 buffer 在 num_stages=4 时也可能只留 1 份",
+        "三者是同一个数，只是叫法不同",
+        "num_versions 一定等于 num_stages",
+        "手写 stage 数组不会影响版本数"
+      ],
+      "answer": 0,
+      "explain": "见 §8.1：stage 是每条语句的位置，depth 是时间槽数量，num_versions 是某个 buffer 的份数；手写 stage = [0, 1, 2, 3] 就能让某条依赖跨 3 个 stage、得到 4 份版本。"
+    },
+    {
+      "id": "q4",
+      "stem": "多缓冲物化时，为什么 barrier 也必须一起展开成多版本？",
+      "options": [
+        "为了省下 shared memory",
+        "因为 barrier 的编号必须和线程号一致",
+        "为了减少同步点的数量",
+        "因为 mbarrier 的 wait 要靠 parity 区分第几圈，少了它第 k 轮的 wait 会等到第 k+1 轮的 arrive"
+      ],
+      "answer": 3,
+      "explain": "见 §3.2：ExpandPipelineBarriers 把 [N] 改成 [nv × N]，并把 wait 的 parity 改成 ((k−min)/nv) mod 2；少了这一步，wait 与 arrive 会配错。"
+    },
+    {
+      "id": "q5",
+      "stem": "关于同步点的代价，下列哪一项正确？",
+      "options": [
+        "必需的同步一定很贵，多余的同步几乎不要钱",
+        "漏一个同步会稳定报错，多一个同步只是偶发变慢",
+        "必需的同步只要深度够成本就能被隐藏；多余的同步落在关键路径上，加深度也救不回来",
+        "同步点越多吞吐越高"
+      ],
+      "answer": 2,
+      "explain": "见 §5.1–§5.3：漏一个同步是偶发的正确性错误（不能用「跑对了」当证据），多一个同步是确定的性能损失；模型显示 depth ≥ 3 时必需的 war 屏障与无屏障同速，而多插的 +cb 屏障在 depth=6 也救不回来。"
+    },
+    {
+      "id": "q6",
+      "stem": "关于昇腾侧 InsertSync 与 event id 的分配，下列哪一项正确？",
+      "options": [
+        "昇腾侧的同步没有方向，只表示等到齐",
+        "每个 hard event 有 8 个 event id 槽，版本数直接乘在 flag 需求上，超出会溢出到互斥池",
+        "event_id 与版本数无关，固定为 0",
+        "同步插入发生在物理版本物化之后，两者互不影响"
+      ],
+      "answer": 1,
+      "explain": "见 §4.4、§4.5：event_id = iteration % num_versions + base，一个版本一个事件槽；每 hard event 只有 8 槽（跨核 16），RewriteFlagToBuf 用 0/1 背包挑一部分保留、其余溢出到 32 槽互斥池。"
+    },
+    {
+      "id": "q7",
+      "stem": "关于 CUDA 侧 cp.async 与 __syncthreads 的分工，下列哪一项正确？",
+      "options": [
+        "cp.async 的完成靠 wait_group，__syncthreads() 不会等它；mbarrier 用 parity 区分轮次",
+        "__syncthreads() 会等待在飞的异步拷贝完成",
+        "mbarrier 不需要 parity，一次 arrive 对应一次 wait",
+        "ThreadPartialSyncRewriter 会把 barrier 扩大到整个 block"
+      ],
+      "answer": 0,
+      "explain": "见 §4.3：源码注释明确指出 tvm_storage_sync 可能被插在 wait_group 之前，对 cp.async 是错的，因此有 ThreadSyncAfterWaitGroupInserter 在每个 wait_group 后补同步；ThreadPartialSyncRewriter 做的是收窄而不是扩大。"
+    },
+    {
+      "id": "q8",
+      "stem": "关于多版本 buffer 与 shared memory 复用，下列哪一项正确？",
+      "options": [
+        "同一个 buffer 的不同版本之间会被 arena 互相复用",
+        "arena 只按字节大小贪心打包，与活跃区间无关",
+        "版本维加在最内层，所以每份版本周围的空间可以被别人复用",
+        "不同 buffer 只要活跃区间不相交且对齐满足就能复用；多版本 buffer 是一个整体参与打包"
+      ],
+      "answer": 3,
+      "explain": "见 §3.3、§3.4、§8.2：arena 先做线性访问扫描再 best-fit，可复用条件是活跃区间不相交且对齐满足；版本维加在最外层，整个多版本 buffer 是不可分割的块，版本之间不会互相复用。"
+    }
+  ]
+}

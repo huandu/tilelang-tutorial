@@ -1,0 +1,34 @@
+{
+  "id": "03-four-levels",
+  "title": "attention 的四级递进实现",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "3.1",
+  "caption": "每一级只改一件事：② 改「中间结果不出片上」，③ 改「搬运与计算的时间关系」，④ 改「覆盖真实形状」。",
+  "steps": [
+    {
+      "label": "① 朴素版：把 N×N 物化",
+      "sub": "S_shared 是 block_M × seq_kv，seq_kv=8K 时已经 2 MB；算分数与算输出被硬性串起来"
+    },
+    {
+      "label": "② 分块 + online softmax",
+      "sub": "S/P 一次都不出片上，消掉 4N² 流量；但 copy 与 gemm 前后排着，Q 只在块内复用",
+      "tone": "compute"
+    },
+    {
+      "label": "③ 加流水与 shared memory 复用",
+      "sub": "T.Pipelined + T.GemmWarpPolicy.FullRow + acc_s 复用；形状仍写死",
+      "tone": "compute"
+    },
+    {
+      "label": "④ 与官方实现对齐",
+      "sub": "scale 折进 log2(e)、past_len、causal 循环裁剪、越界 mask、O_shared epilogue",
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "片上占用：K_shared / V_shared 各 num_stages 份；block_M=block_N=dim=128、fp16 时每份 32 KB，ns=2 → 160 KB、ns=3 → 224 KB（还含 Q_shared 32 KB）",
+    "② 和 ③ 解决的是不同问题：② 省 HBM 流量，③ 省时间轴上的等待",
+    "④ 的每一处都能在 code/04 里被数值验证（full / causal / past_len / window+sink / varlen）"
+  ]
+}

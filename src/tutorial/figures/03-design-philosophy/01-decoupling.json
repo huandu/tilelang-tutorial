@@ -1,0 +1,39 @@
+{
+  "id": "01-decoupling",
+  "title": "数据流与调度空间的解耦",
+  "kind": "compare",
+  "section": "2.1",
+  "labelWidth": 300,
+  "columns": ["用户写下来的：数据流 dataflow", "被解耦出去的：调度空间 scheduling space"],
+  "rows": [
+    {
+      "label": "片上怎么摆",
+      "values": [
+        "申请 tile 缓冲：T.alloc_shared / T.alloc_fragment",
+        "layout（T.annotate_layout / loop_layout=），留空则由 LayoutInference 推导 Fragment"
+      ]
+    },
+    {
+      "label": "搬运用什么机制",
+      "values": ["搬运：T.copy", "pipeline（num_stages= / stage + order）"]
+    },
+    {
+      "label": "计算分给多少线程",
+      "values": [
+        "计算：T.gemm / T.reduce_* / T.Parallel",
+        "thread binding（threads= / policy= / T.get_thread_binding()）"
+      ]
+    },
+    {
+      "label": "张量核指令怎么选",
+      "values": ["计算：还是同一个 T.gemm 调用", "tensorize（派发到 mma / wgmma / tcgen05）"]
+    }
+  ],
+  "caption": "左列是用户直接写出来的东西，右列是被解耦出去、由注解或编译器决定的东西。",
+  "notes": [
+    "四个调度维度在 v0.1.15 里都有入口，也都有缺省：不介入时由编译器决定。",
+    "layout 那条是双向的：可以在 T.annotate_layout 里写死，也可以留空让 LayoutInference 推导。",
+    "数据流的完整链条：申请缓冲（T.alloc_*）→ 搬运（T.copy）→ 计算（T.gemm / T.reduce_* / T.Parallel）→ 写回（T.copy）。",
+    "事实来源：正文 2.1–2.3 节；论文摘要 arXiv:2504.17577。"
+  ]
+}

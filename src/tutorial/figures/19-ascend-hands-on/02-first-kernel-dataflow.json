@@ -1,0 +1,52 @@
+{
+  "id": "02-first-kernel-dataflow",
+  "title": "逐元素 add 的数据流与同步点",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 16,
+  "section": "4.3",
+  "caption": "GM(A)/GM(B) 经 MTE2 搬进 UB，Vector 做 a_ub + b_ub，再经 MTE3 写回 GM(C)；两个 barrier_all 分别保护 MTE2→V 与 V→MTE3。",
+  "nodes": [
+    { "id": "gma", "label": "GM(A)", "tone": "store" },
+    { "id": "gmb", "label": "GM(B)", "tone": "store" },
+    { "id": "a", "label": "a_ub", "tone": "store" },
+    { "id": "b", "label": "b_ub", "tone": "store" },
+    {
+      "id": "bar1",
+      "label": "barrier_all() ①",
+      "sub": "等两次 MTE2 全部完成",
+      "shape": "pill",
+      "tone": "warn"
+    },
+    {
+      "id": "add",
+      "label": "c_ub = a_ub + b_ub",
+      "sub": "T.tile.add（Vector）",
+      "tone": "compute"
+    },
+    { "id": "c", "label": "c_ub", "tone": "store" },
+    {
+      "id": "bar2",
+      "label": "barrier_all() ②",
+      "sub": "等 Vector 全部完成",
+      "shape": "pill",
+      "tone": "warn"
+    },
+    { "id": "gmc", "label": "GM(C)", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "gma", "to": "a", "label": "MTE2" },
+    { "from": "gmb", "to": "b", "label": "MTE2" },
+    { "from": "a", "to": "bar1" },
+    { "from": "b", "to": "bar1" },
+    { "from": "bar1", "to": "add" },
+    { "from": "add", "to": "c" },
+    { "from": "c", "to": "bar2" },
+    { "from": "bar2", "to": "gmc", "label": "MTE3" }
+  ],
+  "notes": [
+    "同步点①保护 MTE2→V：不写会读到旧数据；同步点②保护 V→MTE3：不写会把未算完的 c_ub 写回 GM。",
+    "barrier_all 等价于 PIPE_ALL 全屏障，最小示例够用，代价是没有流水重叠（MTE2 与 V 无法并行）。",
+    "要做到「搬下一块的同时算这一块」，要用多缓冲 + 精确 flag（见 §4.4）。"
+  ]
+}

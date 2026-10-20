@@ -1,0 +1,37 @@
+{
+  "id": "02-grid-mapping",
+  "title": "T.Kernel 的网格与索引",
+  "caption": "位置参数按顺序对应 x / y / z 三个轴；省略 threads= 时 SIMT 后端默认 128 个线程。",
+  "kind": "flow",
+  "section": "3",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "nodes": [
+    {
+      "id": "k",
+      "label": "T.Kernel(gx, gy, gz, threads=128)",
+      "sub": "as (bx, by, bz)",
+      "tone": "accent"
+    },
+    { "id": "bx", "label": "bx = blockIdx.x", "sub": "范围 0..gx-1" },
+    { "id": "by", "label": "by = blockIdx.y", "sub": "范围 0..gy-1" },
+    { "id": "bz", "label": "bz = blockIdx.z", "sub": "范围 0..gz-1" },
+    { "id": "th", "label": "threads=128", "sub": "blockDim.x；省略时 SIMT 默认 128" },
+    { "id": "total", "label": "一次 launch = gx*gy*gz 个块", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "k", "to": "bx" },
+    { "from": "k", "to": "by" },
+    { "from": "k", "to": "bz" },
+    { "from": "k", "to": "th" },
+    { "from": "bx", "to": "total" },
+    { "from": "by", "to": "total" },
+    { "from": "bz", "to": "total" }
+  ],
+  "notes": [
+    "x 变得最快：bx = pid % gx，by = (pid // gx) % gy，bz = pid // (gx*gy)。",
+    "写 T.Kernel(ceildiv(N, BN), ceildiv(M, BM)) 时，x 轴吃 N（列方向），y 轴吃 M（行方向）。",
+    "昇腾方言只接受一维核网格 T.Kernel(num_cores)，没有 threads=，多给一维会直接报错。",
+    "越界部分由 LegalizeSafeMemoryAccess 自动插守卫。"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "02-kv-cache-and-paging",
+  "title": "KV cache 的布局、GQA 复用与 paged 块",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "section": "2.6",
+  "caption": "paged KV 把逻辑位置与物理位置解耦：block_table 把逻辑块映射到任意物理块；GQA 让多个 query head 共享同一份 K/V。",
+  "nodes": [
+    {
+      "id": "k",
+      "label": "K_cache[l]",
+      "code": "[block, block_size, n_kv_heads, head_dim]",
+      "tone": "store"
+    },
+    {
+      "id": "v",
+      "label": "V_cache[l]",
+      "code": "[block, block_size, n_kv_heads, head_dim]",
+      "tone": "store"
+    },
+    {
+      "id": "bt",
+      "label": "block_table[seq_id]",
+      "code": "[block_0, block_7, block_31, …]",
+      "tone": "accent"
+    },
+    { "id": "q", "label": "Q heads", "sub": "28 个", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "bt", "to": "k" },
+    { "from": "bt", "to": "v" },
+    { "from": "q", "to": "k" },
+    { "from": "q", "to": "v" }
+  ],
+  "groups": [{ "label": "第 l 层", "nodes": ["k", "v"] }],
+  "notes": [
+    "Qwen2.5-7B（28 层 / 28 Q heads / 4 KV heads / head_dim 128 / bf16）：每 token 每层 2·4·128·2 B = 2 KiB，每 token 全模型 56 KiB。",
+    "context 8192 时 GQA 占 448 MiB；context 131072 时占 7.00 GiB，而 MHA（28 KV heads）要 49.00 GiB。",
+    "block_size=16 时每层每块 32 KiB、全模型每块 896 KiB；代价是 attention 里 KV 地址要查表，间接寻址破坏 TMA 的静态描述符。",
+    "block_table 到 V_cache、以及 Q head 到 V_cache 的映射与图中标在 K_cache 上的完全一致。"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "04-tensor-core-generations",
+  "title": "Tensor Core 三代：把什么从寄存器里拿了出来",
+  "caption": "每一代都把一类资源从寄存器里搬出去，从而允许更大的 tile 与更深的流水。",
+  "kind": "compare",
+  "section": "3.3",
+  "columns": ["第 1 代 mma", "第 2 代 wgmma", "第 3 代 tcgen05"],
+  "rows": [
+    {
+      "label": "代际 / 架构",
+      "values": ["Volta / Turing / Ampere", "Hopper（sm_90a）", "Blackwell（sm_100a / sm_100f）"]
+    },
+    {
+      "label": "发射粒度",
+      "values": ["warp（32 线程）", "warpgroup（128 线程）", "CTA（可选 2-CTA）"]
+    },
+    {
+      "label": "操作数 A",
+      "values": ["寄存器 fragment", "寄存器或 shared memory", "Tensor Memory 或 shared memory"]
+    },
+    {
+      "label": "操作数 B",
+      "values": ["寄存器 fragment", "shared memory（描述符）", "shared memory"]
+    },
+    {
+      "label": "累加器 D",
+      "values": ["寄存器 fragment", "寄存器 fragment", "Tensor Memory（TMEM）"]
+    },
+    {
+      "label": "同步 / 完成",
+      "values": [
+        "同步（指令返回即完成）",
+        "wgmma.fence + commit_group / wait_group",
+        "mbarrier 完成通知"
+      ]
+    },
+    {
+      "label": "留下的代价",
+      "values": [
+        "fragment 布局要显式安排，寄存器压力限制 tile 大小",
+        "累加器仍在寄存器，要手工维护 commit/wait",
+        "多一种必须显式管理的存储与一套新的同步协议"
+      ]
+    }
+  ],
+  "notes": [
+    "来源：PTX ISA 9.7.16（mma）/ 9.7.17（wgmma）/ 9.7.18（tcgen05）。",
+    "TileLang 的 T.gemm 按目标架构在这三条路径里自动选一条，并隐式插入对应的 wait。",
+    "均为厂商公开文档，非实测。"
+  ]
+}

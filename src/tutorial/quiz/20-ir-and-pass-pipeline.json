@@ -1,0 +1,84 @@
+{
+  "chapter": "20-ir-and-pass-pipeline",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "要弄清某条 backend 的 pass 先后顺序，应该去哪里找？",
+      "options": [
+        "src/transform/*.cc 里函数定义的先后",
+        "tilelang/<backend>/pipeline.py 里的 pass 调用顺序；行为才在 src/transform/*.cc",
+        "docs/compiler_internals/ 的文档表格",
+        "IRModule 的属性里"
+      ],
+      "answer": 1,
+      "explain": "见 §1.2 与 §5.3 陷阱 2：pass 的顺序是 Python 里的数据（tilelang/cuda/pipeline.py、tilelang/ascend/pipeline.py），pass 的行为是 C++ 里的函数（src/transform/*.cc、src/ascend/transform/*.cc）；文档表格只是「默认 pass_configs + 某类 kernel」的产物。"
+    },
+    {
+      "id": "q2",
+      "stem": "PipelinePlanning 对 IR 做了什么？",
+      "options": [
+        "把 T.Pipelined 循环展开成 prologue / steady-state / epilogue 三段",
+        "给 buffer 写下 layout_map 与 parallel_loop_layout 注解",
+        "不改写循环体，只把 T.Pipelined 变成带 software_pipeline_stage/order/async_* 注解的 T.serial",
+        "把 tl.tileop.gemm 降级成具体的 MMA 指令"
+      ],
+      "answer": 2,
+      "explain": "见 §3.4 与 §4.3.1：PipelinePlanning 只规划、不改写——循环体一个字都没改，多出来的是 stage/order/async_producers 等注解；真正的循环重写留给下一步 InjectSoftwarePipeline。这就是 TileLang 最典型的「先规划、后改写」。"
+    },
+    {
+      "id": "q3",
+      "stem": "真正把循环体按 stage 重排、引入多缓冲与 commit/wait 的是哪个 pass？",
+      "options": [
+        "InjectSoftwarePipeline",
+        "PipelinePlanning",
+        "LayoutInference",
+        "StorageRewrite"
+      ],
+      "answer": 0,
+      "explain": "见 §4.3.2：InjectSoftwarePipeline 读取上一步留下的注解，把循环展开成 prologue / steady-state / epilogue，被复用的 buffer 变成多个物理版本，并插入 ptx_commit_group / ptx_wait_group 一类异步等待。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 SBlock 与注解，下面哪一句正确？",
+      "options": [
+        "主块的名字由用户自定义，编译期不会改动",
+        "块上的注解只用于调试输出，不影响后续 pass",
+        "SBlock 只出现在 s_tir 里，tirx 里没有块结构",
+        "主块名硬编码为 \"tilelang_root\"，块上的注解是 pass 之间传递信息的主要通道"
+      ],
+      "answer": 3,
+      "explain": "见 §2.3：src/transform/common/attr.h:17 写着 constexpr const char *DeviceMainBlockName = \"tilelang_root\"; 并且用 name_hint 判断「这是不是 kernel 主块」；layout_map、software_pipeline_stage、tl.launch_threads 等都是靠注解在 pass 之间传递的。"
+    },
+    {
+      "id": "q5",
+      "stem": "在锁定版本里，昇腾插入 ND→NZ 转换的 pass 真名是哪个？",
+      "options": ["InsertNd", "InsertNd2Nz", "InsertNZ", "NormalizeNz"],
+      "answer": 1,
+      "explain": "见 §5.2（b）：真实名字是 InsertNd2Nz（tilelang/ascend/pipeline.py:91、src/ascend/transform/insert_nd2nz.cc）；字面量 InsertNd( 在锁定版本里 grep 不到，它是早期综合文档里的旧写法。判断「有没有」只能靠 grep 在具体 checkout 里核验，不能用 PR 号当判据。"
+    },
+    {
+      "id": "q6",
+      "stem": "昇腾的 InsertSync 与 CUDA 的 ThreadSync，根本区别是什么？",
+      "options": [
+        "它们完全等价，只是名字不同",
+        "ThreadSync 只在 host 侧插入，InsertSync 只在 device 侧插入",
+        "InsertSync 只在 codegen 阶段运行",
+        "CUDA 只需在线程之间插屏障；昇腾要处理 MTE1/2/3、Cube、Vector、Fixpipe 多条硬件流水之间的完成协议与 flag 分配"
+      ],
+      "answer": 3,
+      "explain": "见 §4.4.2 与 §5.3 陷阱 5：ThreadSync 是线程屏障（T.tvm_storage_sync），InsertSync 的文件头注释写着自己的三件事是 synchronization analysis、flag allocation、insertion，输出是 set_flag/wait_flag。看到昇腾 kernel 里没有 bar.sync 并不代表没同步。"
+    },
+    {
+      "id": "q7",
+      "stem": "共享 lowering 走廊的中点是哪个 pass，为什么它适合用来做 IR diff？",
+      "options": [
+        "LayoutInference，因为它写下 layout_map 注解",
+        "MakePackedAPI，因为它是最后一个 pass",
+        "LowerTileOp，因为在此之前还有 tile op（T.copy / T.gemm），之后只剩 TIR 语句与硬件内建",
+        "SplitHostDevice，因为它把 IR 拆成 host 与 device 两个模块"
+      ],
+      "answer": 2,
+      "explain": "见 §4.3.4 与图 fig-03：走廊的中点是 LowerTileOp；在它之前 IR 里还有 tile op 这种高层概念，在它之后只剩 TIR 语句与硬件内建，所以调试「tile 语义」问题时在这一步前后做 diff 信息量最大。"
+    }
+  ]
+}

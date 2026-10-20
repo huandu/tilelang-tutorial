@@ -1,0 +1,53 @@
+{
+  "id": "04-gemm-instruction-selection",
+  "title": "T.gemm 的指令选择与 policy",
+  "caption": "T.gemm 的 M/N/K 必须静态；指令形态由 scope 组合与形状决定，policy 只影响 warp 划分。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    {
+      "id": "g",
+      "label": "T.gemm(A, B, C, transpose_A, transpose_B, policy, clear_accum)",
+      "tone": "default"
+    },
+    {
+      "id": "k",
+      "label": "_gemm_dense_slots：推 M/N/K",
+      "sub": "K 与 M/N 必须 static",
+      "tone": "accent"
+    },
+    { "id": "ir", "label": "tl.tileop.gemm", "sub": "13 槽位 + annotations", "tone": "accent" },
+    { "id": "sel", "label": "SelectInst", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "w",
+      "label": "cuda.wgmma",
+      "sub": "isWgmma_ 或能 wgmma，不满足则 Fatal",
+      "tone": "compute"
+    },
+    {
+      "id": "t",
+      "label": "cuda.tcgen05",
+      "sub": "isTcgen05_ / use_2cta，不满足则 Fatal",
+      "tone": "compute"
+    },
+    { "id": "f", "label": "cuda.fma", "sub": "Volta/Turing 且 MMA 不合法", "tone": "compute" },
+    { "id": "m", "label": "cuda.mma", "sub": "其余情况的回退", "tone": "compute" },
+    { "id": "asc", "label": "昇腾：ascend.mad", "sub": "warp 划分恒为 (1, 1)", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "g", "to": "k" },
+    { "from": "k", "to": "ir" },
+    { "from": "ir", "to": "sel" },
+    { "from": "sel", "to": "w", "label": "wgmma" },
+    { "from": "sel", "to": "t", "label": "能 tcgen05" },
+    { "from": "sel", "to": "f", "label": "Volta/Turing" },
+    { "from": "sel", "to": "m", "label": "否则" },
+    { "from": "ir", "to": "asc", "label": "昇腾", "dashed": true }
+  ],
+  "notes": [
+    "policy（Square / FullRow / FullCol）只影响 warp 划分与 fragment layout：tcgen05 与 fma 固定 (1, num_warps)，只有 wgmma 与默认路径真的用 policy。",
+    "clear_accum 会把 C 的 access region 从 rw 改成 w；只有 cuda.mma 复用已有 shared layout，wgmma / tcgen05 会重新推导。",
+    "accum_dtype 不是 v0.1.15 T.gemm 的参数：累加精度由 C 的 dtype 决定。"
+  ]
+}

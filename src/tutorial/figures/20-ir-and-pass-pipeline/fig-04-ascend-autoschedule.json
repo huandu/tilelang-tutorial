@@ -1,0 +1,43 @@
+{
+  "id": "fig-04-ascend-autoschedule",
+  "title": "昇腾自动调度段（pipeline.py:104-116）",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "4.4.1",
+  "caption": "昇腾没有 CUDA 那样的通用软件流水，而是把「任务化 → 资源建模 → 求解 → 物化 → 同步」做成一整段，全部受 allow_autoschedule() 守卫（默认开启）。",
+  "steps": [
+    {
+      "label": "NormalizeControlFlowForSchedule",
+      "sub": "把 while 变成有界 for，把复杂 if 与 buffer 相关边界提成 Bind"
+    },
+    {
+      "label": "NormalizeConflictHints",
+      "sub": "把 T.assume_no_conflict / T.assume_conflict 归一化"
+    },
+    { "label": "MaterializeScheduleUnits", "sub": "把计算 / 搬运拆成带资源标签的任务单元" },
+    { "label": "AnnotateMultiBufferEligible", "sub": "标注哪些 buffer 可以多份" },
+    { "label": "EstimateLatency", "sub": "给每个任务标注 latency 与 II（启动间隔）" },
+    {
+      "label": "AutoSchedule",
+      "sub": "Z3/SMT 求解：在资源约束下重排任务、决定流水",
+      "tone": "accent"
+    },
+    { "label": "AssignCore", "sub": "给每个任务打上最宽的合法 AIV/AIC 掩码" },
+    { "label": "PrepareMultiBuffer", "sub": "选多缓冲时钟，插入计数器 init/advance 任务" },
+    { "label": "ResolveCore", "sub": "按实际的标量 / 计数器消费者收窄核候选" },
+    {
+      "label": "InsertSync",
+      "sub": "依据读写足迹插入同步，同时产出 buffer 复用契约",
+      "tone": "accent"
+    },
+    { "label": "MaterializeMultiBuffer", "sub": "把逻辑多缓冲时钟落成物理 buffer 版本" },
+    {
+      "label": "LowerScheduledTIR / RestoreWhileLoops",
+      "sub": "落成最终的 AIV/AIC core 体，并把 synthetic_while 还原成 while(true)"
+    }
+  ],
+  "notes": [
+    "每个 pass 的 C++ 本体：AutoSchedule = src/ascend/transform/auto_schedule.cc:1371、InsertSync = insert_sync.cc:2551、MaterializeMultiBuffer = materialize_multi_buffer.cc:544。",
+    "为什么这段只能属于昇腾：CUDA 的软件流水围绕 T.Pipelined 一个循环构造；昇腾一个 kernel 里同时有 Cube / Vector / MTE1-3 / Fixpipe 多条流水，依赖与资源占用必须一起解。"
+  ]
+}

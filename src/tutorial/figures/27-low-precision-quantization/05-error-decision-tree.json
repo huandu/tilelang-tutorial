@@ -1,0 +1,49 @@
+{
+  "id": "05-error-decision-tree",
+  "title": "把「对不上」分成四类：先分类，不要先调容差",
+  "caption": "第一步是用「误差 / 结果的量级」而不是「误差 / 容差」来判断：1e0 量级是全局性逻辑错误，1e-3 ~ 1e-2 量级才可能是正常的数值误差。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "5.4",
+  "nodes": [
+    { "id": "start", "label": "对拍失败：max_diff 超阈值", "shape": "pill", "tone": "default" },
+    {
+      "id": "q1",
+      "label": "误差相对结果的量级？",
+      "sub": "1e-2 还是 1e0",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "num",
+      "label": "① 正常的数值误差",
+      "sub": "对照 u·sqrt(K) 预算：fp16 1e-3 / bf16 1e-2 / fp8 1e-1",
+      "tone": "accent"
+    },
+    { "id": "q2", "label": "所有元素都错，还是只有一部分？", "shape": "diamond", "tone": "muted" },
+    {
+      "id": "logic1",
+      "label": "② 逻辑错误：全局量纲 / 位置错",
+      "sub": "scale 漏乘、反量化位置错、打包字节序错",
+      "tone": "warn"
+    },
+    {
+      "id": "logic2",
+      "label": "③ 逻辑错误：索引错",
+      "sub": "scale 用错轴、group 索引错、行主序 vs group-major",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "start", "to": "q1" },
+    { "from": "q1", "to": "num", "label": "1e-3 ~ 1e-2 量级" },
+    { "from": "q1", "to": "q2", "label": "1e0 量级，几乎每个元素都错" },
+    { "from": "q2", "to": "logic1", "label": "全部元素、偏移方向一致" },
+    { "from": "q2", "to": "logic2", "label": "只在某个维度上错（某些行/列/专家）" }
+  ],
+  "notes": [
+    "先算三个指标：相对 L2（整体是不是同一个量级）、逐元素 max（有没有少数大离群点）、不匹配比例（全局错还是局部错）。",
+    "低精度相对上界（u）：fp16 4.9e-4、bf16 3.9e-3、int8 3.9e-3、e4m3 6.3e-2、int4 7.1e-2、fp4 e2m1 2.5e-1。"
+  ]
+}

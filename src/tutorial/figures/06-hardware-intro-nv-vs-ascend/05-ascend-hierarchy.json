@@ -1,0 +1,57 @@
+{
+  "id": "05-ascend-hierarchy",
+  "title": "昇腾 AI Core 的存储层级与搬运单元",
+  "caption": "Cube 侧走 L1 → L0A/L0B → Cube → L0C，Vector 侧走 UB；每条搬运路径固定归属一个 MTE 单元。",
+  "kind": "layers",
+  "section": "4.2",
+  "layers": [
+    {
+      "label": "Cube（AIC，矩阵计算单元）",
+      "sub": "每次可完成两个 16×16 fp16 矩阵的乘法",
+      "right": "计算",
+      "tone": "compute"
+    },
+    {
+      "label": "Vector（AIV，矢量计算单元）",
+      "sub": "类 SIMD 指令；源与目标都要求在 UB 中，通常 32 B 对齐",
+      "right": "计算",
+      "tone": "compute"
+    },
+    {
+      "label": "L0A / L0B Buffer",
+      "sub": "Cube 的左 / 右矩阵输入；L1 → L0A/L0B → Cube",
+      "right": "Cube 侧",
+      "tone": "store"
+    },
+    {
+      "label": "L0C Buffer",
+      "sub": "Cube 的输出，累加时也作为输入；Cube → L0C → Fixpipe",
+      "right": "Cube 侧",
+      "tone": "store"
+    },
+    {
+      "label": "L1 Buffer / BT / FP",
+      "sub": "Cube 的数据中转区、Bias、量化与 ReLU 参数",
+      "right": "片上",
+      "tone": "store"
+    },
+    {
+      "label": "Unified Buffer（UB）",
+      "sub": "向量 / 标量计算的输入输出：GM → UB → Vector → UB → GM",
+      "right": "Vector 侧",
+      "tone": "store"
+    },
+    {
+      "label": "GM（Global Memory）",
+      "sub": "外部显存，所有数据的起点与终点",
+      "right": "片外",
+      "tone": "store"
+    }
+  ],
+  "notes": [
+    "搬运路径：MTE2 走 GM→L1/UB、MTE1 走 L1→L0A/L0B、MTE3 走 UB→GM、Fixpipe 走 L0C→GM/L1。",
+    "对齐要求：UB 32 B、L1 32 B、L0A/L0B 512 B、L0C 64 B、BT 64 B、Fixpipe 64 B。",
+    "容量要用 GetCoreMemSize 在运行时查询；本章不给 L0A/L0B/L0C 的通用容量数字。",
+    "文档示例里的 UB 192K、L1 512KB 都是特定型号的条件数字，不是通用规格。"
+  ]
+}

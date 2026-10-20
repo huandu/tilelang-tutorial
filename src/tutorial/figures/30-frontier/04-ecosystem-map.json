@@ -1,0 +1,68 @@
+{
+  "id": "04-ecosystem-map",
+  "title": "TileLang 生态的仓库地图",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "6",
+  "caption": "以 tile-ai/tilelang 主干为中心：一侧是接入/适配的昇腾两棵树，另一侧是 spec 驱动、runtime、agent 生成流水线与性能模型等上层使用者。",
+  "nodes": [
+    {
+      "id": "core",
+      "label": "tile-ai/tilelang（主干）",
+      "sub": "v0.1.15 / main；tilelang/{cuda,rocm,metal,cpu,webgpu,ascend} + src/{…,backend/common}",
+      "tone": "accent"
+    },
+    {
+      "id": "ascend",
+      "label": "tile-ai/tilelang-ascend",
+      "sub": "A2/A3 适配器（另一棵树）；Ascend C & PTO 两条 codegen"
+    },
+    {
+      "id": "mlir",
+      "label": "tile-ai/tilelang-mlir-ascend",
+      "sub": "昇腾 AscendNPU IR（MLIR）路线，target kind = npuir"
+    },
+    {
+      "id": "rt",
+      "label": "tile-ai/TileRT",
+      "sub": "超低延迟推理 runtime；算子被它调度、被它约束"
+    },
+    {
+      "id": "ops",
+      "label": "tile-ai/TileOPs",
+      "sub": "spec 驱动的 LLM 算子库（GemmFwdOp 等，可 autotune）"
+    },
+    {
+      "id": "foundry",
+      "label": "tile-ai/TileFoundry",
+      "sub": "「编译器交给 agent」的生成流水线；产出打上 foundry 标签的 PR",
+      "tone": "compute"
+    },
+    {
+      "id": "sight",
+      "label": "tile-ai/TileSight",
+      "sub": "tile 级性能解析模型，可在 CPU 上算，回答「为什么这个 tiling 更好」"
+    },
+    {
+      "id": "bench",
+      "label": "tile-ai/tilelang-benchmark",
+      "sub": "已归档，README 指向 TileOPs",
+      "tone": "muted"
+    }
+  ],
+  "edges": [
+    { "from": "core", "to": "ascend", "label": "接入 / 适配" },
+    { "from": "core", "to": "mlir", "label": "接入 / 适配" },
+    { "from": "core", "to": "ops", "label": "上层使用者" },
+    { "from": "core", "to": "rt", "label": "上层使用者" },
+    { "from": "ops", "to": "foundry", "label": "被 agent 生成 / 优化" },
+    { "from": "core", "to": "sight", "label": "上层使用者" },
+    { "from": "bench", "to": "ops", "label": "被取代", "dashed": true }
+  ],
+  "notes": [
+    "各仓库的描述来自 corpus 里各自 README 快照的原文（抓取日 2026-09-30），不是本章实测；仓库之间的依赖关系是上游自述。",
+    "注意命名：存在的是 tile-ai/TileFoundry（PyPI 包名 tilefoundry），不存在 TileFindry 这个仓库，看到该拼写按错误处理。",
+    "它们各有自己的版本节奏，在 v0.1.15 上跑之前要按第 30 章 §2.3 的四步流程核对其中用到的 API。"
+  ]
+}

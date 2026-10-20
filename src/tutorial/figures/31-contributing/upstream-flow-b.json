@@ -1,0 +1,48 @@
+{
+  "id": "upstream-flow-b",
+  "title": "CI 的四个 job 与依赖关系",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "3.4",
+  "caption": "ci.yml 在 PR 的六种事件上触发，分 lint、tests、ascend、cutedsl 四个 job；tests、ascend、cutedsl 都要求 repository_owner == tile-ai，且草稿 PR 不跑测试矩阵。",
+  "nodes": [
+    {
+      "id": "ci",
+      "label": "CI（pull_request 触发）",
+      "sub": "opened / synchronize / reopened / ready_for_review / labeled / unlabeled",
+      "tone": "accent"
+    },
+    {
+      "id": "lint",
+      "label": "job: lint（ubuntu-latest）",
+      "sub": "compileall 做 Python 3.10 AST 检查；audit_cpp_api_style.py 仅告警；pre-commit run --all-files"
+    },
+    {
+      "id": "tests",
+      "label": "job: tests（矩阵）",
+      "sub": "self-hosted nvidia CUDA-auto → examples + python；amd gfx942 ROCm-7.2；macos-latest Metal 用 -k metal 过滤"
+    },
+    {
+      "id": "ascend",
+      "label": "job: ascend",
+      "sub": "self-hosted ascend，USE_ASCEND=ON；pytest -n 4 examples/ascend 与 -n 32 testing/ascend"
+    },
+    {
+      "id": "cutedsl",
+      "label": "job: cutedsl（needs: tests）",
+      "sub": "TILELANG_TARGET=cutedsl → examples，排除 examples/ascend；只有 NVIDIA 矩阵通过后才跑"
+    }
+  ],
+  "edges": [
+    { "from": "ci", "to": "lint" },
+    { "from": "ci", "to": "tests" },
+    { "from": "ci", "to": "ascend" },
+    { "from": "tests", "to": "cutedsl", "label": "needs" }
+  ],
+  "notes": [
+    "草稿 PR 不会跑测试矩阵，所以「CI 没绿」有时只是因为你把它标成了 draft。",
+    "Metal 矩阵靠 pytest 名字过滤（-k metal）：一个新加的、名字里没有 metal 的 Metal 测试不会在这个 job 里被执行。",
+    "测试的可移植性由 requires_cuda / requires_rocm / requires_metal 等 marker 决定，不由目录决定；只生成源码、不跑 kernel 的目标专属测试同样可能要标 requires_cuda。"
+  ]
+}

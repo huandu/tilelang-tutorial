@@ -1,0 +1,89 @@
+{
+  "chapter": "07-quickstart",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "本章说一个 kernel 剥到最里面就是四个部件，其中哪些是「人写的」？",
+      "options": [
+        "网格与 buffer",
+        "搬运与并行域",
+        "四个部件全部由用户手写",
+        "四个部件全部由编译器补全"
+      ],
+      "answer": 0,
+      "explain": "见 §2 的表：网格与 buffer 是人写的，搬运与并行域由编译器兑现。关键结论是「前两列是人写的，后两列是编译器补的」。"
+    },
+    {
+      "id": "q2",
+      "stem": "按 v0.1.15 的安装文档，pip 安装的两条硬门槛是什么？",
+      "options": [
+        "Python ≥ 3.8、glibc ≥ 2.17",
+        "Python ≥ 3.10、glibc ≥ 2.28",
+        "Python ≥ 3.12、glibc ≥ 2.31",
+        "只要求有 GPU，Python 版本不限"
+      ],
+      "answer": 1,
+      "explain": "见 §3.1：Installation.md 列出 Python ≥ 3.10、glibc 2.28。这两条会卡住大多数人，所以本章建议先跑环境体检脚本再动手装。"
+    },
+    {
+      "id": "q3",
+      "stem": "在 with T.Kernel(T.ceildiv(N, block_N), threads=threads) as bx 里，bx 到底是什么？",
+      "options": [
+        "当前线程的编号，等价于 threadIdx.x",
+        "这一块里元素的下标",
+        "网格的总块数",
+        "当前 tile 程序的编号（第几块），在 CUDA 上落到 blockIdx.x"
+      ],
+      "answer": 3,
+      "explain": "见 §4.2：docstring 把 T.Kernel 定义为「a grid of tile programs」，bx 是第几块而不是第几个线程；总块数是 ceildiv(N, block_N)，threads= 只是每块线程数的提示。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 for i in T.Parallel(block_N): 里的 i，下面哪句符合本章的说明？",
+      "options": [
+        "i 是线程号，一个 i 对应一个线程",
+        "i 是全局下标，等于 bx * block_N + i 本身",
+        "i 是这块里的元素下标；谁来执行、每线程几个、要不要向量化都由布局推导决定",
+        "T.Parallel 只在昇腾后端可用，CUDA 上要手写 threadIdx"
+      ],
+      "answer": 2,
+      "explain": "见 §4.2：i 不是线程号而是块内元素下标，线程映射与向量化在 LayoutInference 里决定，官方原文是「block level, not thread level」。全局下标要自己写成 bx * block_N + i。"
+    },
+    {
+      "id": "q5",
+      "stem": "想在生成的 CUDA 里确认「这段逐元素代码被向量化了」，看哪里最快？",
+      "options": [
+        "看有没有 uint4 / nv_bfloat162 这类类型，以及 stride 是不是等于向量宽度",
+        "看有没有 __launch_bounds__",
+        "看有没有 #pragma unroll",
+        "看 gridDim.x 是不是等于 ceildiv(N, block_N)"
+      ],
+      "answer": 0,
+      "explain": "见 §5.2、§5.3：出现 uint4 这类类型说明命中了 128-bit 向量化。不整除时编译器会补 if (... < N) 边界判断，而边界判断会挡住向量化。"
+    },
+    {
+      "id": "q6",
+      "stem": "在同一个 tilelang 版本下，哪种改动会让编译缓存 key 变化、从而触发重新编译？",
+      "options": [
+        "只改了 kernel 里的注释和空白",
+        "改了 block_N 之类的 tile 参数，或改了 pass 开关",
+        "把同一个 kernel 用同样的参数再调用一次",
+        "把输出张量换个变量名"
+      ],
+      "answer": 1,
+      "explain": "见 §6.3：key 由 func.script()、out_idx、args_repr、target、backend、pass_configs、version/platform 组成。改注释不改 script，所以仍命中；改参数或 pass 开关必然换 key。"
+    },
+    {
+      "id": "q7",
+      "stem": "用主干 v0.1.15 写昇腾 kernel 时，下面哪一条与 CUDA 侧的差异描述正确？",
+      "options": [
+        "T.Kernel 仍可传二维网格，只是 threads= 被忽略",
+        "T.alloc_shared 在昇腾上落到 L1 Buffer",
+        "网格变成一维核网格、没有 threads=，核内线程域要另开 T.SimtVF(threads=...)",
+        "主干提供了顶层 tilelang.cache.clear_cache() 供清缓存"
+      ],
+      "answer": 2,
+      "explain": "见 §7.1 与 §6.4：昇腾的 T.Kernel 只接受一维核网格，多给一维直接报错；alloc_shared 在昇腾落到 UB 而不是 L1；顶层 clear_cache 是独立仓库的 API，主干没有。"
+    }
+  ]
+}

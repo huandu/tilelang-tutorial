@@ -1,0 +1,43 @@
+{
+  "id": "01-design-flow-b",
+  "title": "设计流程里的判据与回退分支",
+  "caption": "每一步都有一个可检验的判据；任何一步不过就回上一步，而不是继续往下写代码。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "1.2",
+  "nodes": [
+    { "id": "c", "label": "② 定 tile 尺寸与存储位置", "tone": "default" },
+    { "id": "c1", "label": "四条约束都过吗？", "shape": "diamond", "tone": "muted" },
+    { "id": "c2", "label": "缩小 tile 或换分块轴", "sub": "回到 ②，不要改算法", "tone": "warn" },
+    { "id": "d", "label": "③ 定流水结构", "tone": "default" },
+    { "id": "d1", "label": "搬运延迟 / 计算周期", "shape": "diamond", "tone": "muted" },
+    { "id": "d2", "label": "不加流水：num_stages 保持 1", "tone": "default" },
+    { "id": "d3", "label": "加多缓冲：份数 = 1 + ceil(延迟/周期)", "tone": "accent" },
+    { "id": "e", "label": "④ 特殊指令 / 特殊布局", "tone": "default" },
+    { "id": "e1", "label": "默认降级路径够快吗？", "shape": "diamond", "tone": "muted" },
+    { "id": "e2", "label": "引入特殊路径，并写下它的新约束", "tone": "warn" },
+    { "id": "g", "label": "⑥ 与模型对账：离下界近吗？", "tone": "accent" },
+    { "id": "h", "label": "回到 ①–④ 里最可疑的那一步", "tone": "warn" }
+  ],
+  "edges": [
+    { "from": "c", "to": "c1" },
+    { "from": "c1", "to": "c2", "label": "否" },
+    { "from": "c1", "to": "d", "label": "是" },
+    { "from": "d", "to": "d1" },
+    { "from": "d1", "to": "d2", "label": "≈ 1" },
+    { "from": "d1", "to": "d3", "label": "> 1" },
+    { "from": "d2", "to": "e" },
+    { "from": "d3", "to": "e" },
+    { "from": "e", "to": "e1" },
+    { "from": "e1", "to": "e2", "label": "否" },
+    { "from": "e1", "to": "g", "label": "是" },
+    { "from": "e2", "to": "g" },
+    { "from": "g", "to": "h", "label": "否" }
+  ],
+  "notes": [
+    "① 建模的判据是「AI 与平衡点比」：如果算子的 AI 比平衡点低两个数量级，调参空间本来就没有。",
+    "⑥ 的判据是「离下界近吗」；不近就回到 ①–④ 里最可疑的那一步，交付时把口径、判据与边界条件一起写下来。",
+    "图里的回退箭头从 ⑥ 指回 ②：任何一步不过都回到上一步，而不是继续往下写代码。"
+  ]
+}

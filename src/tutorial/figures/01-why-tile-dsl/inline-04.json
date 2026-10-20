@@ -1,0 +1,39 @@
+{
+  "id": "inline-04",
+  "title": "三代方案：信息分工的演进链",
+  "kind": "flow",
+  "section": "4.5",
+  "inlineQuote": "flowchart TB\n    A[\"CUDA<br/>线程为第一等公民<br/>全部手工\"] --> B[\"Triton<br/>tile 为第一等公民<br/>调度交给编译器\"]",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "cuda", "label": "CUDA", "sub": "线程为第一等公民，全部手工" },
+    {
+      "id": "triton",
+      "label": "Triton",
+      "sub": "tile 为第一等公民，调度交给编译器",
+      "tone": "accent"
+    },
+    {
+      "id": "tilelang",
+      "label": "TileLang",
+      "sub": "tile + 显式数据流，调度空间解耦后可表达",
+      "tone": "accent"
+    },
+    {
+      "id": "passes",
+      "label": "布局推导 / 软件流水 / 同步插入",
+      "sub": "由编译期 pass 完成",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "cuda", "to": "triton" },
+    { "from": "triton", "to": "tilelang" },
+    { "from": "tilelang", "to": "passes" }
+  ],
+  "caption": "三代方案的信息分工：TileLang 把该显式表达的调度信息放回代码里，把能推导的留给编译期 pass。",
+  "notes": [
+    "CUDA 的事实来源见正文 4.1 节；Triton 的取舍见 MAPL 2019 论文；TileLang 的解耦声明见 arXiv:2504.17577。"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "05-mega-moe-fusion",
+  "title": "MegaMoE 把五段融成一个 kernel",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "caption": "EP dispatch、两个 grouped GEMM、SwiGLU 与 combine 被压进一次 launch，中间结果不再往返 HBM，通信与计算得以重叠。",
+  "nodes": [
+    {
+      "id": "x",
+      "label": "输入",
+      "sub": "x（fp8+sf）· topk_idx · topk_weights",
+      "tone": "default"
+    },
+    {
+      "id": "dispatch",
+      "label": "① EP dispatch",
+      "sub": "token 送到专家所在 rank",
+      "tone": "default"
+    },
+    { "id": "g1", "label": "② Linear1", "sub": "grouped GEMM (fp8×fp4)", "tone": "accent" },
+    {
+      "id": "swiglu",
+      "label": "③ SwiGLU + 量化",
+      "sub": "AIV0 解码 fp4 权重 → fp8 NZ",
+      "tone": "compute"
+    },
+    { "id": "g2", "label": "④ Linear2", "sub": "grouped GEMM → bf16", "tone": "accent" },
+    {
+      "id": "combine",
+      "label": "⑤ EP combine",
+      "sub": "按 top-k 权重归约回原 token",
+      "tone": "default"
+    },
+    { "id": "y", "label": "输出 y", "sub": "bf16", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "x", "to": "dispatch" },
+    { "from": "dispatch", "to": "g1" },
+    { "from": "g1", "to": "swiglu" },
+    { "from": "swiglu", "to": "g2" },
+    { "from": "g2", "to": "combine" },
+    { "from": "combine", "to": "y" }
+  ],
+  "groups": [
+    {
+      "label": "同一个 kernel（AIC + 2×AIV 分工）",
+      "nodes": ["dispatch", "g1", "swiglu", "g2", "combine"],
+      "tone": "accent"
+    }
+  ],
+  "notes": [
+    "进度阶段：kDispatched → kLinear1Ready → kLinear2Ready → kCombineSent。",
+    "代价：多进程 + HCCL 对称缓冲区、形状提前注册、核数固定 32、每次 launch 清 progress 区。",
+    "性能表单独列出 Communication bandwidth（33–135 GB/s）。"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "id": "06-capability-status",
+  "title": "能力状态清单",
+  "kind": "grid",
+  "caption": "只有 EP 主线（dispatch/combine 与其三个可选特性）是可用状态；其余按实验性、未实现、不支持三档如实标注。",
+  "headers": ["能力", "状态", "依据"],
+  "rows": [
+    { "label": "EP dispatch（BF16 / FP8）", "cells": ["可用", "README:66,72"], "tone": "accent" },
+    { "label": "EP combine（BF16，FP32 累加）", "cells": ["可用", "README:66"], "tone": "accent" },
+    {
+      "label": "cached handle / deterministic / padding",
+      "cells": ["可用", "README:66"],
+      "tone": "accent"
+    },
+    { "label": "延迟 epilogue", "cells": ["可用（需 async）", "ep.hpp:398"], "tone": "accent" },
+    { "label": "Bucket batched all-gather", "cells": ["可用（实验性）", "README:69,80"] },
+    { "label": "PPBuffer / EngramBuffer", "cells": ["实验性", "README:67,68,82"], "tone": "muted" },
+    {
+      "label": "Bucket reduce-scatter / all-reduce",
+      "cells": ["未实现", "README:80"],
+      "tone": "warn"
+    },
+    {
+      "label": "lb_prefetch_weights / lb_reduce_grads",
+      "cells": ["未实现", "README:81"],
+      "tone": "warn"
+    },
+    { "label": "混合通信 hybrid", "cells": ["不支持", "README:84"], "tone": "warn" },
+    { "label": "CPU-backed Engram 存储", "cells": ["不支持", "README:84"], "tone": "warn" },
+    { "label": "graph capture（EP 入图）", "cells": ["不支持", "README:84"], "tone": "warn" },
+    { "label": "显式 RDMA 服务等级 / QP 数", "cells": ["不支持", "README:74"], "tone": "warn" },
+    { "label": "奇数 rank 数", "cells": ["不支持（须偶数）", "README:29"], "tone": "warn" }
+  ],
+  "notes": [
+    "判据全部来自 DeepEP-Ascend README 的 Features 表与 Ongoing 清单，以及源码断言。",
+    "「未实现」指接口已在、通信 kernel 还没写；「不支持」指这条路当前走不通。",
+    "选型前先过一遍这张表。"
+  ]
+}

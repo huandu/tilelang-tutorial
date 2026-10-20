@@ -1,0 +1,72 @@
+{
+  "id": "fig-03-backend-abstraction",
+  "title": "多后端抽象：注册清单、四类组件与 BackendContext",
+  "kind": "flow",
+  "section": "4.4",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "nodes": [
+    {
+      "id": "mod",
+      "label": "BackendModule（注册清单）",
+      "sub": "一个后端声明自己提供什么",
+      "tone": "accent"
+    },
+    { "id": "reg", "label": "registry", "sub": "module.py:234-307", "tone": "compute" },
+    {
+      "id": "c1",
+      "label": "PassPipeline",
+      "sub": "pass_pipeline/pipeline.py:11-39",
+      "tone": "store"
+    },
+    { "id": "c2", "label": "DeviceCodegen", "sub": "device_codegen.py:31-44", "tone": "store" },
+    { "id": "c3", "label": "HostCodegen / Hook", "sub": "host_codegen.py:33-52", "tone": "store" },
+    {
+      "id": "c4",
+      "label": "ExecutionBackendSpec",
+      "sub": "execution_backend.py:18-32",
+      "tone": "store"
+    },
+    {
+      "id": "ctx",
+      "label": "BackendContext",
+      "sub": "每次编译解析一次，之后不可变（frozen dataclass）",
+      "tone": "accent"
+    },
+    { "id": "x1", "label": "module: BackendModule", "tone": "default" },
+    { "id": "x2", "label": "target: device Target", "tone": "default" },
+    { "id": "x3", "label": "target_host: host Target", "tone": "default" },
+    { "id": "x4", "label": "execution_backend", "sub": "ExecutionBackendSpec", "tone": "default" }
+  ],
+  "edges": [
+    { "from": "mod", "to": "reg" },
+    { "from": "mod", "to": "c1" },
+    { "from": "mod", "to": "c2" },
+    { "from": "mod", "to": "c3" },
+    { "from": "mod", "to": "c4" },
+    { "from": "reg", "to": "x1" },
+    { "from": "c1", "to": "x2" },
+    { "from": "c2", "to": "x2" },
+    { "from": "c3", "to": "x3" },
+    { "from": "c4", "to": "x4" },
+    { "from": "x1", "to": "ctx" },
+    { "from": "x2", "to": "ctx" },
+    { "from": "x3", "to": "ctx" },
+    { "from": "x4", "to": "ctx" }
+  ],
+  "groups": [
+    { "label": "四类可插拔组件", "nodes": ["c1", "c2", "c3", "c4"], "tone": "default" },
+    {
+      "label": "BackendContext（一次解析，之后不可变）",
+      "nodes": ["ctx", "x1", "x2", "x3", "x4"],
+      "tone": "default"
+    }
+  ],
+  "caption": "注册清单声明一个后端提供什么；registry 解析出只读的 BackendContext，四类组件再从 Context 里取自己需要的那一份。",
+  "notes": [
+    "BackendModule 的字段：target_kinds + supports_target、pipelines: {kind: PassPipeline}、device_codegens: {kind: DeviceCodegen}、host_codegens + host_codegen_hooks、execution_backends: tuple[ExecutionBackendSpec]、callbacks (FFI)。",
+    "注册表的硬校验：每个 target_kinds 必须有恰好一个 pipeline 与一个 device codegen，pipeline 的 name 必须等于 target kind，且至少有一个 execution backend；同一 target kind 上多个 manifest 共存时必须都提供 supports_target 谓词。",
+    "CUDA 与 CuTeDSL 都占 cuda 这个 target kind，靠 is_plain_cuda_target / is_cutedsl_target 区分，而且 CuTeDSL 显式复用 CUDA 的 pipeline。",
+    "共享的 host codegen 只有 c 与 llvm 两种（host_codegen.py:55-59）；两个后端共用的开关注入点在 pass_pipeline/pipeline_utils.py（allow_vectorize / should_force_let_inline / LayoutVisual 等）。"
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "chapter": "24-nvidia-backend-codegen",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "TileLang 的 NVIDIA 路径默认在 lowering 阶段做哪两件事？",
+      "options": [
+        "device 编成 cubin，host 用 LLVM 生成",
+        "device 只生成 CUDA C 源码、不调 nvcc；host 由 adapter 自己生成 wrapper",
+        "device 与 host 都交给 nvcc 一次编完",
+        "device 生成 PTX，host 生成 Python"
+      ],
+      "answer": 1,
+      "explain": "见 §2.1：enable_host_codegen 与 enable_device_compile 默认都是 False，因此 device 走 device_codegen_without_compile、源码存在 source_map[\"cuda\"]，host 由 JIT adapter 生成 wrapper。"
+    },
+    {
+      "id": "q2",
+      "stem": "一段 T.gemm 在 sm_100 上没有被选成 tcgen05，最该先检查什么？",
+      "options": [
+        "线程数是不是 128 的整数倍",
+        "shared memory 是否够大",
+        "累加器 C 是不是用 T.alloc_tmem 分配在 TMEM",
+        "有没有把 execution_backend 设成 cutedsl"
+      ],
+      "answer": 2,
+      "explain": "见 §4.3.3、§5.2：AllowTcgen5Mma 要求 TargetIsSm100、A 在 shared 或 TMEM 且 B 在 shared 且 C 在 TMEM、形状在 GetTCGEN5MMAMeta 白名单里。C 在 fragment 时，即使目标是 sm_100 也不会选 TCGEN05。"
+    },
+    {
+      "id": "q3",
+      "stem": "AllowWgmma 要求哪些条件同时成立？",
+      "options": [
+        "sm_80 且 M≥16 且 dtype 是 fp16",
+        "sm_100 且 C 在 TMEM",
+        "任意架构且 K 是 16 的整数倍",
+        "Hopper、M ≥ 64、num_warps % 4 == 0，外加 CheckWgmma 的 dtype / 转置 / K 整除约束"
+      ],
+      "answer": 3,
+      "explain": "见 §4.3.3：CheckWgmma 还会检查 B 是否在 shared、dtype 与 K 的整除关系——fp16/bf16 对转置不敏感，但 fp8/tf32/int8 在 WGMMA 上只支持特定的主序组合。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 T.copy 默认路径下的 TMA 选择，下列哪一项正确？",
+      "options": [
+        "默认只把 shared → global 的 store 自动降成 TMA；load 要 TMA 需显式 T.tma_copy、prefer_instruction=\"tma\" 或处于 warp-specialized producer 分支",
+        "load 和 store 都会自动走 TMA",
+        "只有 load 会走 TMA，store 不会",
+        "只要目标架构 ≥ sm_80，TMA 就会自动启用"
+      ],
+      "answer": 0,
+      "explain": "见 §4.4.1：默认分支调用 SelectTmaInst(allow_load=false, allow_store=true)，所以 load 不会自动走 TMA；兜底是 SelectSyncLikeInst 的 SIMT 同步拷贝。TMA 需要 arch ≥ 90。"
+    },
+    {
+      "id": "q5",
+      "stem": "TMA 描述符在哪里编码、又怎么传给 kernel？",
+      "options": [
+        "在 device kernel 里用 cp.async.bulk.tensor 现场编码",
+        "由 LowerHopperIntrin 提升为 host 属性 tma_descriptor_args；wrapper 生成 cuTensorMapEncodeTiled，再以 __grid_constant__ const CUtensorMap 传入",
+        "由 nvcc 在编译期自动生成成常量",
+        "由 Python 前端在 T.copy 那一行直接生成"
+      ],
+      "answer": 1,
+      "explain": "见 §4.4.3：create_tma_descriptor 是 TIR 内建、不在 device 上执行；LowerHopperIntrin 把它收集成 host 函数属性，wrapper 读属性生成编码代码，device 侧只拿到一个 __grid_constant__ 参数。"
+    },
+    {
+      "id": "q6",
+      "stem": "关于 T.ws(role) 与 warp specialization，下列哪一项正确？",
+      "options": [
+        "role 是线程号，T.ws(0) 表示第 0 号线程",
+        "T.ws 在任意 CUDA 架构上都可用",
+        "role 是 warp group 序号（一个 warp group = 128 线程），T.ws(0) 展开成 tx < 128；WS 只在 Hopper 及以后（arch ≥ 9 且有 TMA）开启",
+        "WS 里 producer 直接用 T.copy 发数据，等待交给 __syncthreads"
+      ],
+      "answer": 2,
+      "explain": "见 §3.3、§4.5：allow_warp_specialized 先检查 have_tma(target)（arch ≥ 9），不满足就整个跳过 WS；WS 分支里用 T.tma_copy + barrier 显式握手，而不是让 __syncthreads 兜底。"
+    },
+    {
+      "id": "q7",
+      "stem": "TileLang 的 CuTe DSL 后端与 NVIDIA 官方 cuTile 的关系是？",
+      "options": [
+        "CuTe DSL 后端复用同一套 TIR pass，只把 codegen target 换成 CuTe DSL Python 并交给 CUTLASS；cuTile 走 Tile IR + tileiras，是独立的一条路",
+        "两者其实是同一个东西，只是名字不同",
+        "cuTile 是 TileLang 的旧名字",
+        "CuTe DSL 后端会跳过 TIR，直接生成 CUDA C"
+      ],
+      "answer": 0,
+      "explain": "见 §3.6、§4.8.2：CuTe DSL 后端复用 pipeline.CUDA_PIPELINE，只换 device codegen（输出 Python）与 execution backend；cuTile 基于 Tile IR、由 tileiras 编译，编译器与运行时完全独立。"
+    },
+    {
+      "id": "q8",
+      "stem": "关于 T.wgmma_gemm / T.tcgen05_gemm 这类显式变体，下列哪一项正确？",
+      "options": [
+        "约束不满足时会静默降级到 cuda.mma",
+        "它们等价于 T.copy，只是换了名字",
+        "它们只在 sm_70 上可用",
+        "约束不满足时编译期报错、不降级；而且 v0.1.15 里这些名字不在 tilelang.language facade 的导出名单上，用前要先确认 T.<name> 存在"
+      ],
+      "answer": 3,
+      "explain": "见 §4.3.6、§5.3：显式变体与 use_2cta、prefer_instruction=\"tma\" 都是「要么这样，要么报错」；同时 __all__ 与 __init__ 的导出名单对不上，官方示例仍在调用它们，所以用前先确认名字存在。"
+    }
+  ]
+}

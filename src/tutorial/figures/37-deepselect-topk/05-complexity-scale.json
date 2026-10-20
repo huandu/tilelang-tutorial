@@ -1,0 +1,23 @@
+{
+  "id": "05-complexity-scale",
+  "title": "复杂度结论的量级对比",
+  "kind": "bars",
+  "section": "3.6",
+  "caption": "N=1048576, k=512, B=B2=1024 时几项工作量的量级：读一遍输入是 1,048,576；DeepSelect 的额外工作量上界 E[W] 是 28,835；O(k log(N/k)) 近似是 3,904。最后一根是 torch.topk 的粗糙代价模型（非实测）。",
+  "items": [
+    { "label": "读一遍输入 N", "value": 1048576, "display": "1,048,576", "tone": "store" },
+    { "label": "E[W] 上界", "value": 28835, "display": "28,835（0.0275×N）", "tone": "accent" },
+    { "label": "O(k·log(N/k))", "value": 3904, "display": "3,904（0.0037×N）", "tone": "accent" },
+    {
+      "label": "torch.topk 代价模型",
+      "value": 9437184,
+      "display": "≈N·log2(k)，非实测",
+      "tone": "warn"
+    }
+  ],
+  "notes": [
+    "全部是公式算出来的渐近量级，不是实测；不是带宽，也不是加速比。",
+    "E[W] 只随 log N 增长，所以相对 N 越来越小（bound/N 从 N=4096 的 1.95 降到 2^24 的 0.0024）。",
+    "最后一项是示意性的排序代价，用来说明 torch.topk 多出一个与 N 同阶的趟，不用于预测具体实现。"
+  ]
+}

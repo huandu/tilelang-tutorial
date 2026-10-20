@@ -1,0 +1,45 @@
+{
+  "id": "task-graph",
+  "title": "AutoSchedule 的输入：带标签的任务图",
+  "caption": "每个 TaskNode 带 latency / ii / pipe_mask；数据依赖、资源冲突、owner-exclusion 与片上容量一起交给求解器。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "section": "2.1",
+  "nodes": [
+    {
+      "id": "cap",
+      "label": "片上容量",
+      "sub": "shared / shared.l1 / l0a / l0b / l0c",
+      "tone": "store"
+    },
+    { "id": "t0", "label": "T0 loadA", "sub": "pipe = MTE2", "tone": "default" },
+    { "id": "t1", "label": "T1 hif8→l0", "sub": "pipe = MTE1", "tone": "default" },
+    { "id": "t0b", "label": "T0' 下一轮", "sub": "同 MTE2 资源冲突", "tone": "muted" },
+    { "id": "t2", "label": "T2 cube", "sub": "pipe = Cube", "tone": "compute" },
+    { "id": "t3", "label": "T3 l0c→ub", "sub": "pipe = Fixpipe", "tone": "compute" },
+    { "id": "t4", "label": "T4 relu", "sub": "pipe = Vector", "tone": "compute" }
+  ],
+  "edges": [
+    { "from": "cap", "to": "t0", "label": "容量约束" },
+    { "from": "t0", "to": "t1", "label": "数据依赖 latency=190" },
+    { "from": "t0", "to": "t0b", "dashed": true },
+    { "from": "t1", "to": "t2", "label": "latency=5" },
+    { "from": "t2", "to": "t3", "label": "latency=200" },
+    { "from": "t3", "to": "t4", "label": "latency=58" }
+  ],
+  "groups": [
+    {
+      "label": "TaskNode（每个任务带 latency / ii / pipe_mask）",
+      "nodes": ["t0", "t1", "t2", "t3", "t4", "t0b"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "T0′ 是下一轮的 T0：它与本轮 T0 争同一条 MTE2 流水，是一条资源冲突边（虚线）。",
+    "T2 与 T3 之间除了数据依赖，还有 owner-exclusion：两者共享同一块 L0C 的生命周期。",
+    "依赖只有两类：kData（生产者→消费者的数据依赖）与 kOwnerExclusion（同一块可多缓冲存储的两个互斥 owner）。",
+    "distance 有三档：0 同迭代、-1 跨迭代未定版（交给求解器）、≥1 手工多缓冲写死的跨轮距离。",
+    "资源标签只有七条流水：MTE1 / MTE2 / MTE3 / Cube / Vector / Fixpipe / Scalar。"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "id": "02-nv-hierarchy",
+  "title": "NVIDIA 侧存储层级（以 H100 / Hopper 为例）",
+  "caption": "一个 SM 内部是寄存器与 shared/L1，往外是全 GPU 共享的 L2，最远是 HBM。",
+  "kind": "layers",
+  "section": "3.2",
+  "layers": [
+    {
+      "label": "寄存器文件",
+      "sub": "256 KB / SM（64K × 32-bit）；线程私有，由编译器分配",
+      "right": "SM 内",
+      "tone": "compute"
+    },
+    {
+      "label": "shared memory / L1（合并 256 KB / SM）",
+      "sub": "shared 可配置到 228 KB；单 block 最多 227 KB；静态 shared 仍限制 48 KB",
+      "right": "SM 内",
+      "tone": "store"
+    },
+    {
+      "label": "L2 cache",
+      "sub": "50 MB（H100）；GB200 提升到 126 MB",
+      "right": "全 GPU 共享",
+      "tone": "store"
+    },
+    {
+      "label": "HBM / 显存",
+      "sub": "80 GB HBM3、带宽 > 3 TB/s（H100 SXM5）；B200 最高 180 GB",
+      "right": "片外",
+      "tone": "store"
+    }
+  ],
+  "notes": [
+    "Blackwell 另有 Tensor Memory，累加器专用（见 04 图）。",
+    "shared 的 carveout 可选值：0 / 8 / 16 / 32 / 64 / 100 / 132 / 164 / 196 / 228 KB。",
+    "均为厂商公开资料，非实测；H100 的算力数字在官方博客里标注为 preliminary。"
+  ]
+}

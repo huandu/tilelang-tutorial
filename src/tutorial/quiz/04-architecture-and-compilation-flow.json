@@ -1,0 +1,101 @@
+{
+  "chapter": "04-architecture-and-compilation-flow",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "按 §2.1 的五阶段划分，「后端分岔」被压缩在哪一行代码里？",
+      "options": [
+        "tilelang/engine/lower.py 里的 context.lower(mod)",
+        "tilelang/jit/__init__.py 里的 get_tir()",
+        "src/transform/layout_inference/layout_inference.cc 的入口",
+        "tilelang/cache/__init__.py 里的 cached()"
+      ],
+      "answer": 0,
+      "explain": "§2.1 的表格与 §4.2 都指出唯一的分岔点是 engine/lower.py:136 的 context.lower(mod)。A 之外的三个位置分别属于前端取值、pass 本体与缓存，都不是分岔点。"
+    },
+    {
+      "id": "q2",
+      "stem": "想改某个后端 pass 的执行顺序，应该改哪里？",
+      "options": [
+        "src/transform/ 下对应的 .cc",
+        "tilelang/<backend>/pipeline.py",
+        "tilelang/engine/lower.py",
+        "tilelang/language/parser/entry.py"
+      ],
+      "answer": 1,
+      "explain": "§2.2 与 §4.3 反复强调：pass 的「顺序」写在后端包的 Python 里，pass 的「行为」才写在 C++ 的 src/transform/ 里。选 A 的人正是踩了「在 src/transform/ 里找执行顺序」这个坑。"
+    },
+    {
+      "id": "q3",
+      "stem": "写 import tilelang.language as T 之后，T 里到底有什么？",
+      "options": [
+        "昇腾方言的全部扩展",
+        "一个中立的公共表面，不含任何方言扩展",
+        "公共表面 + CUDA 扩展（文件里声明 __tilelang_dialect__ = \"cuda\"）",
+        "同时包含 CUDA 与昇腾两套扩展"
+      ],
+      "answer": 2,
+      "explain": "tilelang/language/__init__.py 既 from tilelang.cuda.language import *，又声明 __tilelang_dialect__ = \"cuda\"（见 §2.3、§5.2 第 1 条）。写昇腾 kernel 要用 from tilelang.ascend import language as T，混用两套 T 会拿到不同签名的 T.Kernel。"
+    },
+    {
+      "id": "q4",
+      "stem": "关于 target backend 与 execution backend，下面哪一句正确？",
+      "options": [
+        "选 nvrtc 会同时换掉 target 架构与 pass pipeline",
+        "execution backend 负责决定生成什么 IR 与什么源码",
+        "同一个 target kind 上只允许存在一个 manifest",
+        "同一个 CUDA target backend 可以走 tvm_ffi、nvrtc、cython 三种执行路径"
+      ],
+      "answer": 3,
+      "explain": "§2.4 引用的官方原话是「selecting nvrtc does not select a different target architecture or pass pipeline」。A 正是最典型的误读；C 也不对——CUDA 与 CuTeDSL 两个 manifest 就共用 cuda 这个 target kind。"
+    },
+    {
+      "id": "q5",
+      "stem": "改完一个 pass、重新编译却发现结果没变，本章建议先怀疑什么？",
+      "options": [
+        "KernelCache 命中，整个 pipeline 一步都没有跑",
+        "Simplify 把这个 pass 的效果优化掉了",
+        "LayoutInference 没有生效",
+        "C++ pass 没有参与编译"
+      ],
+      "answer": 0,
+      "explain": "§4.9 与 §5.2 第 3 条都写了：kernel_cache 命中时整个 pipeline 都不会跑，这是「改了 pass 但结果没变」最常见的原因，调试时应设 TILELANG_CACHE_DIR 或直接 disable_cache()。"
+    },
+    {
+      "id": "q6",
+      "stem": "按 §4.7 的实测统计，CUDA 与 Ascend 两条 pipeline 的步数与同名 pass 数是多少？",
+      "options": [
+        "CUDA 73 步 / Ascend 80 步，同名 pass 39 个",
+        "CUDA 80 步 / Ascend 73 步，同名 pass 39 个",
+        "CUDA 39 步 / Ascend 39 步，同名 pass 73 个",
+        "CUDA 42 步 / Ascend 42 步，同名 pass 39 个"
+      ],
+      "answer": 0,
+      "explain": "§4.7 的统计是 CUDA 73 步、Ascend 80 步，两侧同名出现的 pass 有 39 个，带条件守卫的分别是 7 步与 17 步。B 把两侧的数字对调了，是最容易误选的选项。"
+    },
+    {
+      "id": "q7",
+      "stem": "下面哪一项在锁定的 v0.1.15 里**不存在**？",
+      "options": [
+        "tilelang/ascend/ 这个昇腾后端",
+        "tilelang/backend/ 多后端抽象",
+        "tilelang/jit/adapter/pto/ 这条 PTO 执行路径",
+        "CUDA 与 CuTeDSL 两个 manifest 共用 cuda 这个 target kind"
+      ],
+      "answer": 2,
+      "explain": "§5.3 的版本边界表写明：pto adapter 只在 main（≥ 994b44e）里，v0.1.15 的 tilelang/jit/adapter/ 下没有 pto/。判据永远是在哪个 checkout 里 grep 得到什么，而不是 PR 号。"
+    },
+    {
+      "id": "q8",
+      "stem": "关于「在 engine 里按 target 分支」这件事，本章的结论是什么？",
+      "options": [
+        "这是推荐做法，方便集中管理各后端差异",
+        "官方规则禁止：engine 必须不含 target.kind.name 的后端分派表",
+        "只有昇腾后端需要这样写",
+        "只要写上注释说明理由就可以"
+      ],
+      "answer": 1,
+      "explain": "tilelang/backend/README.md 明令禁止在 engine 里出现 target.kind.name 的分派表（见 §4.4 与 §5.2 第 2 条）：分派应落在后端自己的 pipeline.py 或 backend.py 里。A 是最容易误选的选项，它听起来像「集中管理」的好实践。"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "chapter": "29-compiler-engineering",
+  "items": [
+    {
+      "id": "q1",
+      "stem": "你新写了一个 C++ pass，想让 Python 侧能用 tilelang.transform.YourPass() 调到它，必须做哪件事？",
+      "options": [
+        "给 pass 起一个以 tl. 开头的名字就够了",
+        "在 TVM_FFI_STATIC_INIT_BLOCK 里用 refl::GlobalDef().def(\"tl.transform.X\", X) 注册",
+        "只要 struct 继承了 StmtExprVisitor，就会自动注册",
+        "在 tilelang/transform/_ffi_api.py 里手写一行 import"
+      ],
+      "answer": 1,
+      "explain": "见 §2.3：tilelang/transform/_ffi_api.py 只有 6 行、只做一次 tvm_ffi.init_ffi_api(\"tl.transform\", __name__)，它把注册表里以该前缀开头的函数挂成模块属性。所以 C++ 侧必须显式注册。改名要同时改注册字符串、CreatePrimFuncPass 的 name、Python 薄包装三处，注册名与 Python 调用不一致只会得到运行时的 AttributeError。"
+    },
+    {
+      "id": "q2",
+      "stem": "把 VisitStmt_(const BufferStoreNode *op) 写成 VisitStmt(const BufferStoreNode *op)，会发生什么？",
+      "options": [
+        "编译通过但 pass 永远不生效，只有一条必须命中的测试能抓住它",
+        "编译期直接报错，立刻就能发现",
+        "Python 侧抛 AttributeError",
+        "重载会命中别的节点，结果不可预期"
+      ],
+      "answer": 0,
+      "explain": "见 §3.3 与 §1.2：少一个下划线是 C++ 重载规则下最典型的「什么都没发生」——编译通过、pass 也跑，只是永远不被调用。它也是 §1.2 列出的三种静默失效之一，唯一防线是测试里有一条必须命中的用例。"
+    },
+    {
+      "id": "q3",
+      "stem": "关于 IR diff 基线（tvm.ir.assert_structural_equal），下面哪句正确？",
+      "options": [
+        "它能证明 pass 的行为正确，但没有证明 IR 结构",
+        "它能证明这次改动的 IR 变化是你预期的，但证明不了变化是对的、也证明不了性能没退",
+        "它能证明整条 pipeline 与 runtime 都还活着",
+        "它能证明性能没退，但证明不了边界不被吞"
+      ],
+      "answer": 1,
+      "explain": "见 §5.1 与图 3：④ IR diff 基线断言的是结构相等，所以能证明「变化就是你预期的」；但它证明不了「变化是对的」「性能没退」。「整条 pipeline 都活着」是端到端对拍能证明的事，「边界不被吞」是边界条件能证明的事。"
+    },
+    {
+      "id": "q4",
+      "stem": "一个新加的通用 pass（如 VerifyBufferInit）要在几条 pipeline 里各挂一行？",
+      "options": [
+        "一条就够，挂 CUDA 即可",
+        "两条：CUDA 与昇腾",
+        "六条：cuda / ascend / cpu / metal / rocm / webgpu 各一行，只挂一个后端是评审里最常见的遗漏",
+        "不需要挂，注册之后会自动生效"
+      ],
+      "answer": 2,
+      "explain": "见 §2.4：pipeline 没有注册表，挂载就是一行 mod = tilelang.transform.X()(mod)。v0.1.15 里 VerifyBufferInit 与 DecoupleTypeCast 都被六条 pipeline 各调用一次，所以通用 pass 要逐后端添加，「只挂了一个后端」是最常见的遗漏。"
+    },
+    {
+      "id": "q5",
+      "stem": "仓库里判定「一次改动是否造成性能回归」的规则是什么？",
+      "options": [
+        "任意一条 benchmark 的 speedup < 0.90 就算回归",
+        "看平均 speedup 是否小于 1",
+        "至少有 MIN_COUNT（默认 2）条 speedup < THRESHOLD（默认 0.90）才算回归",
+        "只要有一条掉到 0.044x 这种极端值就必须判回归"
+      ],
+      "answer": 2,
+      "explain": "见 §6.2：判定规则是「至少 2 条同时掉破 0.90」，它在 33 份机器人报告、1901 个样本上校准过。反而单条掉到 0.044x 是假警报的典型形态，其余样本几乎全是 1.000，所以不能看单条数字。"
+    },
+    {
+      "id": "q6",
+      "stem": "按模板加了一个新的 C++ pass 文件后，冒烟脚本仍报 AttributeError，最可能的原因是什么？",
+      "options": [
+        "注册名字写错了，只能改名字来解决",
+        "CMake 用 file(GLOB) 在 configure 期收集源文件，新加 .cc 后必须重新 configure",
+        "忘了先跑 pre-commit",
+        "必须先把 pass 挂进 pipeline 才能注册"
+      ],
+      "answer": 1,
+      "explain": "见 §3.3 的构建与验证步骤：CMakeLists.txt 用 file(GLOB ...) 收集源文件，glob 在 configure 期求值，新加 .cc 不重新 configure 就不会进构建，于是报的仍然是 AttributeError，很容易误判成注册名写错。挂进 pipeline 是另一件事，与能否注册无关。"
+    },
+    {
+      "id": "q7",
+      "stem": "给一个可能误报的检查加 pass config key（例如 tl.disable_buffer_init_check），一共要改几处？",
+      "options": [
+        "一处：tilelang/transform/pass_config.py 的枚举",
+        "两处：C++ 常量与 Python 枚举",
+        "三处：C++ 常量、注册宏、pass 内读取",
+        "四处：src/op/builtin.h 的常量、src/op/builtin.cc 的 TVM_REGISTER_PASS_CONFIG_OPTION、C++ 里的 ctx->GetConfig(...)、tilelang/transform/pass_config.py 的枚举"
+      ],
+      "answer": 3,
+      "explain": "见 §3.4：加一个 config key 要改四处，少一处用户就会拿到「配置不生效但也不报错」。注意 pipeline 里还有一组 should_* / allow_* 源码级守卫是另一套机制，并不替代这四处。"
+    }
+  ]
+}

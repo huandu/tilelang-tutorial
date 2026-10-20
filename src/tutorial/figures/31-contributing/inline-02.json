@@ -1,0 +1,46 @@
+{
+  "id": "inline-02",
+  "title": "推送前要过的四道门",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 22,
+  "inlineQuote": "flowchart LR\n    W[改动] --> F[\"门 1 格式与 lint<br/>bash format.sh<br/>pre-commit run --all-files\"]\n    F --> T[\"门 2 本地测试<br/>改动路径对应的 pytest 套件\"]",
+  "caption": "不管走哪条路径，推送前都要过四道门：本地两道（格式与 lint、本地测试），上游两道（CI 与按需触发的性能回归）。",
+  "nodes": [
+    { "id": "w", "label": "改动", "shape": "pill", "tone": "accent" },
+    {
+      "id": "f",
+      "label": "门 1 · 格式与 lint",
+      "sub": "bash format.sh\npre-commit run --all-files",
+      "tone": "default"
+    },
+    {
+      "id": "t",
+      "label": "门 2 · 本地测试",
+      "sub": "改动路径对应的 pytest 套件",
+      "tone": "default"
+    },
+    {
+      "id": "c",
+      "label": "门 3 · 上游 CI",
+      "sub": "lint + tests + ascend + cutedsl",
+      "tone": "compute"
+    },
+    {
+      "id": "p",
+      "label": "门 4 · 性能回归",
+      "sub": "按需：maintainer 评论 @regression-perf",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "w", "to": "f" },
+    { "from": "f", "to": "t" },
+    { "from": "t", "to": "c" },
+    { "from": "c", "to": "p" }
+  ],
+  "notes": [
+    "门的名字与命令都能在锁定版本里找到出处，具体小节里逐条给出",
+    "前三道门是每次都要过的，第四道门只在改动触及热点路径、由 maintainer 触发时才跑"
+  ]
+}

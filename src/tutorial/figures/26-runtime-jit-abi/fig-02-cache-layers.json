@@ -1,0 +1,83 @@
+{
+  "id": "fig-02-cache-layers",
+  "title": "三本缓存账",
+  "caption": "v0.1.15 里的「缓存」是三层互不相同、失效条件也不同的账：进程内参数缓存、磁盘 kernel 目录、设备二进制。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 26,
+  "section": "2.2",
+  "nodes": [
+    {
+      "id": "a1",
+      "label": "JITImpl._kernel_cache",
+      "sub": "key = parse_args 的参数键 · jit/__init__.py:550-554",
+      "tone": "store"
+    },
+    {
+      "id": "a2",
+      "label": "JITImpl._call_form_cache",
+      "sub": "key = 原始 Python 调用形态 · jit/__init__.py:49-91",
+      "tone": "store"
+    },
+    {
+      "id": "a3",
+      "label": "KernelCache._memory_cache",
+      "sub": "key = SHA256(TIR + 编译参数) · kernel_cache.py:376-383",
+      "tone": "store"
+    },
+    {
+      "id": "b1",
+      "label": "磁盘 kernel 目录",
+      "sub": "$TILELANG_CACHE_DIR/<version>/<platform>-<machine>/kernels/<sha256>/",
+      "tone": "store"
+    },
+    {
+      "id": "b2",
+      "label": "目录里的文件",
+      "sub": "device_kernel.cu · host_kernel.cu · kernel_lib.so · params.json · manifest.json · resource_usage.json",
+      "tone": "muted"
+    },
+    {
+      "id": "c1",
+      "label": "CUDA 设备二进制",
+      "sub": "$TILELANG_CACHE_DIR/<version>/cuda-binaries/<key>/kernel.cubin",
+      "tone": "store"
+    },
+    {
+      "id": "c2",
+      "label": "昇腾设备二进制",
+      "sub": "$TILELANG_CACHE_DIR/<version>/ascend-binaries/<key>/kernel.aibin",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "a1", "to": "a2" },
+    { "from": "a2", "to": "a3" },
+    { "from": "a3", "to": "b1" },
+    { "from": "b1", "to": "b2" },
+    { "from": "b2", "to": "c1", "label": "cache miss 时 device codegen 再查一次", "dashed": true },
+    { "from": "b2", "to": "c2", "label": "cache miss 时 device codegen 再查一次", "dashed": true }
+  ],
+  "groups": [
+    {
+      "label": "第一层：进程内 kernel 对象缓存（随进程消失）",
+      "nodes": ["a1", "a2", "a3"],
+      "tone": "default"
+    },
+    {
+      "label": "第二层：磁盘 kernel 目录缓存（跨进程、跨机器拷贝）",
+      "nodes": ["b1", "b2"],
+      "tone": "default"
+    },
+    {
+      "label": "第三层：设备二进制缓存（只有 bin，没有 host 侧）",
+      "nodes": ["c1", "c2"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "改注释、改空白不会失效：key 用的是 func.script()（TIR 文本），不是 Python 源码。",
+    "改 C++ pass 默认不会失效：tilelang_lib 只在 TILELANG_KERNEL_CACHE_USE_LIB_STAMP=1 时才进 key——这是「改了 pass 不生效」的头号原因。",
+    "③ 是 ② 的「下半截」：device 源码变了但 host 源码没变时，只有这一层会失效。"
+  ]
+}

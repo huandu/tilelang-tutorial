@@ -1,0 +1,32 @@
+{
+  "id": "05-scale-down-ladder",
+  "title": "按比例缩小的降级路径",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "10",
+  "caption": "从 0.1M 到 7B 的逐级放大阶梯：每一级都小到能在一台机器上跑完，且每一级都复用上一级的代码与验收标准。",
+  "steps": [
+    {
+      "label": "L0 · 冒烟",
+      "sub": "~0.1M 参数 · 内置语料 · CPU · 秒级 ｜ 目标：一步跑通，loss 有限"
+    },
+    {
+      "label": "L1 · 字符级 / 小 BPE",
+      "sub": "~10M~125M · TinyStories · 1×GPU ｜ 目标：100 步 loss 下降、开始收敛"
+    },
+    {
+      "label": "L2 · 0.5B 继续训练",
+      "sub": "Qwen2.5-0.5B · 领域语料 · 1×GPU（20~40GB）｜ 目标：与 HF 参考数值对齐"
+    },
+    { "label": "L3 · 1.5B / 3B", "sub": "同族结构放大 · 2~8×GPU ｜ 目标：跑通多卡 + 分片 + 恢复" },
+    {
+      "label": "L4 · 7B",
+      "sub": "Qwen2.5-7B · 小规模继续训练 · 8~64×GPU（ZeRO-3/FSDP）｜ 目标：吞吐/显存达标，loss 稳定"
+    }
+  ],
+  "notes": [
+    "升阶条件：每级都要先满足「数值与 HF 参考对齐」再往上走，否则放大后无法定位是数据、模型还是 kernel 的问题。",
+    "每级的显存 / 时间都用 §2 的账本方法估：把该级的参数量代入 train_plan.py（--tokens 与 --eff-tflops 用该级的真实值）。",
+    "L2 起就必须处理分片（FSDP/ZeRO）与 torchrun；L0/L1 不需要。"
+  ]
+}

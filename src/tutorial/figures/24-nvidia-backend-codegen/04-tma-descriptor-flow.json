@@ -1,0 +1,67 @@
+{
+  "id": "04-tma-descriptor-flow",
+  "title": "TMA 描述符的流转",
+  "caption": "描述符在 device IR 里构造、由 LowerHopperIntrin 提升到 host 编码，再以 __grid_constant__ 参数传入 kernel，由单线程发射并用 mbarrier 完成通知。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 22,
+  "section": "4.4",
+  "nodes": [
+    {
+      "id": "p",
+      "label": "前端（Python）",
+      "sub": "T.copy(A_g, A_s) / T.tma_copy(...)",
+      "tone": "default"
+    },
+    {
+      "id": "l",
+      "label": "Copy::LowerBulk",
+      "sub": "选 CopyInst，构造 TMADesc",
+      "tone": "default"
+    },
+    {
+      "id": "h",
+      "label": "LowerHopperIntrin",
+      "sub": "收集 create_tma_descriptor 语句",
+      "tone": "accent"
+    },
+    {
+      "id": "w",
+      "label": "TLCUDASourceWrapper（host）",
+      "sub": "生成 cuTensorMapEncodeTiled",
+      "tone": "store"
+    },
+    {
+      "id": "d",
+      "label": "device kernel",
+      "sub": "__grid_constant__ const CUtensorMap 参数",
+      "tone": "store"
+    },
+    {
+      "id": "hw",
+      "label": "TMA 硬件单元",
+      "sub": "elected 线程发 cp.async.bulk.tensor.Nd",
+      "tone": "compute"
+    },
+    {
+      "id": "cons",
+      "label": "消费者等 mbarrier 的 parity",
+      "sub": "mbarrier_wait_parity",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "p", "to": "l" },
+    { "from": "l", "to": "h" },
+    { "from": "h", "to": "w" },
+    { "from": "w", "to": "d" },
+    { "from": "d", "to": "hw", "label": "发射" },
+    { "from": "hw", "to": "cons", "label": "arrive", "dashed": true }
+  ],
+  "notes": [
+    "LowerHopperIntrin 把描述符初始化语句收集成 host 函数的属性 tma_descriptor_args。",
+    "描述符在生成的 CUDA 里就是 __grid_constant__ const CUtensorMap 参数，由 codegen 从 storage_scope == \"grid_constant\" 打印出来。",
+    "mbarrier 原语在 tl_templates/cuda/barrier.h：mbarrier_init / mbarrier_arrive_expect_tx / mbarrier_wait；store 方向用 tma_store_arrive / tma_store_wait。",
+    "普通 T.copy 走 TMA load 时由 lower_args.alloc_mbarrier(1) 自动分配 barrier；T.tma_copy 没给 barrier 则 LOG(FATAL)。"
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "id": "01-two-routes-c",
+  "title": "A 树的两条链：ascendc 与 pto",
+  "caption": "适配器仓库里同一个前端可以走出两条 codegen：ascendc 发 AscendC 类库 C++，pto 发 PTO-DSL 模板 C++，但都编成 .so。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "4.8",
+  "nodes": [
+    { "id": "a0", "label": "@tilelang.jit(target=\"ascendc\")", "tone": "default" },
+    { "id": "a1", "label": "engine/phase.py 两个阶段", "tone": "accent" },
+    {
+      "id": "a2",
+      "label": "CodeGenTileLangAscend",
+      "sub": "src/target/codegen_ascend.cc",
+      "tone": "accent"
+    },
+    {
+      "id": "a3",
+      "label": "AscendC 类库 C++",
+      "sub": "AscendC::TPipe / TBuf / GetWithOffset",
+      "tone": "store"
+    },
+    { "id": "a4", "label": "bisheng --npu-arch=dav-2201 -xasc --shared", "tone": "compute" },
+    { "id": "a5", "label": ".so", "tone": "accent" },
+    { "id": "b0", "label": "@tilelang.jit(target=\"pto\")", "tone": "default" },
+    { "id": "b1", "label": "engine/phase.py 同一套 pass", "tone": "accent" },
+    {
+      "id": "b2",
+      "label": "CodeGenTileLangAscendPto",
+      "sub": "src/target/codegen_ascend_pto.cc",
+      "tone": "accent"
+    },
+    {
+      "id": "b3",
+      "label": "PTO-DSL C++",
+      "sub": "pto::Tile / TLOAD / TMATMUL 模板",
+      "tone": "store"
+    },
+    { "id": "b4", "label": "bisheng --cce-aicore-arch=dav-c220|c310 -xcce", "tone": "compute" },
+    { "id": "b5", "label": ".so", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "a0", "to": "a1" },
+    { "from": "a1", "to": "a2" },
+    { "from": "a2", "to": "a3", "label": "发射" },
+    { "from": "a3", "to": "a4" },
+    { "from": "a4", "to": "a5" },
+    { "from": "b0", "to": "b1" },
+    { "from": "b1", "to": "b2" },
+    { "from": "b2", "to": "b3", "label": "发射" },
+    { "from": "b3", "to": "b4" },
+    { "from": "b4", "to": "b5" }
+  ],
+  "groups": [
+    {
+      "label": "A1：target=\"ascendc\"（Ascend C 类库路线）",
+      "nodes": ["a0", "a1", "a2", "a3", "a4", "a5"],
+      "tone": "default"
+    },
+    {
+      "label": "A2：target=\"pto\"（PTO-DSL 路线）",
+      "nodes": ["b0", "b1", "b2", "b3", "b4", "b5"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "A 树的中端是传统 TileLang 管线：PipelinePlanning + InjectSoftwarePipeline，同步用 AscendSyncInsert / AscendSyncInsertVS。",
+    "分配代码在 ascendc 上是 AscendC::TPipe + pipe.InitBuffer，在 pto 上是 pto::Tile<...> 别名实例。"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "02-fragment-algebra",
+  "title": "从 m16k16 底座拼出四个 warp 的块布局",
+  "caption": "Fragment 的 repeat / repeat_on_thread / replicate 三个算子，把单 warp 的 m16k16 底座逐级放大到 block 级布局。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 18,
+  "section": "2.3",
+  "nodes": [
+    {
+      "id": "base",
+      "label": "base_layout（m16k16）",
+      "sub": "一个 warp 消费 16×16",
+      "tone": "default"
+    },
+    {
+      "id": "warp",
+      "label": "warp_layout（m32k16）",
+      "sub": "repeat([warp_m/16, block_k/16])",
+      "tone": "accent"
+    },
+    {
+      "id": "block",
+      "label": "block_layout（m128k16）",
+      "sub": "repeat_on_thread([block_m/warp_m, 1])",
+      "tone": "accent"
+    },
+    {
+      "id": "nrep",
+      "label": "跨 N 方向复制",
+      "sub": "replicate(n_warp)，覆盖 block_n",
+      "tone": "muted"
+    }
+  ],
+  "edges": [
+    { "from": "base", "to": "warp" },
+    { "from": "warp", "to": "block" },
+    { "from": "block", "to": "nrep" }
+  ],
+  "notes": [
+    "warp_layout：一个 warp 消费 m32k16（32×16）；block_layout：四个 warp 消费 m128k16（128×16）。",
+    "三个算子依次是 repeat（同一 warp 内重复）、repeat_on_thread（再来一个 warp）、replicate（跨 N 复制）。",
+    "本书取 8×8 作最小底座：thread = j//2 + 4*i，slot = j%2，32 个线程每线程 2 个槽；MakeGemmFragment8x8 会打印 threads=32、slots_per_thread={2}、bijective=True。"
+  ]
+}

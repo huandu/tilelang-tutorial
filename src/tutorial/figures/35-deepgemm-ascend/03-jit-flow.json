@@ -1,0 +1,63 @@
+{
+  "id": "03-jit-flow",
+  "title": "从一个 shape 到一次 launch",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 30,
+  "caption": "GemmDesc 描述问题，select_gemm_config 在容量约束下搜索出 GemmConfig，再拼成源码交给 DeepJIT 编译并缓存。",
+  "nodes": [
+    { "id": "tensors", "label": "torch 张量", "sub": "a / b / d (+ sfa / sfb)", "tone": "default" },
+    {
+      "id": "desc",
+      "label": "GemmDesc",
+      "sub": "m,n,k · major · stride · gemm_type",
+      "tone": "default"
+    },
+    {
+      "id": "select",
+      "label": "select_gemm_config",
+      "sub": "枚举 block_m/n/k，过滤非法候选，用 HWDesc 算代价取最小",
+      "tone": "accent"
+    },
+    {
+      "id": "config",
+      "label": "GemmConfig",
+      "sub": "block/mad · L1/L0/epilogue stages · L2 hints",
+      "tone": "accent"
+    },
+    {
+      "id": "code",
+      "label": "拼出 C++ 源码",
+      "sub": "std::format → #include + 模板实例化",
+      "tone": "default"
+    },
+    {
+      "id": "jit",
+      "label": "DeepJIT 编译 / 缓存",
+      "sub": "bisheng + ld.lld；命中即复用",
+      "tone": "compute"
+    },
+    {
+      "id": "launch",
+      "label": "jit->launch(...)",
+      "sub": "gm_ptr 句柄 + LaunchOptions",
+      "tone": "compute"
+    }
+  ],
+  "edges": [
+    { "from": "tensors", "to": "desc" },
+    { "from": "desc", "to": "select" },
+    { "from": "select", "to": "config" },
+    { "from": "config", "to": "code" },
+    { "from": "code", "to": "jit" },
+    { "from": "jit", "to": "launch" }
+  ],
+  "groups": [
+    { "label": "host 侧：问题 → 配置", "nodes": ["desc", "select", "config"], "tone": "accent" },
+    { "label": "编译与下发", "nodes": ["code", "jit", "launch"], "tone": "default" }
+  ],
+  "notes": [
+    "缓存 key 覆盖源码、追踪到的 include、编译器版本与选项。",
+    "DG_PRINT_CONFIGS=1 在每个 shape 第一次编译时打印选中的 config。"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "id": "07-comparison",
+  "title": "NV 与昇腾 950 的五维对照",
+  "caption": "两台机器在五个维度上一一对应但取值不同；TileLang 用同一套 tile 前端落到各自后端。",
+  "kind": "compare",
+  "section": "5.1",
+  "columns": ["NVIDIA GPU（Hopper / Blackwell）", "昇腾 950（Atlas 350 加速卡）"],
+  "rows": [
+    {
+      "label": "程序组织",
+      "values": [
+        "grid → thread block（CTA）→ warp → thread",
+        "一维 AI Core 网格；核内 Cube / Vector / Scalar"
+      ]
+    },
+    {
+      "label": "矩阵计算",
+      "values": ["Tensor Core：mma / wgmma / tcgen05", "Cube（AIC），每次 16×16 fp16"]
+    },
+    {
+      "label": "向量计算",
+      "values": ["通用核心 + SIMT 线程", "Vector（AIV）SIMD；950 另支持 SIMT"]
+    },
+    {
+      "label": "显式片上存储",
+      "values": [
+        "寄存器 / shared memory（+ Blackwell 的 Tensor Memory）",
+        "UB / L1 / L0A / L0B / L0C / BT / FP"
+      ]
+    },
+    {
+      "label": "数据搬运",
+      "values": ["线程发访存指令 + cp.async + TMA", "固定路径 MTE1 / MTE2 / MTE3 + Fixpipe"]
+    },
+    {
+      "label": "同步",
+      "values": [
+        "__syncthreads / mbarrier / cluster barrier",
+        "成对的 SetFlag / WaitFlag（按有向 pipe pair）"
+      ]
+    },
+    {
+      "label": "编程粒度",
+      "values": [
+        "thread / warp / warpgroup / CTA / cluster",
+        "AI Core 网格 + Cube/Vector；TileLang 以 tile 为单位"
+      ]
+    }
+  ],
+  "notes": [
+    "不存在「一边全是 SIMT、一边全是 SIMD」的简单二分：950 同时支持两者，NV 也早已是复合体系。",
+    "跨厂商算力口径不可比；本章不做「谁更快」的结论。",
+    "「SIMT 路径 UB 带宽只有 SIMD 的一半」只有社区来源，标为未确认，不作为结论。"
+  ]
+}

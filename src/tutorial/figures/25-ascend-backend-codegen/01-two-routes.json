@@ -1,0 +1,74 @@
+{
+  "id": "01-two-routes",
+  "title": "四条昇腾编译路线一览",
+  "caption": "锁定版本里「昇腾后端」是四条可执行路线：M1 进了主干，A1/A2 在适配器仓库，L1 是 MLIR 快照；四者的目标名、生成物与编译器都不通用。",
+  "kind": "compare",
+  "section": "1.1",
+  "labelWidth": 130,
+  "columns": [
+    "M1：主干 tilelang v0.1.15",
+    "A1：适配器 ascendc",
+    "A2：适配器 pto",
+    "L1：MLIR tilelang-mlir-ascend"
+  ],
+  "rows": [
+    {
+      "label": "树 / 仓库",
+      "values": [
+        "_vendor/tilelang-v0.1.15（主干）",
+        "_vendor/tilelang-ascend-v0.1.2.000",
+        "同左（适配器）",
+        "corpus 快照 tilelang-mlir-ascend"
+      ]
+    },
+    {
+      "label": "target 名",
+      "values": ["ascend（别名 asc）", "ascendc", "pto", "TVM target kind npuir"]
+    },
+    {
+      "label": "中端",
+      "values": [
+        "AscendPassPipelineBody",
+        "engine/phase.py 两个阶段",
+        "engine/phase.py 同一套 pass",
+        "MLIR pass：canonicalize / adapt-triton-kernel"
+      ]
+    },
+    {
+      "label": "device codegen",
+      "values": [
+        "CodeGenTileLangAscend（src/ascend/codegen）",
+        "CodeGenTileLangAscend（src/target）",
+        "CodeGenTileLangAscendPto",
+        "codegen_npuir_apis / _dev"
+      ]
+    },
+    {
+      "label": "生成物",
+      "values": [
+        "CCE/Ascend C 源：asc_* intrinsic + __ubuf__ / __cbuf__",
+        "AscendC 类库 C++：TPipe / TBuf / GetWithOffset",
+        "PTO-DSL C++：pto::Tile / TLOAD / TMATMUL 模板",
+        "AscendNPU IR（MLIR 文本，HFusion / HIVM / HACC）"
+      ]
+    },
+    {
+      "label": "编译器",
+      "values": [
+        "bisheng --npu-arch=dav-3510 + ld.lld",
+        "bisheng --npu-arch=dav-2201 -xasc --shared",
+        "bisheng --cce-aicore-arch=dav-c220|c310 -xcce",
+        "bishengir-compile --enable-hivm-compile=true"
+      ]
+    },
+    {
+      "label": "产物",
+      "values": ["可执行 CCE ELF（aibin）", ".so", ".so", "kernel.o"]
+    }
+  ],
+  "notes": [
+    "只有 M1 进了主干 v0.1.15；A1/A2 与 L1 分别在自己的仓库/分支里，锁定版本是 v0.1.2.000 与 corpus 快照。",
+    "PTO 在 v0.1.15 里搜不到（ascend_pto / \"pto\" target 无输出）；把 PTO 带进主干的是 PR3310。",
+    "四者的 API、target 名、编译器参数都不通用——同一段昇腾代码换一棵树就不可复现。"
+  ]
+}

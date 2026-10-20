@@ -1,0 +1,10 @@
+%% 第 23 章 图 1：模序调度 start = k * II + r（本章自绘）
+%% 渲染：mermaid-cli (mmdc -i modulo-schedule.mmd -o modulo-schedule.svg)
+flowchart TB
+  subgraph L1["直线依赖（同一轮迭代内）"]
+    A["loadA<br/>MTE2 GM→L1<br/>latency 190, ii 64"] --> B["L1→L0A<br/>MTE1<br/>latency 5, ii 1"]
+    B --> C["Cube MAD<br/>latency 8 + M*K*N/8192"] --> D["L0C→GM<br/>Fixpipe<br/>latency 200"]
+  end
+  subgraph L2["跨迭代依赖（distance = -1，交给求解器定版）"]
+    A2["下一轮 loadA"] -. "WAR：覆盖同一块 L1<br/>start_下一轮 - start_本轮 >= 15 - II * buf" .-> B
+  end

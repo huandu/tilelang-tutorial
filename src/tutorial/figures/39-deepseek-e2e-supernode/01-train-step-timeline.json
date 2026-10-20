@@ -1,0 +1,56 @@
+{
+  "id": "01-train-step-timeline",
+  "title": "训练一步的全栈流水",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 16,
+  "caption": "一个含 mHC 的 MoE 层：TileLang 覆盖两端与中间一小段，最贵的两段 GEMM 与两段通信在 Ascend C 里。",
+  "nodes": [
+    { "id": "mhc-pre", "label": "mHC pre", "sub": "TileLang · 第 34 章", "tone": "accent" },
+    { "id": "router", "label": "路由 / TopK", "sub": "TileLang · 第 33 章", "tone": "accent" },
+    {
+      "id": "dispatch",
+      "label": "dispatch",
+      "sub": "Ascend C · 第 38 章 · 零 FLOP",
+      "tone": "warn"
+    },
+    {
+      "id": "gemm1",
+      "label": "grouped GEMM ①",
+      "sub": "Ascend C + MAD · 第 35 章",
+      "tone": "compute"
+    },
+    { "id": "swiglu", "label": "SwiGLU + 量化", "sub": "TileLang · 第 33 章", "tone": "accent" },
+    {
+      "id": "gemm2",
+      "label": "grouped GEMM ②",
+      "sub": "Ascend C + MAD · 第 35 章",
+      "tone": "compute"
+    },
+    { "id": "combine", "label": "combine", "sub": "Ascend C · 第 38 章 · 零 FLOP", "tone": "warn" },
+    { "id": "attn", "label": "attention / MLP", "sub": "模型本体 ℱ" },
+    { "id": "mhc-post", "label": "mHC post", "sub": "TileLang · 第 34 章", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "mhc-pre", "to": "router" },
+    { "from": "router", "to": "dispatch" },
+    { "from": "dispatch", "to": "gemm1", "label": "跨卡" },
+    { "from": "gemm1", "to": "swiglu" },
+    { "from": "swiglu", "to": "gemm2" },
+    { "from": "gemm2", "to": "combine" },
+    { "from": "combine", "to": "attn", "label": "跨卡" },
+    { "from": "attn", "to": "mhc-post" }
+  ],
+  "groups": [
+    {
+      "label": "专家并行段（可与独立计算重叠）",
+      "nodes": ["dispatch", "gemm1", "swiglu", "gemm2", "combine"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "dispatch / combine 是零 FLOP 的搬运，但字节量（每 token 每方向 k·d·b）与这一层 GEMM 的访存同量级。",
+    "mHC pre / post 是每层都要执行的「外壳」；Engram 是挂在残差流上的旁路（第 34 章）。",
+    "反向不在这张图里：combine 的反向是 dispatch、dispatch 的反向是 combine，另有梯度归约与多层重算。"
+  ]
+}

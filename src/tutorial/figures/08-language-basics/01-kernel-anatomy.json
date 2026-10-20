@@ -1,0 +1,55 @@
+{
+  "id": "01-kernel-anatomy",
+  "title": "一个 TileLang kernel 的六个构件",
+  "caption": "六类必须显式表达的东西，以及它们各自落到 IR 的什么位置；右边是后文各节的位置。",
+  "kind": "grid",
+  "section": "2",
+  "headers": ["构件", "语言表面（你写的）", "落到 IR 里是", "后文位置"],
+  "rows": [
+    {
+      "label": "1. 定义与网格",
+      "cells": [
+        "with T.Kernel(gx, gy) as (bx, by)",
+        "thread-binding frame（blockIdx + threadIdx）",
+        "§3"
+      ]
+    },
+    {
+      "label": "2. 数据类型",
+      "cells": [
+        "'float16' / T.bfloat16 / torch.float16",
+        "同一个 tvm.DataType（dtype 规范化）",
+        "§4"
+      ]
+    },
+    {
+      "label": "3. buffer 与作用域",
+      "cells": ["T.alloc_shared / fragment / local / var", "Buffer + storage_scope", "§5"]
+    },
+    {
+      "label": "4. 迭代",
+      "cells": [
+        "T.serial / unroll / vectorized / Parallel / Pipelined",
+        "For 节点，ForKind 不同",
+        "§6"
+      ]
+    },
+    {
+      "label": "5. 控制流",
+      "cells": [
+        "if/else、T.if_then_else、while",
+        "IfThenElse 语句 / if_then_else 表达式 / While",
+        "§7"
+      ]
+    },
+    {
+      "label": "6. Python 边界",
+      "cells": ["哪些语法能用、哪些会展开、哪些不行", "只留 trace 期能确定的部分", "§8"]
+    }
+  ],
+  "notes": [
+    "你写的是块（tile）级的意图，不是线程级的指令。",
+    "类型、内存作用域、迭代、控制流这四件事必须显式写出来。",
+    "trace 期的 Python 与运行期的 TIR 是两种东西，见 §7 与 §8。"
+  ]
+}

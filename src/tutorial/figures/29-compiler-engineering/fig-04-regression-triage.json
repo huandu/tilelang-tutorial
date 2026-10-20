@@ -1,0 +1,38 @@
+{
+  "id": "fig-04-regression-triage",
+  "title": "判定性能回归并定位到 pass 的流程",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "6.3",
+  "caption": "每一步都对应一个可执行的命令或一个已存在的文件：benchmark 判定 → 重跑排除噪声 → pass_timing 分编译期/产物 → lower_trace 找 diff → 回到四层测试补基线。",
+  "steps": [
+    {
+      "label": "① 判定：一次对比算不算回归",
+      "sub": "maint/scripts/run_perf_regression.sh 造 current 与基线两个 venv + wheel；regressed ⟺ 至少 2 条 speedup < 0.90"
+    },
+    {
+      "label": "② 确认不是噪声：重跑",
+      "sub": "REFRESH=1 bash maint/scripts/run_perf_regression.sh -k <算子/用例>；重跑后仍低于阈值才继续往下"
+    },
+    {
+      "label": "③ 定位「编译期变慢」还是「kernel 变慢」",
+      "sub": "TILELANG_PASS_PROFILE=1 python3 <用例>.py → tilelang/tools/pass_timing.py 的 inclusive / self 用时",
+      "tone": "accent"
+    },
+    {
+      "label": "④ 看「哪些 pass 改了 IR」",
+      "sub": "TL_LOWER_TRACE=terminal python3 <用例>.py → tilelang/tools/lower_trace/ 逐 pass before/after diff（TILELANG_PASS_DIFF 已被取代）",
+      "tone": "accent"
+    },
+    {
+      "label": "⑤ 定位到具体 pass",
+      "sub": "回到图 3 的四层测试，为这次的改动补一条 IR 基线",
+      "tone": "store"
+    }
+  ],
+  "notes": [
+    "「编译慢」和「跑得慢」是两件事：pass_timing 量前者，benchmark 量后者；一个 pass 让编译慢 3 倍但产物一样时，kernel 性能不变。",
+    "pass_timing 给 inclusive 与 self 两个数，self 才是这个 pass 自己花掉的；看到外层 pass 很慢先看 self。",
+    "回归判定需要样本量：单条掉到 0.044x 也不算回归，只有 ≥2 条同时掉破阈值才算。"
+  ]
+}

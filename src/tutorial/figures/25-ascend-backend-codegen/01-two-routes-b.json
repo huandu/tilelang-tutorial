@@ -1,0 +1,60 @@
+{
+  "id": "01-two-routes-b",
+  "title": "M1 主干路线：target=\"ascend\" 的生成链",
+  "caption": "M 树从 @tilelang.jit(target=\"ascend\") 到可执行 CCE ELF 的六跳，生成物是 asc_* 内置函数风格的 CCE/Ascend C 源。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "section": "1.1",
+  "nodes": [
+    {
+      "id": "m0",
+      "label": "@tilelang.jit(target=\"ascend\")",
+      "sub": "M 树方言 tilelang.ascend.language",
+      "tone": "default"
+    },
+    {
+      "id": "m1",
+      "label": "AscendPassPipelineBody",
+      "sub": "tilelang/ascend/pipeline.py:36",
+      "tone": "accent"
+    },
+    {
+      "id": "m2",
+      "label": "CodeGenTileLangAscend",
+      "sub": "src/ascend/codegen/codegen_ascend.cc",
+      "tone": "accent"
+    },
+    {
+      "id": "m3",
+      "label": "CCE/Ascend C 源",
+      "sub": "asc_* intrinsic + __ubuf__ / __cbuf__",
+      "tone": "store"
+    },
+    {
+      "id": "m4",
+      "label": "bisheng --npu-arch=dav-3510",
+      "sub": "+ ld.lld 链接",
+      "tone": "compute"
+    },
+    { "id": "m5", "label": "可执行 CCE ELF (aibin)", "tone": "accent" }
+  ],
+  "edges": [
+    { "from": "m0", "to": "m1", "label": "降级" },
+    { "from": "m1", "to": "m2" },
+    { "from": "m2", "to": "m3", "label": "发射" },
+    { "from": "m3", "to": "m4" },
+    { "from": "m4", "to": "m5", "label": "链接" }
+  ],
+  "groups": [
+    {
+      "label": "M 树：_vendor/tilelang-v0.1.15（主干）",
+      "nodes": ["m0", "m1", "m2", "m3", "m4", "m5"],
+      "tone": "default"
+    }
+  ],
+  "notes": [
+    "入口在 tilelang/ascend/，实现在 src/ascend/，两者通过 FFI 名 target.build.tilelang_ascend 连接。",
+    "生成物里没有 AscendC:: 类库调用，只有 asc_* 内置函数与 __ubuf__ / __cbuf__ / __ca__ / __cb__ / __cc__ 限定符。"
+  ]
+}

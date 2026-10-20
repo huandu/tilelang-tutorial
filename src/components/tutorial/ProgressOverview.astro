@@ -1,0 +1,72 @@
+---
+import type { TutorialChapterMeta } from '@lib/tutorial.ts';
+
+interface Props {
+  chapters: TutorialChapterMeta[];
+}
+
+const { chapters } = Astro.props;
+const total = chapters.length;
+const exerciseTotal = chapters.reduce((sum, chapter) => sum + chapter.exerciseCount, 0);
+const quizTotal = chapters.reduce((sum, chapter) => sum + chapter.quizCount, 0);
+---
+
+<section
+  class="card border border-base-300 bg-base-100"
+  data-progress-overview
+  data-total={String(total)}
+>
+  <div class="card-body flex-row flex-wrap items-center gap-6">
+    <div class="relative h-32 w-32 shrink-0">
+      <svg aria-hidden="true" class="progress-ring h-32 w-32" viewBox="0 0 120 120">
+        <circle class="progress-ring__track" cx="60" cy="60" fill="none" r="52" stroke-width="8" />
+        <circle
+          class="progress-ring__value"
+          cx="60"
+          cy="60"
+          data-ring-value
+          fill="none"
+          r="52"
+          stroke-linecap="round"
+          stroke-width="8"
+        />
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <span class="text-2xl font-semibold" data-progress-percent>
+          0%
+        </span>
+        <span class="text-xs opacity-60">已读完</span>
+      </div>
+    </div>
+    <div class="min-w-60 flex-1">
+      <h2 class="card-title text-lg">我的进度</h2>
+      <p class="mt-1 text-sm opacity-70">
+        进度只保存在这台设备的浏览器里（localStorage），不上传、不做服务端持久化。换浏览器
+        或清空站点数据会重置，下方可以手动重置。
+      </p>
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        <div class="rounded-lg bg-base-200 px-3 py-2">
+          <dt class="text-xs opacity-60">已读完</dt>
+          <dd class="font-mono text-lg whitespace-nowrap">
+            <span data-progress-read>0</span> / {total}
+          </dd>
+        </div>
+        <div class="rounded-lg bg-base-200 px-3 py-2">
+          <dt class="text-xs opacity-60">章节</dt>
+          <dd class="font-mono text-lg whitespace-nowrap">{total}</dd>
+        </div>
+        <div class="rounded-lg bg-base-200 px-3 py-2">
+          <dt class="text-xs opacity-60">习题</dt>
+          <dd class="font-mono text-lg whitespace-nowrap">{exerciseTotal}</dd>
+        </div>
+        <div class="rounded-lg bg-base-200 px-3 py-2">
+          <dt class="text-xs opacity-60">自测题</dt>
+          <dd class="font-mono text-lg whitespace-nowrap">{quizTotal}</dd>
+        </div>
+      </dl>
+    </div>
+    <button class="btn btn-ghost btn-sm" data-reset-progress type="button">
+      重置进度
+    </button>
+  </div>
+</section>

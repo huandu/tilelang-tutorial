@@ -1,0 +1,34 @@
+{
+  "id": "inline-04",
+  "title": "一个算子示例目录的标准形状",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "inlineQuote": "examples/<op_name>/\n├─ example_<op_name>.py      实现（用 @tilelang.jit）\n├─ test_<op_name>.py         正确性测试（pytest 能收集到）",
+  "caption": "目录里必须有 pytest 能收集到的测试：只写一个能跑的 example_*.py、没有 test_*.py，这个示例在 CI 里等于不存在。",
+  "nodes": [
+    { "id": "root", "label": "examples/<op_name>/", "tone": "accent" },
+    {
+      "id": "ex",
+      "label": "example_<op_name>.py",
+      "sub": "实现（用 @tilelang.jit）",
+      "tone": "default"
+    },
+    {
+      "id": "test",
+      "label": "test_<op_name>.py",
+      "sub": "正确性测试（pytest 能收集到）",
+      "tone": "accent"
+    },
+    { "id": "readme", "label": "README.md", "sub": "可选：口径、限制、如何跑", "tone": "muted" }
+  ],
+  "edges": [
+    { "from": "root", "to": "ex" },
+    { "from": "root", "to": "test" },
+    { "from": "root", "to": "readme" }
+  ],
+  "notes": [
+    "CI 的 examples 步骤收集的是测试函数，不是脚本本身：没有 test_*.py 的示例不会被跑到",
+    "一个算子一个目录是主干仓库的惯例，锁定版本下 examples/ 有 54 个子目录"
+  ]
+}

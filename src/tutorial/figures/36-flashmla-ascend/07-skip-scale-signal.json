@@ -1,0 +1,62 @@
+{
+  "id": "07-skip-scale-signal",
+  "title": "skip-scale 的信号传递",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 18,
+  "section": "4.3",
+  "caption": "生产者是 softmax 的 SIMD VF，消费者是 CUBE 与 VECTOR 两者；信号必须经 Scalar Core 写进 SS buffer，于是形成一次阻塞式同步，再被「顺序发射、顺序执行」放大。",
+  "nodes": [
+    {
+      "id": "vf",
+      "label": "SIMD VF 算出 row_max_max_delta",
+      "sub": "softmax 的一步",
+      "tone": "compute"
+    },
+    { "id": "sflag", "label": "set_flag(V→S)", "sub": "ROW_MAX_MAX_DELTA_FULL", "tone": "accent" },
+    {
+      "id": "scalar",
+      "label": "Scalar Core 写 SS buffer",
+      "sub": "is_rescale_triggered[job&8][blk&8][sub]",
+      "tone": "warn"
+    },
+    {
+      "id": "cflag",
+      "label": "CrossCoreSetFlag(4, S)",
+      "sub": "SS_BUFFER_FULL_V2C，同时发给两个 AIV",
+      "tone": "accent"
+    },
+    {
+      "id": "cube",
+      "label": "CUBE 读 SS buffer",
+      "sub": "决定是否清空 L0C / trigger_o_copy_out",
+      "tone": "compute"
+    },
+    {
+      "id": "vec",
+      "label": "VECTOR run_scale_o 读同一格",
+      "sub": "决定是否做 add_and_scale_o_vf",
+      "tone": "compute"
+    },
+    {
+      "id": "skip",
+      "label": "跳过 scale-O 的收益",
+      "sub": "省 FixPipe / UB / VF 带宽，降功耗换频率",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "vf", "to": "sflag" },
+    { "from": "sflag", "to": "scalar", "label": "阻塞式等待" },
+    { "from": "scalar", "to": "cflag" },
+    { "from": "cflag", "to": "cube" },
+    { "from": "cflag", "to": "vec" },
+    { "from": "vec", "to": "skip" }
+  ],
+  "notes": [
+    "只有 scalar core 能读写 SS buffer（__ssbuf__），所以 SIMD VF → Scalar Core 是阻塞式同步（报告 :204）。",
+    "CrossCoreSetFlag<4, PIPE>(id) 的 4 表示「同时发给两个 AIV」，helper 会发 id 与 id+16 两份（kernel_body.h:69-81）。",
+    "因为各条 PIPE 顺序发射、顺序执行，发起顺序本身就是优化对象：systolic_arr_activate 会按情况提前 set_is_rescale_triggered_flag（kernel_body.h:1306-1319）。",
+    "来源：报告 :156-162, 202-206；kernel_body.h:69-81,1186-1207,1306-1319,1583-1590。"
+  ]
+}

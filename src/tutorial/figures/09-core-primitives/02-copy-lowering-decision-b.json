@@ -1,0 +1,44 @@
+{
+  "id": "02-copy-lowering-decision-b",
+  "title": "T.copy 的降级判定链（提示与默认路径）",
+  "caption": "判定链的后半段：prefer_instruction 显式指定形态，未指定时先试 TMA store，失败再走同步形态。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "p5", "label": "⑤/⑥/⑦ prefer_instruction？", "shape": "diamond", "tone": "muted" },
+    { "id": "r5", "label": "tma → TMA", "sub": "与 disable_tma 冲突则报错", "tone": "warn" },
+    {
+      "id": "r6",
+      "label": "cp_async → cp.async",
+      "sub": "与 enable_async_copy=False 冲突则报错",
+      "tone": "warn"
+    },
+    {
+      "id": "r7",
+      "label": "sync → 只允许同步形态",
+      "sub": "LDSM / STSM / TMEM / Normal",
+      "tone": "default"
+    },
+    { "id": "p8", "label": "⑧ 未指定：先试 TMA store", "shape": "diamond", "tone": "muted" },
+    { "id": "r8", "label": "kBulkStore / kBulkStore1D", "tone": "accent" },
+    {
+      "id": "r9",
+      "label": "SelectSyncLikeInst",
+      "sub": "LDSM → STSM → TMEM → Normal",
+      "tone": "default"
+    }
+  ],
+  "edges": [
+    { "from": "p5", "to": "r5", "label": "tma" },
+    { "from": "p5", "to": "r6", "label": "cp_async" },
+    { "from": "p5", "to": "r7", "label": "sync" },
+    { "from": "p5", "to": "p8", "label": "未指定" },
+    { "from": "p8", "to": "r8", "label": "成功" },
+    { "from": "p8", "to": "r9", "label": "失败" }
+  ],
+  "notes": [
+    "默认路径只对 store 方向尝试 TMA；global→shared 的 load 不写提示就不会自动选 TMA。",
+    "边界条件：TMA bulk load 要求最后一维位宽是 128 的整数倍；cp.async 要求 global→shared 且两侧 dtype 相同。"
+  ]
+}

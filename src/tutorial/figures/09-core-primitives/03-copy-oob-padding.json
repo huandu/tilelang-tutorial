@@ -1,0 +1,59 @@
+{
+  "id": "03-copy-oob-padding",
+  "title": "三条 padding 路径不是同一件事",
+  "caption": "NV 的 SIMT 越界填充、TMA 的 descriptor 填充、昇腾的 DMA 对齐填充是三条独立路径，混用会在 tail 处理上出错。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "nodes": [
+    { "id": "s1", "label": "src_predicate = MakePredicate(src->shape)", "tone": "default" },
+    { "id": "s2", "label": "value = if_then_else(pred, load, safe_value)", "tone": "default" },
+    {
+      "id": "s3",
+      "label": "safe_value 默认 0",
+      "sub": "可被 T.annotate_safe_value 覆盖",
+      "tone": "accent"
+    },
+    { "id": "s4", "label": "dst_predicate = MakePredicate(dst->shape)", "tone": "default" },
+    {
+      "id": "s5",
+      "label": "body = IfThenElse(dst_pred, store)",
+      "sub": "目标越界时整条 store 不写",
+      "tone": "default"
+    },
+    { "id": "t1", "label": "TMADesc.oob_fill", "tone": "store" },
+    {
+      "id": "t2",
+      "label": "越界语义由 descriptor 定义",
+      "sub": "没有 Python 层安全值",
+      "tone": "store"
+    },
+    { "id": "a1", "label": "pad_value = v", "tone": "store" },
+    { "id": "a2", "label": "行宽向上取整到 32B 边界", "tone": "store" },
+    { "id": "a3", "label": "pad lane 填 v", "tone": "store" },
+    {
+      "id": "a4",
+      "label": "先发 ascend_set_copy_pad_value",
+      "sub": "供 AutoSchedule 插入 PIPE_S→PIPE_MTE2 同步",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "s1", "to": "s2" },
+    { "from": "s2", "to": "s3" },
+    { "from": "s4", "to": "s5" },
+    { "from": "t1", "to": "t2" },
+    { "from": "a1", "to": "a2" },
+    { "from": "a2", "to": "a3" },
+    { "from": "a3", "to": "a4" }
+  ],
+  "groups": [
+    { "label": "SIMT 路径（NV）", "nodes": ["s1", "s2", "s3", "s4", "s5"], "tone": "default" },
+    { "label": "TMA 路径（NV）", "nodes": ["t1", "t2"], "tone": "store" },
+    { "label": "昇腾 T.copy pad", "nodes": ["a1", "a2", "a3", "a4"], "tone": "store" }
+  ],
+  "notes": [
+    "SIMT 越界读默认填 0，可用 T.annotate_safe_value({A: v}) 改；TMA 的填充只能在 descriptor 参数层面改。",
+    "昇腾的 pad_value 是 DMA 对齐填充：与「越界读替一个值」是两件事。"
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "id": "fig-04-pipeline-compare",
+  "title": "CUDA 与 Ascend 两条 pipeline 的阶段对照",
+  "kind": "compare",
+  "section": "4.7",
+  "width": 1200,
+  "labelWidth": 230,
+  "columns": ["CUDA pipeline（cuda/pipeline.py）", "Ascend pipeline（ascend/pipeline.py）"],
+  "rows": [
+    {
+      "label": "共同起点",
+      "values": [
+        "BindTarget → MaterializeKernelLaunch（lower_thread_binding=True, default_threads=128）",
+        "BindTarget → MaterializeKernelLaunch（lower_grid_binding=True, launch_dim_tags=[\"cthread\"]）"
+      ]
+    },
+    {
+      "label": "规范化与小 pass 前置",
+      "values": [
+        "LetInline / AddWrapperForSingleBufStore / LegalizeNegativeIndex / VerifyParallelLoop / InjectAssumes / Simplify；CanonicalizeLegacyReducer / VerifyReducerEpoch / VerifyBufferInit",
+        "同样的一段（两侧共同），但顺序与守卫不同"
+      ]
+    },
+    {
+      "label": "分岔 1：后端专属前处理",
+      "values": [
+        "AutoWarpSpecialization → MaterializeWSSchedule → ProducerConsumerWarpSpecialized → LowerBlackwell2SM",
+        "RewriteDualCopy → LegalizeSimdMerging"
+      ]
+    },
+    {
+      "label": "分岔 2：流水 / 布局 / 调度",
+      "values": [
+        "PipelinePlanning + InjectSoftwarePipeline 在 LayoutInference 之前；之后 LowerTileOp",
+        "AscendLayoutInference 先推，再进 16 步 AutoSchedule（含 Z3 求解）；之后 AscendLowerTileOp"
+      ]
+    },
+    {
+      "label": "共同：标准 lowering",
+      "values": [
+        "DecoupleTypeCast / LegalizeVectorizedLoop / LegalizeSafeMemoryAccess / LowerAccessPtr / HoistGlobalBufferAllocations / LowerOpaqueBlock / FlattenBuffer / ConfigIndexBitwidth / VectorizeLoop / LoopUnswitching / UnrollLoop / VerifyMemory",
+        "同一段（39 个同名 pass 构成的走廊）"
+      ]
+    },
+    {
+      "label": "分岔 3：同步与存储合并",
+      "values": [
+        "LowerThreadAllreduce → LowerLDGSTG → LowerHopperIntrin → MarkCudaSyncCalls → MergeSharedMemoryAllocations → ThreadSync(shared) ×2 → InjectTcgen05Fence",
+        "LowerThreadAllreduce → AscendThreadSync(global) → MarkScalarDcacheBypass → MergeUBAllocations → RewriteFlagToBuf → AscendThreadSync(shared) ×2"
+      ]
+    },
+    {
+      "label": "共同收尾",
+      "values": [
+        "MergeIfStmt → MakePackedAPI → Simplify → LowerDeviceKernelLaunch；额外一步 PersistThreadblock",
+        "MergeIfStmt → MakePackedAPI → Simplify → LowerDeviceKernelLaunch"
+      ]
+    }
+  ],
+  "caption": "两条 pipeline 共享同一条「tile op 之后」的标准 lowering 走廊，差异集中在三处：网格物化的参数、流水 / 调度由谁负责、同步与片上存储怎么合并。",
+  "notes": [
+    "完整清单：CUDA 73 步、Ascend 80 步，同名 pass 39 个，带条件守卫的分别是 CUDA 7 步、Ascend 17 步（脚本 ../code/pass-order/dump_pass_order.py）。",
+    "步数口径：正文 4.5 / 4.7 节按 mod = <pass>(...) 语句统计；源图 fig-04 写的是 74 / 80，差异来自统计口径，以正文为准。",
+    "pass 序列是一段带分支的程序，不是一张静态表：Ascend 的 13 步 AutoSchedule 段由 if auto_schedule_enabled 包住，关闭时才会补一个 InferBufferAliases。",
+    "本图只画阶段，不画每个 pass 的参数；逐行清单见正文 4.5、4.6 节。"
+  ]
+}

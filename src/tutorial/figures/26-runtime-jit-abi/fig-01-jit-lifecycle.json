@@ -1,0 +1,67 @@
+{
+  "id": "fig-01-jit-lifecycle",
+  "title": "从 Python 到可调用对象：七个阶段",
+  "caption": "@tilelang.jit 的完整生命周期；每一跳左边是入口函数，右边是它产出的东西。",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 26,
+  "section": "2.1",
+  "nodes": [
+    {
+      "id": "s1",
+      "label": "① 装饰 @tilelang.jit",
+      "sub": "jit/__init__.py:588 → JITImpl（只是包装，不编译）",
+      "tone": "default"
+    },
+    {
+      "id": "s2",
+      "label": "② 取 TIR  JITImpl.get_tir",
+      "sub": "jit/__init__.py:379 → PrimFunc（eager 走 Builder 追踪）",
+      "tone": "default"
+    },
+    {
+      "id": "s3",
+      "label": "③ 缓存查询 JITImpl.__call__",
+      "sub": "jit/__init__.py:519 · _kernel_cache / cached()",
+      "tone": "accent"
+    },
+    {
+      "id": "s4",
+      "label": "④ lower  lower_with_context",
+      "sub": "engine/lower.py:144 → host_mod + device_mod",
+      "tone": "default"
+    },
+    {
+      "id": "s5",
+      "label": "⑤ codegen  device_codegen / host_codegen",
+      "sub": "engine/lower.py:99 / :104 / :65",
+      "tone": "default"
+    },
+    {
+      "id": "s6",
+      "label": "⑥ adapter  _create_adapter_from_artifact",
+      "sub": "jit/kernel.py:324 → tvm_ffi / cython / nvrtc / torch / cutedsl",
+      "tone": "accent"
+    },
+    {
+      "id": "s7",
+      "label": "⑦ 可调用 kernel(a, b) → 结果张量",
+      "sub": "JITKernel.torch_function :149 · __call__ :206",
+      "tone": "accent"
+    }
+  ],
+  "edges": [
+    { "from": "s1", "to": "s2" },
+    { "from": "s2", "to": "s3", "label": "先取 TIR 再算 key" },
+    { "from": "s3", "to": "s4", "label": "未命中" },
+    { "from": "s4", "to": "s5" },
+    { "from": "s5", "to": "s6" },
+    { "from": "s6", "to": "s7" }
+  ],
+  "groups": [{ "label": "缓存命中时 ④⑤⑥ 全部跳过", "nodes": ["s4", "s5", "s6"], "tone": "muted" }],
+  "notes": [
+    "装饰阶段不编译：只把函数包成 JITImpl，顺手记下源码文本与签名。",
+    "②→③ 的顺序不能颠倒：lower 需要 PrimFunc，而缓存 key 建立在 func.script() 上。",
+    "⑦ 只有一个出口：不管后端是哪一个，对外都是 adapter.func。"
+  ]
+}

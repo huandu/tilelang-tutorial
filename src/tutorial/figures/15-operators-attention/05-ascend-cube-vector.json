@@ -1,0 +1,29 @@
+{
+  "id": "05-ascend-cube-vector",
+  "title": "昇腾上 attention 的 Cube / Vector 数据通路",
+  "kind": "steps",
+  "direction": "TB",
+  "section": "4.5",
+  "caption": "QKᵀ 落在 L0C，softmax 只能由 Vector 在 UB 上做；两者之间没有直接通道，必须绕一趟 GM。",
+  "steps": [
+    { "label": "Cube：Q·Kᵀ → L0C", "sub": "分数 S_tile 落在 L0C", "tone": "compute" },
+    { "label": "① L0C → GM（workspace_1）", "sub": "合法搬运对里没有 L0C → UB", "tone": "warn" },
+    {
+      "label": "② GM → UB",
+      "sub": "Vector：reduce_max / exp / reduce_sum，得到 P 与 ℓ",
+      "tone": "compute"
+    },
+    { "label": "③ UB → GM（workspace_2）", "sub": "概率 P 转 fp16 写出", "tone": "default" },
+    {
+      "label": "④ GM → L1 → L0A/L0B；⑤ P·V → L0C",
+      "sub": "Cube 再算一次矩阵乘",
+      "tone": "compute"
+    },
+    { "label": "⑥ GM → UB：O += PV", "sub": "除以 ℓ 后写回 O", "tone": "accent" }
+  ],
+  "notes": [
+    "合法搬运对：GM→L1、GM→UB、UB→L1、UB→UB、L1→L0A、L1→L0B、L0C→GM、UB→GM；L0C 只有一条出边 L0C→GM",
+    "workspace 不是调试缓冲，而是数据通路的一环；适配器例子显式传 workspace_1/2/3 并配 set/wait_cross_flag",
+    "两台机器的瓶颈不同：NV 是异步搬运的 overlap 与非矩阵指令占比；昇腾是 Cube 与 Vector 的核间流水与同步次数"
+  ]
+}

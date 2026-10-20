@@ -1,0 +1,47 @@
+{
+  "id": "03-reduce-two-stage",
+  "title": "T.reduce_sum 的两段归约",
+  "kind": "flow",
+  "direction": "LR",
+  "section": "2.2",
+  "nodeMaxEm": 26,
+  "caption": "先线程内各加各的（无同步），再跨线程 butterfly 归约——两条路径按参与宽度分叉。",
+  "nodes": [
+    { "id": "src", "label": "fragment(src)", "sub": "形状 [M, N]", "tone": "store" },
+    {
+      "id": "in_thread",
+      "label": "① 线程内归约",
+      "sub": "每个线程把自己那几列先加起来",
+      "tone": "compute"
+    },
+    {
+      "id": "cross",
+      "label": "② 跨线程归约",
+      "sub": "tl::AllReduce<Reducer, threads, scale>::run",
+      "tone": "compute"
+    },
+    { "id": "shared", "label": "offset ≥ 32", "sub": "shared memory + barrier", "tone": "default" },
+    {
+      "id": "shuffle",
+      "label": "offset < 32",
+      "sub": "shfl_xor_sync（warp 内）",
+      "tone": "default"
+    },
+    { "id": "same", "label": "每个线程拿到同一个行和", "tone": "accent" },
+    { "id": "dst", "label": "fragment(dst)", "sub": "形状 [M]", "tone": "store" }
+  ],
+  "edges": [
+    { "from": "src", "to": "in_thread" },
+    { "from": "in_thread", "to": "cross" },
+    { "from": "cross", "to": "shared" },
+    { "from": "cross", "to": "shuffle" },
+    { "from": "shared", "to": "same" },
+    { "from": "shuffle", "to": "same" },
+    { "from": "same", "to": "dst" }
+  ],
+  "notes": [
+    "clear=True（默认）覆盖 dst；clear=False 先把 dst 拷进临时 fragment，归约完再合并一次——所以 sum/abssum 会多一份片上存储",
+    "四种 scope 组合：shared→shared 建两个 fragment；shared→fragment、fragment→shared 各建一个；fragment→fragment 直发",
+    "约束：threads 必须能被 scale 整除，且 threads / scale 是 2 的幂，否则 static_assert 失败"
+  ]
+}

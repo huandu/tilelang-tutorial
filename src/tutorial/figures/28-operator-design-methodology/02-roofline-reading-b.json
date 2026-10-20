@@ -1,0 +1,29 @@
+{
+  "id": "02-roofline-reading-b",
+  "title": "roofline 的八种常见误读",
+  "caption": "每一条偏差都由同一个脚本在同一台机器、同一个算子上量化；它们的共同后果是把判类或效率读数带偏。",
+  "kind": "compare",
+  "section": "2.3",
+  "labelWidth": 230,
+  "columns": ["误读", "在案例算子上把答案带偏"],
+  "rows": [
+    { "label": "M1 用 datasheet 峰值", "values": ["compute time 低估 1.36×"] },
+    { "label": "M2 用张量核 roof 给逐元素算子定价", "values": ["平衡点 12.72 → 161.97（12.7×）"] },
+    { "label": "M3 按输入 dtype 声明 roof", "values": ["同一算子三个上限 306 / 162 / 12.7"] },
+    {
+      "label": "M4 用一个 stage 的 AI 代表融合后的算子",
+      "values": ["AI 2.79 被读成 1.40（2.0×）"]
+    },
+    { "label": "M5 超越函数按 1 FLOP 记账", "values": ["softmax 行 0.8k → 1.7k cycles（2.08×）"] },
+    { "label": "M6 只数 payload 不数查表", "values": ["查表从 6.2% 变成 79.8%（总流量 4.65×）"] },
+    {
+      "label": "M7 在模型没有抓手的尺度上读数字",
+      "values": ["一个 decode step 的 SOL 是 0.003 µs"]
+    },
+    { "label": "M8 把 >105% 的效率当好性能", "values": ["那是公式错误，不是性能"] }
+  ],
+  "notes": [
+    "案例算子 = QK-Norm + RoPE + fp8 量化，189.2 MFLOP / 67.76 MB，AI = 2.79 FLOP/Byte。",
+    "「没有抓手」指 sol_time 与实测时间都低于延迟下限，启动开销占主导，模型对这一行的读数没有意义。"
+  ]
+}

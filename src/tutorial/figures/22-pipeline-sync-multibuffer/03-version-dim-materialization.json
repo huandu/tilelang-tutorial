@@ -1,0 +1,51 @@
+{
+  "id": "03-version-dim-materialization",
+  "title": "版本维的物化与 barrier 的多版本",
+  "caption": "多缓冲在 IR 上只做两件事：给 buffer 前置一个版本维、把访问下标改成 (k − min) mod nv；barrier 也要按 stage 展开并带 parity。",
+  "kind": "flow",
+  "direction": "LR",
+  "nodeMaxEm": 20,
+  "section": "3.1",
+  "nodes": [
+    {
+      "id": "b1",
+      "label": "A_shared : (BM, BK)",
+      "sub": "写于 stage 0，读于 stage N-1",
+      "tone": "default"
+    },
+    { "id": "b2", "label": "barrier mbar : (1,)", "sub": "逻辑形状", "tone": "default" },
+    {
+      "id": "a1",
+      "label": "A_shared : (N, BM, BK)",
+      "sub": "RewriteAllocBuffer：shape.insert(0, nv)",
+      "tone": "accent"
+    },
+    {
+      "id": "a2",
+      "label": "mbar : (N,)",
+      "sub": "ExpandPipelineBarriers：[N] → [nv × N]",
+      "tone": "accent"
+    },
+    {
+      "id": "arena",
+      "label": "MergeSharedMemoryAllocations",
+      "sub": "按活跃区间打包进同一个 arena",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "b1", "to": "a1" },
+    { "from": "b2", "to": "a2" },
+    { "from": "a1", "to": "arena" },
+    { "from": "a2", "to": "arena" }
+  ],
+  "groups": [
+    { "label": "PipelinePlanning 之后（逻辑形状）", "nodes": ["b1", "b2"], "tone": "default" },
+    { "label": "InjectSoftwarePipeline 之后（物化形状）", "nodes": ["a1", "a2"], "tone": "accent" }
+  ],
+  "notes": [
+    "访问下标要前置 (k − min) mod nv；mbarrier 的 wait 还要带 parity = ((k − min) / nv) mod 2。",
+    "访问区域也要放宽：只有 access_all_versions（max_stage ≠ 1）时，稳态里块的读写区域才放宽到整个版本维。",
+    "多版本 buffer 是一个不可分割的块，整体参与 arena 打包；不同版本之间不会互相复用。"
+  ]
+}

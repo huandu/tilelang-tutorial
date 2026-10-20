@@ -1,0 +1,62 @@
+{
+  "id": "05-kernel-to-framework",
+  "title": "一个 TileLang kernel 进入服务框架要过的四层",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 20,
+  "section": "5.4",
+  "caption": "kernel 层 → 算子层 → 框架层 → 服务层；真正决定效果的往往是形状/元数据契约、dtype 与 layout、stream 与图模式这三条约束。",
+  "nodes": [
+    {
+      "id": "l1",
+      "label": "① kernel 层：TileLang 算子",
+      "sub": "T.Kernel / T.gemm / T.copy / T.reduce_*",
+      "tone": "compute"
+    },
+    {
+      "id": "l2",
+      "label": "② 算子层：形状与元数据契约",
+      "sub": "varlen（cu_seqlens）、paged（block_table）、dtype、scale"
+    },
+    {
+      "id": "l3",
+      "label": "③ 框架层：模型 runner 选后端",
+      "sub": "选 attention / GEMM / MoE 实现、图模式"
+    },
+    {
+      "id": "l4",
+      "label": "④ 服务层：调度 / 路由 / PD 分离",
+      "sub": "continuous batching、prefix cache、SLO"
+    },
+    {
+      "id": "m1",
+      "label": "编译期常量形状 → JIT 缓存键",
+      "sub": "max_kv、group_sum、block 尺寸",
+      "tone": "warn"
+    },
+    {
+      "id": "m2",
+      "label": "dtype 与 layout 必须与框架一致",
+      "sub": "KV cache dtype、NZ/ND、packed int4",
+      "tone": "warn"
+    },
+    {
+      "id": "m3",
+      "label": "host 侧元数据要在同一条 stream 上",
+      "sub": "否则每步都要一次隐式同步",
+      "tone": "warn"
+    }
+  ],
+  "edges": [
+    { "from": "l1", "to": "l2" },
+    { "from": "l2", "to": "l3" },
+    { "from": "l3", "to": "l4" },
+    { "from": "m1", "to": "l2", "dashed": true },
+    { "from": "m2", "to": "l2", "dashed": true },
+    { "from": "m3", "to": "l3", "dashed": true }
+  ],
+  "notes": [
+    "vLLM 提供可替换的 attention / GEMM / MoE 后端与 PagedAttention；TileRT 走超低延迟 + PD 分离（两端 KV dtype 必须一致）；vllm-ascend 定义昇腾上的环境与插件形态。",
+    "kernel 写得再好，也只有这三件事都对上之后才会跑出效果——它们都不在 kernel 里，而在框架与部署约束里。"
+  ]
+}

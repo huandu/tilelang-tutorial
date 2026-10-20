@@ -1,0 +1,50 @@
+{
+  "id": "04-inference-step",
+  "title": "一次推理请求里各组件的位置",
+  "kind": "flow",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "inlineQuote": "[fig-04] 一次推理请求（prefill / decode）里各组件的位置",
+  "caption": "DSA 把推理链变成「先打分、再筛选、再稀疏计算」；decode 每生成一个 token 循环一次。",
+  "nodes": [
+    { "id": "tokens", "label": "输入 token", "sub": "prompt 或上一步生成的 token" },
+    {
+      "id": "logits",
+      "label": "MQA logits（索引打分）",
+      "sub": "DeepGEMM-Ascend：给每个 KV 打分",
+      "tone": "compute"
+    },
+    {
+      "id": "topk",
+      "label": "TopK 筛选",
+      "sub": "DeepSelect：选出 top-k 个 KV",
+      "tone": "compute"
+    },
+    {
+      "id": "attn",
+      "label": "稀疏注意力",
+      "sub": "FlashMLA：DSA 稀疏 prefill / decode",
+      "tone": "compute"
+    },
+    { "id": "out", "label": "输出 / 下一个 token", "sub": "进入下一轮 decode" },
+    {
+      "id": "comm",
+      "label": "MoE 推理通信",
+      "sub": "DeepEP-Ascend：EP dispatch / combine",
+      "tone": "store"
+    }
+  ],
+  "edges": [
+    { "from": "tokens", "to": "logits" },
+    { "from": "logits", "to": "topk" },
+    { "from": "topk", "to": "attn" },
+    { "from": "attn", "to": "out" },
+    { "from": "out", "to": "logits", "label": "decode 循环", "dashed": true },
+    { "from": "attn", "to": "comm", "label": "MoE 推理" }
+  ],
+  "notes": [
+    "prefill 一次处理整段 prompt，decode 每个 step 只生成一个 token；两者复用同一套 EPBuffer 接口，但算子形状不同。",
+    "decode 只支持量化 KV cache（FP8 / FP4），不支持 bfloat16 KV cache；prefill 版没有 batch 维。",
+    "常规算子（归一化 / RoPE / 量化 / 采样）由 TileKernels 提供，穿插在打分、筛选与稀疏注意力之间。"
+  ]
+}

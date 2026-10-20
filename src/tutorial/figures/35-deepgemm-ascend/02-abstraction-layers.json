@@ -1,0 +1,43 @@
+{
+  "id": "02-abstraction-layers",
+  "title": "昇腾 GEMM 的四层抽象与两条实现路线",
+  "caption": "TileLang 与 DeepGEMM-Ascend 的 MAD 抽象站在同一层；分歧只在这层之下——一个交给编译期，一个交给运行期 JIT。",
+  "kind": "layers",
+  "layers": [
+    {
+      "label": "用户 API 层",
+      "sub": "deep_gemm.fp8_gemm_nt / bf16_gemm_nt / m_grouped_*",
+      "right": "两边相同",
+      "tone": "accent"
+    },
+    {
+      "label": "MAD 原语抽象层（同一层）",
+      "sub": "TileLang：T.copy / T.gemm / T.Pipelined / T.SimdVF",
+      "right": "路线 A",
+      "tone": "default"
+    },
+    {
+      "label": "MAD 原语抽象层（同一层）",
+      "sub": "DeepGEMM-Ascend：tile_ptr / copy / sync / mad()",
+      "right": "路线 B",
+      "tone": "default"
+    },
+    {
+      "label": "Ascend C / 生成代码层",
+      "sub": "DataCopy / LoadData / Mmad / SetFlag-WaitFlag",
+      "right": "殊途同归",
+      "tone": "compute"
+    },
+    {
+      "label": "硬件",
+      "sub": "GM·L1·L0A·L0B·L0C·UB + Cube/Vector + MTE1/2/3 + FixPipe",
+      "right": "同一台机器",
+      "tone": "store"
+    }
+  ],
+  "notes": [
+    "路线 A（TileLang）往下是编译期：AutoSchedule / InsertSync / codegen。",
+    "路线 B（DeepGEMM-Ascend）往下是运行期：std::format 拼源码，交给 DeepJIT 现场编译。",
+    "两条路线的产物都在 Ascend C 这一层，所以它们是同一层上的两种工程选择。"
+  ]
+}

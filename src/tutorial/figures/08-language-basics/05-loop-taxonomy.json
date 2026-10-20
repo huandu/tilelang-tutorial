@@ -1,0 +1,39 @@
+{
+  "id": "05-loop-taxonomy",
+  "title": "五种循环构造子",
+  "caption": "五种迭代构造子各自的语义与优化目标；大写版本只是小写版的别名。",
+  "kind": "flow",
+  "section": "6",
+  "direction": "TB",
+  "nodeMaxEm": 24,
+  "nodes": [
+    { "id": "root", "label": "你在 kernel 里写的迭代", "tone": "accent" },
+    { "id": "ser", "label": "T.serial", "sub": "普通设备循环，ForKind = Serial" },
+    { "id": "unr", "label": "T.unroll", "sub": "请求展开，ForKind = Unrolled" },
+    { "id": "vec", "label": "T.vectorized", "sub": "把一段迭代合成一条向量操作" },
+    { "id": "par", "label": "T.Parallel", "sub": "嵌套并行循环，线程映射交给布局推导" },
+    { "id": "pip", "label": "T.Pipelined", "sub": "生产者—消费者软流水（num_stages）" },
+    { "id": "s1", "label": "谁执行", "sub": "默认单个线程顺序走完，除非外层有 T.Parallel 在分活" },
+    { "id": "u1", "label": "优化目标", "sub": "摊掉循环开销、把访存合并成更宽的请求" },
+    { "id": "v1", "label": "优化目标", "sub": "一条向量指令处理 extent 个元素，寄存器复用" },
+    { "id": "p1", "label": "编译器决定", "sub": "lane → thread → 每线程串行复制" },
+    { "id": "p2", "label": "编译器决定", "sub": "buffer 开几份、copy 与 compute 怎么重叠" }
+  ],
+  "edges": [
+    { "from": "root", "to": "ser" },
+    { "from": "root", "to": "unr" },
+    { "from": "root", "to": "vec" },
+    { "from": "root", "to": "par" },
+    { "from": "root", "to": "pip" },
+    { "from": "ser", "to": "s1" },
+    { "from": "unr", "to": "u1" },
+    { "from": "vec", "to": "v1" },
+    { "from": "par", "to": "p1" },
+    { "from": "pip", "to": "p2" }
+  ],
+  "notes": [
+    "for i in range(n) 在 kernel 里会变成 T.serial(n)，不是展开。",
+    "for x in [0, 1, 2] 或 enumerate(...) 是 trace 期展开，不产生设备循环。",
+    "T.serial 与 T.Serial 是同一个东西，unroll / vectorized 同理。"
+  ]
+}
