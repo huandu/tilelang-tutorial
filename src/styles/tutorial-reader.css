@@ -97,7 +97,7 @@ html[data-reader='on'] .chapter-prose :where(h2, h3, h4) {
   where the footer is hidden.
 */
 body:has([data-reader-controls]) footer {
-  padding-bottom: 3.5rem;
+  padding-bottom: 1.5rem;
 }
 
 /* -------------------------------------------------------------------------- */

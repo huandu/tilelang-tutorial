@@ -9,21 +9,23 @@ interface Props {
   title: string;
   description: string;
   path: string;
+  reader?: boolean | undefined;
 }
 
-const { title, description, path } = Astro.props;
+const { title, description, path, reader = true } = Astro.props;
 ---
 
 <BaseLayout description={description} path={path} title={title}>
   {/*
     Reading mode is a tutorial-wide feature: printing the controls here means
-    every page — current and future — gets it without any per-page wiring.
+    tutorial pages get it without any per-page wiring. Index and utility pages
+    can opt out when the controls would only compete with navigation.
     `reader-client.ts` (inside the component) drives the `data-reader`
     attributes that `tutorial-reader.css` styles. The controls come before the
     page content so a keyboard user reaches them right after 「跳到主要内容」;
     they are `position: fixed`, so the visual order is unchanged.
   */}
-  <ReaderControls />
+  {reader && <ReaderControls />}
   <slot />
 </BaseLayout>
 
