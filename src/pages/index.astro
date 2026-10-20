@@ -7,7 +7,10 @@ import { TUTORIAL, chaptersOfPart, chapterPath } from '@lib/tutorial.ts';
 const first = TUTORIAL.chapters[0];
 const totalExercises = TUTORIAL.chapters.reduce((sum, c) => sum + c.exerciseCount, 0);
 const totalQuiz = TUTORIAL.chapters.reduce((sum, c) => sum + c.quizCount, 0);
-const totalFigures = TUTORIAL.chapters.reduce((sum, c) => sum + c.figureCount, 0);
+const totalFigures = TUTORIAL.chapters.reduce(
+  (sum, c) => sum + c.figureCount + c.inlineFigureCount,
+  0,
+);
 const totalMinutes = TUTORIAL.chapters.reduce((sum, c) => sum + c.readingMinutes, 0);
 
 const paths = [
@@ -51,8 +54,11 @@ const paths = [
         <span class="badge badge-primary badge-outline font-mono">TileLang v0.1.15</span>
         <span class="badge badge-outline">DeepSeek 昇腾全栈（2026-09-30 开源）</span>
       </div>
-      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-        从零到一：<span class="text-primary">TileLang</span> 系统教程
+      <h1 class="mt-4 flex flex-wrap items-baseline gap-x-2 text-4xl font-semibold tracking-tight sm:text-5xl">
+        <span>从零到一：</span>
+        <span class="whitespace-nowrap">
+          <span class="text-primary">TileLang</span> 系统教程
+        </span>
       </h1>
       <p class="mt-5 max-w-3xl text-lg leading-relaxed opacity-80">
         一套面向「会用 PyTorch、但没写过 kernel」的研发人员的完整教材：先建立宏观心智模型， 再按
