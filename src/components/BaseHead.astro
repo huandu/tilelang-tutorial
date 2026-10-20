@@ -1,4 +1,5 @@
 ---
+import GoogleAnalytics from '@components/GoogleAnalytics.astro';
 import { SITE, SITE_URL } from '@lib/site.ts';
 
 interface Props {
@@ -54,4 +55,5 @@ const socialImage = new URL('/og.svg', SITE_URL).href;
       }
     })();
   </script>
+  <GoogleAnalytics />
 </head>

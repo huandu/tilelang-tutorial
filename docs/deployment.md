@@ -11,8 +11,9 @@
 - Install command: `pnpm install --frozen-lockfile`
 - Node.js: 24.x on Vercel
 
-The site is fully static. No environment variables, functions, storage bindings
-or secrets are required.
+The site is fully static. No functions, storage bindings or secrets are required.
+Google Analytics uses `G-ZQ5VYWGFV1` as the built-in production measurement id;
+`GA_MEASUREMENT_ID` can override it for a local or preview build.
 
 ## Continuous deployment
 
@@ -40,6 +41,19 @@ Check at least:
 - `/code/01-why-tile-dsl/` renders source.
 - `robots.txt` points to `sitemap-index.xml`.
 - A 404 renders inside the tutorial shell.
+
+## Analytics
+
+Google Analytics 4 is mounted once in `src/components/BaseHead.astro` through
+`GoogleAnalytics.astro`. The tag is rendered only when:
+
+- `GA_MEASUREMENT_ID` is set explicitly, or
+- the Vercel deployment environment is `production`.
+
+The built-in production id is `G-ZQ5VYWGFV1`. Local development, CI builds and
+Vercel preview deployments therefore emit no tag unless the environment variable
+is deliberately set. Because pages are prerendered, the id is written into the
+generated HTML at build time.
 
 ## Domain changes
 

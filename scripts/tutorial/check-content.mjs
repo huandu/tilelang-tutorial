@@ -139,6 +139,48 @@ function checkSubstance(chapter, spec, where) {
   }
 }
 
+function svgRectangles(svg, className) {
+  const pattern = new RegExp(
+    `<rect class="${className}[^"]*" x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"`,
+    'g',
+  );
+  return [...svg.matchAll(pattern)].map((match) => ({
+    x: Number(match[1]),
+    y: Number(match[2]),
+    width: Number(match[3]),
+    height: Number(match[4]),
+  }));
+}
+
+/** Geometry regressions that are visible to readers even when SVG is valid. */
+function checkFigureGeometry(chapter, where, spec, svg) {
+  if (spec.kind === 'flow') {
+    for (const match of svg.matchAll(/<path class="tlfig-edge[^"]*" d="([^"]+)"/g)) {
+      if (/[HV]/u.test(match[1] ?? '')) {
+        fail(chapter, `${where}: flow edge uses a bent H/V route`);
+        break;
+      }
+    }
+  }
+
+  const groups = svgRectangles(svg, 'tlfig-group');
+  for (let i = 0; i < groups.length; i += 1) {
+    for (let j = i + 1; j < groups.length; j += 1) {
+      const first = groups[i];
+      const second = groups[j];
+      if (first === undefined || second === undefined) continue;
+      const overlapX =
+        Math.min(first.x + first.width, second.x + second.width) > Math.max(first.x, second.x);
+      const overlapY =
+        Math.min(first.y + first.height, second.y + second.height) > Math.max(first.y, second.y);
+      if (overlapX && overlapY) {
+        fail(chapter, `${where}: group backgrounds overlap`);
+        return;
+      }
+    }
+  }
+}
+
 async function checkFigures(chapter) {
   const sourceDir = path.join(SRC, 'source-figures', chapter);
   const specDir = path.join(SRC, 'figures', chapter);
@@ -181,6 +223,8 @@ async function checkFigures(chapter) {
       const svg = renderFigure(spec);
       if (!svg.startsWith('<svg') || !svg.endsWith('</svg>')) {
         fail(chapter, `${file}: renderer produced malformed SVG`);
+      } else {
+        checkFigureGeometry(chapter, file, spec, svg);
       }
     } catch (error) {
       fail(chapter, `${file}: render failed (${error.message})`);

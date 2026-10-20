@@ -21,6 +21,9 @@ const NODE_MIN_W = 120;
 const NODE_MAX_W = 340;
 const LEVEL_GAP = 90;
 const NODE_GAP = 26;
+const GROUP_PAD = 18;
+const GROUP_LABEL_ROOM = 28;
+const GROUP_LANE_GAP = 72;
 const MARGIN = 24;
 
 export function escapeXml(value) {
@@ -98,9 +101,14 @@ function round(value) {
 }
 
 function measureNode(node, maxEm) {
-  const label = wrap(node.label ?? '', maxEm);
-  const sub = node.sub === undefined ? [] : wrap(node.sub, maxEm * 1.05);
-  const code = node.code === undefined ? [] : wrap(node.code, maxEm * 1.15);
+  const contentWidth = NODE_MAX_W - NODE_PAD_X * 2;
+  const label = wrap(node.label ?? '', Math.min(maxEm, contentWidth / FONT_SIZE));
+  const sub =
+    node.sub === undefined ? [] : wrap(node.sub, Math.min(maxEm * 1.05, contentWidth / SMALL_SIZE));
+  const code =
+    node.code === undefined
+      ? []
+      : wrap(node.code, Math.min(maxEm * 1.15, contentWidth / SMALL_SIZE));
   const labelWidth = linesToWidth(label, FONT_SIZE);
   const subWidth = linesToWidth(sub, SMALL_SIZE);
   const codeWidth = linesToWidth(code, SMALL_SIZE);
@@ -173,12 +181,10 @@ function arrowPath(from, to, direction, label) {
   const startY = horizontal ? from.y + from.height / 2 : from.y + from.height;
   const endX = horizontal ? to.x : to.x + to.width / 2;
   const endY = horizontal ? to.y + to.height / 2 : to.y;
-  const aligned = Math.abs(startX - endX) < 0.5 || Math.abs(startY - endY) < 0.5;
-  const path = aligned
-    ? `M ${round(startX)} ${round(startY)} L ${round(endX)} ${round(endY)}`
-    : horizontal
-      ? `M ${round(startX)} ${round(startY)} H ${round(endX)} V ${round(endY)}`
-      : `M ${round(startX)} ${round(startY)} V ${round(endY)} H ${round(endX)}`;
+  // A flow edge is one straight segment. The previous orthogonal router
+  // introduced an H/V elbow whenever the two node centres differed by even a
+  // pixel, which made ordinary chains look like circuit detours.
+  const path = `M ${round(startX)} ${round(startY)} L ${round(endX)} ${round(endY)}`;
   const labelX = (startX + endX) / 2;
   const labelY = (startY + endY) / 2;
   const labelMarkup =
@@ -228,35 +234,93 @@ function layoutFlow(nodes, edges, direction, options) {
   for (const node of nodes) measured.set(node.id, measureNode(node, nodeMaxEm));
 
   const horizontal = direction === 'LR';
-  const levelSizes = [];
-  for (let level = 0; level <= maxLevel; level += 1) {
-    const items = groups.get(level) ?? [];
-    const extent = items.reduce(
-      (sum, node) =>
-        sum + (horizontal ? measured.get(node.id).height : measured.get(node.id).width),
-      0,
-    );
-    levelSizes.push(extent + Math.max(0, items.length - 1) * NODE_GAP);
+  const levelsOfNodes = Array.from({ length: maxLevel + 1 }, (_, level) => groups.get(level) ?? []);
+  const groupSpecs = options.groups ?? [];
+  const groupOfNode = new Map();
+  groupSpecs.forEach((group, groupIndex) => {
+    for (const id of group.nodes ?? []) groupOfNode.set(id, groupIndex);
+  });
+
+  /*
+    Assign whole groups to separate lane bands before positioning individual
+    nodes. A group can span several levels, so centring each level independently
+    both bends its edges and lets separate group backgrounds collide.
+  */
+  const bandKeys = [...groupSpecs.keys(), null];
+  const bandLaneCounts = new Map(
+    bandKeys.map((band) => [
+      band,
+      Math.max(
+        0,
+        ...levelsOfNodes.map(
+          (items) => items.filter((node) => (groupOfNode.get(node.id) ?? null) === band).length,
+        ),
+      ),
+    ]),
+  );
+  const bandStart = new Map();
+  const laneBands = [];
+  for (const band of bandKeys) {
+    const count = bandLaneCounts.get(band) ?? 0;
+    if (count === 0) continue;
+    bandStart.set(band, laneBands.length);
+    for (let lane = 0; lane < count; lane += 1) laneBands.push(band);
   }
-  const crossExtent = Math.max(options.minCross ?? 0, ...levelSizes, 0);
+  const laneCount = Math.max(1, laneBands.length);
+  const laneNodes = Array.from({ length: laneCount }, () => []);
+  for (const items of levelsOfNodes) {
+    const usedInBand = new Map();
+    for (const node of items) {
+      const band = groupOfNode.get(node.id) ?? null;
+      const localLane = usedInBand.get(band) ?? 0;
+      usedInBand.set(band, localLane + 1);
+      const lane = (bandStart.get(band) ?? 0) + localLane;
+      laneNodes[lane]?.push(node);
+    }
+  }
+
+  const laneSizes = laneNodes.map((items) => {
+    const sizes = items.map((node) => {
+      const size = measured.get(node.id);
+      return horizontal ? size.height : size.width;
+    });
+    return Math.max(0, ...sizes);
+  });
+  const hasGroups = groupSpecs.length > 0;
+  const laneCenters = [];
+  let crossCursor = MARGIN + (hasGroups ? GROUP_PAD + GROUP_LABEL_ROOM : 0);
+  for (let lane = 0; lane < laneSizes.length; lane += 1) {
+    const size = laneSizes[lane] ?? 0;
+    laneCenters.push(crossCursor + size / 2);
+    const currentBand = laneBands[lane];
+    const nextBand = laneBands[lane + 1];
+    const gap =
+      lane === laneSizes.length - 1 ? 0 : currentBand === nextBand ? NODE_GAP : GROUP_LANE_GAP;
+    crossCursor += size + gap;
+  }
+  const crossExtent = Math.max(options.minCross ?? 0, crossCursor + MARGIN);
 
   const boxes = new Map();
   let mainCursor = MARGIN;
   for (let level = 0; level <= maxLevel; level += 1) {
-    const items = groups.get(level) ?? [];
+    const items = levelsOfNodes[level];
     const mainSize = items.reduce(
       (max, node) =>
         Math.max(max, horizontal ? measured.get(node.id).width : measured.get(node.id).height),
       0,
     );
-    let crossCursor = MARGIN + (crossExtent - levelSizes[level]) / 2;
-    for (const node of items) {
+    const usedInBand = new Map();
+    items.forEach((node) => {
+      const band = groupOfNode.get(node.id) ?? null;
+      const localLane = usedInBand.get(band) ?? 0;
+      usedInBand.set(band, localLane + 1);
+      const lane = (bandStart.get(band) ?? 0) + localLane;
       const size = measured.get(node.id);
       const cross = horizontal ? size.height : size.width;
       const box = horizontal
         ? {
             x: mainCursor,
-            y: crossCursor,
+            y: (laneCenters[lane] ?? MARGIN) - cross / 2,
             width: size.width,
             height: size.height,
             label: size.label,
@@ -264,7 +328,7 @@ function layoutFlow(nodes, edges, direction, options) {
             code: size.code,
           }
         : {
-            x: crossCursor,
+            x: (laneCenters[lane] ?? MARGIN) - cross / 2,
             y: mainCursor,
             width: size.width,
             height: size.height,
@@ -273,8 +337,7 @@ function layoutFlow(nodes, edges, direction, options) {
             code: size.code,
           };
       boxes.set(node.id, box);
-      crossCursor += cross + NODE_GAP;
-    }
+    });
     mainCursor += mainSize + LEVEL_GAP;
   }
 
@@ -326,27 +389,30 @@ function renderFlow(spec) {
 function renderGroups(groups, boxes) {
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
-  const markup = groups
-    .map((group) => {
-      const members = (group.nodes ?? [])
-        .map((id) => boxes.get(id))
-        .filter((box) => box !== undefined);
-      if (members.length === 0) return '';
-      const pad = 18;
-      const left = Math.min(...members.map((b) => b.x)) - pad;
-      const top = Math.min(...members.map((b) => b.y)) - pad - 16;
-      const right = Math.max(...members.map((b) => b.x + b.width)) + pad;
-      const bottom = Math.max(...members.map((b) => b.y + b.height)) + pad;
-      minX = Math.min(minX, left);
-      minY = Math.min(minY, top);
-      const tone = group.tone === undefined ? 'default' : group.tone;
-      return (
-        `<rect class="tlfig-group tlfig-group--${tone}" x="${round(left)}" y="${round(top)}" width="${round(right - left)}" height="${round(bottom - top)}" rx="14" />` +
-        `<text class="tlfig-group-label" x="${round(left + 12)}" y="${round(top + 15)}" font-size="${SMALL_SIZE}">${escapeXml(group.label ?? '')}</text>`
-      );
-    })
-    .join('');
-  return { markup, minX, minY };
+  const rectangles = [];
+  const labels = [];
+  for (const group of groups) {
+    const members = (group.nodes ?? [])
+      .map((id) => boxes.get(id))
+      .filter((box) => box !== undefined);
+    if (members.length === 0) continue;
+    const left = Math.min(...members.map((b) => b.x)) - GROUP_PAD;
+    const top = Math.min(...members.map((b) => b.y)) - GROUP_PAD - GROUP_LABEL_ROOM;
+    const right = Math.max(...members.map((b) => b.x + b.width)) + GROUP_PAD;
+    const bottom = Math.max(...members.map((b) => b.y + b.height)) + GROUP_PAD;
+    minX = Math.min(minX, left);
+    minY = Math.min(minY, top);
+    const tone = group.tone === undefined ? 'default' : group.tone;
+    rectangles.push(
+      `<rect class="tlfig-group tlfig-group--${tone}" x="${round(left)}" y="${round(top)}" width="${round(right - left)}" height="${round(bottom - top)}" rx="14" />`,
+    );
+    labels.push(
+      `<text class="tlfig-group-label" x="${round(left + 12)}" y="${round(top + 18)}" font-size="${SMALL_SIZE}">${escapeXml(group.label ?? '')}</text>`,
+    );
+  }
+  // Draw all group backgrounds first and all labels last. Otherwise a later
+  // group rectangle can paint over an earlier group's title.
+  return { markup: `${rectangles.join('')}${labels.join('')}`, minX, minY };
 }
 
 function renderLayers(spec) {

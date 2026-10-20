@@ -261,6 +261,71 @@ describe('figure renderer', () => {
     expect(svg).toContain('x="344.3"');
   });
 
+  it('draws flow edges as one straight segment', () => {
+    const svg = renderFigure({
+      ...base,
+      kind: 'flow',
+      nodes: [
+        { id: 'a', label: '起点' },
+        { id: 'b', label: '中点' },
+        { id: 'c', label: '终点' },
+      ],
+      edges: [
+        { from: 'a', to: 'b' },
+        { from: 'b', to: 'c' },
+      ],
+    });
+    const paths = [...svg.matchAll(/<path class="tlfig-edge[^"]*" d="([^"]+)"/g)].map(
+      (match) => match[1] ?? '',
+    );
+    expect(paths).toHaveLength(2);
+    for (const pathData of paths) {
+      expect(pathData).not.toMatch(/[HV]/u);
+    }
+  });
+
+  it('keeps labelled flow groups from overlapping', () => {
+    const svg = renderFigure({
+      ...base,
+      kind: 'flow',
+      direction: 'LR',
+      nodes: [
+        { id: 'a1', label: '第一组起点', sub: '两行说明\n仍然留在框内' },
+        { id: 'a2', label: '第一组终点' },
+        { id: 'b1', label: '第二组起点' },
+        { id: 'b2', label: '第二组终点', sub: '两行说明\n仍然留在框内' },
+      ],
+      edges: [
+        { from: 'a1', to: 'a2' },
+        { from: 'b1', to: 'b2' },
+      ],
+      groups: [
+        { label: '第一组', nodes: ['a1', 'a2'] },
+        { label: '第二组', nodes: ['b1', 'b2'] },
+      ],
+    });
+    const rects = [
+      ...svg.matchAll(
+        /<rect class="tlfig-group[^"]*" x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"/g,
+      ),
+    ].map((match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+      width: Number(match[3]),
+      height: Number(match[4]),
+    }));
+    expect(rects).toHaveLength(2);
+    const [first, second] = rects;
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    if (first === undefined || second === undefined) return;
+    const overlapX =
+      Math.min(first.x + first.width, second.x + second.width) > Math.max(first.x, second.x);
+    const overlapY =
+      Math.min(first.y + first.height, second.y + second.height) > Math.max(first.y, second.y);
+    expect(overlapX && overlapY).toBe(false);
+  });
+
   it('rejects unknown kinds loudly', () => {
     expect(() => renderFigure({ ...base, kind: 'nope' })).toThrow(/unknown figure kind/);
   });

@@ -1,0 +1,25 @@
+---
+import { readGaMeasurementId } from '@lib/analytics.ts';
+
+const measurementId = readGaMeasurementId();
+---
+
+{measurementId !== undefined && (
+  <>
+    <script
+      async
+      is:inline
+      src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+    ></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+    </script>
+    <script define:vars={{ measurementId }} is:inline>
+      gtag('js', new Date());
+      gtag('config', measurementId);
+    </script>
+  </>
+)}
