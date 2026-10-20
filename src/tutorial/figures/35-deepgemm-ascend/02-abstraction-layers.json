@@ -1,7 +1,7 @@
 {
   "id": "02-abstraction-layers",
   "title": "昇腾 GEMM 的四层抽象与两条实现路线",
-  "caption": "TileLang 与 DeepGEMM-Ascend 的 MAD 抽象站在同一层；分歧只在这层之下——一个交给编译期，一个交给运行期 JIT。",
+  "caption": "TileLang 与 DeepGEMM-Ascend 的 MAD 抽象站在同一层；分歧只在这层之下，一个交给编译期，一个交给运行期 JIT。",
   "kind": "layers",
   "layers": [
     {

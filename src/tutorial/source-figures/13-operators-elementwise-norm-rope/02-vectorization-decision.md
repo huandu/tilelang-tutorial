@@ -28,7 +28,7 @@ for (int i = 0; i < 8; ++i) {
 }
 ```
 
-——没有 `uint4`，没有合并访存，因为尾块的谓词让「向量组内部恒定」不成立。
+没有 `uint4`，没有合并访存，因为尾块的谓词让“向量组内部恒定”不成立。
 把 N 换成 2048（整除）之后，同一段代码生成的是 `uint4` 的 128-bit 访存。
 
 **来源**：`../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/elementwise.md:104-133,153-176`；

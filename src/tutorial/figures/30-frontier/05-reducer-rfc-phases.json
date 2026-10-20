@@ -39,14 +39,26 @@
     }
   ],
   "edges": [
-    { "from": "p0", "to": "p1" },
-    { "from": "p1", "to": "p2" },
-    { "from": "p2", "to": "p3" },
-    { "from": "p3", "to": "p4" }
+    {
+      "from": "p0",
+      "to": "p1"
+    },
+    {
+      "from": "p1",
+      "to": "p2"
+    },
+    {
+      "from": "p2",
+      "to": "p3"
+    },
+    {
+      "from": "p3",
+      "to": "p4"
+    }
   ],
   "notes": [
-    "颜色只分「已发布」与「部分 / 未落地」两态：图中只有 Phase 1 是 shipped，其余四条都是 partial。",
+    "颜色只分“已发布”与“部分 / 未落地”两态：图中只有 Phase 1 是 shipped，其余四条都是 partial。",
     "08-frontier-unmerged/ 这个 corpus 目录名描述的是资料的收集动机，不是每一条的落地状态；判断落地只能看代码。",
-    "对读者：不要因为 RFC 还开着就不敢用 reducer，也不要照抄 alloc_reducer(..., replication=\"all\") 这类 legacy 写法——它正是 RFC 里那个错码例子的写法。"
+    "对读者：不要因为 RFC 还开着就不敢用 reducer，也不要照抄 alloc_reducer(..., replication=\"all\") 这类 legacy 写法。它正是 RFC 里那个错码例子的写法。"
   ]
 }

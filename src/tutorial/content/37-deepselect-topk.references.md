@@ -15,7 +15,7 @@ DeepSelect 本身不在 `_vendor/` 里，它是 corpus 里的仓库快照
   **没有编译、没有运行**；
 * 本章所有性能数字**只有两个来源**：DeepSelect 仓库自述与它自带的性能图；
 * **没有任何一条性能数字来自本机实测**；本章可运行的三个示例都是 CPU 上的算法模型
-  （验证级别「CPU 逻辑验证」，见 [`code/README.md`](code/README.md)）。
+  （验证级别“CPU 逻辑验证”，见 [`code/README.md`](code/README.md)）。
 
 ---
 
@@ -26,7 +26,7 @@ DeepSelect 本身不在 `_vendor/` 里，它是 corpus 里的仓库快照
 | R1 | `.../DeepSelect/docs/DeepSelect-deep-dive.zh.md` | https://github.com/deepseek-ai/DeepSelect/blob/main/docs/DeepSelect-deep-dive.zh.md | **本章主要依据**：算法三步骤与伪代码（`:9-39`）、三条 Notes（`:45-49`）、期望复杂度证明（`:51-92`）、性能综述与渐近结论（`:94-102`）、CUDA 实现技巧（`:104-113`） | 已核验（2026-10-01）：全文 113 行逐行读 |
 | R2 | `.../DeepSelect/docs/DeepSelect-deep-dive.md` | https://github.com/deepseek-ai/DeepSelect/blob/main/docs/DeepSelect-deep-dive.md | 同一份报告的英文版（114 行）；用于交叉核对措辞 | 已核验（2026-10-01）：与中文版对照关键段 |
 | R3 | `.../DeepSelect/README.md` | https://github.com/deepseek-ai/DeepSelect | 两个使用场景（`:13-37`）、约束（`topk ≤ 4096`、`topk=512`、昇腾只支持 bf16）、性能口径（`:39-62`）、`2 ~ 20x` 的说法（`:3-5`） | 已核验（2026-10-01）：逐行读 |
-| R4 | `.../DeepSelect/assets/perf_bf16_cuda.png`、`perf_bf16_ascend.png`、`perf_fp32_cuda.png` | 同上 | 三张性能图；纵轴 effective bandwidth、横轴 vocab/batch；本章 §6.2 的读图依据 | 已核验（2026-10-01）：查看图片内容；**数值只作为「量级」引用，未做精确读数** |
+| R4 | `.../DeepSelect/assets/perf_bf16_cuda.png`、`perf_bf16_ascend.png`、`perf_fp32_cuda.png` | 同上 | 三张性能图；纵轴 effective bandwidth、横轴 vocab/batch；本章 §6.2 的读图依据 | 已核验（2026-10-01）：查看图片内容；**数值只作为“量级”引用，未做精确读数** |
 | R5 | `.../14-deepseek-ascend-stack/raw/PROVENANCE.md:13` | — | DeepSelect 快照的 commit（`bfa4507d935f`）与日期（2026-09-30） | 已核验（2026-10-01） |
 
 **说明**：R1 里的三段代码链接（`.../blob/8e70df7.../csrc/cuda_kernels/common_parts.cuh#L1466` 等）
@@ -81,7 +81,7 @@ DeepSelect 本身不在 `_vendor/` 里，它是 corpus 里的仓库快照
 | A3 | `.../DeepSelect/csrc/ascend_kernels/kernel.asc:110-128` | `topk_find_bucket`：`asc_ge` + `asc_arange` + `asc_reduce_min` 找第一个累计计数达到 rank 的桶 | 已核验（2026-10-01） |
 | A4 | `.../DeepSelect/csrc/ascend_kernels/kernel.asc:282-300` | `topk_select_candidates` 的签名与语义（把低 16 位索引先追加、再补高位） | 已核验（2026-10-01） |
 | A5 | `.../DeepSelect/csrc/ascend_kernels/kernel.asc:653-780` | `topk_select_run` 主流程：UB 布局别名、`kNumStages` 组 flag、warmup 页建直方图、`kSafeTrigger = kTopkCapacity + kFilteredCapacity` | 已核验（2026-10-01） |
-| A6 | `.../DeepSelect/csrc/ascend_kernels/kernel.asc:737-740` | 随机排列的种子来自输入前 8 字节（与报告「independent of x」的偏差，见「待补资料」第 1 条） | 已核验（2026-10-01） |
+| A6 | `.../DeepSelect/csrc/ascend_kernels/kernel.asc:737-740` | 随机排列的种子来自输入前 8 字节（与报告“independent of x”的偏差，见“待补资料”第 1 条） | 已核验（2026-10-01） |
 | A7 | `.../DeepSelect/csrc/ascend_kernels/kernel.asc:844-846` | 只有 `sorted_index` 时才调用 `AscendC::Sort`，且只排 `topk` 个元素 | 已核验（2026-10-01） |
 | A8 | `.../DeepSelect/csrc/ascend_kernels/kernel.asc:891-931` | kernel 入口：`__global__ __vector__ __aicore__`，一行一个 block（`get_block_idx()`），按运行期行长选择 Lower/Upper 配置 | 已核验（2026-10-01） |
 | A9 | `.../DeepSelect/csrc/ascend_kernels/config.h:17-31` | `TOPK_COMPACT_PADDING=256`、`TOPK_UB_LIMIT_BYTES=248*1024`、`VST_VLD_ALIGN_BYTES=32`、`aligned/ceil_div` | 已核验（2026-10-01） |
@@ -106,13 +106,13 @@ DeepSelect 本身不在 `_vendor/` 里，它是 corpus 里的仓库快照
 
 ## TileLang 侧对照（锁定源码 `_vendor/`）
 
-本章只在 §5.4、§5.5 用到 TileLang 侧材料，用于说明「为什么 DeepSelect 不是
-TileLang 实现」以及判据：
+本章只在 §5.4、§5.5 用到 TileLang 侧材料，用于说明“为什么 DeepSelect 不是
+TileLang 实现”以及判据：
 
 | id | 引用位置 | 用途 | 核验方式与状态 |
 | --- | --- | --- | --- |
-| V1 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/ascend_tile.py:550-600` | `T.tile.topk` 的文档：「by sorting the source data」；要求静态形状（`:587` 抛错） | 已核验（2026-10-01）：读函数与 docstring |
-| V2 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:132-154` | 昇腾方言的写法（`T.SimtVF`/`T.SimdVF`/`T.alloc_*`/`T.Pipelined`）；与 Ascend C 的分工对照表；「自动调度不保证把任意 `T.Parallel` 张量化为 SIMD」 | 已核验（2026-10-01）：逐行读 |
+| V1 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/ascend_tile.py:550-600` | `T.tile.topk` 的文档：“by sorting the source data”；要求静态形状（`:587` 抛错） | 已核验（2026-10-01）：读函数与 docstring |
+| V2 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:132-154` | 昇腾方言的写法（`T.SimtVF`/`T.SimdVF`/`T.alloc_*`/`T.Pipelined`）；与 Ascend C 的分工对照表；“自动调度不保证把任意 `T.Parallel` 张量化为 SIMD” | 已核验（2026-10-01）：逐行读 |
 | V3 | `_vendor/tilelang-v0.1.15/tilelang/language/`、`tilelang/ascend/language/`（不存在性） | 确认 M 树这两个目录下**没有** `sort` / `topk` 原语（`grep -rn "def sort"` 与 `grep -rn "def topk"` 均无命中） | 已核验（2026-10-01） |
 
 ---
@@ -127,22 +127,22 @@ TileLang 实现」以及判据：
 | 三张性能图的柱高（≈5 TB/s / ≈3.5 TB/s / ≈2.8 TB/s 等） | R4 | **从图上读的近似量级**；测试条件见 README（`topk=512`、`B` 为 batch、横轴为 vocab/batch） |
 | `E[W]` 界、`O(k log(N/k))`、`B2` 的 trade-off 表 | R1（`:51-102`）+ 本书 `code/03` 的复算 | **公式算出来的渐近量级**，不是带宽也不是加速比 |
 
-没有任何「本机实测的延迟 / 吞吐 / 带宽利用率」出现在本章。
+没有任何“本机实测的延迟 / 吞吐 / 带宽利用率”出现在本章。
 
 ---
 
 ## 待补资料
 
 1. **昇腾侧的随机种子取自输入，与报告的假设不一致。**
-   报告要求块排列「independent of x」（R1 `:23,53`），而昇腾实现把种子设为
+   报告要求块排列“independent of x”（R1 `:23,53`），而昇腾实现把种子设为
    `hash(输入前 8 字节) ^ valid_len`（A6）；`TopkPermGenerator` 本身也是模运算伪随机
-   （A10）。这既影响「均匀性」，也影响「独立性」，因此 §3 的期望界**不能原样套用**。
+   （A10）。这既影响“均匀性”，也影响“独立性”，因此 §3 的期望界**不能原样套用**。
    本章按事实写出并标注为偏差。建议向上游确认：这是有意的工程取舍，还是文档与实现的
    不一致？
 2. **报告的推荐参数与发布实例不一致。**
    R1 `:15` 推荐 `B=B2=1024`（`k=512`），而 CUDA 实例用 `B=4096/8192`、`B2=4096`
    （S16）。按 §3.6 的公式，后者的界更松（`N=1M` 时 ≈78k vs ≈28.8k）。
-   本章把它作为「算法建议值 vs 硬件调优值」的例子，但**没有实测证据**说明哪一组更快。
+   本章把它作为“算法建议值 vs 硬件调优值”的例子，但**没有实测证据**说明哪一组更快。
    建议补一份在真机上扫 `B`/`B2` 的数据（至少 `(1024,1024)` 与 `(8192,4096)` 两组）。
 3. **`2^22` 与 `1<<23` 的关系未核清。**
    R1 `:109` 给的浮点模拟条件是 `0 ≤ x,y ≤ 2^22`；代码里有
@@ -152,14 +152,14 @@ TileLang 实现」以及判据：
    位模式论证，本章未找到直接依据。建议向上游确认或补一段推导。
 4. **昇腾侧的实测性能与硬件规格缺失。**
    本章只有一张昇腾性能图（R4），没有测试机器型号、CANN 版本、编译选项等条件说明，
-   也没有 Ascend 950 的带宽/UB 容量规格页。因此 §6.2 只能给出「量级」，
-   给不出「达到硬件带宽的百分之多少」。建议补抓测试环境说明与硬件规格。
+   也没有 Ascend 950 的带宽/UB 容量规格页。因此 §6.2 只能给出“量级”，
+   给不出“达到硬件带宽的百分之多少”。建议补抓测试环境说明与硬件规格。
 5. **小 batch 的 cluster 版本缺少独立材料。**
    `csrc/cuda_kernels/v3_cluster/` 只有 8 个 instantiation 文件（S14），
    DSM/cluster 归并的具体实现细节在 `common_parts.cuh` 里（`USE_CLUSTER_ADDRESSING`
-   分支），本章只讲到「切分 + CTA0 归并」这一层。建议补一份 cluster 路径的
+   分支），本章只讲到“切分 + CTA0 归并”这一层。建议补一份 cluster 路径的
    内存/同步说明，或直接引用 Hopper cluster 的官方文档。
 6. **`TORCH_CHECK(topk <= 4096)` 的边界并未在报告里论证。**
-   `topk ≤ 4096` 是硬约束（S15），但报告只说「更大的值不支持」。
+   `topk ≤ 4096` 是硬约束（S15），但报告只说“更大的值不支持”。
    为什么恰好是 4096，本章无法从材料里推出（可能与 UB/shared memory 预算有关）。
    建议向上游确认并补一条说明。

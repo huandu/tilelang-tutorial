@@ -2,13 +2,13 @@
 
 与 `exercises.md` 一一对应。每题给出**解题思路**、**参考答案**与**常见错误**。
 所有源码引用都指向 `_vendor/tilelang-v0.1.15/`。本章写作环境没有 NVIDIA GPU，
-因此凡是涉及运行结果的题目，答案里都写明了「需要读者在有卡机器上自行确认」。
+因此凡是涉及运行结果的题目，答案里都写明了“需要读者在有卡机器上自行确认”。
 
 ---
 
 ## E1 概念题 ★
 
-**解题思路**：从 `lower()` 的默认参数入手，记住「device 只产源码、host 由 adapter 生成」
+**解题思路**：从 `lower()` 的默认参数入手，记住“device 只产源码、host 由 adapter 生成”
 这两条默认行为。
 
 **参考答案**：
@@ -44,14 +44,14 @@ PTX 要用 `tilelang/contrib/nvcc.py:271-296` 的 `get_ptx_from_source`。
    `_is_nvrtc_available`）、`cython`（无条件列出，实际使用需要 `tilelang_cython_wrapper`
    模块）。按 `tilelang/jit/__init__.py:97` 的签名，用户可显式传
    `execution_backend="nvrtc" | "cython" | "tvm_ffi" | "torch" | "cutedsl"`。
-2. 因为三种 backend 共用同一个 `TLCUDASourceWrapper`；差别只在「生成的 C 源码怎么装载、
-   `call()` 怎么被调」，device 侧源码由同一条 `CUDA_PIPELINE` + 同一个
+2. 因为三种 backend 共用同一个 `TLCUDASourceWrapper`；差别只在“生成的 C 源码怎么装载、
+   `call()` 怎么被调”，device 侧源码由同一条 `CUDA_PIPELINE` + 同一个
    `CodeGenTileLangCUDA` 产出。
-3. `nvrtc`。它的模块 docstring 写明动机是「不需要离线编译步骤，只依赖驱动」
+3. `nvrtc`。它的模块 docstring 写明动机是“不需要离线编译步骤，只依赖驱动”
    （`tilelang/jit/adapter/nvrtc/libgen.py:1-20`）；`cython` 需要 nvcc 把 C 源码编成 `.so`
    （`tilelang/jit/adapter/libgen.py:41-80`）。
 
-**常见错误**：把 `tvm_ffi` 当成「TVM 运行 kernel」——它在 v0.1.15 里是 TileLang 自己
+**常见错误**：把 `tvm_ffi` 当成“TVM 运行 kernel”。它在 v0.1.15 里是 TileLang 自己
 通过 TVM-FFI 生成的 host module
 （`tilelang/cuda/execution_backend.py:24-29`，注意 `supports_callee_allocated_outputs=True`）。
 
@@ -59,21 +59,21 @@ PTX 要用 `tilelang/contrib/nvcc.py:271-296` 的 `get_ptx_from_source`。
 
 ## E3 代码阅读题 ★★
 
-**解题思路**：注意「显式 API」与「自动选择」两类语义的差别。
+**解题思路**：注意“显式 API”与“自动选择”两类语义的差别。
 
 **参考答案**：
 
-1. 因为 `T.wgmma_gemm()` 是**用户点名**的接口：用户说的是「我确知要用 WGMMA」。
+1. 因为 `T.wgmma_gemm()` 是**用户点名**的接口：用户说的是“我确知要用 WGMMA”。
    如果条件不满足，静默换成 `mma.sync` 会让用户拿到一个与预期不同的实现（寄存器压力、
    layout、同步点全不一样），所以选择显式失败。错误信息由 `FatalWgmmaUnavailable`
    （`src/cuda/op/gemm.cc:157-176`）给出，并且带 `SpanHintSuffix` 指回用户源码位置。
-2. 因为 2CTA 的形状约定本身就建立在「B 的 N 范围有一半在邻居 CTA」之上；回退到单 CTA
+2. 因为 2CTA 的形状约定本身就建立在“B 的 N 范围有一半在邻居 CTA”之上；回退到单 CTA
    指令会**静默越界**。理由写在 `src/cuda/op/gemm.cc:347-353` 的注释里。
 3. 会继续往下走到 `AllowTcgen5Mma`（在 sm_70 上为假）与 `AllowWgmma`（sm_90 才真）之后，
-   最后落到函数末尾的 `return kCudaMMA`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:375`）——因为 `TargetIsVolta(target)`
+   最后落到函数末尾的 `return kCudaMMA`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:375`）。因为 `TargetIsVolta(target)`
    为真但 `!AllowVoltaMma(op)` 为假，所以两个 FMA 分支都被跳过。
 
-**常见错误**：把 `LOG(FATAL)` 当成「编译器的 bug」。它是**有意的**契约违背报错。
+**常见错误**：把 `LOG(FATAL)` 当成“编译器的 bug”。它是**有意的**契约违背报错。
 
 ---
 
@@ -115,15 +115,15 @@ if (!facts.disable_tma && !facts.pass_context_disables_tma) {
 
 **参考答案**：
 
-1. ✅ 可以。arch≥90、scope 正确、最后一维 64×16=1024 bits 是 128 的倍数、
+1.  可以。arch≥90、scope 正确、最后一维 64×16=1024 bits 是 128 的倍数、
    row-major stride 合法。
-2. ❌ 不能。最后一维 30×16=480 bits，不是 128 的倍数
+2.  不能。最后一维 30×16=480 bits，不是 128 的倍数
    （`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:205-215` 的 `check_last_dim` 分支）。
-3. ❌ 不能。`CheckGlobalStrides` 要求最内层 stride 必须是 1
+3.  不能。`CheckGlobalStrides` 要求最内层 stride 必须是 1
    （`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:155-165`）。
-4. ❌ 不能。stride=12 元素的字节数 = 24，不能被 16 整除
+4.  不能。stride=12 元素的字节数 = 24，不能被 16 整除
    （`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:167-180`）。
-5. ❌ 不能。`TargetHasBulkCopy` 要求 `arch >= 90`
+5.  不能。`TargetHasBulkCopy` 要求 `arch >= 90`
    （`_vendor/tilelang-v0.1.15/src/cuda/target_utils.cc:117-122`）。
 
 **常见错误**：只看 dtype 与 scope。真正最容易踩的是**最后一维的位数对齐**与
@@ -133,8 +133,8 @@ if (!facts.disable_tma && !facts.pass_context_disables_tma) {
 
 ## E6 代码阅读题 ★★
 
-**解题思路**：`AllowWgmma` 是「架构 + 形状 + warp 数」，`CheckWgmma` 是「dtype + 转置 +
-K 整除」。
+**解题思路**：`AllowWgmma` 是“架构 + 形状 + warp 数”，`CheckWgmma` 是“dtype + 转置 +
+K 整除”。
 
 **参考答案**：
 
@@ -145,10 +145,10 @@ K 整除」。
    （`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:48-52`：`(!op.transA_) && op.transB_ && op.k_ % 32 == 0`）。
 3. 没有要求。f16/bf16 那条分支只要求 `k % 16 == 0`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:43-46`、`58-63`）。
    原因是硬件对 fp16/bf16 的 operand 主序没有限制，而 fp8/tf32 的 WGMMA 有硬性 layout
-   约束——这一点在 FlashAttention-3 论文 §2.2 有明确表述
+   约束。这一点在 FlashAttention-3 论文 §2.2 有明确表述
    （`../tilelang-corpus/03-tilelang-papers/raw/arxiv-2407-08608-fulltext.md:186-190`）。
 
-**常见错误**：漏掉 `CheckWgmma` 里「B 必须在 shared」这个前置条件
+**常见错误**：漏掉 `CheckWgmma` 里“B 必须在 shared”这个前置条件
 （`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:41-43`）。
 
 ---
@@ -164,7 +164,7 @@ K 整除」。
    这两个函数都要读 `policy.IsFullRow() / IsFullCol() / IsSquare()`。
 2. `ComputeWarpPartition` 的前两个分支直接返回固定划分：TCGEN05 走 `m_warp=1,
    n_warp=num_warps`，FMA 同样走 `1 × num_warps`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:380-390`）。原因是
-   **这两类指令都不是「按 warp 切 M/N」的模型**：TCGEN05 是单线程发射、累加器在 TMEM；
+   **这两类指令都不是“按 warp 切 M/N”的模型**：TCGEN05 是单线程发射、累加器在 TMEM；
    FMA 是纯标量循环，划分方式对结果没有意义。
 
 **常见错误**：以为 policy 会影响数值结果。它只影响每个 warp 负责哪一块输出、
@@ -174,7 +174,7 @@ K 整除」。
 
 ## E8 动手题 ★★
 
-**解题思路**：改一个变量、观察一个结果，必须能解释「为什么」。
+**解题思路**：改一个变量、观察一个结果，必须能解释“为什么”。
 
 **参考答案**（示例，不是唯一解）：
 
@@ -189,7 +189,7 @@ K 整除」。
    拒绝了 30×16=480 bits。脚本会抛 `SelectionError`
    （对应 `_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:737-747` 的 `Unsupported(...)`）。
 
-**常见错误**：只报告「结果变了」而不追到具体谓词。这一题的价值全在「为什么」。
+**常见错误**：只报告“结果变了”而不追到具体谓词。这一题的价值全在“为什么”。
 
 ---
 
@@ -211,7 +211,7 @@ K 整除」。
    `.ws` 形态 `32xNxK, N ∈ {64,128,256}, K=16` 对应
    （`../tilelang-corpus/05-nvidia-backend/raw/nvidia-ptx-isa.md:29804-29808`）。
 
-**常见错误**：以为 sm_100 上「有 TMEM 就会用 tcgen05」。作用域不满足时不会。
+**常见错误**：以为 sm_100 上“有 TMEM 就会用 tcgen05”。作用域不满足时不会。
 
 ---
 
@@ -232,8 +232,8 @@ K 整除」。
 3. box 最内层 = 8 时，8×16 = 128 bits，仍然能被 128 整除，所以**不会被拒绝**；
    但会命中 `TMA_MAX_BOX_DIM = 256` 之外的其它约束（这里是没超）。
    想构造拒绝，应该改成 7（7×16 = 112，不是 128 的倍数），脚本会报
-   「不是 128 的倍数」。**注意**：box 只影响每次 TMA 搬运的元素数，
-   上限是 256（`_vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:40`）。
+   “不是 128 的倍数”。**注意**：box 只影响每次 TMA 搬运的元素数，
+   上限是 256（`_vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:41-42`）。
 
 **常见错误**：把 `globalStride` 的单位当成元素。它是字节。
 
@@ -253,8 +253,8 @@ K 整除」。
    这也解释了为什么两个角色各有一个自己的 mbarrier。
 3. 会漏掉反向压力：producer 可能在 consumer 还没读完上一轮数据时就覆写 shared buffer，
    这是数据竞争（读旧数据/写新数据的竞态）。用 `(ko + 1) % 2` 是因为 producer 在第 `ko`
-   轮要等待的是「第 `ko+1` 轮的 buffer 空闲」，即 `compute_is_done` 在上一次翻转后的
-   相位——相位与 consumer 的 `ko % 2` 相差一轮。
+   轮要等待的是“第 `ko+1` 轮的 buffer 空闲”，即 `compute_is_done` 在上一次翻转后的
+   相位，相位与 consumer 的 `ko % 2` 相差一轮。
 4. 由 `AutoWarpSpecialization` → `MaterializeWSSchedule` → `ProducerConsumerWarpSpecialized`
    三个 pass 完成（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:101-109`），
    寄存器分配由 `AnnotateWarpGroupRegAlloc` 收尾（:268-271）。前置门禁是
@@ -285,7 +285,7 @@ K 整除」。
    `mma.sync.m16n8k64.kind::mxf4nvf4.block_scale`，**忽略 `mbar`**
    （`_vendor/tilelang-v0.1.15/tilelang/cuda/language/gemm_op.py:103-135`）。
 
-**常见错误**：以为 TMEM 是「更大的 shared memory」。它只对 TCGEN05 与 TMEM 存取指令
+**常见错误**：以为 TMEM 是“更大的 shared memory”。它只对 TCGEN05 与 TMEM 存取指令
 可见，不是一个通用 buffer。
 
 ---
@@ -298,7 +298,7 @@ K 整除」。
 
 1. 没有实质区别。`T.ClusterKernel` 就是 `T.Kernel` 加上必填的 `cluster_dims`
    （`_vendor/tilelang-v0.1.15/tilelang/cuda/language/kernel.py:12-40` 的 docstring
-   明确说了「T.ClusterKernel is the same launch with a required cluster_dims」）。
+   明确说了“T.ClusterKernel is the same launch with a required cluster_dims”）。
 2. 因为可移植 cluster 上限是 8，B200 允许通过这个 attribute 显式开到 16；
    wrapper 生成的启动代码总是先设这个 attribute
    （`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/wrapper.py:178-200`），
@@ -336,7 +336,7 @@ K 整除」。
    而 TileLang 的 CuTe DSL 后端把 CUTLASS/CuTe 当作 codegen target，
    和 cuTile 的编译器、IR、运行期都没有关系。
 
-**常见错误**：把「CuTe DSL」与「cuTile」当成同一个东西——名字像，技术栈完全不同。
+**常见错误**：把“CuTe DSL”与“cuTile”当成同一个东西，名字像，技术栈完全不同。
 
 ---
 
@@ -356,7 +356,7 @@ K 整除」。
 3. `_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc` 里
    `CopyInstIsTMA` 被拆成 `CopyInstIsTMALoad` / `CopyInstIsTMAStore`，
    `ClassifyWarpSpecializedProducerCopy` 改名为 `ClassifyWarpSpecializedCopy`
-   并新增「shared → global 直接走通用判定」的分支。
+   并新增“shared → global 直接走通用判定”的分支。
    （另外还有 `AllowTcgen5Mma` 里 `op.c_.scope() == "shared.tmem"` → `IsTmemBuffer(op.c_)`、
    `tilelang/cuda/pipeline.py:70` 的 `MaterializeKernelLaunch(lower_thread_binding=True,
    default_threads=128)`。）
@@ -364,8 +364,8 @@ K 整除」。
    `__all__` 列了它，但 `tilelang/cuda/language/__init__.py:88` 只 import 了
    `gemm, gemm_blockscaled, gemm_sp`，而 `_CUDA_API_ALL`（同文件 108-196 行）也没有它；
    `tilelang/language/__init__.py:11` 用的是受 `__all__` 限制的
-   `from tilelang.cuda.language import *`。所以「示例里能写」只是说明示例没有跟着
-   facade 的导出名单更新——**这需要在有卡机器上实际 import 一次才能最终确认**，
+   `from tilelang.cuda.language import *`。所以“示例里能写”只是说明示例没有跟着
+   facade 的导出名单更新。**这需要在有卡机器上实际 import 一次才能最终确认**，
    本章只陈述源码事实。
 
 **常见错误**：用 `git log` 去查差异。两个 `_vendor/` 树都是

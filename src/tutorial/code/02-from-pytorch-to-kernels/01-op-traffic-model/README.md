@@ -84,9 +84,9 @@ AdamW step（7.00B 参数, state fp32, grad bf16）         105 GFLOP  182.00 GB
 
 ## 已知局限
 
-* 只统计「算法理论最少」的访存，真实实现的高于这个下界；本脚本给出的是**乐观下界**。
+* 只统计“算法理论最少”的访存，真实实现的高于这个下界；本脚本给出的是**乐观下界**。
 * 不考虑 cache 命中、kernel 启动开销、尾部效应；TileOPs 的 roofline 文档把这类情形
-  单独标为「latency-bound」，本脚本不做这个判断。
+  单独标为“latency-bound”，本脚本不做这个判断。
 * 超越函数在账本上按 1 FLOP 记（TileOPs 的口径），真实硬件上 SFU 的吞吐与 FMA 差很多，
   所以 `exp/tanh` 密集的算子（softmax、SiLU）实际会更慢。
 * LayerNorm 的 8 FLOP/元素、AdamW 的 15 FLOP/参数都是本书口径的粗估，用来说明量级。

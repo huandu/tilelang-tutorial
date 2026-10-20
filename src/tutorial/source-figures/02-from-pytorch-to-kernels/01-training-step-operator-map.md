@@ -62,6 +62,6 @@ flowchart TB
 
 * 优化器的状态张量与公式：`../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/document/detail/canncommercial/canncommercial_900_API_aolapi_context_ops-nn_aclnnApplyAdamW_md.md:25-60`
   （CANN 官方算子文档，`aclnnApplyAdamW` 的 `varRef/mRef/vRef` 与公式）。
-* 「反向 ≈ 2 倍前向」的推导见正文 1.1 节（对单个 GEMM 逐项做加法）。
+* “反向 ≈ 2 倍前向”的推导见正文 1.1 节（对单个 GEMM 逐项做加法）。
 * 各阶段占比的具体数字由 `code/02-step-budget/step_budget.py` 复算，属本书的粗模型推导，
   **不是实测**。

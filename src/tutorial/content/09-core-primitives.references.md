@@ -39,7 +39,7 @@
 | S13 | `_vendor/tilelang-v0.1.15/tilelang/ascend/language/gemm_op.py:89-107,168-210` | 昇腾 L0A/L0B/L0C → 专用 L0 MAD 组装；`unit_flag_ctrl` | 已核验（2026-10-01） |
 | S14 | `_vendor/tilelang-v0.1.15/tilelang/language/reduce_op.py:13-16,25-173,176-259,479-524` | `T.reduce_*` 前端、scope 分支矩阵、`clear` 语义、`warp_reduce_*` | 已核验（2026-10-01） |
 | S15 | `_vendor/tilelang-v0.1.15/src/op/reduce.cc:78-110,185-188,212-217,224-247,245` | `ReduceOp` 构造、workspace 注释、lowering 入口、layout 冲突检查、op 注册 | 已核验（2026-10-01） |
-| S16 | `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/reduce.h:211-238,240-253,279-296` | `tl::AllReduce` 文档、模板与 4 条 `static_assert`、butterfly 实现（≥32 shared / <32 shuffle） | 已核验（2026-10-01） |
+| S16 | `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/reduce.h:211-238,240-253,279-295` | `tl::AllReduce` 文档、模板与 4 条 `static_assert`、butterfly 实现（≥32 shared / <32 shuffle） | 已核验（2026-10-01） |
 | S17 | `_vendor/tilelang-v0.1.15/tilelang/language/atomic.py:13-23,39-122,125-208,211-311,314-387,390-492,495-506` | 原子操作的标量/tile-region 两条路径、`memory_order` id 映射、`return_prev` 限制、`atomic_addx2/x4`、load/store/or | 已核验（2026-10-01） |
 | S18 | `_vendor/tilelang-v0.1.15/tilelang/cuda/language/atomic.py:12-50` | CUDA 侧 `use_tma`（sm90+ TMA `cp.reduce`） | 已核验（2026-10-01） |
 | S19 | `_vendor/tilelang-v0.1.15/src/op/atomic_add.cc:94-129,138`；`src/op/atomic_reduce.cc:162,167`；`src/cuda/op/atomic_add.cc:36-62` | `AtomicAdd` 节点与注册、`AtomicMax/Min` 注册、TMA 原子加的 dtype 白名单 | 已核验（2026-10-01） |
@@ -60,19 +60,19 @@
 | id | 引用位置 | 用途 | 核验方式与状态 |
 | --- | --- | --- | --- |
 | S31 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/ascend_tile.py:313-341,343-386,389-410,412-450,452-606,608-705,707-855,884-910,967-1150,1150-1470,1572-1620,1616-1660,1661-1711,1837-1926,1976-2310,2302-2410` | `T.tile.*` 全量：`atomic_add`/`fill`/`clear`/`arith_progression`/`sort`/`merge_sort`/`topk`/`gather*`/`select`/`brcb`/`binary_op` 与一元、标量、compare、transpose、broadcast | 已核验（2026-10-01）：`grep -n "^def "` 得到全部定义行，逐段阅读；**未运行** |
-| S32 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/__init__.py:86` | `from . import ascend_tile as tile`——`T.tile` 命名空间的来源 | 已核验（2026-10-01） |
+| S32 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/__init__.py:86` | `from . import ascend_tile as tile`，`T.tile` 命名空间的来源 | 已核验（2026-10-01） |
 | S33 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/reduce_ascend.py`（`def reduce_sum` 起） | 适配器版 `T.reduce_*` 的 `real_shape` / `tmp` 扩展 | 已核验（2026-10-01）：`grep -n "def reduce_sum"` 与签名阅读 |
 | S34 | `_vendor/tilelang-ascend-v0.1.2.000/src/op/ascend.cc:95-110,740-780,975-1260` | `tl.ascend_atomic_add` 的约束（dst 必须 global、src 必须 UB/L0C）、`tl.ascend_*` 内建 op 的定义 | 已核验（2026-10-01） |
 | S35 | `_vendor/tilelang-ascend-v0.1.2.000/src/target/codegen_ascend.cc:522-630` | `ascend_add`/`compare`/`gather`/`transpose`/`sort`/`topk`/`select` 的 C++ 代码生成分支 | 已核验（2026-10-01） |
 | S36 | `_vendor/tilelang-ascend-v0.1.2.000/src/tl_templates/ascend/common.h:255-290` | `atomic_add_ub_to_gm` / `atomic_add_l0c_to_gm`：`AscendC::SetAtomicAdd<T>()` 包裹的写回 | 已核验（2026-10-01） |
-| S37 | `_vendor/tilelang-ascend-v0.1.2.000/docs/language_ref/tilelibrary.md:40-63,64-100,133-175,176-187,206-209` | 适配器语言参考：`T.copy`（含「越界补零」）、`T.gemm` 约束、reduce、`tmp` arena 规则、`T.clear T.fill`「转成 `T.Parallel`」 | 已核验（2026-10-01）：本地全文 217 行 |
+| S37 | `_vendor/tilelang-ascend-v0.1.2.000/docs/language_ref/tilelibrary.md:40-63,64-100,133-175,176-187,206-209` | 适配器语言参考：`T.copy`（含“越界补零”）、`T.gemm` 约束、reduce、`tmp` arena 规则、`T.clear T.fill`“转成 `T.Parallel`” | 已核验（2026-10-01）：本地全文 217 行 |
 | S38 | `_vendor/tilelang-ascend-v0.1.2.000/docs/TileLang-Ascend Programming Guide.md:481-520,601-700,740-935,989-1160,1397-1520,1502-1540` | Developer / Expert 两种模式、数据搬运与计算原语、reduce 的 `clear=False` merge 语义、`T.tile.*` 数学计算汇总表 | 已核验（2026-10-01）：本地全文 2596 行；**未在 NPU 上运行** |
-| S39 | `_vendor/tilelang-ascend-v0.1.2.000/.agents/skills/tilelang-ascend-tile-api/SKILL.md:1-60` | `T.tile.xxx` 的开发流程与「优先新增 Ascend 专属 API、不要改全局 API」的设计约定 | 已核验（2026-10-01） |
+| S39 | `_vendor/tilelang-ascend-v0.1.2.000/.agents/skills/tilelang-ascend-tile-api/SKILL.md:1-60` | `T.tile.xxx` 的开发流程与“优先新增 Ascend 专属 API、不要改全局 API”的设计约定 | 已核验（2026-10-01） |
 | S40 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/ascend_tile.py` 全文 3112 行 | 章节内所有 `T.tile.*` 行号的分母 | 已核验（2026-10-01）：`wc -l` |
 
 > 说明：S37 里该 tag 自带的 `docs/api_docs/` **只有** `T.copy.md` 与 `T.gemm_v0.md`
 > 两个文件；本章引用的其余 `T.tile.*` 逐 API 文档来自 corpus 的同一仓库快照（见 R6），
-> 其分支/commit 与锁定 tag 不同。两个快照的差异已在「三、资料之间的版本差异」中登记。
+> 其分支/commit 与锁定 tag 不同。两个快照的差异已在“三、资料之间的版本差异”中登记。
 
 ---
 
@@ -82,13 +82,13 @@
 
 | id | 本地路径 | 上游链接 | 用途 | 核验状态 |
 | --- | --- | --- | --- | --- |
-| R1 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/programming_guides/instructions.md` | https://tilelang.com/ | 原语分类；`T.copy` 的同步语义与「可降级为 SIMT/LDSM/TMA/cp.async」；`T.async_copy` 不自动插 wait；`T.gemm`/`T.gemm_blockscaled` 后端归属 | 已核验（2026-10-01）：本地为站点源文件全文 |
-| R2 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/programming_guides/language_basics.md:164-182` | https://tilelang.com/ | `T.copy` 用法与「编译期做合并与 scope 相关 lowering」 | 已核验（2026-10-01） |
+| R1 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/programming_guides/instructions.md` | https://tilelang.com/ | 原语分类；`T.copy` 的同步语义与“可降级为 SIMT/LDSM/TMA/cp.async”；`T.async_copy` 不自动插 wait；`T.gemm`/`T.gemm_blockscaled` 后端归属 | 已核验（2026-10-01）：本地为站点源文件全文 |
+| R2 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/programming_guides/language_basics.md:164-182` | https://tilelang.com/ | `T.copy` 用法与“编译期做合并与 scope 相关 lowering” | 已核验（2026-10-01） |
 | R3 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/matmul.md:60,95-105,198-207,245-248` | https://tilelang.com/ | `T.copy`/`T.gemm`/`T.Pipelined` 组合的官方 GEMM 骨架 | 已核验（2026-10-01） |
 | R4 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/elementwise.md:100-115,214-254` | https://tilelang.com/ | 边界检查的代价；显式 `T.copy` 到寄存器的写法 | 已核验（2026-10-01）；**文档自带 experimental 警告** |
 | R5 | `../tilelang-corpus/07-tilelang-ascend-adapter/SUMMARY.md` | — | 昇腾两条后端路线、适配器仓库定位、编程指南骨架（Developer = tile library / Expert = thread+搬运原语） | 已核验（2026-10-01）：本地全文 |
 | R6 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/api_docs/`（20 个 `.md`：`T.copy`、`T.gemm_v0`、`T.reduce_{sum,max,min}`、`T.tile.{add,sub,mul,div,select,compare,gather,sort,merge_sort,topk,transpose,broadcast,atomic_add,arith_progression,createvecindex}`） | https://github.com/tile-ai/tilelang-ascend（`ascendc_pto` 分支） | `T.tile.*` 的逐 API 语义、dtype/rank 支持、约束与示例 | 已核验（2026-10-01）：本地为该快照的仓库工作树；快照分支 `ascendc_pto @ cbc67f2`，**与 VERSIONS 锁定的 `v0.1.2.000-release` tag 不是同一个 commit** |
-| R7 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/language_ref/tilelibrary.md` | 同上 | `T.copy` 的「Zero will be padded if we detect the load is out of boundary」、`T.gemm` 的 K 轴 32 倍数约束、workspace arena 规则 | 已核验（2026-10-01）：本地 188 行；**与 R6 不同分支** |
+| R7 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/language_ref/tilelibrary.md` | 同上 | `T.copy` 的“Zero will be padded if we detect the load is out of boundary”、`T.gemm` 的 K 轴 32 倍数约束、workspace arena 规则 | 已核验（2026-10-01）：本地 188 行；**与 R6 不同分支** |
 | R8 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/TileLang-Ascend Programming Guide.md` | 同上 | §4.1 Developer 模式（内存/搬运/计算/调度原语）、§4.2 Expert 模式、reduce 的 `clear=False` merge 规则 | 已核验（2026-10-01）：本地全文 |
 | R9 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/tilelang/language/ascend_tile.py` | 同上 | R6 文档对应的前端实现（3263 行，与 S31 的 3112 行不同版本） | 已核验（2026-10-01）：`diff` 确认与锁定 tag 版本不同 |
 | R10 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/lower_trace.md` | https://tilelang.com/ | `TL_LOWER_TRACE`：每个 pass 的前后 IR diff + 最终 codegen 源码落盘（本章 §5.3 第 2 条路径） | 已核验（2026-10-01）：本地为站点源文件全文 |
@@ -98,7 +98,7 @@
 
 ## 三、资料之间的版本差异（本章特别标注）
 
-本章有三处必须让读者知道的「同名不同版本」，全部已用 `diff`/`grep` 核验：
+本章有三处必须让读者知道的“同名不同版本”，全部已用 `diff`/`grep` 核验：
 
 | 对象 | 锁定版本（本章引用行号以此为准） | corpus 快照 | 影响 |
 | --- | --- | --- | --- |
@@ -111,13 +111,13 @@
 ## 四、本章未采用的资料与建议来源
 
 本章刻意**没有**给出下列内容，因为在本 corpus 与锁定源码里找不到可复核的依据。
-这是「不知道就写不知道」的落实，不是遗漏：
+这是“不知道就写不知道”的落实，不是遗漏：
 
 | 缺什么 | 为什么需要 | 建议来源 |
 | --- | --- | --- |
-| `T.copy` 各降级路径在真实硬件上的实测吞吐/延迟 | 本章只能给「指令类别」，不能给性能结论 | 作者在 H100/B200 与 Atlas 350 上跑成对的 micro-benchmark，并公开代码与测量口径 |
-| 昇腾 `T.tile.sort`/`topk` 的临时 workspace 实际容量 | 只拿到「保守启发式」公式（`library.md:64-100`），没有官方最小值 | 华为 CANN 对应版本的 `LocalTensor` 排序接口文档，或真实设备上的容量实测 |
-| `T.dual_copy` 在 L0C→UB 双目标模式下的有效带宽增益 | README 只说「两个 AIV 各处理一半」，没有数字 | 昇腾 950 上的 N 分裂/M 分裂对照实验 |
+| `T.copy` 各降级路径在真实硬件上的实测吞吐/延迟 | 本章只能给“指令类别”，不能给性能结论 | 作者在 H100/B200 与 Atlas 350 上跑成对的 micro-benchmark，并公开代码与测量口径 |
+| 昇腾 `T.tile.sort`/`topk` 的临时 workspace 实际容量 | 只拿到“保守启发式”公式（`library.md:64-100`），没有官方最小值 | 华为 CANN 对应版本的 `LocalTensor` 排序接口文档，或真实设备上的容量实测 |
+| `T.dual_copy` 在 L0C→UB 双目标模式下的有效带宽增益 | README 只说“两个 AIV 各处理一半”，没有数字 | 昇腾 950 上的 N 分裂/M 分裂对照实验 |
 | v0.1.15 里 `T.tile.*` 是否已有移植计划 | 决定读者该以哪个仓库为准 | `tile-ai/tilelang` 与 `tile-ai/tilelang-ascend` 的 issue/PR；本章不做推测 |
 
 ## 五、引用规则提醒
@@ -125,5 +125,5 @@
 * 源码引用一律写成 `_vendor/tilelang-v0.1.15/<相对路径>` 或
   `_vendor/tilelang-ascend-v0.1.2.000/<相对路径>`，并给出行号区间。
 * 资料引用一律写成 `../tilelang-corpus/<类别>/raw/<文件>`。
-* 本章所有「v0.1.15 里有没有某某」的结论都在锁定工作树上核验过；核验命令写在对应行。
-* 「已核验（静态）」≠「运行验证」。本章没有任何运行验证。
+* 本章所有“v0.1.15 里有没有某某”的结论都在锁定工作树上核验过；核验命令写在对应行。
+* “已核验（静态）”≠“运行验证”。本章没有任何运行验证。

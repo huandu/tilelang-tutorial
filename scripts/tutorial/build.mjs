@@ -66,7 +66,7 @@ const PARTS = [
     id: 'part-4',
     label: '第四部分 · 前沿与参与',
     title: '未合入的方向与如何贡献',
-    blurb: '区分「已发布 / 只在 main / 只在 PR」三种状态，然后给出从 issue 到 PR 的完整贡献路径。',
+    blurb: '区分“已发布 / 只在 main / 只在 PR”三种状态，然后给出从 issue 到 PR 的完整贡献路径。',
     from: '30',
     to: '31',
   },
@@ -791,9 +791,11 @@ async function main() {
       )) {
         const relative = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
         if (entry.isDirectory()) {
+          if (entry.name === '__pycache__') continue;
           await walk(path.join(current, entry.name), relative);
           continue;
         }
+        if (!entry.isFile() || entry.name.endsWith('.pyc')) continue;
         const raw = await readFile(path.join(current, entry.name), 'utf8');
         files.push({ path: relative, content: raw, bytes: raw.length });
       }
@@ -821,6 +823,7 @@ async function main() {
     const figures = await loadFigures(slug, path.join(SRC, 'source-figures', slug));
     const codeFiles = await publishCode(slug);
     const figureIds = new Set(figures.map((figure) => figure.id));
+    const firstFigureId = figures[0]?.id;
     const codePaths = new Set(codeFiles.map((file) => file.path));
     const contextResolve = createResolver(references, {
       vendorRoot,
@@ -828,6 +831,7 @@ async function main() {
       sourceUrls,
       exists: (target) => existsSync(target),
       figureIds,
+      firstFigureId,
       codeFiles: codePaths,
     });
     const rawHtml = renderChapter(md, chapterMd, figures);

@@ -19,18 +19,18 @@
 
 ## 这张图想说什么
 
-* 访存延迟比算术延迟大两个数量级（CUDA Best Practices Guide：未缓存访存「hundreds of
-  clock cycles」，算术指令约 4 周期，compute capability 7.0）。所以优化方向是
+* 访存延迟比算术延迟大两个数量级（CUDA Best Practices Guide：未缓存访存“hundreds of
+  clock cycles”，算术指令约 4 周期，compute capability 7.0）。所以优化方向是
   **让数据先靠近计算单元、并在片上被复用**。
 * 越靠近计算单元的存储容量越小，于是只能分块（tile）；分块之后想重叠搬运与计算，
-  就需要多缓冲——而多缓冲又要和片上容量、同步一起算。
+  就需要多缓冲。而多缓冲又要和片上容量、同步一起算。
 
 ## 事实来源
 
 * 延迟对比：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-best-practices.md`。
 * 层级顺序：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`。
 * 昇腾侧各级存储的角色见 `02-ascend-hierarchy.md`。
-* 图中标注「具体值未确认」的地方，本章没有找到可跨型号引用的公开延迟数字，**不填估计值**。
+* 图中标注“具体值未确认”的地方，本章没有找到可跨型号引用的公开延迟数字，**不填估计值**。
 
 ## 许可
 

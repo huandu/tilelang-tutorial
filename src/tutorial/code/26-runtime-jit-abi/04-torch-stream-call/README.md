@@ -2,7 +2,7 @@
 
 ## 目的
 
-验证正文「torch 集成」一节的两条论断：
+验证正文“torch 集成”一节的两条论断：
 
 1. 默认执行后端（`tvm_ffi`）在**调用时**读 PyTorch 的 current stream，
    并把 kernel 提交到那条 stream 上（`tilelang/jit/adapter/base.py:61-101`）；
@@ -36,7 +36,7 @@ note: removing side.synchronize() above makes the comparison racy.
 
 * 两次比较都为 `True`；
 * `out.device` / `out.dtype` / `out.shape` 与 kernel 声明一致；
-* 「反例」注释块保持注释状态——它的价值在于说明**去掉同步会发生什么**，
+* “反例”注释块保持注释状态——它的价值在于说明**去掉同步会发生什么**，
   而不是作为可运行的代码。
 
 ## 反例说明了什么
@@ -49,11 +49,11 @@ print(torch.allclose(out_side, ref))   # 没有 sync
 
 `allclose` 自己也要在 device 上跑；它提交在**默认 stream** 上，而 kernel 在 `side` 上。
 两条 stream 之间没有依赖边，`allclose` 可能读到还没写完的输出。
-症状是「偶尔错、偶尔对」，单次运行几乎发现不了；只有 `N` 次重复 + 每次强制同步才能稳定复现。
+症状是“偶尔错、偶尔对”，单次运行几乎发现不了；只有 `N` 次重复 + 每次强制同步才能稳定复现。
 
 ## 作者实际做到的验证级别
 
 **仅静态核对**：`python3 -m py_compile` 通过；`tilelang.jit(out_idx=...)`、
 `T.Kernel(...)`、`JITKernel.__call__` 等 API 名与 `_vendor/tilelang-v0.1.15/` 逐个比对。
-本机是 macOS，无 CUDA GPU、未安装 tilelang / torch，**未运行**。上面「期望输出」
+本机是 macOS，无 CUDA GPU、未安装 tilelang / torch，**未运行**。上面“期望输出”
 是按 API 语义写出的应然结果，不是实测记录。

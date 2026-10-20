@@ -61,10 +61,10 @@ TL_LOWER_TRACE=html     python3 lower_num_stages.py --num-stages 3
 
 1. 对 `num_stages=N ≥ 2`，`software_pipeline_stage` 的最后一个元素应等于 `N - 1`，
    前两个（两条 copy）为 0；
-2. `num_stages=1` 时上游 planner 仍会给出 `[0, 0, 1]`（「把 copy 挪到 order 开头并
-   整体减一」这一步要求 `num_stages ≥ 2`，见
+2. `num_stages=1` 时上游 planner 仍会给出 `[0, 0, 1]`（“把 copy 挪到 order 开头并
+   整体减一”这一步要求 `num_stages ≥ 2`，见
    `_vendor/tilelang-v0.1.15/src/transform/pipeline_planning.cc:1266-1277`），
-   所以**不要**把「深度 1」当成「深度 0」；
+   所以**不要**把“深度 1”当成“深度 0”；
 3. `num_stages=0` 时循环上不应出现任何 `software_pipeline_stage` 注解——参数在
    `src/ir.cc:138-144` 就被丢掉了；
 4. 生成 CUDA 里 A/B 的 shared 数组首维应随 N 增长（`N` 或 `N-1`，取决于
@@ -87,7 +87,7 @@ TL_LOWER_TRACE=html     python3 lower_num_stages.py --num-stages 3
 
 ## 在有卡机器上补做性能部分
 
-IR 部分不需要卡；只有「多一个 stage 到底快多少」需要。步骤：
+IR 部分不需要卡；只有“多一个 stage 到底快多少”需要。步骤：
 
 1. 用同一份 kernel（把脚本里的 `T.Pipelined` 换成 §7 的完整 GEMM），
    `@tilelang.jit` 编译 `num_stages ∈ {1, 2, 3, 4, 6}`；

@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "q1",
-      "stem": "本书把「机器平衡点」定义为峰值算力与峰值带宽的比值。它的单位是什么？",
+      "stem": "本书把“机器平衡点”定义为峰值算力与峰值带宽的比值。它的单位是什么？",
       "options": ["FLOP/Byte", "Byte/FLOP", "秒/FLOP", "无量纲的比值"],
       "answer": 0,
       "explain": "平衡点 = 峰值算力 ÷ 峰值带宽，单位是 FLOP/Byte（见 §1.3）；H100 的粗估约 333 FLOP/Byte。B 是最容易误选的选项，它把分子分母写反了。"
@@ -22,7 +22,7 @@
     },
     {
       "id": "q3",
-      "stem": "按 §2.3 的三要素定义，如果一块数据只有形状与存储位置、缺了「物理布局（归属）」，它退化成了什么？",
+      "stem": "按 §2.3 的三要素定义，如果一块数据只有形状与存储位置、缺了“物理布局（归属）”，它退化成了什么？",
       "options": [
         "一个循环分块（loop tiling）",
         "一个 fragment",
@@ -30,7 +30,7 @@
         "一个 memory-bound 的算子"
       ],
       "answer": 2,
-      "explain": "§2.3 明确写了：少了第 3 条（物理布局），tile 就只是「一块数据」；少的是第 2 条（存储位置）时才退化成「循环分块」。A 正是常见误选，两句话很容易记反。"
+      "explain": "§2.3 明确写了：少了第 3 条（物理布局），tile 就只是“一块数据”；少的是第 2 条（存储位置）时才退化成“循环分块”。A 正是常见误选，两句话很容易记反。"
     },
     {
       "id": "q4",
@@ -42,7 +42,7 @@
         "两边不是一一对应：L0A/L0B/L0C 在 NV 侧没有同名对应物，NV 的 shared memory 在昇腾侧要拆成 L1 与 UB 两种角色"
       ],
       "answer": 3,
-      "explain": "§2.1 的第一个「值得记住的细节」就是两边不一一对应。把两套层级当成同一张图（A、C）是最常见的误解，也是第 6 章要展开的内容。"
+      "explain": "§2.1 的第一个“值得记住的细节”就是两边不一一对应。把两套层级当成同一张图（A、C）是最常见的误解，也是第 6 章要展开的内容。"
     },
     {
       "id": "q5",
@@ -54,11 +54,11 @@
         "需要更多显式决策，抽象仍在快速演化"
       ],
       "answer": 1,
-      "explain": "「tile 与调度绑定、硬件资源信息无法显式表达」是 Triton 的遗留问题；A 属于 CUDA，D 属于 TileLang。B 之所以容易误选，是因为它听起来像对所有块级方案都成立。"
+      "explain": "“tile 与调度绑定、硬件资源信息无法显式表达”是 Triton 的遗留问题；A 属于 CUDA，D 属于 TileLang。B 之所以容易误选，是因为它听起来像对所有块级方案都成立。"
     },
     {
       "id": "q6",
-      "stem": "TileLang 论文摘要说的「解耦」，究竟是把什么从什么里解耦出来？",
+      "stem": "TileLang 论文摘要说的“解耦”，究竟是把什么从什么里解耦出来？",
       "options": [
         "把 scheduling space（thread binding / layout / tensorize / pipeline）从 dataflow 里解耦出来",
         "把反向计算从正向计算里解耦出来",
@@ -66,7 +66,7 @@
         "把 Python 前端从 C++ 后端里解耦出来"
       ],
       "answer": 0,
-      "explain": "原文是「decouples scheduling space (thread binding, layout, tensorize and pipeline) from dataflow」（见 §4.4）。B、C、D 描述的都是软件栈里真实存在的分层，但它们不是这篇论文说的那一次解耦。"
+      "explain": "原文是“decouples scheduling space (thread binding, layout, tensorize and pipeline) from dataflow”（见 §4.4）。B、C、D 描述的都是软件栈里真实存在的分层，但它们不是这篇论文说的那一次解耦。"
     },
     {
       "id": "q7",
@@ -78,7 +78,7 @@
         "三层互斥，一个 kernel 只能用其中一层"
       ],
       "answer": 1,
-      "explain": "§4.4 的表格写明 developer 层「稳定，日常 90% 的代码在这一层」，beginner 层则是「not yet fully implemented」。A 是本章反复提醒的坑（见 §5.2 第 6 条）。"
+      "explain": "§4.4 的表格写明 developer 层“稳定，日常 90% 的代码在这一层”，beginner 层则是“not yet fully implemented”。A 是本章反复提醒的坑（见 §5.2 第 6 条）。"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 ## 目的
 
-对应正文第 3.4 节「如何观察 layout」。把三种 layout 画成图，学会读它：
+对应正文第 3.4 节“如何观察 layout”。把三种 layout 画成图，学会读它：
 
 1. 手写的 `T.Layout([4,4], lambda i, j: (j, i))` —— 一个转置映射；
 2. 手写的 `T.Fragment([8,8], forward_fn=lambda i, j: (4*i + j//2, j % 2))`
@@ -33,7 +33,7 @@ python3 plot_layout_demo.py
 * `view="output"`：格子代表**输出**空间，格子里写回输入坐标。
 * Fragment 图：格子按线程号染色，标签是 `T<线程> L<槽>`；8×8 的 fragment 应显示
   32 种颜色、每种颜色 2 格。
-* Swizzle 图：输出侧的格子分布应呈现「按行异或」的错位，而不是逐行相同。
+* Swizzle 图：输出侧的格子分布应呈现“按行异或”的错位，而不是逐行相同。
 
 ## API 依赖（逐个在 v0.1.15 里核对过）
 
@@ -52,7 +52,7 @@ python3 plot_layout_demo.py
 * `python3 -m py_compile plot_layout_demo.py` 通过；
 * 每个 API 的存在性与签名逐个在 `_vendor/tilelang-v0.1.15/` 中比对；
 * **未在本机运行**（本机无 TileLang、无 GPU）。运行后请以实际产物为准，不要引用本
-  README 里的「期望看到什么」当作已观测结果。
+  README 里的“期望看到什么”当作已观测结果。
 
 ## 注意：与仓库示例的一处 API 漂移
 
@@ -61,4 +61,4 @@ python3 plot_layout_demo.py
 签名是 `make_full_bank_swizzled_layout(buffer)`（只接一个 buffer；见
 `tilelang/layout/swizzle.py:94-102`，也见 `testing/python/layout/test_tilelang_bank_swizzle_expand.py`
 的用法）。本示例按**库签名**书写。这个不一致已登记在 `../../references.md` 的
-「待补资料 / 待确认」小节。
+“待补资料 / 待确认”小节。

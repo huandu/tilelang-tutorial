@@ -7,8 +7,17 @@
   "nodeMaxEm": 24,
   "caption": "每处理一块 key 只维护三个每行状态：运行最大值 m、分母 ℓ、未归一化分子 O。",
   "nodes": [
-    { "id": "s0", "label": "初始", "sub": "m = −inf，ℓ = 0，O = 0", "tone": "muted" },
-    { "id": "b1", "label": "块 1：S₁ = Q·K₁ᵀ·s", "tone": "compute" },
+    {
+      "id": "s0",
+      "label": "初始",
+      "sub": "m = −inf，ℓ = 0，O = 0",
+      "tone": "muted"
+    },
+    {
+      "id": "b1",
+      "label": "块 1：S₁ = Q·K₁ᵀ·s",
+      "tone": "compute"
+    },
     {
       "id": "m1",
       "label": "m₁ = max(m₀, rowmax(S₁))",
@@ -21,7 +30,11 @@
       "sub": "O = c₁·O + exp(S₁ − m₁)·V₁",
       "tone": "compute"
     },
-    { "id": "b2", "label": "块 2：S₂ = Q·K₂ᵀ·s", "tone": "compute" },
+    {
+      "id": "b2",
+      "label": "块 2：S₂ = Q·K₂ᵀ·s",
+      "tone": "compute"
+    },
     {
       "id": "m2",
       "label": "m₂ = max(m₁, rowmax(S₂))",
@@ -34,7 +47,11 @@
       "sub": "O = c₂·O + exp(S₂ − m₂)·V₂",
       "tone": "compute"
     },
-    { "id": "d", "label": "输出 O / ℓ", "tone": "accent" },
+    {
+      "id": "d",
+      "label": "输出 O / ℓ",
+      "tone": "accent"
+    },
     {
       "id": "x",
       "label": "与完整 softmax 完全等价",
@@ -43,18 +60,42 @@
     }
   ],
   "edges": [
-    { "from": "s0", "to": "b1" },
-    { "from": "b1", "to": "m1" },
-    { "from": "m1", "to": "a1" },
-    { "from": "a1", "to": "b2" },
-    { "from": "b2", "to": "m2" },
-    { "from": "m2", "to": "a2" },
-    { "from": "a2", "to": "d" },
-    { "from": "d", "to": "x" }
+    {
+      "from": "s0",
+      "to": "b1"
+    },
+    {
+      "from": "b1",
+      "to": "m1"
+    },
+    {
+      "from": "m1",
+      "to": "a1"
+    },
+    {
+      "from": "a1",
+      "to": "b2"
+    },
+    {
+      "from": "b2",
+      "to": "m2"
+    },
+    {
+      "from": "m2",
+      "to": "a2"
+    },
+    {
+      "from": "a2",
+      "to": "d"
+    },
+    {
+      "from": "d",
+      "to": "x"
+    }
   ],
   "notes": [
     "c = exp(m_prev − m_new) 永远落在 (0, 1]：新块更大就等比缩小旧累加器，没有更大就 c = 1",
     "边界：某行所有分数都被 mask 掉时 m_prev = m_new = −∞，c = exp2(NaN) = NaN 会污染 acc_o，需要 check_inf",
-    "ℓ 和 O 并不单调——但两者被同一个 c 缩放，所以它们的比值始终不变"
+    "ℓ 和 O 并不单调。但两者被同一个 c 缩放，所以它们的比值始终不变"
   ]
 }

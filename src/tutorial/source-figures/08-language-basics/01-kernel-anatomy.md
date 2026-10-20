@@ -45,7 +45,7 @@ flowchart TB
 ## 关键分工
 
 * **你写的是块（tile）级的意图**，不是线程级的指令。`T.Kernel` 之内默认是
-  「一个块要做的全部事」，`T.Parallel` 的循环边界是**逻辑迭代空间**，
+  “一个块要做的全部事”，`T.Parallel` 的循环边界是**逻辑迭代空间**，
   线程映射由布局推导决定（第 3、6 节）。
 * **类型、内存作用域、迭代、控制流**这四件事必须显式写出来；它们直接决定
   IR 里的 `DataType`、`storage_scope`、`ForKind` 和语句形状。
@@ -57,7 +57,7 @@ flowchart TB
 
 * `_vendor/tilelang-v0.1.15/tilelang/cuda/language/kernel.py:13-55`（`T.Kernel`）
 * `_vendor/tilelang-v0.1.15/src/ir.cc:236-262`（网格绑定与 `blockIdx` 标签）
-* `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:49-192`（分配函数与 scope）
+* `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:49-191`（分配函数与 scope）
 * `_vendor/tilelang-v0.1.15/tilelang/language/loop.py:13-357`（循环构造子）
 * `_vendor/tilelang-v0.1.15/docs/programming_guides/python_compatibility.md`
 

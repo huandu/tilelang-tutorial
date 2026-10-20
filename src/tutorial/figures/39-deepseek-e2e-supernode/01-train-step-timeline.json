@@ -50,7 +50,7 @@
   ],
   "notes": [
     "dispatch / combine 是零 FLOP 的搬运，但字节量（每 token 每方向 k·d·b）与这一层 GEMM 的访存同量级。",
-    "mHC pre / post 是每层都要执行的「外壳」；Engram 是挂在残差流上的旁路（第 34 章）。",
+    "mHC pre / post 是每层都要执行的“外壳”；Engram 是挂在残差流上的旁路（第 34 章）。",
     "反向不在这张图里：combine 的反向是 dispatch、dispatch 的反向是 combine，另有梯度归约与多层重算。"
   ]
 }

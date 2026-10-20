@@ -5,7 +5,7 @@
   "direction": "TB",
   "nodeMaxEm": 24,
   "inlineQuote": "[fig-04] 一次推理请求（prefill / decode）里各组件的位置",
-  "caption": "DSA 把推理链变成「先打分、再筛选、再稀疏计算」；decode 每生成一个 token 循环一次。",
+  "caption": "DSA 把推理链变成“先打分、再筛选、再稀疏计算”；decode 每生成一个 token 循环一次。",
   "nodes": [
     { "id": "tokens", "label": "输入 token", "sub": "prompt 或上一步生成的 token" },
     {

@@ -11,7 +11,7 @@ flowchart LR
     E --> F["fragment(dst)<br/>形状 [M]"]
 ```
 
-`clear` 决定的是「行和要不要和 dst 里已有的值合并」：
+`clear` 决定的是“行和要不要和 dst 里已有的值合并”：
 
 ```text
 clear = True （默认）
@@ -39,7 +39,7 @@ clear = False
 **来源**：`_vendor/tilelang-v0.1.15/tilelang/language/reduce_op.py:94-171`（scope 分支与
 `clear` 处理）、`:230-259`（`reduce_sum` 的 `clear` 说明）、
 `_vendor/tilelang-v0.1.15/src/op/reduce.cc:168-198`（lowering 的行为说明）、
-`_vendor/tilelang-v0.1.15/src/tl_templates/cuda/reduce.h:211-253,279-296`
+`_vendor/tilelang-v0.1.15/src/tl_templates/cuda/reduce.h:211-253,279-295`
 （`AllReduce` 的两条路径与四条 `static_assert`）。
 
 **约束**：`threads` 必须能被 `scale` 整除，且 `threads / scale` 是 2 的幂。

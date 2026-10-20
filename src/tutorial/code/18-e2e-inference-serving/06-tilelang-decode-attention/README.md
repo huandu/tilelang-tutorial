@@ -5,7 +5,7 @@
 把 flash decoding 的两段结构写成可读的 TileLang 代码：
 
 1. **split 段**：把 KV 方向切成 `num_splits` 段，每段独立算一份
-   「已归一化的部分输出」`Output_partial` 与「本段的 lse」；
+   “已归一化的部分输出”`Output_partial` 与“本段的 lse”；
 2. **combine 段**：按 `ℓ_s / Σ ℓ` 加权合并（ℓ 由 lse 还原）。
 
 这个骨架相对官方示例做了三处简化，写在文件头注释里：只做 decode
@@ -47,7 +47,7 @@ print(mod.build())
 * **正确性判据**：与 `example_mha_inference.py` 或 `example_gqa_decode.py`
   的 `ref_program` 对齐，`torch.allclose(o, o_ref, atol=1e-2, rtol=1e-2)`；
   官方示例用的是相似度指标 `assert_similar(..., eps=1e-2)`。
-  还要与「不分 split 的单 kernel 版本」结果一致：split 只是并行化，
+  还要与“不分 split 的单 kernel 版本”结果一致：split 只是并行化，
   不改变数学。
 * **性能口径**：延迟用 `kernel.get_profiler().do_bench(warmup=500)`
   （官方示例的用法），或 `tilelang.profiler.do_bench`（默认 25 ms 预热、

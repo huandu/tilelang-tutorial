@@ -70,7 +70,7 @@
     }
   ],
   "notes": [
-    "对应习题 E9 的参考答案：原块里 UB 出现两次（Vector 在原地把结果写回 UB），这里合成一个节点表达「搬进 UB → ReLU → 写回 GM(C)」。",
+    "对应习题 E9 的参考答案：原块里 UB 出现两次（Vector 在原地把结果写回 UB），这里合成一个节点表达“搬进 UB → ReLU → 写回 GM(C)”。",
     "M 树里这一整段是 T.dual_copy(C_l0c, C_ub) + T.SimtVF 做 ReLU + T.dual_copy(C_ub, C[...]) 写回，set/wait 由编译器自动插入。"
   ],
   "inlineQuote": "GM(A), GM(B) --MTE2--> L1 --MTE1--> L0A/L0B --Cube--> L0C\n                                                        │  (L0C→UB 的通路)\n                                                        ▼"

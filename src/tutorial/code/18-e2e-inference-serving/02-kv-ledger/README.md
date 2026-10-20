@@ -2,12 +2,12 @@
 
 ## 目的
 
-回答「KV cache 到底占多少显存、paged KV 的块怎么算、并发数从哪来」：
+回答“KV cache 到底占多少显存、paged KV 的块怎么算、并发数从哪来”：
 
 1. 每 token / 每层 / 每条序列的 KV 字节数（GQA 4 个 KV head）；
 2. 与 MHA（28 个 KV head）对照，量化 GQA 省 7 倍的代价（算术强度）；
 3. paged KV 的块账与碎片上界；
-4. 80 GB 卡上「还能放几条序列」随 context 的变化。
+4. 80 GB 卡上“还能放几条序列”随 context 的变化。
 
 ## 运行前提
 
@@ -65,8 +65,8 @@ concurrency 与 context 的取舍（H100 80 GB，粗略）
 
 * 不含分配器碎片、对齐 padding、`block_table` 与序列长度数组等元数据；
   真实占用一定比账本大。
-* 80 GB 卡上的并发数是「权重 + KV」的估算，忽略激活、框架常驻内存、
+* 80 GB 卡上的并发数是“权重 + KV”的估算，忽略激活、框架常驻内存、
   CUDA context 与 TP 切分；真实可并发数要实测。
 * `hidden_size=3584 / head_dim=128 / intermediate_size=18944` 三个字段是
   由模型卡的参数量反推的（见 `../01-prefill-decode-roofline/`），
-  不是模型卡直接给出的字段；`../../references.md` 的「待补资料」里记了这一条。
+  不是模型卡直接给出的字段；`../../references.md` 的“待补资料”里记了这一条。

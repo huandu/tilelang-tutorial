@@ -3,8 +3,8 @@
 ## 目的
 
 正文 4.5 / 4.6 节的两张 pass 序列表格，就是本脚本的输出。它回答的是
-「`tilelang/cuda/pipeline.py` 与 `tilelang/ascend/pipeline.py` 实际按什么顺序跑 pass」，
-而不是「文档说应该按什么顺序」。
+“`tilelang/cuda/pipeline.py` 与 `tilelang/ascend/pipeline.py` 实际按什么顺序跑 pass”，
+而不是“文档说应该按什么顺序”。
 
 ## 为什么不能靠 import
 

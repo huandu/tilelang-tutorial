@@ -25,7 +25,7 @@
 ## 要点
 
 * **DSA 改变了推理链的形状**：先打分（②）再筛选（③）再稀疏计算（④），不再是
-  「一次稠密注意力」。
+  “一次稠密注意力”。
 * **各段的实现分属不同仓库**：② DeepGEMM-Ascend、③ DeepSelect、④ FlashMLA、
   常规算子 TileKernels、专家通信 DeepEP-Ascend。
 * **decode 只支持量化 KV cache**（FP8 / FP4），不支持 bfloat16 KV cache；

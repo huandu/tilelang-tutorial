@@ -18,11 +18,11 @@
       "stem": "关于 dtype，下面哪一句符合本章的说明？",
       "options": [
         "bfloat16 有 x2、x4、x8 等完整的向量形",
+        "'float16'、T.float16、torch.float16 三种写法会归一成同一个 tvm.DataType",
         "int4 与 float4 的每个元素都占一个字节",
-        "只要写在 kernel 里，dtype 一定会被自动推导，不需要声明",
-        "'float16'、T.float16、torch.float16 三种写法会归一成同一个 tvm.DataType"
+        "只要写在 kernel 里，dtype 一定会被自动推导，不需要声明"
       ],
-      "answer": 3,
+      "answer": 1,
       "explain": "见 §4.1、§4.2 与 §9.3：三种写法等价；bfloat16 只有 x2，没有 x4 及以上；int4 与 float4_e2m1fn 是 4 bit，一个字节存两个值。"
     },
     {
@@ -65,12 +65,12 @@
       "id": "q6",
       "stem": "关于 T.Parallel 的默认维度映射，下面哪句是对的？",
       "options": [
-        "extents 的个数与顺序直接声明了哪个维度给线程",
         "先按行优先展平，再按 lane → thread → 每线程串行切分，所以 nest 形状会影响访存能否合并",
+        "extents 的个数与顺序直接声明了哪个维度给线程",
         "所有迭代都会平均分给线程，nest 形状无所谓",
         "必须手写 loop_layout= 才能通过编译"
       ],
-      "answer": 1,
+      "answer": 0,
       "explain": "见 §6.3 与 §11.2：extents 是逻辑迭代空间；同一份工作换成不同 nest 形状时每线程次数相同，但 thread 0 拿到的逻辑下标不同，合并与否也就不同。不写 loop_layout= 时布局推导会自己推一个。"
     },
     {
@@ -78,11 +78,11 @@
       "stem": "要在 kernel 里做越界保护，例如只在该下标合法时才读取 X[gi]，应该怎么写？",
       "options": [
         "Y[gi] = T.Select(gi < N, X[gi], 0.0)，因为它更接近硬件 select",
-        "Y[gi] = T.if_then_else(gi < N, X[gi], 0.0)，它只求值被选中的那一边",
         "两种写法都可以，Select 在越界时会自动短路",
+        "Y[gi] = T.if_then_else(gi < N, X[gi], 0.0)，它只求值被选中的那一边",
         "先用 Python 的 if X[gi] is None: 判空再读"
       ],
-      "answer": 1,
+      "answer": 2,
       "explain": "见 §7.2 与 §11.3：Select 的两个操作数都会被求值，用它做越界保护照样会读越界。文档明确要求分支有副作用或涉及越界访存时用 if_then_else。"
     },
     {
@@ -91,11 +91,11 @@
       "options": [
         "因为 all_of 已经被删除，只能用 T.Select 代替",
         "因为 all_of 只能用在 while 里",
-        "因为 all_of 只接受一个 buffer 或 buffer 切片，多条件的与要用 and",
-        "因为 all_of 需要先用 T.dynamic 声明符号"
+        "因为 all_of 需要先用 T.dynamic 声明符号",
+        "因为 all_of 只接受一个 buffer 或 buffer 切片，多条件的与要用 and"
       ],
-      "answer": 2,
-      "explain": "见 §7.3：v0.1.15 的 all_of(buffer) 语义是「这个切片是否全为真」，测试里的用法是 T.all_of(BlockMask[by, bx, k, :])；多条件用 and / or 会降级成 tir.And / tir.Or。这是文档落后于源码的一处。"
+      "answer": 3,
+      "explain": "见 §7.3：v0.1.15 的 all_of(buffer) 语义是“这个切片是否全为真”，测试里的用法是 T.all_of(BlockMask[by, bx, k, :])；多条件用 and / or 会降级成 tir.And / tir.Or。这是文档落后于源码的一处。"
     }
   ]
 }

@@ -4,7 +4,7 @@
   "kind": "flow",
   "direction": "TB",
   "nodeMaxEm": 18,
-  "inlineQuote": "先看 dur_ns 与算术强度 —— 是 memory-bound 还是 compute-bound？（第 2 章的账要重算一遍）\n        │\n   ┌────┴─────────────────────────────────────────────┐",
+  "inlineQuote": "先看 dur_ns 与算术强度，是 memory-bound 还是 compute-bound？（第 2 章的账要重算一遍）\n        │\n   ┌────┴─────────────────────────────────────────────┐",
   "caption": "拿到 KernelProfile 后按这条顺序读：先分 compute-bound 与 memory-bound，再用 aic_mad、aic_mte1/2、aic_fixpipe、aiv_mte2/3 定位瓶颈在 Cube、搬运还是同步。",
   "nodes": [
     {
@@ -75,16 +75,46 @@
     }
   ],
   "edges": [
-    { "from": "d", "to": "p" },
-    { "from": "p", "to": "m" },
-    { "from": "p", "to": "v" },
-    { "from": "m", "to": "alg" },
-    { "from": "m", "to": "wait" },
-    { "from": "wait", "to": "gm2" },
-    { "from": "wait", "to": "l0l1" },
-    { "from": "wait", "to": "fix" },
-    { "from": "v", "to": "band" },
-    { "from": "v", "to": "vsync" }
+    {
+      "from": "d",
+      "to": "p"
+    },
+    {
+      "from": "p",
+      "to": "m"
+    },
+    {
+      "from": "p",
+      "to": "v"
+    },
+    {
+      "from": "m",
+      "to": "alg"
+    },
+    {
+      "from": "m",
+      "to": "wait"
+    },
+    {
+      "from": "wait",
+      "to": "gm2"
+    },
+    {
+      "from": "wait",
+      "to": "l0l1"
+    },
+    {
+      "from": "wait",
+      "to": "fix"
+    },
+    {
+      "from": "v",
+      "to": "band"
+    },
+    {
+      "from": "v",
+      "to": "vsync"
+    }
   ],
   "notes": [
     "分支的判据写在节点上：compute-bound 侧看 aic_mad，memory-bound 侧看 aiv_mte2 / aiv_mte3。",

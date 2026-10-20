@@ -123,6 +123,7 @@ function renderOverview(): void {
     card.dataset.read = isRead(entry) ? 'true' : 'false';
     const badge = card.querySelector<HTMLElement>('[data-card-status]');
     if (badge !== null) {
+      badge.hidden = entry === undefined;
       if (isRead(entry)) badge.textContent = '已读完';
       else if (entry !== undefined) badge.textContent = '在读';
       else badge.textContent = '';
@@ -359,10 +360,10 @@ function init(): void {
     save(progress);
     renderOverview();
     renderChapterPanel(slug);
-    markRead.textContent = entry.read ? '取消「已读完」标记' : '标记本章已读完';
+    markRead.textContent = entry.read ? '取消“已读完”标记' : '标记本章已读完';
   });
   if (markRead !== null && slug !== '') {
-    markRead.textContent = isRead(load().chapters[slug]) ? '取消「已读完」标记' : '标记本章已读完';
+    markRead.textContent = isRead(load().chapters[slug]) ? '取消“已读完”标记' : '标记本章已读完';
   }
 
   for (const reset of document.querySelectorAll<HTMLButtonElement>('[data-reset-progress]')) {

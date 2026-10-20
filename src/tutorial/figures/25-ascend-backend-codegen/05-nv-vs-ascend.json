@@ -41,7 +41,7 @@
     { "label": "产物", "values": ["cubin / fatbin", "linked CCE ELF（aibin）"] }
   ],
   "notes": [
-    "一句话：NV 是「一个线程块一组线程 + shared/register」，昇腾被拆成「Cube 核 + 两个 Vector 子核 + 五块片上 buffer + 四条搬运/收尾流水线」。",
+    "一句话：NV 是“一个线程块一组线程 + shared/register”，昇腾被拆成“Cube 核 + 两个 Vector 子核 + 五块片上 buffer + 四条搬运/收尾流水线”。",
     "同步的语义对象不同：NV 同步线程（要看到同一份 shared），昇腾同步流水线（MTE2 → V 这一对事件完成了吗）。",
     "把这两件事当成同一种东西，是理解昇腾自动同步时最常见的错误。"
   ]

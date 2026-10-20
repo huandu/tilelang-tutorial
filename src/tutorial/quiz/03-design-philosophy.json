@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "q1",
-      "stem": "TileLang 论文点名的「调度空间」包含哪四个维度？",
+      "stem": "TileLang 论文点名的“调度空间”包含哪四个维度？",
       "options": [
         "thread binding / layout / tensorize / pipeline",
         "forward / backward / optimizer / communication",
@@ -23,7 +23,7 @@
         "留到运行时由 driver 决定"
       ],
       "answer": 2,
-      "explain": "§2.3 的表格里 layout 一行的缺省行为就是「由 LayoutInference pass 推导」；§4.2 还说明它还负责给 T.Parallel 推循环布局。A 混淆了「布局写错会报错」与「不写布局」。"
+      "explain": "§2.3 的表格里 layout 一行的缺省行为就是“由 LayoutInference pass 推导”；§4.2 还说明它还负责给 T.Parallel 推循环布局。A 混淆了“布局写错会报错”与“不写布局”。"
     },
     {
       "id": "q3",
@@ -35,7 +35,7 @@
         "显存里的一块缓冲"
       ],
       "answer": 1,
-      "explain": "§2.4 说得很清楚：你申请的是一块逻辑缓冲，物理上它并不存在，编译期会推导出 Fragment 布局把它切成每个线程的碎片。A 是最容易误选的选项——它把「整块 tile」和「每线程持有量」搞反了。"
+      "explain": "§2.4 说得很清楚：你申请的是一块逻辑缓冲，物理上它并不存在，编译期会推导出 Fragment 布局把它切成每个线程的碎片。A 是最容易误选的选项。它把“整块 tile”和“每线程持有量”搞反了。"
     },
     {
       "id": "q4",
@@ -44,10 +44,10 @@
         "已完成，是官方推荐的入门入口",
         "就是 developer 层的别名",
         "已废弃并从代码里移除",
-        "官方文档标注「not yet fully implemented」，方向体现为 eager 前端"
+        "官方文档标注“not yet fully implemented”，方向体现为 eager 前端"
       ],
       "answer": 3,
-      "explain": "官方文档在 beginner 那条下面直接写了「This interface is not yet fully implemented」，现存雏形是 eager 前端（见 §2.5、§3.4）。A 是本章特意纠正的期待，千万不要按它来选题。"
+      "explain": "官方文档在 beginner 那条下面直接写了“This interface is not yet fully implemented”，现存雏形是 eager 前端（见 §2.5、§3.4）。A 是本章特意纠正的期待，千万不要按它来选题。"
     },
     {
       "id": "q5",
@@ -59,7 +59,7 @@
         "所有原语都必须成对使用"
       ],
       "answer": 0,
-      "explain": "§2.6 指出它指的是「同一个 kernel 里高层与低层原语共存，甚至同一段循环体里相邻」。B 把它误读成编译器的自动融合，A 之外的三个选项都是对「可组合」的字面误解。"
+      "explain": "§2.6 指出它指的是“同一个 kernel 里高层与低层原语共存，甚至同一段循环体里相邻”。B 把它误读成编译器的自动融合，A 之外的三个选项都是对“可组合”的字面误解。"
     },
     {
       "id": "q6",

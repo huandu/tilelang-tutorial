@@ -40,9 +40,9 @@ ASCII 版：
 ```
 
 **来源**：`_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:60-155`
-（Quick Start 与「Writing Ascend Kernels」）；
+（Quick Start 与“Writing Ascend Kernels”）；
 `tilelang/ascend/language/copy_op.py:53-163`；
 `tilelang/ascend/language/frame.py:107-195`。
 
 **要点**：`T.dual_copy` 在这里的职责是把 L0C 累加器按 M 或 N 切开交给两个 AIV，
-否则 Vector 侧只有一半并行度；它不是「把纯 Vector kernel 变成双 AIV」的开关。
+否则 Vector 侧只有一半并行度；它不是“把纯 Vector kernel 变成双 AIV”的开关。

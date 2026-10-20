@@ -2,11 +2,11 @@
 
 ## 目的
 
-把「TileLang 算子如何在昇腾上被反复执行而不被 host 侧下发拖死」讲清楚：
+把“TileLang 算子如何在昇腾上被反复执行而不被 host 侧下发拖死”讲清楚：
 
 1. TileLang 的昇腾 kernel 怎么与 `torch_npu` 的算子落在同一条 stream 上；
 2. ACLGraph 的 capture / replay 两阶段模型；
-3. 入图对形状的要求，以及「为什么 vLLM-Ascend 只对 decode 入图」。
+3. 入图对形状的要求，以及“为什么 vLLM-Ascend 只对 decode 入图”。
 
 `aclgraph_decode_block.py` 里是 RMSNorm + 一步 decode 的最小骨架，
 结构对照 corpus 里的
@@ -68,7 +68,7 @@ msprof op --kernel-name="main_rms" python3 aclgraph_decode_block.py
   通过，最后打印 `Kernel Output Match!`（与 corpus 里那份 ACLGraph 示例
   的收尾断言一致）；
 * 再跑一遍不带 `torch.npu.graph` 的 eager 版本，两次结果一致——
-  这是「入图没有改变语义」的判据。
+  这是“入图没有改变语义”的判据。
 
 **性能口径**：
 
@@ -89,7 +89,7 @@ msprof op --kernel-name="main_rms" python3 aclgraph_decode_block.py
 
 ## 已知局限
 
-* 只覆盖「capture 一次 + replay 多次」这一条路径，没有覆盖动态形状、
+* 只覆盖“capture 一次 + replay 多次”这一条路径，没有覆盖动态形状、
   多流、以及 vLLM-Ascend 里把图路径限制在 decode 的调度层逻辑。
 * corpus 里的 ACLGraph 示例使用 `T.tile.*` 做逐元素运算；主干 v0.1.15 的
   昇腾方言改用 `T.SimtVF` + `T.Parallel`，两者写法不同（见第 19 章）。

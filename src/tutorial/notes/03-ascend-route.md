@@ -4,7 +4,7 @@
 > 教材锁定 `v0.1.15` 与 `tilelang-ascend v0.1.2.000-release`，个别 pass 名与 API 会与本文
 > 不一致；逐行核对请以 `../../tilelang-book/_vendor/` 里的两个 checkout 为准。
 
-这份文档把「TileLang + 华为昇腾」这一侧拼成一张完整的图：硬件 → 指令集 → 语言 →
+这份文档把“TileLang + 华为昇腾”这一侧拼成一张完整的图：硬件 → 指令集 → 语言 →
 编译期 → 工程落地 → 未合入的前沿。所有结论都有本 corpus 内的出处。
 
 ## 1. 三句话概括现状（2026-09-30）
@@ -27,7 +27,7 @@
 | 数据传递 | 普通访存 + `cp.async` / TMA 等异步机制 | 不同存储层级通过**指定搬运路径**连接，并与计算流水协作 |
 | 同步 | 线程、线程组、异步操作各自的完成协议 | 需要处理**流水线间、Cube/Vector 间、多缓冲复用**的完成协议 |
 
-结论：**维度不同，不能按 CUDA 直觉类推**。TileLang 的选择是「不强行弥合差异」，而是把
+结论：**维度不同，不能按 CUDA 直觉类推**。TileLang 的选择是“不强行弥合差异”，而是把
 昇腾特有的资源信息暴露到前端。
 
 ## 3. 语言层：昇腾专属原语
@@ -46,8 +46,8 @@
 
 官方给的 GEMM+ReLU 例子（原文引用）用不到 20 行就表达了完整的 dataflow：
 `alloc_l1 → copy → gemm(l0c) → dual_copy → SimtVF(max)`，开发者不需要关心插多少条搬运
-指令，也不需要手写 Cube 与 Vector 之间的同步。原文对性能的判断是「与主线 Ascend C
-打得有来有回，代码行数差好几倍」——注意这是 community 级证据，需要自行复核。
+指令，也不需要手写 Cube 与 Vector 之间的同步。原文对性能的判断是“与主线 Ascend C
+打得有来有回，代码行数差好几倍”，注意这是 community 级证据，需要自行复核。
 
 ## 4. 编译期：昇腾后端在解什么问题
 
@@ -59,13 +59,13 @@
 2. **任务化与资源建模**（`MaterializeScheduleUnits`、`AnnotateMultiBufferEligible`、
    `EstimateLatency`）：把 kernel 拆成带流水标签（MTE1/MTE2/MTE3/Cube/Vector/Fixpipe/
    Scalar）的任务，并记录读写依赖、延迟、buffer 容量。
-3. **Z3 求解**（`AutoSchedule`）：把「流水能不能成立」变成整数/布尔约束问题，一次性
+3. **Z3 求解**（`AutoSchedule`）：把“流水能不能成立”变成整数/布尔约束问题，一次性
    求解任务发射时刻、跨迭代重叠与 buffer 份数。
 4. **落地**（`PrepareMultiBuffer` → `InsertSync` → `MaterializeMultiBuffer` →
    `AscendThreadSync` → `RewriteFlagToBuf`）：把解变成真实的同步指令与 buffer 版本。
 
 **要理解的一句话**：Z3 不知道 Cube 是什么，硬件知识完全来自 TileLang 对访问区域、
-资源占用、延迟和物理存储大小的建模。所以「给昇腾后端加能力」的大部分工作是**更准确
+资源占用、延迟和物理存储大小的建模。所以“给昇腾后端加能力”的大部分工作是**更准确
 地建这个模**。
 
 ## 5. 工具链与工程落地
@@ -95,8 +95,8 @@ GE、runtime、HCCL）与 `hardware/`（处理器规格、集群）。
 * TileLang 侧的对接：主干 PR #3310（PTO backend for Ascend950）、
   `tilelang/jit/adapter/pto/`、`tilelang/ascend/codegen/`。
 
-理解 PTO 的意义：它把「tile 粒度」做成指令集层面的概念。TileLang 的 PTO 后端就是
-「把 tile 程序降到 tile 指令」，这比降级到 Ascend C 少了中间层，也更容易做资源建模。
+理解 PTO 的意义：它把“tile 粒度”做成指令集层面的概念。TileLang 的 PTO 后端就是
+“把 tile 程序降到 tile 指令”，这比降级到 Ascend C 少了中间层，也更容易做资源建模。
 
 ## 7. 未合入的前沿（必须跟）
 
@@ -122,4 +122,4 @@ GE、runtime、HCCL）与 `hardware/`（处理器规格、集群）。
 4. 读 `tilelang/ascend/pipeline.py` + `tilelang/ascend/transform/`，
    重点看 `AutoSchedule`、`InsertSync`、`MaterializeMultiBuffer`。
 5. 挑一个未合入 PR（建议从 `AutoSimtVF` 或 `T.PersistentKernel` 起），复现并尝试改。
-6. 读 PTO 规范，理解「tile 指令集」这条路线的终点形态。
+6. 读 PTO 规范，理解“tile 指令集”这条路线的终点形态。

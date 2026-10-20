@@ -2,7 +2,7 @@
 
 ## 目的
 
-把「本章说 v0.1.15 里有这个 API」从断言变成一次可复现的检查。脚本不 import
+把“本章说 v0.1.15 里有这个 API”从断言变成一次可复现的检查。脚本不 import
 tilelang，只读源码文本，把本章（以及对照用的昇腾）每个 API 名在
 `_vendor/tilelang-v0.1.15/` 与 `_vendor/tilelang-ascend-v0.1.2.000/` 里搜一遍。
 
@@ -11,7 +11,7 @@ tilelang，只读源码文本，把本章（以及对照用的昇腾）每个 AP
 * 主干 `tilelang/cache/__init__.py` 里**没有**顶层 `clear_cache()`；
 * 主干的 `tilelang.ascend.language` 里**没有** `is_npu`、**没有** `alloc_ub`。
 
-（这两条正是「主干昇腾方言」与「独立仓库 tilelang-ascend 方言」的区别，见本章 7.2 节。）
+（这两条正是“主干昇腾方言”与“独立仓库 tilelang-ascend 方言”的区别，见本章 7.2 节。）
 
 ## 运行前提
 
@@ -41,7 +41,7 @@ python check_api_surface.py --root /path/to/tilelang-book
 全部 36 项符合预期。
 ```
 
-**正确性判据**：脚本退出码为 0，最后一行是「全部 N 项符合预期」。
+**正确性判据**：脚本退出码为 0，最后一行是“全部 N 项符合预期”。
 
 ## 验证级别
 
@@ -50,5 +50,5 @@ python check_api_surface.py --root /path/to/tilelang-book
 
 ## 在真实机器上的验证步骤
 
-在被修改过的 checkout 上重跑本脚本，能立刻发现「API 被挪走 / 改名」。若某一条 FAIL，
+在被修改过的 checkout 上重跑本脚本，能立刻发现“API 被挪走 / 改名”。若某一条 FAIL，
 先看它命中了哪个文件的哪一行，再去对照本章 `references.md` 里的行号。

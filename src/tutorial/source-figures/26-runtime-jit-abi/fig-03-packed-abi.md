@@ -22,7 +22,7 @@ callee-allocated-output ABI 时**减掉全部输出参数、再加 1 个 allocat
 函数签名被改写为 `kCPackedFunc`、global symbol 加上
 `tvm_ffi_symbol_prefix`（`:1006-1009`）。
 
-## 2. 运行时检查的插入顺序（这才是「ABI」的实体）
+## 2. 运行时检查的插入顺序（这才是“ABI”的实体）
 
 ```text
 seq_init            ← 全部由 MakePackedAPI 生成

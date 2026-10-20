@@ -2,7 +2,7 @@
 
 ## 目的
 
-NVIDIA 侧的设计靠「流量 × 波数」的启发式（`../03-carver-cost-model/`），
+NVIDIA 侧的设计靠“流量 × 波数”的启发式（`../03-carver-cost-model/`），
 昇腾侧不是：它把每条语句变成任务，按**物理 pipe** 逐个收费，再把结果交给 Z3 排。
 常量表在
 
@@ -69,7 +69,7 @@ tile M= 128 N= 128 K=  32 bf16  Cube II     128  MTE2 II     164  MTE1 II     32
 1. **官方的 256×224×128 例子恰好落在 Cube 侧**，脚本没有任何针对它的调参；
    这是模型自洽的一个旁证（不是证明）。
 2. **直方图上的翻转点在 M=N≈164**，与闭式解一致；128 那边是 MTE2 瓶颈，
-   而且此时 MTE2 的 II 是被「描述符最小发射间隔」128 cycles 顶住的，不是带宽。
+   而且此时 MTE2 的 II 是被“描述符最小发射间隔”128 cycles 顶住的，不是带宽。
 3. `latency/period = 1.004` 那一行说明**不要把模型当判决**：Cube 的 8 cycle
    completion overhead 恰好把第一章 11 节的 stage 公式从 2 顶到 3，
    而官方例子用的是 `num_stages=2`。
@@ -90,7 +90,7 @@ tile M= 128 N= 128 K=  32 bf16  Cube II     128  MTE2 II     164  MTE1 II     32
 * 这是**教学用的抽版本**。真实的 `EstimateAscend` 还要算 Vector 的 ops/cycle、
   `ScaleBytesByLanes` 的 lanes 缩放、每个物理路径的完成延迟、以及基于 pipe mask 的
   II 合成（`estimate_latency.cc:750-970`）。本脚本只保留 Cube、MTE1、MTE2 三条。
-* 「needs >= N buffers」用的是第 11 章的 `1 + ceil(latency/period)`,它在这套模型里
+* “needs >= N buffers”用的是第 11 章的 `1 + ceil(latency/period)`,它在这套模型里
   没有经过验证。真实的多缓冲份数是 `PrepareMultiBuffer` /
   `MaterializeMultiBuffer` 和 Z3 求解的结果（第 23 章）。
 * 常量是按芯片世代手工标定的（第 23 章 5.1 节点明了这一点）；换芯片要重标。

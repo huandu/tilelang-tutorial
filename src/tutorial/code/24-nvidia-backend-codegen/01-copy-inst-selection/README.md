@@ -6,7 +6,7 @@
 `SelectCopyInstForLowering` 判定顺序，用标准库重写成一个可交互的小模型，用来回答：
 
 * 为什么同样一句 `T.copy`，在 sm_80 和 sm_90 上会落到不同机制？
-* 「默认路径下只有 store 会自动走 TMA」这句话具体长什么样？
+* “默认路径下只有 store 会自动走 TMA”这句话具体长什么样？
 * 哪些条件会让 `T.copy(A_g, A_s, prefer_instruction="tma")` 编译失败？
 
 ## 运行前提
@@ -39,7 +39,7 @@ self-check: ok
 
 1. **`store` 默认走 TMA，`load` 默认不走**（`hint=default` 的两行）。
 2. **裸 `T.copy(A_g, A_s)` 的兜底是同步 SIMT（`Normal`），不是 `cp.async`**；
-   `cp.async` 只在「流水里」或「显式 `T.async_copy`」时出现。
+   `cp.async` 只在“流水里”或“显式 `T.async_copy`”时出现。
 3. sm_80 上没有 TMA，所以即使是最内层 16 字节对齐的 2D tile 也只能走
    `Normal` / `cp.async`。
 

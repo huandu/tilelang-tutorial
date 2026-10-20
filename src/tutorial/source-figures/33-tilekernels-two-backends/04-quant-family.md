@@ -42,11 +42,11 @@ flowchart TD
 
 ## 读图提示
 
-* **粒度是 `sf_block` 的形状**，不是「块大小」：`(1, C)` 是 per-token、
+* **粒度是 `sf_block` 的形状**，不是“块大小”：`(1, C)` 是 per-token、
   `(Rt, C)` 是 per-block、`(T, 1)` 是 per-channel。
 * 三个 cast 共用同一段算术（`get_sf_and_inv`）、同一套配置（`BaseCastConfig`），
   因此两个后端的舍入与 clamp 口径**不可能不一致**。
-* 融合路径（SwiGLU + per-token cast）省掉的是「SwiGLU 结果写回 GM、再读回来量化」
+* 融合路径（SwiGLU + per-token cast）省掉的是“SwiGLU 结果写回 GM、再读回来量化”
   这一趟往返；代价是多套 UB 缓冲。
 * 图中的三条后端差异会让 sf 张量的**形状或取值**不同，因此
   跨设备搬运权重时必须重新打包。

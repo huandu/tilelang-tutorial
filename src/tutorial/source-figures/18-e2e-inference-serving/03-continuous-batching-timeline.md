@@ -27,10 +27,10 @@ continuous batching（每个 step 结束就能换人）
 | kernel 的要求 | 固定长度即可 | 变长 batch、paged KV、prefill/decode 混步 |
 
 **仿真里差多少。** `code/04-serving-schedule-sim/serving_schedule_sim.py`
-在「decode step 固定 8 ms、prefill 12 us/token、64 个请求、8 个槽位、
-输出长度离散」的人为参数下，continuous 的总耗时是 static 的 1/2.74，
+在“decode step 固定 8 ms、prefill 12 us/token、64 个请求、8 个槽位、
+输出长度离散”的人为参数下，continuous 的总耗时是 static 的 1/2.74，
 吞吐 2.74×，平均 E2E 延迟从 12084 ms 降到 3953 ms。
 **这组数字是仿真输出，不是测量**；换成别的参数结论的倍数会变，方向不变。
 
-**注意「吞吐」和「延迟」在这里同时变好**，这是调度层面的收益；如果槽位被
-占满，再加并发只会让排队延迟变长——那才是吞吐与延迟的权衡所在。
+**注意“吞吐”和“延迟”在这里同时变好**，这是调度层面的收益；如果槽位被
+占满，再加并发只会让排队延迟变长。那才是吞吐与延迟的权衡所在。

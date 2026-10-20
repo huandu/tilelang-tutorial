@@ -41,7 +41,7 @@
     { "from": "tests", "to": "cutedsl", "label": "needs" }
   ],
   "notes": [
-    "草稿 PR 不会跑测试矩阵，所以「CI 没绿」有时只是因为你把它标成了 draft。",
+    "草稿 PR 不会跑测试矩阵，所以“CI 没绿”有时只是因为你把它标成了 draft。",
     "Metal 矩阵靠 pytest 名字过滤（-k metal）：一个新加的、名字里没有 metal 的 Metal 测试不会在这个 job 里被执行。",
     "测试的可移植性由 requires_cuda / requires_rocm / requires_metal 等 marker 决定，不由目录决定；只生成源码、不跑 kernel 的目标专属测试同样可能要标 requires_cuda。"
   ]

@@ -45,4 +45,4 @@ code/
   都不存在；模型里出现的数字全是公式推导，性能对比的口径与来源见
   `../references.md`。
 * 版本一律为 TileLang `v0.1.15` 与 TileLang-Ascend
-  `v0.1.2.000-release`；本章不使用「最新版」这类表述。
+  `v0.1.2.000-release`；本章不使用“最新版”这类表述。

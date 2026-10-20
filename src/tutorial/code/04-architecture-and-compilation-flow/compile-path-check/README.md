@@ -10,7 +10,7 @@
  → <backend>/pipeline.py → device/host codegen → CompiledArtifact → adapter → 可调用对象
 ```
 
-本脚本把这条链拆成 30 个「跳」，每跳要求：文件存在、且声称的行号上确实出现声称的符号。
+本脚本把这条链拆成 30 个“跳”，每跳要求：文件存在、且声称的行号上确实出现声称的符号。
 任何一跳对不上，脚本以退出码 1 失败。
 
 ## 运行前提
@@ -41,7 +41,7 @@ compile-path hops: 30/30 verified
 ## 它能证明什么、不能证明什么
 
 能证明：这条链上的每个符号在 v0.1.15 的源码里确实存在，且位置与正文一致——
-也就是「正文没有把不存在的 API 写进去」。
+也就是“正文没有把不存在的 API 写进去”。
 
 不能证明：编译真的会这么走。真实编译会按 `pass_configs`、device codegen 开关
 （`enable_host_codegen` / `enable_device_compile`）与缓存命中情况分岔；本脚本只做

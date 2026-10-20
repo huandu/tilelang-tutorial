@@ -26,7 +26,7 @@
   ],
   "notes": [
     "loadA → L1→L0A → Cube MAD → L0C→GM 这一串是同一轮迭代内的直线依赖，决定任务的相位。",
-    "虚线来自「下一轮 loadA」：跨迭代 WAR 依赖 distance = -1，交给求解器用 buffer 份数（ring 宽度）解决。",
+    "虚线来自“下一轮 loadA”：跨迭代 WAR 依赖 distance = -1，交给求解器用 buffer 份数（ring 宽度）解决。",
     "start = k × II + r：k 是任务的流水级，r 是稳态相位（0 ≤ r < II），II 是最小启动间隔。",
     "跨迭代 WAR 约束 start(下一轮) − start(本轮) ≥ 15 − II × buf：依赖跨几轮由求解器选定的 buffer 份数决定。"
   ]

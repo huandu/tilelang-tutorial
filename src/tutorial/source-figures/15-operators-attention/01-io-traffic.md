@@ -89,9 +89,9 @@ flowchart TD
 ## 读图要点
 
 1. **三趟变一趟**指的是 `S`/`P` 的落地次数，不是 K/V 的读取次数。优化之后 K 和 V
-   反而**被读得更多**（每个 Q 块都要读一遍）——用带宽换片上空间。
-2. **「省」与「不省」取决于形状。** prefill（`Sq = Skv = N`）省得多；decode
-   （`Sq = 1`）根本不省。把这两件事混为一谈，就会得出「decode 也该用同一个 kernel」
+   反而**被读得更多**（每个 Q 块都要读一遍），用带宽换片上空间。
+2. **“省”与“不省”取决于形状。** prefill（`Sq = Skv = N`）省得多；decode
+   （`Sq = 1`）根本不省。把这两件事混为一谈，就会得出“decode 也该用同一个 kernel”
    这种错误结论。
 3. 图上 `2.00x` 这个倍数**只属于这个模型**。模型忽略了 `N×N` 在 SRAM 里根本放不下、
    忽略了缓存与 TMA，也忽略了实际 kernel 里的软硬件重叠。真实收益需要实测，
@@ -100,6 +100,6 @@ flowchart TD
 ## 来源
 
 * 全部数字：本章 `code/01-traffic-model/traffic_model.py`（纯标准库，可复算）。
-* 「IO-aware exact attention」的定性表述：
+* “IO-aware exact attention”的定性表述：
   `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2205-14135.md`（FA1 摘要）。
 * 本文与图中不含任何硬件实测数据。

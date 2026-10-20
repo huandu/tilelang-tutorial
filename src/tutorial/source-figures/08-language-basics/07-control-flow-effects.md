@@ -17,8 +17,8 @@ flowchart TB
 ```
 
 来源：`_vendor/tilelang-v0.1.15/tilelang/language/tir/ir.py:172-179`（`Select` 的
-docstring：「``Select`` evaluates both value expressions. Use ``if_then_else``
-when a branch must guard side effects or out-of-bounds memory accesses.」）。
+docstring：“``Select`` evaluates both value expressions. Use ``if_then_else``
+when a branch must guard side effects or out-of-bounds memory accesses.”）。
 
 ## 7.2 两种代价：向量化被守卫挡住、流水被分支切开
 
@@ -52,7 +52,7 @@ flowchart LR
 ```
 
 来源：`_vendor/tilelang-v0.1.15/tilelang/language/loop.py:139-168`（`T.Pipelined`
-的 docstring 关于「可重放 Bind 不占槽位」的说明）。
+的 docstring 关于“可重放 Bind 不占槽位”的说明）。
 
 ## 7.4 `while` / `break` / `continue`
 
@@ -78,8 +78,8 @@ if T.all_of(i < M, j < N):
 但 v0.1.15 的 `tilelang/language/logical.py:51` 里 `all_of` 的签名是
 `def all_of(buffer: BufferLikeType)`，接受的是**缓冲区或缓冲区切片**，不是
 条件列表。对应的测试也这样用：`T.all_of(BlockMask[by, bx, k, :])`
-（`testing/python/language/test_tilelang_language_all_of.py:56`）。要做「多个
-条件的与」，用 `and` / `or`（会降级成 `tir.And` / `tir.Or`，见
+（`testing/python/language/test_tilelang_language_all_of.py:56`）。要做“多个
+条件的与”，用 `and` / `or`（会降级成 `tir.And` / `tir.Or`，见
 `tilelang/language/eager/builder.py:820-846`）。
 
 ## 事实来源

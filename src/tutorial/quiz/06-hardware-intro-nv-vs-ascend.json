@@ -5,36 +5,36 @@
       "id": "q1",
       "stem": "本章用访存延迟和算术延迟的对比说明为什么必须有片上存储，两者的量级关系是？",
       "options": [
-        "访存延迟只比算术延迟略高一点，不到一个数量级",
         "未缓存访存要等数百个时钟周期，而算术指令约 4 周期，差了两个数量级",
+        "访存延迟只比算术延迟略高一点，不到一个数量级",
         "算术延迟比访存延迟更高，所以计算单元常常在等",
         "两者量级相当，瓶颈只在带宽而不在延迟"
       ],
-      "answer": 1,
-      "explain": "见 §1.1：CUDA 文档说未缓存访存有「hundreds of clock cycles」，compute capability 7.0 的算术指令约 4 周期。这正是「让数据先靠近计算单元、并在片上被复用」的动机。"
+      "answer": 0,
+      "explain": "见 §1.1：CUDA 文档说未缓存访存有“hundreds of clock cycles”，compute capability 7.0 的算术指令约 4 周期。这正是“让数据先靠近计算单元、并在片上被复用”的动机。"
     },
     {
       "id": "q2",
       "stem": "本章用哪四个维度来描述任何一台加速器？",
       "options": [
         "算力、带宽、功耗、面积",
+        "存储层级、执行单元、数据搬运、同步",
         "前端语言、编译器、运行时、库",
-        "寄存器、shared memory、L2、HBM",
-        "存储层级、执行单元、数据搬运、同步"
+        "寄存器、shared memory、L2、HBM"
       ],
-      "answer": 3,
-      "explain": "见 §2 的四个小节：存储层级（数据住在哪）、执行单元（谁来算）、数据搬运（怎么流动）、同步（谁等谁）。第三项只是存储维度里的一个例子，不是维度本身。"
+      "answer": 1,
+      "explain": "见 §2 的四个小节：存储层级（数据住在哪）、执行单元（谁来算）、数据搬运（怎么流动）、同步（谁等谁）。“寄存器、shared memory、L2、HBM”只是存储维度里的一个例子，不是维度本身。"
     },
     {
       "id": "q3",
       "stem": "相对第 1 代 warp 级 mma，第 2 代 wgmma 最结构性的变化是什么？",
       "options": [
         "把累加器从寄存器搬进了专用的 Tensor Memory",
-        "粒度升到 warpgroup（128 线程）、变成异步，并且操作数可以放在 shared memory",
         "取消了 fragment 布局，改成每线程私有数组",
+        "粒度升到 warpgroup（128 线程）、变成异步，并且操作数可以放在 shared memory",
         "把同步方式从 mbarrier 改成 __syncthreads"
       ],
-      "answer": 1,
+      "answer": 2,
       "explain": "见 §3.3 第二代：wgmma 是 warpgroup 级、异步，操作数可用描述符指向 shared memory，同步靠 commit_group / wait_group。把累加器搬进 TMEM 是第 3 代 tcgen05 的事。"
     },
     {
@@ -47,7 +47,7 @@
         "放在 L2 cache 里，靠 mbarrier 通知完成"
       ],
       "answer": 2,
-      "explain": "见 §3.3 第三代：D 矩阵在 Tensor Memory，完成通过 mbarrier 通知；A 可在 TMEM 或 SMEM，B 在 SMEM。第一项是前两代的现状。"
+      "explain": "见 §3.3 第三代：D 矩阵在 Tensor Memory，完成通过 mbarrier 通知；A 可在 TMEM 或 SMEM，B 在 SMEM。“仍然在每线程的寄存器 fragment 里”描述的是前两代的现状。"
     },
     {
       "id": "q5",
@@ -55,34 +55,34 @@
       "options": [
         "L1 → L0A/L0B 与 L1 → BT Buffer",
         "UB → GM",
-        "GM → {L1, L0A/L0B} 与 GM → UB",
-        "L0C → {GM, L1} 与 L1 → FP Buffer"
+        "L0C → {GM, L1} 与 L1 → FP Buffer",
+        "GM → {L1, L0A/L0B} 与 GM → UB"
       ],
-      "answer": 2,
-      "explain": "见 §4.3 的搬运单元表：MTE2 负责从 GM 进片上。第一项是 MTE1，第二项是 MTE3，第四项是 Fixpipe。"
+      "answer": 3,
+      "explain": "见 §4.3 的搬运单元表：MTE2 负责从 GM 进片上。“L1 → L0A/L0B”是 MTE1，“UB → GM”是 MTE3，“L0C → {GM, L1}”是 Fixpipe。"
     },
     {
       "id": "q6",
       "stem": "关于昇腾的 SetFlag / WaitFlag 这一对机制，下面哪一句是对的？",
       "options": [
-        "一个 SetFlag 可以对应多次 WaitFlag，标志位会一直保持",
         "WaitFlag 发现标志位为 1 时会先把它清 0 再继续，所以一次 Set 只对应一次 Wait",
+        "一个 SetFlag 可以对应多次 WaitFlag，标志位会一直保持",
         "它们只是编译期提示，对硬件没有实际约束",
         "它们用于跨 cluster 的 barrier，等价于 cluster.sync"
       ],
-      "answer": 1,
-      "explain": "见 §4.4：WaitFlag 在标志位为 1 时清零并继续，所以它是一对信号量；也正因为如此，多缓冲必须为「缓冲可以归还」再加一对反向的 Set/Wait。"
+      "answer": 0,
+      "explain": "见 §4.4：WaitFlag 在标志位为 1 时清零并继续，所以它是一对信号量；也正因为如此，多缓冲必须为“缓冲可以归还”再加一对反向的 Set/Wait。"
     },
     {
       "id": "q7",
-      "stem": "本章说「GPU 是 SIMT、NPU 是 SIMD」这个概括已经过时，主要理由是什么？",
+      "stem": "本章说“GPU 是 SIMT、NPU 是 SIMD”这个概括已经过时，主要理由是什么？",
       "options": [
         "因为昇腾 950 只支持 SIMD，根本不支持 SIMT",
+        "因为昇腾 950 同时支持 SIMT 与 SIMD，而 NV 也早已是“SIMT + 异步 + 专用矩阵单元”的复合体系",
         "因为 NVIDIA GPU 从来都不是 SIMT",
-        "因为昇腾 950 同时支持 SIMT 与 SIMD，而 NV 也早已是「SIMT + 异步 + 专用矩阵单元」的复合体系",
         "因为 SIMT 与 SIMD 在硬件上其实是同一回事"
       ],
-      "answer": 2,
+      "answer": 1,
       "explain": "见 §5.2：厂商硬件页写明 950 支持 SIMD+SIMT 混合编程，TileLang 也提供 T.SimtVF / T.SimdVF；NV 侧同样有 TMA、Tensor Core 与 warp specialization。正确做法是逐维度比较。"
     },
     {
@@ -90,11 +90,11 @@
       "stem": "对于本章引用的 UB 192K、L1 512KB 这类容量数字，正确的态度是？",
       "options": [
         "它们是昇腾所有型号的通用规格，可以直接拿来算 tile 大小",
-        "它们只是文档示例里某一型号的条件数字，真实容量要用 GetCoreMemSize 在运行时查询",
         "它们是实测结果，比厂商文档更可信",
-        "H100 的 228 KB shared 也是所有 NVIDIA 卡的通用上限"
+        "H100 的 228 KB shared 也是所有 NVIDIA 卡的通用上限",
+        "它们只是文档示例里某一型号的条件数字，真实容量要用 GetCoreMemSize 在运行时查询"
       ],
-      "answer": 1,
+      "answer": 3,
       "explain": "见 §4.2 与 §7.4：192K 出自某型号的 bank 冲突示例，512KB 出自某个 GetMatmulApiTiling 示例；H100 的 228 KB 也只是 SXM5 的公开上限。报数字要带型号与出处。"
     }
   ]

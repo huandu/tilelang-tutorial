@@ -37,7 +37,7 @@ python3 ws_gemm.py
   `T.alloc_barrier` → `tilelang/language/allocate.py:194-222`；
   `T.tma_copy` → `tilelang/language/copy_op.py:232-300`；
   `T.barrier_wait` / `T.barrier_arrive` → `tilelang/language/builtin.py:885-908`）；
-* **未在 GPU 上运行过。** 本机没有 NVIDIA GPU。任何「跑得对/跑得快」的结论都必须由读者
+* **未在 GPU 上运行过。** 本机没有 NVIDIA GPU。任何“跑得对/跑得快”的结论都必须由读者
   在自己的机器上得出。
 
 ## 阅读提示

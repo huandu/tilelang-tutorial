@@ -29,7 +29,7 @@ code/
 | 示例 | 它交付什么 | 运行前提 | 作者实际做到的验证级别 |
 | --- | --- | --- | --- |
 | `01-python-api/deepgemm_ascend_call.py` | DeepGEMM-Ascend 的三类最小调用（BF16 dense、FP8 dense、M-grouped），含 SF 打包的示例造法 | 昇腾 NPU + CANN 9.20 + `torch_npu` + `deep_gemm` | **仅静态核对**：`py_compile` 通过；函数名与参数逐个对照 `csrc/apis/gemm.hpp` 的注册表；**未运行** |
-| `02-perf-ledger/perf_ledger.py` | 用源码里的硬件模型复算 bf16/fp8/fp4 峰值；把六张表的 Computation 换算成利用率；用「A+B(+SF)」口径复算带宽并与表格列对比 | Python 3.9+（只用标准库） | **CPU 逻辑验证**：在 macOS (Apple Silicon)、Python 3.11 上实际运行过，退出码 0，输出见该目录 README |
+| `02-perf-ledger/perf_ledger.py` | 用源码里的硬件模型复算 bf16/fp8/fp4 峰值；把六张表的 Computation 换算成利用率；用“A+B(+SF)”口径复算带宽并与表格列对比 | Python 3.9+（只用标准库） | **CPU 逻辑验证**：在 macOS (Apple Silicon)、Python 3.11 上实际运行过，退出码 0，输出见该目录 README |
 | `03-config-search/config_search.py` | 用 `heuristics.hpp` 的容量公式枚举 `block_m/block_n` 与 `mad_m/n/k`，打印哪些候选合法、L1/L0 各能放几级 | Python 3.9+（只用标准库） | **CPU 逻辑验证**：实跑过，退出码 0，输出见该目录 README |
 | `04-hc-prenorm-tilelang/hc_prenorm_sketch.py` | 把 `hc_prenorm.py` 的骨架（`get_config` + `MixedKernel` + SIMD 阶段 + K-split 原子加）提炼成可读版本，逐段加注释 | 昇腾 NPU + TileLang（M 树 `tilelang.ascend.language`） | **仅静态核对**：`py_compile` 通过；`T.MixedKernel`/`T.alloc_l1`/`T.dual_copy`/`T.SimdVF`/`T.PerCoreTask`/`T.set_atomic` 等逐个对照 `_vendor/tilelang-v0.1.15/tilelang/ascend/language/`；**未运行** |
 
@@ -41,13 +41,13 @@ code/
   **本机 CPU 运算**的结果（复算，不是测量）。
 * 版本：TileLang `v0.1.15`（`_vendor/tilelang-v0.1.15/`）；DeepGEMM-Ascend 取自
   corpus 快照 commit `8491bbb4b8c0`（见 corpus 的 `PROVENANCE.md`）。
-* `02` 引用的「硬件极限」复算公式来自 `csrc/jit_kernels/heuristics.hpp:46-48`；
+* `02` 引用的“硬件极限”复算公式来自 `csrc/jit_kernels/heuristics.hpp:46-48`；
   它是**模型**，不是任何一台机器的实测值。
 
 ## 建议的阅读顺序
 
-1. 读完正文第 5 节后跑 `02-perf-ledger/`：先把「98%–99.8%」换算成你自己能量出来的量；
-2. 读完第 4.4 节后跑 `03-config-search/`：亲手确认「为什么 `256×256` 已经用满 L0C」；
+1. 读完正文第 5 节后跑 `02-perf-ledger/`：先把“98%–99.8%”换算成你自己能量出来的量；
+2. 读完第 4.4 节后跑 `03-config-search/`：亲手确认“为什么 `256×256` 已经用满 L0C”；
 3. 读完第 3 节后看 `01-python-api/`：把调用姿势与注册表对上；
 4. 读完第 6 节后看 `04-hc-prenorm-tilelang/`：把骨架与 `hc_prenorm.py` 的行号对上。
 

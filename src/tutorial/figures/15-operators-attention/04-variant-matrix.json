@@ -5,10 +5,19 @@
   "direction": "TB",
   "section": "4.6",
   "nodeMaxEm": 22,
-  "caption": "变体不是重写 kernel，而是在主循环上改一处——这张图画出它们各自的来路。",
+  "caption": "变体不是重写 kernel，而是在主循环上改一处。这张图画出它们各自的来路。",
   "nodes": [
-    { "id": "base", "label": "基础主循环（BHSD）", "sub": "Q,K,V → O", "tone": "accent" },
-    { "id": "causal", "label": "causal：循环上界 + q ≥ k", "tone": "default" },
+    {
+      "id": "base",
+      "label": "基础主循环（BHSD）",
+      "sub": "Q,K,V → O",
+      "tone": "accent"
+    },
+    {
+      "id": "causal",
+      "label": "causal：循环上界 + q ≥ k",
+      "tone": "default"
+    },
     {
       "id": "window",
       "label": "sliding window",
@@ -21,7 +30,11 @@
       "sub": "分母加一项 exp2(sink − m·scale)",
       "tone": "default"
     },
-    { "id": "varlen", "label": "varlen：cu_seqlens + guard", "tone": "default" },
+    {
+      "id": "varlen",
+      "label": "varlen：cu_seqlens + guard",
+      "tone": "default"
+    },
     {
       "id": "gqa",
       "label": "GQA / MQA",
@@ -40,24 +53,64 @@
       "sub": "两个 kernel",
       "tone": "compute"
     },
-    { "id": "paged", "label": "paged KV", "sub": "block_table 间接寻址", "tone": "default" },
-    { "id": "sparse", "label": "稀疏 / 索引类", "sub": "索引张量替代连续区间", "tone": "warn" }
+    {
+      "id": "paged",
+      "label": "paged KV",
+      "sub": "block_table 间接寻址",
+      "tone": "default"
+    },
+    {
+      "id": "sparse",
+      "label": "稀疏 / 索引类",
+      "sub": "索引张量替代连续区间",
+      "tone": "warn"
+    }
   ],
   "edges": [
-    { "from": "base", "to": "causal" },
-    { "from": "causal", "to": "window" },
-    { "from": "window", "to": "sink" },
-    { "from": "base", "to": "varlen" },
-    { "from": "base", "to": "gqa" },
-    { "from": "varlen", "to": "gqav" },
-    { "from": "gqa", "to": "gqav" },
-    { "from": "base", "to": "decode" },
-    { "from": "base", "to": "paged" },
-    { "from": "base", "to": "sparse" }
+    {
+      "from": "base",
+      "to": "causal"
+    },
+    {
+      "from": "causal",
+      "to": "window"
+    },
+    {
+      "from": "window",
+      "to": "sink"
+    },
+    {
+      "from": "base",
+      "to": "varlen"
+    },
+    {
+      "from": "base",
+      "to": "gqa"
+    },
+    {
+      "from": "varlen",
+      "to": "gqav"
+    },
+    {
+      "from": "gqa",
+      "to": "gqav"
+    },
+    {
+      "from": "base",
+      "to": "decode"
+    },
+    {
+      "from": "base",
+      "to": "paged"
+    },
+    {
+      "from": "base",
+      "to": "sparse"
+    }
   ],
   "notes": [
     "causal = 循环裁剪 + q_idx ≥ k_idx mask；window 再加循环起点与 check_inf；sink 只在分母上加一项",
     "decode 是唯一改变 kernel 数量的变体（split + combine 两个 kernel），因为瓶颈是并行度而不是流量",
-    "稀疏 / 索引类是唯一改变「KV 从哪来」的变体，也是第 16 章的起点"
+    "稀疏 / 索引类是唯一改变“KV 从哪来”的变体，也是第 16 章的起点"
   ]
 }

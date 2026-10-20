@@ -19,7 +19,7 @@
     { "label": "sorted_value", "cells": ["仅 CUDA 的 fp32 变体支持", "支持（仅 CUDA）"] }
   ],
   "notes": [
-    "两个场景不变的是「k 小、N 大」；dtype、行长与后端能力都在变，所以算法写成「阈值 + 随机块序」。",
+    "两个场景不变的是“k 小、N 大”；dtype、行长与后端能力都在变，所以算法写成“阈值 + 随机块序”。",
     "topk ≤ 4096 是硬约束（csrc/api.cpp:57），不是优化建议。",
     "输入行 stride 有对齐要求：CUDA 1024 B、昇腾 32 B（csrc/structs.h）；不满足要自己 padding。"
   ]

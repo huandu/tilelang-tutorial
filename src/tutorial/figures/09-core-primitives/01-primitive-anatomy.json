@@ -6,7 +6,12 @@
   "direction": "LR",
   "nodeMaxEm": 18,
   "nodes": [
-    { "id": "user", "label": "用户代码", "code": "T.copy(A[i,j], A_s)", "tone": "default" },
+    {
+      "id": "user",
+      "label": "用户代码",
+      "code": "T.copy(A[i,j], A_s)",
+      "tone": "default"
+    },
     {
       "id": "front",
       "label": "前端函数",
@@ -14,35 +19,101 @@
       "code": "language/copy_op.py",
       "tone": "default"
     },
-    { "id": "tir", "label": "TIR intrinsic", "sub": "tl.tileop.copy", "tone": "accent" },
+    {
+      "id": "tir",
+      "label": "TIR intrinsic",
+      "sub": "tl.tileop.copy",
+      "tone": "accent"
+    },
     {
       "id": "ir",
       "label": "IR 节点",
       "sub": "CopyNode{src, dst, src_range, dst_range, annotations}",
       "tone": "accent"
     },
-    { "id": "sel", "label": "后端指令选择", "sub": "SelectCopyInstForLowering", "tone": "compute" },
-    { "id": "simt", "label": "SIMT 循环", "tone": "compute" },
-    { "id": "cpasync", "label": "cp.async", "tone": "compute" },
-    { "id": "tma", "label": "TMA cp.async.bulk.tensor", "tone": "compute" },
-    { "id": "ldsm", "label": "ldmatrix / stmatrix / tcgen05.ld", "tone": "compute" },
-    { "id": "asc", "label": "tl.tileop.ascend_copy", "tone": "store" },
-    { "id": "ascdma", "label": "DataCopy / ND2NZ / LoadData / Fixpipe", "tone": "store" }
+    {
+      "id": "sel",
+      "label": "后端指令选择",
+      "sub": "SelectCopyInstForLowering",
+      "tone": "compute"
+    },
+    {
+      "id": "simt",
+      "label": "SIMT 循环",
+      "tone": "compute"
+    },
+    {
+      "id": "cpasync",
+      "label": "cp.async",
+      "tone": "compute"
+    },
+    {
+      "id": "tma",
+      "label": "TMA cp.async.bulk.tensor",
+      "tone": "compute"
+    },
+    {
+      "id": "ldsm",
+      "label": "ldmatrix / stmatrix / tcgen05.ld",
+      "tone": "compute"
+    },
+    {
+      "id": "asc",
+      "label": "tl.tileop.ascend_copy",
+      "tone": "store"
+    },
+    {
+      "id": "ascdma",
+      "label": "DataCopy / ND2NZ / LoadData / Fixpipe",
+      "tone": "store"
+    }
   ],
   "edges": [
-    { "from": "user", "to": "front" },
-    { "from": "front", "to": "tir" },
-    { "from": "tir", "to": "ir" },
-    { "from": "ir", "to": "sel" },
-    { "from": "sel", "to": "simt" },
-    { "from": "sel", "to": "cpasync" },
-    { "from": "sel", "to": "tma" },
-    { "from": "sel", "to": "ldsm" },
-    { "from": "ir", "to": "asc", "label": "昇腾", "dashed": true },
-    { "from": "asc", "to": "ascdma" }
+    {
+      "from": "user",
+      "to": "front"
+    },
+    {
+      "from": "front",
+      "to": "tir"
+    },
+    {
+      "from": "tir",
+      "to": "ir"
+    },
+    {
+      "from": "ir",
+      "to": "sel"
+    },
+    {
+      "from": "sel",
+      "to": "simt"
+    },
+    {
+      "from": "sel",
+      "to": "cpasync"
+    },
+    {
+      "from": "sel",
+      "to": "tma"
+    },
+    {
+      "from": "sel",
+      "to": "ldsm"
+    },
+    {
+      "from": "ir",
+      "to": "asc",
+      "label": "昇腾",
+      "dashed": true
+    },
+    {
+      "from": "asc",
+      "to": "ascdma"
+    }
   ],
   "notes": [
     "Python 只在最左边一列起作用：越往右，能影响的只剩 annotations 里的几个键。",
-    "前端大部分时候只把参数变成 region；唯一的例外是标量 copy——两边都是无 extent 的 BufferLoad 时，直接退化成 BufferStore。"
+    "前端大部分时候只把参数变成 region；唯一的例外是标量 copy，两边都是无 extent 的 BufferLoad 时，直接退化成 BufferStore。"
   ]
 }

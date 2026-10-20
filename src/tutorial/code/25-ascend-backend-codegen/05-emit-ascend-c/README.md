@@ -2,7 +2,7 @@
 
 ## 目的
 
-第 25 章讲的是「生成物」。这个示例给你一个**真实可编译的 kernel**，并用
+第 25 章讲的是“生成物”。这个示例给你一个**真实可编译的 kernel**，并用
 `get_kernel_source()` 把编译器生成的设备源码打印出来，再按正文 §4.2–4.6 的清单
 逐段核对：scope 限定符、DMA intrinsic 名、L0 MAD、`asc_syncthreads`、多缓冲 slot。
 
@@ -47,7 +47,7 @@ python3 print_ascend_c.py --emit --target pto
 [9] multibuffer slot indexing : count distinct buffer slot offsets (>= num_stages)
 ```
 
-脚本把每条「命中/未命中」都打印出来，但对**生成代码**不做自动语义判定——它只是
+脚本把每条“命中/未命中”都打印出来，但对**生成代码**不做自动语义判定——它只是
 把你该看的地方指出来。
 
 ## 作者实际做到的验证级别
@@ -60,4 +60,4 @@ python3 print_ascend_c.py --emit --target pto
 
 它改写自锁定版本的官方示例 `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:66-108`
 （GEMM + ReLU）。这里把尺寸缩小、并用 `--check` 做 API 名审计，方便在没有卡的
-机器上先确认「API 名没写错」，再上机看生成物。
+机器上先确认“API 名没写错”，再上机看生成物。

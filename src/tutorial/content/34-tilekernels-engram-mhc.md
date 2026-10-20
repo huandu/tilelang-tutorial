@@ -4,13 +4,13 @@
 
 读完本章，你应当能够：
 
-1. 说清 **Engram** 解决什么问题：为什么论文把「条件记忆」称为与 MoE 并列的
-   **第二条稀疏轴**，`O(1)` 查表与「确定性寻址」各自指什么，以及为什么确定性
+1. 说清 **Engram** 解决什么问题：为什么论文把“条件记忆”称为与 MoE 并列的
+   **第二条稀疏轴**，`O(1)` 查表与“确定性寻址”各自指什么，以及为什么确定性
    寻址能把上百亿参数的表卸载到 host memory；能区分**论文结论**与**仓库示例能
    证明的事**。
 2. 逐段对照 `engram_gate_fwd_cuda.py` 与 `engram_gate_fwd_asc.py`，指出同一份
    门控算法在两条后端上分别怎么表达（task 划分、片上缓冲、多阶段流水、约简），
-   并说得出「把 RMSNorm 的权重先乘成 `weight_fused`」为什么是合法的融合。
+   并说得出“把 RMSNorm 的权重先乘成 `weight_fused`”为什么是合法的融合。
 3. 说出 `engram_gate_bwd`、`engram_grad_w_reduce`、`engram_fused_weight` 三个
    kernel 在一次训练 step 里各自做什么，并解释**为什么参数梯度必须再有一个
    单独的归约 kernel**。
@@ -22,13 +22,13 @@
    `head_compute_mix` 拼起来的数据流，并把论文 §4.3 的三条基础设施设计
    （kernel fusion / recomputing / DualPipe 上的重叠）与
    `pre_big_fuse` / `multilayer_recompute` / DualPipe 一一对上。
-6. 归纳「访存为主、算力需求低、shape 小」这一整类算子的共同特征，并判断一个
+6. 归纳“访存为主、算力需求低、shape 小”这一整类算子的共同特征，并判断一个
    新算子该用 TileLang 写，还是像 DeepGEMM 那样下钻到 Ascend C / PTX。
 
 ## 前置知识
 
 * **第 33 章（TileKernels 上）**：`*_kernel.py`（共享层）/ `*_cuda.py` / `*_asc.py`
-  的三份文件结构，以及「运行期按设备选择后端」的写法。本章不再重复这套骨架，
+  的三份文件结构，以及“运行期按设备选择后端”的写法。本章不再重复这套骨架，
   直接讲这一章特有的两类算子。
 * **第 7、9 章**：`T.Kernel`、`T.copy`、`T.Parallel`、`T.alloc_shared` /
   `alloc_fragment` / `alloc_local` 的语义。
@@ -36,12 +36,12 @@
 * **第 6、19、25 章**：昇腾的存储层级（GM / L1 / L0 / UB）与执行单元（AIC / AIV），
   以及 `T.Persistent`、`T.SimdVF`、`annotate_buffer_versions` 这些昇腾方言原语
   的含义。本章会把它们用在真实的库代码上。
-* **第 16 章（MoE）**：本章的对照物。MoE 是「条件计算」，Engram 是「条件记忆」；
+* **第 16 章（MoE）**：本章的对照物。MoE 是“条件计算”，Engram 是“条件记忆”；
   理解前者才能看清后者补的是什么。
 * **mHC 论文**（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md`）：
   本章 §6 以它的 §3（动机）与 §4（方法 + 基础设施设计）为**定义**，以
   TileKernels 的 `mhc/` 算子族为**实现**，逐条对照。你不必先读完论文，
-  但 §6 里每处「论文式 (N)」都会给出该文件的行号。
+  但 §6 里每处“论文式 (N)”都会给出该文件的行号。
 
 不需要你有 GPU 或 NPU。本章所有 kernel 都只做静态阅读；`code/` 下的四个脚本
 都能在只有 CPU 的机器上跑。
@@ -54,7 +54,7 @@
 **没有 NVIDIA GPU，也没有昇腾 NPU**（见 [`../../VERSIONS.md`](../../VERSIONS.md)）。
 因此本章遵守三条硬规矩：
 
-1. **每一个 kernel 结论的最高验证级别是「仅静态核对」**：源码逐行读过，行号准确，
+1. **每一个 kernel 结论的最高验证级别是“仅静态核对”**：源码逐行读过，行号准确，
    但**没有任何一条性能数字或正确性数字来自本机运行 kernel**。本章引用的源码都在
    corpus 的 `14-deepseek-ascend-stack` 分类下（TileKernels / Engram /
    DeepGEMM-Ascend 三个仓库的快照）。
@@ -79,7 +79,7 @@ mHC 论文的抓取日期为 2026-10-01）：
 | --- | --- | --- |
 | **TK** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/` | 用 TileLang 写的双后端算子库，本章主线 |
 | **EN** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/Engram/` | Engram 论文仓库：论文 PDF + 一个教学 demo |
-| **DG** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/` | 昇腾 GEMM 库；本章只取它的 HC prenorm GEMM 与「mHC kernel 由 TileLang 支撑」这两点 |
+| **DG** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/` | 昇腾 GEMM 库；本章只取它的 HC prenorm GEMM 与“mHC kernel 由 TileLang 支撑”这两点 |
 | **MHC** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md` | mHC 论文（arXiv:2512.24880 v1）的文本抽取；§6 的定义来源，同目录有 `paper-deepseek-mhc.pdf` |
 
 > **一句话说清 TileKernels 与 TileLang 的关系**：TileKernels 不是 TileLang 的
@@ -89,13 +89,13 @@ mHC 论文的抓取日期为 2026-10-01）：
 
 ---
 
-## 1. 问题的由来：为什么需要「不是矩阵乘」的算子
+## 1. 问题的由来：为什么需要“不是矩阵乘”的算子
 
-### 1.1 Transformer 缺一个「查表」原语
+### 1.1 Transformer 缺一个“查表”原语
 
 大模型的参数里，有相当一部分承担的是**查表**的职责：常见实体、固定搭配、
 公式模板。但在标准 Transformer 里，这类静态知识没有专门的存放位置，只能被
-**重建成计算**——用前几层的 attention 与 FFN 一步步把它「推」出来。
+**重建成计算**，用前几层的 attention 与 FFN 一步步把它“推”出来。
 
 Engram 论文把这件事说得很直白：语言建模里有两类性质不同的子任务，
 **组合推理**需要深而动态的计算，而**知识检索**面对的大量内容（命名实体、
@@ -103,7 +103,7 @@ Engram 论文把这件事说得很直白：语言建模里有两类性质不同�
 正因为这些规律天然适合用**查表**表达
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:53-71`）。
 
-于是论文提出：既然 MoE 用「条件计算」增加容量，为什么不能有一条
+于是论文提出：既然 MoE 用“条件计算”增加容量，为什么不能有一条
 **条件记忆**的稀疏轴，用查表来承载静态容量？
 
 ```text
@@ -127,11 +127,11 @@ hidden state 给查回来的记忆打一个闸门，再通过残差连接加回�
 四个组成部分（术语第一次出现，都给中英对照）：
 
 1. **词表压缩（tokenizer compression）**：先做一次 `P : V → V′` 的满射，
-   把「语义等价但 subword 不同」的 token（`Apple` 与 `␣apple`）折成同一个
+   把“语义等价但 subword 不同”的 token（`Apple` 与 `␣apple`）折成同一个
    canonical id。论文报告在 128k 词表上有效词表缩小 **23%**
    （`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:158-166`）。
 2. **多头哈希（multi-head hashing）**：直接把所有 N-gram 参数化是不可行的，
-   所以对每个 N-gram order 用 **K 个 head**，每个 head 用「轻量乘法-XOR 哈希」
+   所以对每个 N-gram order 用 **K 个 head**，每个 head 用“轻量乘法-XOR 哈希”
    `φ_{n,k}` 映射到一张素数大小的表 `E_{n,k}`
    （`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:167-176`）。多个 head 是为了压低碰撞概率。
 3. **上下文感知门控（context-aware gating）**：取回的 `e_t` 是静态的、
@@ -146,7 +146,7 @@ hidden state 给查回来的记忆打一个闸门，再通过残差连接加回�
 本章要写的 kernel，就是第 3 步（门控）与第 2 步（寻址）；第 4 步的卷积不在
 TileKernels 这次开源的 Engram 算子族里。
 
-### 1.3 论文说了什么，仓库给了什么——证据要分开
+### 1.3 论文说了什么，仓库给了什么，证据要分开
 
 这是本章最容易写错的地方，所以单独列一节。
 
@@ -157,19 +157,19 @@ TileKernels 这次开源的 Engram 算子族里。
 | 把总容量在 MoE 与 Engram 之间分配，验证 loss 呈 **U 型**；纯 MoE（ρ=100%）不是最优 | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:364-430` |
 | 10B 这一档，验证 loss 从 `1.7248`（ρ=100%）降到 `1.7109`（ρ≈80%） | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:418-426` |
 | 最优分配比例在 `ρ ≈ 75%–80%` 附近，且跨两个算力档位稳定 | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:426-428` |
-| 无限内存 regime 下，「槽位数 ↔ 验证 loss」在对数空间里是**严格幂律** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:431-460` |
+| 无限内存 regime 下，“槽位数 ↔ 验证 loss”在对数空间里是**严格幂律** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:431-460` |
 | Engram-27B 相对严格 iso-parameter/iso-FLOPs 的 MoE-27B 全面更好（MMLU +3.4、BBH +5.0、HumanEval +3.0、MATH +2.4 等） | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:26-40,470-520` |
 | 把 100B 参数的表卸载到 host memory，开销 < 3% | `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:39,95-99` |
 
 **仓库（EN）给的是什么**：一个**教学 demo** 与一个 transformer 骨架的 mock。
 `Engram/README.md` 自己写着：
 
-> ⚠️ The provided code is a demonstration version intended to illustrate the data
+> 注意： The provided code is a demonstration version intended to illustrate the data
 > flow. It mocks standard components (like Attention/MoE/mHC)…
 > （`../tilelang-corpus/14-deepseek-ascend-stack/raw/Engram/README.md:89`）
 
 也就是说：**仓库里的 `engram_demo_v1.py` 不能用来验证论文的任何 scaling 结论**，
-它只演示「token id → 哈希 → 查表 → 门控 → 残差」这条数据流；真正可在生产里用的
+它只演示“token id → 哈希 → 查表 → 门控 → 残差”这条数据流；真正可在生产里用的
 算子实现，在这次开源的清单里是 **TileKernels 的 `tile_kernels/engram/`**
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/README.md:3-5,15`）。
 
@@ -189,15 +189,15 @@ TileKernels 这次开源的 Engram 算子族里。
 ### 1.4 mHC 是另一半：为什么它也不是矩阵乘
 
 TileKernels 里还有一族名字很长的算子：**manifold hyper-connections（mHC，
-流形超连接）**。它把残差流从「一条」扩成 **M 条并列分支**，用可学习的连接权重
-决定信息在分支之间怎么流动；而这些权重矩阵被**约束在一个流形上**——具体做法就是
+流形超连接）**。它把残差流从“一条”扩成 **M 条并列分支**，用可学习的连接权重
+决定信息在分支之间怎么流动；而这些权重矩阵被**约束在一个流形上**，具体做法就是
 §5 要讲的 Sinkhorn 归一化。
 
 它为什么不是矩阵乘？
 
 * 规模小：`M = 4`，所以 `comb` 矩阵是 `4 × 4`；
 * 逐 token：每个 token 一个 `4 × 4`，batch 维度才是并行的来源；
-* 访存为主：`pre_apply_mix` 是「4 个分支的加权和」，`post` 是「4×4 乘 4 条向量」，
+* 访存为主：`pre_apply_mix` 是“4 个分支的加权和”，`post` 是“4×4 乘 4 条向量”，
   算术量远小于搬进来的字节数；
 * 关键路径短：这些算子夹在 GEMM 与 Attention / MoE 之间，**延迟**比吞吐重要。
 
@@ -205,8 +205,8 @@ TileKernels 里还有一族名字很长的算子：**manifold hyper-connections�
 hyper-connections, 2025，见 `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:1127-1130`）；
 而 **mHC 自己的论文**就在 corpus 里：
 `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md`
-（arXiv:2512.24880 v1）。§6 用它把「代码在做什么」升级成
-「论文定义了什么、代码怎么实现、哪里不一致」。§6.1 会把证据等级写清楚。
+（arXiv:2512.24880 v1）。§6 用它把“代码在做什么”升级成
+“论文定义了什么、代码怎么实现、哪里不一致”。§6.1 会把证据等级写清楚。
 
 ### 1.5 本章路线图
 
@@ -253,7 +253,7 @@ hyper-connections, 2025，见 `../tilelang-corpus/14-deepseek-ascend-stack/raw/p
 * `hc`（`hc_mult`）是超连接的分支数，**本库的实现固定要求 `hc_mult = 4`**
   （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/engram/engram_gate_fwd_asc.py:23`、
   `../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/engram/engram_gate_bwd_cuda.py:30`），这正对应论文里 mHC 的 `M = 4`。
-* `kv` 把「每个分支的 Key」与「共享的 Value」打成一个张量：前 `hc` 行是 Key，
+* `kv` 把“每个分支的 Key”与“共享的 Value”打成一个张量：前 `hc` 行是 Key，
   最后一行是 Value（`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/engram/engram_gate_fwd_kernel.py:20-21`、`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/torch/engram.py:191-192`）。
 * `alpha` 的公式是 `sigmoid(sign(z)·sqrt(clamp(|z|, clamp_value)))`，其中
   `z = dot · rstd_x · rstd_k · d^{-1/2}`、`dot = Σ x_d · w_h,d · w_e,d · k_d`。
@@ -317,9 +317,9 @@ hyper-connections, 2025，见 `../tilelang-corpus/14-deepseek-ascend-stack/raw/p
    论文报告 100B 参数的表卸载开销 < 3%（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:39,95-99`）。
    注意这是**论文自报**的实验结论，本章无法复现。
 
-一个容易混的点：`O(1)` 说的是「取几行」不随表增长，**不是**说访存延迟是常数。
-真正的延迟取决于表放在哪一级存储、以及预取有没有被计算盖住——这正是论文 §2.5
-讨论「Engram 放在第几层」的原因（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:341-351`）。
+一个容易混的点：`O(1)` 说的是“取几行”不随表增长，**不是**说访存延迟是常数。
+真正的延迟取决于表放在哪一级存储、以及预取有没有被计算盖住。这正是论文 §2.5
+讨论“Engram 放在第几层”的原因（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-engram.md:341-351`）。
 
 ### 2.4 Engram 算子清单
 
@@ -344,17 +344,22 @@ hyper-connections, 2025，见 `../tilelang-corpus/14-deepseek-ascend-stack/raw/p
 
 * **启动开销**：kernel 数与 launch 次数成正比，而这几个算子每个都只干很少的活；
 * **访存往返**：`normed_x`、`normed_k` 都是 `[T, hc, d]` 级别的张量，
-  写出去再读回来，正是「访存为主」算子的主要浪费。
+  写出去再读回来，正是“访存为主”算子的主要浪费。
 
-融合的合法性来自一个恒等式。「带权重的 RMSNorm」的输出就是「归一化后逐元素乘
-权重」：`RMSNorm(x, w_h) = x · rstd_x · w_h`，其中
+融合的合法性来自一个恒等式。“带权重的 RMSNorm”的输出就是“归一化后逐元素乘
+权重”：`RMSNorm(x, w_h) = x · rstd_x · w_h`，其中
 `rstd_x = rsqrt(mean(x²) + eps)`。于是
 
-```text
-   RMSNorm(x, w_h)ᵀ · RMSNorm(k, w_e)
-       = rstd_x · rstd_k · Σ_d ( x_d · w_h,d · w_e,d · k_d )
-       = rstd_x · rstd_k · Σ_d ( x_d · w_fused,d · k_d )
-```
+$$
+\begin{aligned}
+&\operatorname{RMSNorm}(x,w_h)^\top
+ \operatorname{RMSNorm}(k,w_e)\\
+&=r_xr_k\sum_d x_dw_{h,d}w_{e,d}k_d\\
+&=r_xr_k\sum_d x_dw_{\mathrm{fused},d}k_d.
+\end{aligned}
+$$
+
+其中 \(r_x\) 和 \(r_k\) 分别是两份输入的 `rstd`。
 
 只要把 `w_fused = w_h ⊙ w_e` 提前算好，一次扫描就能同时得到
 `Σx²`、`Σk²`、`Σ x·w_fused·k` 三个标量，而**不需要**把两个归一化后的张量写出来。
@@ -367,7 +372,7 @@ hyper-connections, 2025，见 `../tilelang-corpus/14-deepseek-ascend-stack/raw/p
 ```
 
 `fused_weight` 因此是一个**独立的 kernel**：它只在权重更新后需要重算一次，
-而门控 kernel 每次前向都要跑。把「权重乘积」和「数据相关的点积」分开，
+而门控 kernel 每次前向都要跑。把“权重乘积”和“数据相关的点积”分开，
 两者被调用的频率差了若干个数量级（每 step 一次 vs 每 micro-batch 一次）。
 
 ### 3.2 CUDA 版逐段读
@@ -393,7 +398,7 @@ def get_engram_gate_fwd_kernel_cuda(hidden_size, eps, scalar, num_sms, clamp_val
 
 逐段拆：
 
-**① 任务划分：一个「head × 持久块」一个 CTA，32 个线程。**
+**① 任务划分：一个“head × 持久块”一个 CTA，32 个线程。**
 `T.Kernel(hc_mult, num_persistent_blocks)` 的网格是二维的：`pid_h ∈ [0, 4)` 是分支，
 `pid_b` 是 token 上的持久块。每个 CTA 分到
 `per_block = ceil(num_tokens / num_persistent_blocks)` 个 token（`:86-88`），
@@ -407,7 +412,7 @@ def _choose_num_persistent_blocks(hidden_size, blk_d, num_sms, hc_mult):
 ```
 
 （`:38-43`）注意末尾的 `// hc_mult`：网格第一维已经是 4 个分支了，
-每个分支能分到的块数是总块数除以 4。**这类「网格维度 × 持久块数」的换算，
+每个分支能分到的块数是总块数除以 4。**这类“网格维度 × 持久块数”的换算，
 是持久化 kernel 里最常写错的地方。**
 
 **② 片上缓冲：`x_smem` 常驻，`kv_smem` 双缓冲。**
@@ -438,7 +443,7 @@ for i_b in T.Serial(1, num_blk):
 ```
 
 （`:110-126`）三个累加器全在寄存器里。注意它加载的是 `w_local = weight_fused[...]`
-（`:122`）——**这里读的是融合后的权重**，而不是两个 RMSNorm 权重。
+（`:122`）。**这里读的是融合后的权重**，而不是两个 RMSNorm 权重。
 
 **④ 归约与激活。**
 
@@ -457,7 +462,7 @@ gate_score_reducer[0] = T.sigmoid(
 
 （`:149-166`）因为 `threads = 32` 恰好是一个 warp，约简只需要一次
 `warp_reduce_sum`（warp shuffle），不需要 shared memory 中转。
-那行 `* rstd_x * rstd_k * scalar` 就是式 (4) 的「乘 `1/√d`」，
+那行 `* rstd_x * rstd_k * scalar` 就是式 (4) 的“乘 `1/√d`”，
 `T.copysign` 实现 `sign(z)·sqrt(|z|)`，`T.clamp` 是 `clamp_value` 的落点。
 
 **⑤ 第二遍：写输出，同时把下个 token 的 `k`/`x` 预取进来。**
@@ -474,7 +479,7 @@ for i_b in T.Serial(num_blk):
 
 （`:173-195`）`v` 在 `kv` 的最后一行（`kv[i_s, hc_mult, …]`），所以它和 `k` 可以
 共用 `kv_smem`：第二遍开始时 `k` 已经不用了，腾出来的 bank 正好放 `v`。
-这种「生命周期不重叠的两个张量共用一个缓冲」是手写 pipeline 里常见的省存储手法；
+这种“生命周期不重叠的两个张量共用一个缓冲”是手写 pipeline 里常见的省存储手法；
 注释里的 `v_start_phase = num_blk % 2`（`:53`）负责让相位对齐。
 
 **⑥ `inplace` 与 `save_for_backward` 的互斥。**
@@ -513,7 +518,7 @@ def get_engram_gate_fwd_kernel_asc(hidden_size, eps, scalar, clamp_value, hc_mul
 
 逐段对照 CUDA 版的六点：
 
-**① 任务划分：核数固定，用 `T.Persistent` 把「(token, head 组)」逐个分配给核心。**
+**① 任务划分：核数固定，用 `T.Persistent` 把“(token, head 组)”逐个分配给核心。**
 
 ```python
 for token_id, task_head_group in T.Persistent(
@@ -521,10 +526,10 @@ for token_id, task_head_group in T.Persistent(
         group_size=num_head_groups, num_stages=num_stages):
 ```
 
-（`:76-82`）CUDA 版把「分支」放在网格第一维、把 token 分段；昇腾版把
-「分支组」也塞进 `T.Persistent` 的迭代空间，核数由 `num_vec_cores` 决定。
+（`:76-82`）CUDA 版把“分支”放在网格第一维、把 token 分段；昇腾版把
+“分支组”也塞进 `T.Persistent` 的迭代空间，核数由 `num_vec_cores` 决定。
 `heads_per_task = 2`、`num_head_groups = 4 / 2 = 2`（`:28-29`），
-即一个任务处理 2 个分支——**这样每个任务有 2 个独立的归约目标，
+即一个任务处理 2 个分支。**这样每个任务有 2 个独立的归约目标，
 能把向量寄存器的 64 lane 用满**（每 32 lane 一个分支）。
 
 **② 片上缓冲：UB 里的多版本缓冲，用一次注解声明。**
@@ -544,7 +549,7 @@ T.annotate_buffer_versions(buffer_versions)
 （`:49-72`）昇腾的多缓冲不是手写 `phase = i_b % 2`，而是**声明每个缓冲要几个版本**
 （`num_stages`），由后端在 pass 里自动展开成多份并插入同步
 （`annotate_buffer_versions` 的语义见第 19 章）。这里还有一个细节：
-只有 `save_for_backward` 时才给 `dot_ub` / `rstd_*_ub` 多版本——
+只有 `save_for_backward` 时才给 `dot_ub` / `rstd_*_ub` 多版本，
 **注解本身也是按运行期路径条件拼出来的**。
 
 另外注意 `weight_fused` 被一次性搬进 UB 并**常驻**：
@@ -619,7 +624,7 @@ T.copy(k_output_ub, output_target[token_id, task_head_base:task_head_base+heads_
 ```
 
 （`:188-222`）`k_output_ub` 里的 `k` 用完就腾出来放 `out`，和 CUDA 版
-「`kv_smem` 的两半交替放 `k` 与 `v`」是同一个思路。
+“`kv_smem` 的两半交替放 `k` 与 `v`”是同一个思路。
 `BRC_B32` 把标量闸门广播成整条向量，`PK_B32` 把 fp32 打包回 bf16。
 
 **⑥ 写回训练要用的中间量：**
@@ -636,8 +641,8 @@ if save_for_backward:
 
 ### 3.4 两份实现的对照表
 
-「一份算法、两个后端」的一般结构（三层文件、运行期后端选择、哪些必须重写）
-见**第 33 章 §2–§4**；那里已经用 top-k gate 把「并行映射差异 ≠ 算法差异」
+“一份算法、两个后端”的一般结构（三层文件、运行期后端选择、哪些必须重写）
+见**第 33 章 §2–§4**；那里已经用 top-k gate 把“并行映射差异 ≠ 算法差异”
 讲过一遍。本节只做一件事：把同一套维度用在门控这个例子上。
 
 | 关注点（与第 33 章 §4.4 同一套维度） | CUDA（`engram_gate_fwd_cuda.py`） | 昇腾（`engram_gate_fwd_asc.py`） |
@@ -654,8 +659,8 @@ if save_for_backward:
 | 启动/结束提示 | 没有用 PDL（本 kernel 未开 `use_pdl`） | PDL 是 CUDA-only，这里不适用 |
 
 **两条实现算的是同一个式子**：这是本章最想让你记住的一点。
-「一份算法、两个后端」不是「两份代码碰巧结果一样」，而是**同一个数学式在两种
-机器模型上的忠实表达**；差异全部落在「谁负责同步、谁负责切任务、向量宽度是多少」
+“一份算法、两个后端”不是“两份代码碰巧结果一样”，而是**同一个数学式在两种
+机器模型上的忠实表达**；差异全部落在“谁负责同步、谁负责切任务、向量宽度是多少”
 这三件事上。
 
 ### 3.5 融合的收益从哪来
@@ -673,9 +678,9 @@ if save_for_backward:
   weight_fused : 4096 B (fp32, resident)
 ```
 
-把 `normed_x` / `normed_k` 消掉，省下的就是「写一遍 + 读一遍」两个
+把 `normed_x` / `normed_k` 消掉，省下的就是“写一遍 + 读一遍”两个
 `[T, hc, d]` 张量的流量；融合后的 kernel 只需要读 `x`、`kv` 与常驻的
-`weight_fused`。**这也是为什么本章把它们统称为「访存为主」的算子**：
+`weight_fused`。**这也是为什么本章把它们统称为“访存为主”的算子**：
 算力需求很低（每个元素几次乘加），瓶颈在搬了多少字节、启动了多少次 kernel。
 
 ---
@@ -703,10 +708,10 @@ if save_for_backward:
 
 分工的原则很清楚：
 
-* **`fused_weight`** 把「两个权重的乘积」算成 fp32，供前向与反向共用；
-* **`gate_bwd`** 是「逐 token 的链式法则」，每个 CTA 只负责一部分 token，
+* **`fused_weight`** 把“两个权重的乘积”算成 fp32，供前向与反向共用；
+* **`gate_bwd`** 是“逐 token 的链式法则”，每个 CTA 只负责一部分 token，
   所以它只能产出**部分和** `grad_w_partial`；
-* **`grad_w_reduce`** 是「跨 CTA 的归约 + 穿过 ⊙ 的链式法则」，这部分无法在
+* **`grad_w_reduce`** 是“跨 CTA 的归约 + 穿过 ⊙ 的链式法则”，这部分无法在
   并行写里完成。
 
 ### 4.2 反向逐段读
@@ -740,7 +745,7 @@ sub_warp_id = warp_id % warps_per_head
 token。每个 head 被两个 warp 瓜分，**这些几何量决定了后面所有 tile 的尺寸**
 （`_choose_go_config`、`_choose_x_blk_d` 都在反推 hidden 应该怎么切）。
 
-**② 第一遍：先算 `dldg`——「输出对闸门的梯度」。**
+**② 第一遍：先算 `dldg`，“输出对闸门的梯度”。**
 
 ```python
 for i_b in T.serial(1, num_go_tiles):
@@ -758,7 +763,7 @@ T.sync_threads()
 ```
 
 （`:206-236`）`dldg = Σ_d grad_out_d · v_d`（因为 `out = x + α·v`）。
-一个 head 的两个 warp 各算一半，写进 shared memory，再读出来相加——
+一个 head 的两个 warp 各算一半，写进 shared memory，再读出来相加，
 这就是 docstring 里说的 `Cross-warp dldg reduction via shared memory`。
 
 **③ 穿过 signed-sqrt 与 sigmoid，得到对 `dot` 的梯度。**
@@ -773,8 +778,8 @@ dldg_r[0] = T.Select(
 )
 ```
 
-（`:248-253`）式子本身是「sigmoid 的导数 × signed-sqrt 的导数」；
-`T.Select` 那个分支对应前向里 `clamp(|z|, clamp_value)` **在边界上把梯度置零**——
+（`:248-253`）式子本身是“sigmoid 的导数 × signed-sqrt 的导数”；
+`T.Select` 那个分支对应前向里 `clamp(|z|, clamp_value)` **在边界上把梯度置零**，
 这正是前向写 `T.clamp` 时必须想到的反向行为。
 
 **④ 三个输入张量的梯度，以及 `grad_w` 的部分和。**
@@ -788,7 +793,7 @@ grad_kv[i_s, head_id, ...] = dldg_r[0] * (x_local[i_k] * w_fused_local[i_k] - k_
 grad_w_local[...] += dldg_r[0] * x_local[i_k] * k_local[i_k]
 ```
 
-（`:266-267, 291-299`）前两个是 RMSNorm 的链式法则（归一化会「减去自身分量」，
+（`:266-267, 291-299`）前两个是 RMSNorm 的链式法则（归一化会“减去自身分量”，
 所以有 `- x·dot_x` 这一项）；第三个只是 `∂dot/∂w_f = x·k`，**还没有乘任何东西**，
 因为 `w_f` 不是参数。
 
@@ -798,8 +803,8 @@ grad_w_local[...] += dldg_r[0] * x_local[i_k] * k_local[i_k]
 grad_w_partial[pid_p, head_id, global_off + i_k] = grad_w_local[...]
 ```
 
-（`:332-336`）形状是 `[num_persistent_blocks, hc_mult, hidden_size]`——
-**第一维就是 CTA 数**，这就是「部分和」的含义。
+（`:332-336`）形状是 `[num_persistent_blocks, hc_mult, hidden_size]`，
+**第一维就是 CTA 数**，这就是“部分和”的含义。
 
 ### 4.3 为什么梯度归约要单独一个 kernel
 
@@ -825,12 +830,12 @@ def grad_w_reduce_ref(grad_w_partial, weight_hidden, weight_embed,
 
 * **归约维度跨 CTA。** 每个 CTA 只看到自己那部分 token，它算出的
   `grad_w_partial` 是**局部的**；跨 CTA 求和需要第二个 kernel（或者原子加）。
-   TileKernels 选了「先写部分和，再启动一个 kernel 归约」，因为这样
+   TileKernels 选了“先写部分和，再启动一个 kernel 归约”，因为这样
   **结果确定**（不依赖原子加的浮点顺序）。
 * **两个参数共享同一份中间量。** `grad_w` 的求和只需要做一次，然后分别乘
   `w_e` / `w_h` 得到两份参数梯度。放在一个 kernel 里做，正好顺路。
 * **`main_grad` 支持。** autograd 包装层优先把梯度累加到参数的 `main_grad`
-  缓冲上（`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/modeling/engram/engram_gate.py:78-90`），要求「累加」而不是「赋值」，
+  缓冲上（`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/modeling/engram/engram_gate.py:78-90`），要求“累加”而不是“赋值”，
   这也是 `grad_w_reduce` 的设计前提。
 
 实现上它和 Sinkhorn 的 `step_reduce` 是同一种模式：
@@ -846,7 +851,7 @@ for j in T.Parallel(blk_d):
 ```
 
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/engram/engram_grad_w_reduce_cuda.py:45-60`）先 `T.Pipelined` 分批把部分和搬进
-shared memory，再在寄存器里逐行累加——**用「分批 + 片上累加」代替一次读完
+shared memory，再在寄存器里逐行累加，**用“分批 + 片上累加”代替一次读完
 全部部分和**，因为部分和的总量是 `num_ctas × hidden_size` 级别。
 
 ### 4.4 autograd 包装与 `main_grad`
@@ -875,8 +880,8 @@ return (grad_x..., grad_kv..., None if main_grad_wh is not None else grad_wh, ..
 **原地累加**，函数本身返回 `None`；否则分配 fp32 缓冲并返回。
 这解释了两件事：
 
-1. 为什么 `grad_w_reduce` 的语义是「累加」而不是「写入」；
-2. 为什么它必须接受 fp32 的输出缓冲——参数本身是 bf16，但梯度累加要在 fp32 里做。
+1. 为什么 `grad_w_reduce` 的语义是“累加”而不是“写入”；
+2. 为什么它必须接受 fp32 的输出缓冲，参数本身是 bf16，但梯度累加要在 fp32 里做。
 
 ---
 
@@ -888,7 +893,7 @@ return (grad_x..., grad_kv..., None if main_grad_wh is not None else grad_wh, ..
 反复若干轮。Sinkhorn-Knopp 定理保证（在一定条件下）迭代收敛到一个
 **双随机矩阵**（doubly stochastic：每行每列的和都是 1）。
 
-mHC 论文把这件事写成「把残差映射投影到 Birkhoff 多胞形上」：
+mHC 论文把这件事写成“把残差映射投影到 Birkhoff 多胞形上”：
 
 ```text
    论文 §4.1 式 (6)：P_Mres(H) = { H ∈ R^{n×n} | H·1 = 1, 1ᵀ·H = 1ᵀ, H ≥ 0 }
@@ -961,25 +966,25 @@ for _ in T.serial(repeat - 1):
 * 这里的 `hidden_size` 实际是 mHC 的 `M`（`= 4`，见 `../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/sinkhorn_kernel.py:6-13`
   传进来的 `comb_res_mix` 形状），**变量名复用了 `hidden_size`**，读代码时别被它骗了；
 * 迭代次数是 `T.serial(repeat - 1)`，即**编译期常量**，所以循环会被完全展开；
-* `dim=2` 是行内归约、`dim=1` 是列内归约——两个方向正好相反，
-  这就是「交替」在代码里的样子。
+* `dim=2` 是行内归约、`dim=1` 是列内归约，两个方向正好相反，
+  这就是“交替”在代码里的样子。
 
 **论文与源码在这里有四处值得注意的差异**（这正是本章想让你学会做的核对）：
 
 | 论文（`paper-deepseek-mhc.md`） | 源码（`TileKernels/tile_kernels/mhc/`） | 后果 |
 | --- | --- | --- |
 | 起点 `M^(0) = exp(H̃)`，第一步是 `T_r(T_c(·))`（`:400-406`） | 起点是 `softmax(-1)`，等价于先做了一次**行**归一化，第一步是列归一化（`sinkhorn_cuda.py:35-43`） | `T_r` 与 `T_c` 不可交换，**迭代中间点不同**；两者的不动点（双随机解）相同 |
-| 迭代次数 `t_max = 20`（`:405-406`、Table 5 `:1375-1378`） | 测试与融合 kernel 默认 `repeat = 10`（`tests/mhc/test_sinkhorn.py:19`、`tests/mhc/test_pre_big_fuse.py:24`） | 达到同样精度所需轮数不同；论文的「一次迭代」是行+列各一次，源码的 `repeat` 计数把起点那一步也算进去了 |
+| 迭代次数 `t_max = 20`（`:405-406`、Table 5 `:1375-1378`） | 测试与融合 kernel 默认 `repeat = 10`（`tests/mhc/test_sinkhorn.py:19`、`tests/mhc/test_pre_big_fuse.py:24`） | 达到同样精度所需轮数不同；论文的“一次迭代”是行+列各一次，源码的 `repeat` 计数把起点那一步也算进去了 |
 | 论文只做归一化，没有数值 eps | 每一步都 `+ eps` 并除以 `(sum + eps)`（`sinkhorn_cuda.py:36-52`），测试用 `eps = 1e-6` | 源码的固定点带 `O(eps)` 偏移（本章 §8 的 P7 与 `code/02` 的数字） |
-| `H^post = 2σ(·)`（式 (8)，`:393-399`） | 倍数被抽成参数 `mhc_post_mult_value`（`pre_split_mixes_cuda.py:62`），仓库测试默认 `1.0`（`tests/mhc/test_pre_big_fuse.py:23`） | 论文的 `2` 需要调用方显式传入；用默认值跑出来的是「半强度」版本 |
+| `H^post = 2σ(·)`（式 (8)，`:393-399`） | 倍数被抽成参数 `mhc_post_mult_value`（`pre_split_mixes_cuda.py:62`），仓库测试默认 `1.0`（`tests/mhc/test_pre_big_fuse.py:23`） | 论文的 `2` 需要调用方显式传入；用默认值跑出来的是“半强度”版本 |
 
 再加一处不算矛盾的差异：论文式 (8) 是 `H^pre = σ(·)`，而源码加了
 `+ mhc_pre_eps`（`pre_split_mixes_cuda.py:55-60`，默认 `1e-6`），
-目的是让 `pre` 严格大于 0——这是实现侧的数值保护，不改变数学含义。
+目的是让 `pre` 严格大于 0。这是实现侧的数值保护，不改变数学含义。
 
 反向也值得看一眼。它**在片上重算前向的每一轮迭代**（论文 §4.3.1 的说法是
-「a custom backward kernel that recomputes the intermediate results on-chip and
-traverses the entire iteration」，见 `paper-deepseek-mhc.md:429`），
+“a custom backward kernel that recomputes the intermediate results on-chip and
+traverses the entire iteration”，见 `paper-deepseek-mhc.md:429`），
 把每一步的中间矩阵与行列和存进 shared memory：
 
 ```python
@@ -1025,7 +1030,7 @@ row_norm = torch.norm(iterate, p=2, dim=1)
 row_scale.div_(row_norm + eps)
 ```
 
-kernel 把它拆成「逐行算 L2 → 更新 `row_scale` → 累加列平方和」：
+kernel 把它拆成“逐行算 L2 → 更新 `row_scale` → 累加列平方和”：
 
 ```python
 for row in T.serial(...):
@@ -1050,15 +1055,15 @@ T.copy(col_acc_frag, col_sumsq_partial[pid, :], disable_tma=True)
 
 * **row 是串行的，col 是并行的**：每一行都被整个 CTA 一起处理
   （`T.Parallel(head_dim)`），但行与行之间是 `T.serial`。因为每个 CTA 要算的
-  `head_dim` 很长（测试里到 5120），一次放不进寄存器，所以用「一次一行、
-  行内并行」的粒度。
+  `head_dim` 很长（测试里到 5120），一次放不进寄存器，所以用“一次一行、
+  行内并行”的粒度。
 * **列部分和谁写谁不管归约**：`col_acc_frag` 只累加自己 CTA 看到的行，
   写进 `col_sumsq_partial[pid, :]`。归约交给 `③`，
   与 §4.3 的 `grad_w_reduce` 是同一个模式：
-  「先写部分和，再用一个 kernel 确定性归约」。
+  “先写部分和，再用一个 kernel 确定性归约”。
 
 `code/02-sinkhorn-iterations/` 把这条流水在 CPU 上跑了一遍，输出里能直接看到
-「行 L2 被拉回 1、列 L2 变成另一个常数、最后由 `finalize` 用一个 alpha 定尺度」：
+“行 L2 被拉回 1、列 L2 变成另一个常数、最后由 `finalize` 用一个 alpha 定尺度”：
 
 ```text
   step   max|row L2 - 1| after row step        col L2 before col step
@@ -1070,7 +1075,7 @@ T.copy(col_acc_frag, col_sumsq_partial[pid, :], disable_tma=True)
 
 ### 5.4 为什么它值得单独写 kernel
 
-回到「为什么要为这么小的矩阵写 kernel」：
+回到“为什么要为这么小的矩阵写 kernel”：
 
 * **迭代在片上完成，只进出 HBM 一次。** `mhc_sinkhorn_fwd` 的输入输出都是
   `[T, M, M]`（fp32），整个 `repeat` 轮迭代不落地；如果每轮一个 kernel，
@@ -1078,7 +1083,7 @@ T.copy(col_acc_frag, col_sumsq_partial[pid, :], disable_tma=True)
 * **它真的在关键路径上。** 每层都要跑（`pre_big_fuse` 里就内嵌了它），
   `repeat` 直接乘进延迟。
 * **它的状态小到可以全部留在寄存器 / shared memory。** `M = 4` 且 `repeat` 是
-  **编译期常量**，展开后就是「两次 reduce + 两次逐元素除法 × repeat」——
+  **编译期常量**，展开后就是“两次 reduce + 两次逐元素除法 × repeat”，
   这正是编译器擅长的循环，也正是 TileLang 的 `T.Parallel` + `T.reduce_*` 想表达的层次。
 
 `code/02` 里那些数字还有一个直接用途：**它告诉你 `repeat` 是精度旋钮。**
@@ -1101,16 +1106,16 @@ TileKernels 的测试与融合 kernel 默认用 10（`../tilelang-corpus/14-deep
 | `code/03-mhc-mix-flow/` | 本书用 CPU 复算的公式与形状核对 | 脚本输出 |
 
 两份材料**不完全一致**的地方，本章逐条列出：§5.2 列了 Sinkhorn 的四处差异；
-§6.2 指出一处实现侧改写（论文把「除以范数」放在矩阵乘之后，代码照做并把
+§6.2 指出一处实现侧改写（论文把“除以范数”放在矩阵乘之后，代码照做并把
 `1/r` 折进 reduce+scale）；§6.4 指出 `expand` 与 `head_compute_mix` 是论文没有、
-但接入单流骨干时必须补的两个接口。因为「论文怎么写、代码怎么写」的差，
+但接入单流骨干时必须补的两个接口。因为“论文怎么写、代码怎么写”的差，
 本身就是最有价值的阅读内容。
 
 另外两条必须记住的边界：
 
 * 论文 §5 的实验全部在**未具名**的加速器上完成（该文本抽取里没有出现任何硬件型号），
   所以论文的收益数字**不能**被当作昇腾上的收益；本章引用时一律带上实验条件（§6.7）。
-* 论文 §4.3 里「用 TileLang 实现」的边界说得很明确：
+* 论文 §4.3 里“用 TileLang 实现”的边界说得很明确：
   **除了式 (14)–(15) 那部分（也就是 prenorm GEMM）之外，其余 kernel 都用 TileLang**
   （`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:502`）；这与本仓库把 prenorm GEMM 放进
   DeepGEMM-Ascend 的做法一致，也是本章 §7.3 判断法的最好例证。
@@ -1128,15 +1133,15 @@ TileKernels 的测试与融合 kernel 默认用 10（`../tilelang-corpus/14-deep
 | §4.3.1 式 (14)–(15)、`:419-423` | 两次扫描（前向）+ 两个矩阵乘（反向）各融一个 kernel | prenorm GEMM（DeepGEMM-Ascend，**唯一不用 TileLang 的部分**） | §6.6、§7.3 |
 | §4.3.1 式 (16)–(18)、`:425` | 小系数上的轻量运算融合成一个 kernel | `pre_split_mixes`（+ `head_compute_mix`） | §6.2、§6.4 |
 | §4.3.1 式 (19)、`:429` | Sinkhorn 迭代放一个 kernel；反向在片上重算并整轮回放 | `mhc_sinkhorn_fwd/bwd` | §5.2 |
-| §4.3.1 `:501-502` | 两个「应用映射」的 kernel + 融合把读从 `(3n+1)C` 降到 `(n+1)C`、写从 `3nC` 降到 `nC` | `pre_apply_mix`、`post` | §6.3 |
+| §4.3.1 `:501-502` | 两个“应用映射”的 kernel + 融合把读从 `(3n+1)C` 降到 `(n+1)C`、写从 `3nC` 降到 `nC` | `pre_apply_mix`、`post` | §6.3 |
 | §4.3.2 Table 3 与式 (20)、`:504-539` | 丢掉中间激活、按 `L_r` 层块重算；`L*_r ≈ sqrt(nL/(n+2))` | `multilayer_recompute` | §6.5 |
 | §4.3.3 `:541-554` | 在 DualPipe 上错开通信与重算；`F_post,res` 走高优先级流 | 属于 DualPipe，不在 TileKernels 里 | §6.7（详见第 38 章） |
 | §4.3 `:411`、§1 `:219` | 大规模训练只增加 **6.7%** 时间开销（`n=4`） | 上述全部融合/重算/重叠的总效果 | §6.6 |
 
 > **一段历史说明**：本章初稿时 corpus 里还没有 mHC 论文，只有一份第三方
 > （华为 PTO 教程，`../tilelang-corpus/06-huawei-ascend/raw/pto-dsl/examples/aot/sinkhorn_demo/pto_sinkhorn_demo_zh.md:1-20`）
-> 转述「DeepSeek-V4 使用了 mHC」并指向一个 arXiv 编号。现在一手论文已经入库，
-> 该教程从「唯一线索」降级为「旁证」；本章所有 mHC 结论都以论文为准。
+> 转述“DeepSeek-V4 使用了 mHC”并指向一个 arXiv 编号。现在一手论文已经入库，
+> 该教程从“唯一线索”降级为“旁证”；本章所有 mHC 结论都以论文为准。
 
 ### 6.2 pre 侧：从 4 条残差分支到这一层的输入
 
@@ -1165,12 +1170,12 @@ comb_res_mix_frag[i, j]   = input_mixes_frag[i, j + mhc_mult*2]*mhc_scale[2] + m
    └─ [ 8 : 24)  → x·s2 + b ，reshape 成 4×4 =  comb_res_mix     （分支之间的连接）
 ```
 
-`scale`（3 个数）与 `base`（24 个数）都是可学习参数，所以反向里它们也要梯度——
+`scale`（3 个数）与 `base`（24 个数）都是可学习参数，所以反向里它们也要梯度，
 这就是为什么 `pre_split_mixes_bwd` 会输出两份 `*_grad_partial`
 （`:100-104,168-171`），再由 `pre_split_mixes_bwd_reduce_cuda` 归约
 （`:176-209`）。**和 Engram 的 `grad_w_reduce` 一模一样的拆分理由。**
 
-把这段实现逐项对回论文，就得到一张完整的「公式 ↔ 张量」表：
+把这段实现逐项对回论文，就得到一张完整的“公式 ↔ 张量”表：
 
 | 论文（`paper-deepseek-mhc.md`） | 代码里的对应物 |
 | --- | --- |
@@ -1181,13 +1186,13 @@ comb_res_mix_frag[i, j]   = input_mixes_frag[i, j + mhc_mult*2]*mhc_scale[2] + m
 | `H^pre = σ(H̃^pre)`、`H^post = 2σ(H̃^post)`、`H^res = Sinkhorn-Knopp(H̃^res)`（式 (17)(18)(19)，`:483-499`） | 同一个 kernel 里的三段：`pre`（`+ eps`）、`post`（`× mhc_post_mult_value`）、`comb`（进 Sinkhorn） |
 | `n²+2n = 24` 个系数（式 (10)(13)，`:430-457`） | `mhc_mult3 = 2*M + M² = 24` |
 
-**一处实现侧的改写值得单独指出**：论文把「除以范数」放在矩阵乘**之后**
-（§4.3.1 第一句：「we reorder the dividing-by-norm operation to follow the matrix
-multiplication」，`:415-417`），因此 `φ_l` 里可以直接吸收 RMSNorm 的权重
+**一处实现侧的改写值得单独指出**：论文把“除以范数”放在矩阵乘**之后**
+（§4.3.1 第一句：“we reorder the dividing-by-norm operation to follow the matrix
+multiplication”，`:415-417`），因此 `φ_l` 里可以直接吸收 RMSNorm 的权重
 （`:417`）。代码里对应的就是 `mhc_reduce_partials_and_rmsnorm_fwd` 把 GEMM 的
 split-K 部分和与 `Σx²` 一起归约，再乘 `rsqrt(Σx²/(nC) + eps)`
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/norm_fn_kernel.py:64-99`）。
-论文声称这一步「maintains mathematical equivalence」——本章只能静态核对，
+论文声称这一步“maintains mathematical equivalence”，本章只能静态核对，
 **没有在数值上验证过这两种顺序的等价性**（`code/03` 用的是已经归约好的 `mixes`）。
 
 pre 侧最后一步是 `pre_apply_mix`：
@@ -1210,7 +1215,7 @@ xgl[i_mhc, i1_h] += mixl[i_mhc] * ogl[i1_h]
 
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/pre_apply_mix_cuda.py:103-105`）前者是对 `mix` 的归约，后者是对 `x` 的逐元素累加。
 注意这里用的是 `T.alloc_reducer` / `T.reducer_update` / `T.finalize_reducer`
-（`:83-85,109`）——**Tree-reduction 的写法在 TileKernels 里比手写 `warp_reduce_sum`
+（`:83-85,109`），**Tree-reduction 的写法在 TileKernels 里比手写 `warp_reduce_sum`
 更常见**，因为它能跨 warp 自动归约。
 
 ### 6.3 post 侧：写出新的 4 条残差分支
@@ -1232,22 +1237,23 @@ x_frag[i_mhco, i1_h] = x_local
 
 即
 
-```text
-   new_res[n, o, h] = post[n, o] · layer_output[n, h]
-                     + Σ_m comb[m, o] · residual[n, m, h]
-```
+$$
+\mathrm{new\_res}[n,o,h]
+=\mathrm{post}[n,o]\,\mathrm{layer\_output}[n,h]
++\sum_m \mathrm{comb}[m,o]\,\mathrm{residual}[n,m,h]
+$$
 
 这与普通残差 `h ← h + f(h)` 的差别在于：**新残差的第 `o` 条分支由所有旧分支
 线性混合而来**，混合系数就是 `comb`。`comb` 被 Sinkhorn 约束成双随机，
-于是这种混合是「守恒的」——信息在分支之间流动，但总权重受控。
+于是这种混合是“守恒的”，信息在分支之间流动，但总权重受控。
 
 这条式子在论文里就是 §4.3.1 的 `F_post,res := H^res_l x_l + H^{post⊤}_l F(·,·)`
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:501`），同时它对应 §3 式 (4) 里
 `Σ_i (∏ H^res) H^{post⊤} F(H^pre x_i)` 那一项的第二半
 （`:205-208`，式 (4) 的完整展开）。论文特别说明：把 `H^post` 与 `H^res`
-的「应用」和残差合并融进同一个 kernel 之后，这个 kernel 的**读从 `(3n+1)C` 降到
-`(n+1)C`、写从 `3nC` 降到 `nC`**（`:501`）——这正是 `post_cuda.py` 一个 kernel
-里同时干「`post ⊙ out`」和「`combᵀ · residual`」两件事的理由。
+的“应用”和残差合并融进同一个 kernel 之后，这个 kernel 的**读从 `(3n+1)C` 降到
+`(n+1)C`、写从 `3nC` 降到 `nC`**（`:501`）。这正是 `post_cuda.py` 一个 kernel
+里同时干“`post ⊙ out`”和“`combᵀ · residual`”两件事的理由。
 
 `code/03-mhc-mix-flow/` 在 CPU 上验证了这条递推，也验证了 `comb` 经过 Sinkhorn
 之后行列和都是 1：
@@ -1282,34 +1288,34 @@ xgl[ti, tj] += o_grad[i, m, j]           # bwd：对 M 条分支求和
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/expand_cuda.py:18-25,43-51`）
 
 * **`head_compute_mix`**：只有 `sigmoid(x·scale + base) + eps`
-  （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/head_compute_mix_cuda.py:30-35`）。它是一个「纯逐元素」算子，
+  （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/head_compute_mix_cuda.py:30-35`）。它是一个“纯逐元素”算子，
   价值在于**和 expand 一起把模型的头尾补齐**，让多分支结构可以从第 0 层
   一直用到最后一层。
 
-论文对这两个算子没有专门定义——它们是把 mHC 接进一个**普通**（单流）骨干时
+论文对这两个算子没有专门定义。它们是把 mHC 接进一个**普通**（单流）骨干时
 必须补的接口：
 
-* `expand` 实现的是 §3 开头那句「the input … is expanded by a factor of n to
-  construct a hidden matrix `x_l ∈ R^{n×C}`」（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:241`），
-  反向自然就是「回到单流」的求和；
+* `expand` 实现的是 §3 开头那句“the input … is expanded by a factor of n to
+  construct a hidden matrix `x_l ∈ R^{n×C}`”（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:241`），
+  反向自然就是“回到单流”的求和；
 * `head_compute_mix` 复用式 (8) 里 `H^pre = σ(·)` 的形式
   （`:393-399`），但只算**模型最后一层**需要的那 `n` 个系数
   （`head_compute_mix_cuda.py:22-25` 的 `[num_tokens, mhc_mult]`），
   所以没有 `comb`，也不需要 Sinkhorn。
 
-换句话说：**论文定义了「层内」三个映射，`expand` / `head_compute_mix` 定义了
-「层外」两个接口**。后者是工程约定，不是论文内容——这也是本章 §7.3 说的
-「哪些东西是论文的、哪些是实现的」的一个小例子。
+换句话说：**论文定义了“层内”三个映射，`expand` / `head_compute_mix` 定义了
+“层外”两个接口**。后者是工程约定，不是论文内容。这也是本章 §7.3 说的
+“哪些东西是论文的、哪些是实现的”的一个小例子。
 
 ### 6.5 `multilayer_recompute`：用重算换显存
 
 反向需要每层的 `residual`、`pre_mix`、`post_mix`、`comb_mix` 与 `layer_output`。
 如果全存下来，显存开销是
-`L × (4·n·h + 小张量)`——`residual` 比 `layer_input` 大 `M = 4` 倍，
+`L × (4·n·h + 小张量)`，`residual` 比 `layer_input` 大 `M = 4` 倍，
 这就是要省的地方。
 
 `mhc_multilayer_recompute` 的做法是：**只保留 `initial_residual` 与各层
-「算得出来的东西」（`pre_mix` / `post_mix` / `comb_mix` / `layer_output`），
+“算得出来的东西”（`pre_mix` / `post_mix` / `comb_mix` / `layer_output`），
 在反向时按层重算 `layer_input` 与 `residual`。**
 
 它的接口因此接受一串列表，并把它们变成 GPU 上的指针表：
@@ -1322,7 +1328,7 @@ pre_mix_ptrs, layer_input_ptrs, residual_ptrs, layer_output_ptrs, post_mix_ptrs,
 ```
 
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/multilayer_recompute_kernel.py:57-67`）kernel 里用
-`T.make_tensor(layer_input_ptrs[i_layer], ...)` 把「一个地址」还原成张量
+`T.make_tensor(layer_input_ptrs[i_layer], ...)` 把“一个地址”还原成张量
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/multilayer_recompute_cuda.py:72-73` 以及 62-69、115-116），
 然后逐层跑同一个递推：
 
@@ -1349,11 +1355,11 @@ for i_mhc, i1_h in T.Parallel(mhc, h_blk):
     res_local[i_mhc, i1_h] = T.cast(T.cast(new_res_local[i_mhc, i1_h], T.bfloat16), T.float32)
 ```
 
-（`:111-112`）残差在层间要**先回 bf16 再转回 fp32**——因为前向保存下来的下一层
+（`:111-112`）残差在层间要**先回 bf16 再转回 fp32**。因为前向保存下来的下一层
 输入就是 bf16，重算必须复现这个精度的往返，否则数值对不上。
-这是一个「重计算（recompute）」实现里非常典型、也非常容易漏的细节。
+这是一个“重计算（recompute）”实现里非常典型、也非常容易漏的细节。
 
-**这一段在论文里是 §4.3.2（Recomputing）**，而且论文把「存什么、重算什么」
+**这一段在论文里是 §4.3.2（Recomputing）**，而且论文把“存什么、重算什么”
 列成了 Table 3：
 
 ```text
@@ -1371,23 +1377,25 @@ for i_mhc, i1_h in T.Parallel(mhc, h_blk):
 这与 kernel 的接口完全对得上：`initial_residual` 是 `x_{l0}`、
 `layer_output_list` 是每层都存的 `F(·)`、`pre_mix/post_mix/comb_mix` 是被排除在
 表外的轻量系数，而 kernel 的**输出** `residual_list` / `layer_input_list`
-正是那些「块内瞬态」的重算结果。
+正是那些“块内瞬态”的重算结果。
 
 论文还给了块长的选择依据：令 `L_r` 为块内层数，总显存 ≈
 `nC·⌈L/L_r⌉ + (n+2)C·L_r`，最小化后得到
 
-```text
-   L*_r ≈ sqrt( n·L / (n+2) )        （论文式 (20)，:534-537）
-```
+$$
+L_r^*\approx\sqrt{\frac{nL}{n+2}}
+$$
 
-并说明「重算块不能跨流水级边界」，于是实际做法是**让重算边界与流水级对齐**
-（`:539`）。本章对这个公式只做到「读懂」：`code/03` 是单层的 CPU 复算，
+这是论文式 (20)，见 `:534-537`。
+
+并说明“重算块不能跨流水级边界”，于是实际做法是**让重算边界与流水级对齐**
+（`:539`）。本章对这个公式只做到“读懂”：`code/03` 是单层的 CPU 复算，
 没有实现多层重算，也没有验证 `L*_r` 的最优性。
 
 为什么这样做值得？`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tests/mhc/test_multilayer_recompute.py:99-108` 把两条路径的
 IO 字节数摆在一起：分开调用要反复读写每层的 `residual`（`M` 倍于 `layer_input`），
 融合重算只保留一份 `initial_residual` 加上按层的小张量。**用一次额外的前向计算
-换掉 `L` 份 `[n, M, h]` 的读写**——在显存紧张的训练里，这笔交易通常划算。
+换掉 `L` 份 `[n, M, h]` 的读写**，在显存紧张的训练里，这笔交易通常划算。
 
 ### 6.6 kernel 与训练 step 的对应
 
@@ -1406,24 +1414,24 @@ IO 字节数摆在一起：分开调用要反复读写每层的 `residual`（`M`
      multilayer_recompute
 ```
 
-顺带把「谁用什么写」说清楚，这是本章 §7 判断法的实例：
+顺带把“谁用什么写”说清楚，这是本章 §7 判断法的实例：
 
 | 组件 | 实现语言 | 出处 |
 | --- | --- | --- |
 | mHC 的 mix / Sinkhorn / pre_apply_mix / post / expand / recompute | **TileLang** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/`（本节全部） |
 | prenorm GEMM | 昇腾侧是 **Ascend C 主体 + 一段 TileLang** | `../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/README.md:27-28,190`；TileLang 实现见 `../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/deep_gemm/tilelang_ops/hc_prenorm.py` |
 
-「谁用什么写」这件事，论文自己给出了更权威的版本：**除了式 (14)–(15) 的 prenorm
+“谁用什么写”这件事，论文自己给出了更权威的版本：**除了式 (14)–(15) 的 prenorm
 GEMM 之外，其余 kernel 都用 TileLang 实现**
-（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:502`）。昇腾侧的落地就是本仓库的做法——
+（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:502`）。昇腾侧的落地就是本仓库的做法，
 GEMM 交给 DeepGEMM-Ascend（Ascend C 主体 + 一段 TileLang），其余算子在
-TileKernels 里。**这条边界是「论文 + 实现」双重印证的**，也是 §7.3 判断法的样板。
+TileKernels 里。**这条边界是“论文 + 实现”双重印证的**，也是 §7.3 判断法的样板。
 
 论文对这套工程设计给出的总账是：`n = 4` 时，大规模训练只增加
 **6.7% 的时间开销**（§4.3 `:411`，§1 也提到 `:219`）。
 **引用这条时必须带上条件**：它是论文自报的**内部大规模训练**结果，
 文本抽取里没有说明加速器型号、并行规模与序列长度，也不是昇腾上的数字；
-本章无法复现，只把它当作「融合 + 重算 + 重叠三件事合起来值多少」的量级参考。
+本章无法复现，只把它当作“融合 + 重算 + 重叠三件事合起来值多少”的量级参考。
 
 DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自报，作者未复现**）：
 
@@ -1435,11 +1443,11 @@ DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自�
 | 4096 | 24 | 28672 | 72.7 | 78 | 3276 |
 | 8192 | 24 | 28672 | 136.7 | 82 | 3463 |
 
-（`../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/README.md:166-176`）注意 `N = 24`——正是
+（`../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/README.md:166-176`）注意 `N = 24`，正是
 `mhc_mult3`。这张表的读法是：**算力利用率只有 3–82 TFLOPS，而带宽到 519–3463 GB/s**，
-而且 README 自己说它「nearly saturates the HBM write bandwidth」
+而且 README 自己说它“nearly saturates the HBM write bandwidth”
 （`:166-168`）。换句话说，这个 GEMM 也在往**带宽**而不是算力上顶。
-本章引用它只为说明「这条链是访存主导」，具体数值属于第 35 章的范围。
+本章引用它只为说明“这条链是访存主导”，具体数值属于第 35 章的范围。
 
 ### 6.7 论文 §4.3.3 与 §5：DualPipe 上的重叠，以及那些数字的实验条件
 
@@ -1453,9 +1461,9 @@ DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自�
 ```
 
 这条设计落在 **DualPipe** 这个仓库里，而不是 TileKernels：DualPipe 的双向流水
-调度本身就是为「前向/反向计算与通信完全重叠」设计的
+调度本身就是为“前向/反向计算与通信完全重叠”设计的
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/DualPipe/README.md:1-9`）。
-本章只把它点到为止——**DualPipe 与 EP 通信重叠是第 38 章的内容**，
+本章只把它点到为止，**DualPipe 与 EP 通信重叠是第 38 章的内容**，
 这里只需要记住：`multilayer_recompute` 的重算块边界必须与流水级对齐（§6.5），
 正是为了让 §4.3.3 说的这种重叠能成立。
 
@@ -1470,7 +1478,7 @@ DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自�
 | Sinkhorn 迭代次数 **t_max = 20**；`n = 4`；`α` 初始化 **0.01**；Layer Norm ε **1e-20** | 式 (9) `:405-406`；Table 5 `:1355-1380`（各行分别在 `:1360,1365,1370,1375`） | 论文的实验超参 |
 
 **本章不引用**论文里任何未给出条件的加速/吞吐数字，也不把上述 27B 的结果
-当作昇腾上的预期——那是两次不同的实验。
+当作昇腾上的预期。那是两次不同的实验。
 
 ---
 
@@ -1484,10 +1492,10 @@ DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自�
 | --- | --- |
 | **访存为主** | 每个元素只做几次乘加；瓶颈是搬进来的字节数与 kernel 启动次数 |
 | **算力需求低** | 没有 GEMM 里的 `M×N×K` 三级循环；用不上 Cube / Tensor Core 的主力 |
-| **shape 小** | `4 × 4`、`[T, 4]`、`24` 维——连 `hidden_size` 都是要被切开的维度 |
+| **shape 小** | `4 × 4`、`[T, 4]`、`24` 维，连 `hidden_size` 都是要被切开的维度 |
 | **latency-bound** | 夹在 GEMM / Attention 之间，必须尽快交出结果，吞吐不是首要目标 |
 | **状态小但迭代多** | Sinkhorn 的迭代状态全在片上；`repeat` 是编译期常量 |
-| **逐 token 并行** | 并行维度是 token（和 head），归约维度几乎总是「很小」的那一维 |
+| **逐 token 并行** | 并行维度是 token（和 head），归约维度几乎总是“很小”的那一维 |
 | **参数梯度要二次归约** | 逐 token 的 partial gradient 必须再有一个 reduce kernel |
 
 判断一个算子属不属于这一类，最快的办法是问三个问题：
@@ -1495,7 +1503,7 @@ DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自�
 1. **它的 FLOPs 和 bytes 哪个大？** 如果算术强度远低于机器的 `算力/带宽`，
    它就是访存主导的。
 2. **它的归约维度有多长？** 如果归约维度小到能放进一个 CTA 的片上存储，
-   那么「一个 kernel + 片上迭代」几乎总是对的。
+   那么“一个 kernel + 片上迭代”几乎总是对的。
 3. **它是不是在关键路径上被反复调用？** 是的话，kernel 的**数量**和**启动开销**
    往往比单次 kernel 的效率更重要。
 
@@ -1513,8 +1521,8 @@ DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自�
 | 动态 shape | `T.dynamic('num_tokens')` 与 `T.const('hidden_size')` | 所有 kernel 的签名 | `tilelang/language/symbolics.py:13` |
 | 运行时才知道的地址 | `T.ptr` + `T.make_tensor(ptr, shape, dtype)` | `multilayer_recompute` 的指针表 | `tilelang/language/proxy.py:265,325` |
 
-其中最后一项值得单独说：**把「一串张量的地址」做成指针表传进 kernel**，
-是「层数维度的循环」唯一的表达方式——因为不同层的张量是各自分配的，
+其中最后一项值得单独说：**把“一串张量的地址”做成指针表传进 kernel**，
+是“层数维度的循环”唯一的表达方式。因为不同层的张量是各自分配的，
 只有地址能整齐地排成一个 `T.Tensor[(L,), T.ptr]`。代价是
 **kernel 内的类型信息全靠 `T.make_tensor` 手写**，写错不会在编译期被抓住。
 
@@ -1522,9 +1530,9 @@ DeepGEMM-Ascend 的 README 给了一张 prenorm GEMM 的性能表（**厂商自�
 
 TileKernels 自己给了答案：**同一个仓库里，mix/Sinkhorn 这类算子是纯 TileLang，
 而 prenorm GEMM 走 DeepGEMM-Ascend，主体是 Ascend C + MAD 原语抽象。**
-mHC 论文在这一点上和实现完全一致：它是**先用一句「excluding Eq. (14) to (15)」
+mHC 论文在这一点上和实现完全一致：它是**先用一句“excluding Eq. (14) to (15)”
 把 prenorm GEMM 划出去、再说其余都用 TileLang**（`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:502`），
-也就是「论文作者自己也认为只有那一段需要下钻」。
+也就是“论文作者自己也认为只有那一段需要下钻”。
 
 DeepGEMM-Ascend 的 README 把理由写成了它的卖点：
 
@@ -1536,10 +1544,10 @@ DeepGEMM-Ascend 的 README 把理由写成了它的卖点：
 > approach the performance limits of the Ascend hardware.
 > （`../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/README.md:5`）
 
-翻译成判断法：**当「离硬件上限还差多少」成为主要矛盾，而这件事取决于
+翻译成判断法：**当“离硬件上限还差多少”成为主要矛盾，而这件事取决于
 分形布局、512 字节对齐、手工地址计算、指令级流水（协程、稀疏加载）时，
-就该下钻。** 这些不是 TileLang 表达不了，而是它们需要比「声明式 tile」
-更细的控制；「接近硬件极限」的收益来自把这些细节都抠到位。
+就该下钻。** 这些不是 TileLang 表达不了，而是它们需要比“声明式 tile”
+更细的控制；“接近硬件极限”的收益来自把这些细节都抠到位。
 
 反过来，本章这些算子的瓶颈在**搬多少**、**启动几次**、**迭代怎么展开**，
 而这些恰好是 TileLang 的强项（`T.Persistent` + 多缓冲 + `T.Parallel` + `T.reduce_*`）。
@@ -1548,7 +1556,7 @@ DeepGEMM-Ascend 的 README 把理由写成了它的卖点：
 至于 PTX / 内联汇编，本章只有一个间接的接触面：CUDA 侧的
 `T.ptx_wait_group` 是 TileLang 暴露出的 `cp.async` 等待原语；更深的 PTX
 （例如第 37 章 DeepSelect 用来压低常数的位运算技巧）不属于 TileLang 主线，
-只在「TileLang 编出来的东西还不够好」时才有必要碰。
+只在“TileLang 编出来的东西还不够好”时才有必要碰。
 
 ### 7.4 一张决策表
 
@@ -1572,7 +1580,7 @@ DeepGEMM-Ascend 的 README 把理由写成了它的卖点：
         是 ─► 下钻到 Ascend C / PTX；否则留在 TileLang
 ```
 
-一句话总结本章的判断法：**先问「瓶颈是字节还是指令」，再问「归约跨不跨 CTA」。**
+一句话总结本章的判断法：**先问“瓶颈是字节还是指令”，再问“归约跨不跨 CTA”。**
 字节 + 跨 CTA ⇒ TileLang 加一个 reduce kernel；指令 ⇒ 下钻。
 
 ---
@@ -1588,9 +1596,9 @@ DeepGEMM-Ascend 的 README 把理由写成了它的卖点：
 
 **P2 忘了 `hc_mult = 4` 是硬约束。** 门控前向/反向、`head_compute_mix`、
 `pre_big_fuse` 的昇腾版都直接 `assert hc_mult == 4`。
-给 `M ≠ 4` 的模型套这些 kernel 会直接断言失败，而不是「慢一点」。
+给 `M ≠ 4` 的模型套这些 kernel 会直接断言失败，而不是“慢一点”。
 
-**P3 以为 `O(1)` 查表等于「通信成本可忽略」。** `O(1)` 只是取行数不随表增长；
+**P3 以为 `O(1)` 查表等于“通信成本可忽略”。** `O(1)` 只是取行数不随表增长；
 这些行从 host memory 到 HBM 的搬运仍然要走 PCIe，能不能盖住取决于**放在第几层**
 （论文 §2.5）。论文的 < 3% 是在特定放置下测出来的。
 
@@ -1608,7 +1616,7 @@ DeepGEMM-Ascend 的 README 把理由写成了它的卖点：
 （`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/engram/engram_gate_fwd_cuda.py:26`）。
 
 **P7 忘了 `eps` 会留下固定偏差。** mHC 的 Sinkhorn 每步都是
-「除以 `(sum + eps)`、再加 `eps`」，所以行列和永远不会精确等于 1。
+“除以 `(sum + eps)`、再加 `eps`”，所以行列和永远不会精确等于 1。
 `code/02` 里的 `max|col_sum − 1| ≈ 1.1e-6` 就是 `eps` 的下限，
 再迭代也不会更好。
 
@@ -1622,8 +1630,8 @@ DeepGEMM-Ascend 的 README 把理由写成了它的卖点：
 tile 假设失效（它在 `:107-121` 一次性搬 2 个 head）。
 
 **P10 把 `repeat` 当成越小越好。** `repeat` 直接决定 mix 矩阵离双随机有多远，
-而 forward 反向都要重跑它。默认 10 是「精度 vs 延迟」的折中，
-不是「随便调大调小都行」。
+而 forward 反向都要重跑它。默认 10 是“精度 vs 延迟”的折中，
+不是“随便调大调小都行”。
 
 **P11 用 `T.ptr` 指针表时把 shape 写错。** 指针表把类型信息交给
 `T.make_tensor`，编译器不会帮你检查；`multilayer_recompute` 里
@@ -1637,18 +1645,18 @@ tile 假设失效（它在 `:107-121` 一次性搬 2 个 head）。
 论文式 (9) 的一次迭代 = 行归一化 + 列归一化（`:402-406`），而代码把
 起点那次列归一化也算进 `repeat`（`mhc/sinkhorn_cuda.py:35-52`）。
 要对论文口径，要么把 `repeat` 调到 20 以上并在意那 `O(eps)` 偏移，
-要么明确说清「这是仓库默认值」。见 §5.2 的对照表。
+要么明确说清“这是仓库默认值”。见 §5.2 的对照表。
 
 **P14 忘了 `H^post = 2σ(·)` 里的那个 2。** 论文式 (8) 是 `2σ`
 （`:393-399`），代码把它做成参数 `mhc_post_mult_value`，而仓库测试的默认值是
 `1.0`（`tests/mhc/test_pre_big_fuse.py:23`、`pre_split_mixes_cuda.py:62`）。
 生产调用必须显式传 2.0；拿默认值跑，`post` 项只有论文强度的一半。
 
-**P15 以为「先 RMSNorm 再乘」和「先乘再除范数」可以随便换。** 论文 §4.3.1 明确
+**P15 以为“先 RMSNorm 再乘”和“先乘再除范数”可以随便换。** 论文 §4.3.1 明确
 把这一步换序并声明数学等价（`:415-417`），因为换序之后 RMSNorm 的权重可以被吸进
 投影矩阵 `φ_l`、并且能和 GEMM 的 split-K 部分和一起归约。代码确实这么做了
 （`mhc/norm_fn_kernel.py:64-99`），但**本章只在静态层面核对，没有数值验证**
-两种顺序的等价性——如果你要改动这条链，先补一个和 `torch/mhc.py` 基线的对拍。
+两种顺序的等价性。如果你要改动这条链，先补一个和 `torch/mhc.py` 基线的对拍。
 
 ---
 
@@ -1659,28 +1667,28 @@ tile 假设失效（它在 `:107-121` 一次性搬 2 个 head）。
 1. **Engram 是第二条稀疏轴。** MoE 用条件计算扩容量，Engram 用条件记忆扩容量；
    两者的容量分配存在 U 型的最优比例（论文自报：约 75%–80% 给 MoE）。
 2. **确定性寻址是它的工程命门。** index 只依赖 token id ⇒ 可以提前预取 ⇒
-   可以把大表放到 host memory 甚至更慢的介质上。`O(1)` 指的是「每次取几行」，
-   不是「延迟可忽略」。
+   可以把大表放到 host memory 甚至更慢的介质上。`O(1)` 指的是“每次取几行”，
+   不是“延迟可忽略”。
 3. **门控 kernel 的融合来自一个恒等式。** `RMSNorm(x,w_h)ᵀRMSNorm(k,w_e)
    = rstd_x·rstd_k·Σx·(w_h⊙w_e)·k`，所以 `w_h⊙w_e` 可以提前算成
    `weight_fused`，kernel 里一次扫描就够。
-4. **CUDA 与 Ascend 版本算的是同一个式子。** 差别只在「谁切任务、谁管同步、
-   向量多宽」：`T.Kernel(4, blocks)` + 手写相位 vs `T.Persistent` +
+4. **CUDA 与 Ascend 版本算的是同一个式子。** 差别只在“谁切任务、谁管同步、
+   向量多宽”：`T.Kernel(4, blocks)` + 手写相位 vs `T.Persistent` +
    `annotate_buffer_versions`。
 5. **参数梯度要二次归约。** 逐 token 的 kernel 只能产出
    `grad_w_partial[num_ctas, hc, d]`；跨 CTA 的求和 + 穿过 ⊙ 的链式法则由
    `grad_w_reduce` 完成。mHC 的 `pre_split_mixes_bwd_reduce` 是同一种模式。
-6. **Sinkhorn 有两处，别混。** mHC 是「softmax + 行/列求和归一化 → 双随机」，
-   每个 token 一个 4×4、全部在片上；Engram 是「行/列 L2 缩放」，
+6. **Sinkhorn 有两处，别混。** mHC 是“softmax + 行/列求和归一化 → 双随机”，
+   每个 token 一个 4×4、全部在片上；Engram 是“行/列 L2 缩放”，
    一张大矩阵、拆成四个 kernel。
-7. **mHC 是「论文定义 + 工程实现」的两层结构。** 论文 §4.1 把 `H^res` 约束到
+7. **mHC 是“论文定义 + 工程实现”的两层结构。** 论文 §4.1 把 `H^res` 约束到
    Birkhoff 多胞形、§4.2 给出参数化与 Sinkhorn 迭代、§4.3 给出三条基础设施设计
    （kernel fusion / recomputing / DualPipe 重叠）；TileKernels 的 `mhc/` 是它们在
    昇腾上的落地。两者**不一致**的地方有四处（Sinkhorn 起点与首步顺序、迭代次数
    `20` vs `10`、`eps`、`post = 2σ` vs `mhc_post_mult_value = 1.0`），本章逐条列出。
 8. **论文自己划出了 TileLang 的边界**：除式 (14)–(15) 的 prenorm GEMM 之外，
-   其余 kernel 都用 TileLang（`paper-deepseek-mhc.md:502`）。这与「GEMM 下钻、
-   结构性算子留在 TileLang」的判断法互为印证。
+   其余 kernel 都用 TileLang（`paper-deepseek-mhc.md:502`）。这与“GEMM 下钻、
+   结构性算子留在 TileLang”的判断法互为印证。
 9. **论文的收益数字必须带条件读。** `n = 4` 时 6.7% 的训练开销、27B 上 0.021 的
    loss 降低、BBH +2.1% / DROP +2.3% 都是论文自报，硬件型号未在文本中给出，
    **不是昇腾上的数字**；本章一条也没复现。
@@ -1692,13 +1700,13 @@ tile 假设失效（它在 `:107-121` 一次性搬 2 个 head）。
 
 * `references.md` 的 **TK** 组：本章逐行读过的所有 kernel 与它们的确切行号。
 * `references.md` 的 **EN** 组：Engram 论文文本抽取的段落索引，
-  以及 `Engram/README.md` 里那句「只是 demo」的原文。
+  以及 `Engram/README.md` 里那句“只是 demo”的原文。
 * `references.md` 的 **MHC** 组：mHC 论文（`paper-deepseek-mhc.md`）的 §3–§5 段落
   索引，含 §4.3 三条基础设施设计与 §5 的实验条件。
-* `references.md` 的 **DG** 组：HC prenorm GEMM 的性能表与「mHC kernel 由 TileLang
-  支撑」的出处；它在第 35 章会被展开。
+* `references.md` 的 **DG** 组：HC prenorm GEMM 的性能表与“mHC kernel 由 TileLang
+  支撑”的出处；它在第 35 章会被展开。
 * `code/01`–`code/04`：四个可以在 CPU 上跑的复算脚本，用来核对本章的代数与形状。
 * 第 33 章：`*_kernel` / `*_cuda` / `*_asc` 三份文件的结构与运行期后端选择。
-* 第 38 章：DualPipe 与 EP 通信重叠——本章 §6.7 点到为止的部分在那里展开。
-* 第 35 章：DeepGEMM-Ascend 的 MAD 抽象、稀疏加载与协程流水——
-  也就是本章 §7.3「什么时候下钻」的另一半。
+* 第 38 章：DualPipe 与 EP 通信重叠，本章 §6.7 点到为止的部分在那里展开。
+* 第 35 章：DeepGEMM-Ascend 的 MAD 抽象、稀疏加载与协程流水，
+  也就是本章 §7.3“什么时候下钻”的另一半。

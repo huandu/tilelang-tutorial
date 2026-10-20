@@ -1,7 +1,7 @@
-# 图 3：Sinkhorn 迭代——同一个词，两处不同的用法
+# 图 3：Sinkhorn 迭代，同一个词，两处不同的用法
 
-对应正文第 5.1–5.4 节。要点：**迭代结构都是「交替把行、列拉回目标归一化」，
-但 mHC 用的是「先 softmax 再行/列求和归一化」，Engram 用的是「行/列 L2 缩放」。**
+对应正文第 5.1–5.4 节。要点：**迭代结构都是“交替把行、列拉回目标归一化”，
+但 mHC 用的是“先 softmax 再行/列求和归一化”，Engram 用的是“行/列 L2 缩放”。**
 
 ## Mermaid 版本
 
@@ -74,7 +74,7 @@ flowchart TB
    `code/02` 显示 `repeat = 10` 时行和偏差约 `5.7e-3`，`repeat = 30` 时降到 `1.4e-6`。
    mHC 的 forward 反向都要重跑这个迭代，所以次数直接进关键路径。
    **注意别和论文的 `t_max` 混用**：论文用 `t_max = 20`，且它的一次迭代是
-   「行 + 列」各一次；代码的 `repeat` 从「softmax 之后做一次列归一化」开始计数。
+   “行 + 列”各一次；代码的 `repeat` 从“softmax 之后做一次列归一化”开始计数。
 4. **反向也要有对应实现。** `mhc_sinkhorn_bwd` 会把每一步的中间矩阵与行列和
    存下来（`sinkhorn_cuda.py:91-92` 的两块 shared 缓冲），然后**逆序**回放链式法则；
    `pre_big_fuse` 的昇腾版本则是把整个前向 op-for-op 复刻进一个 kernel。
@@ -89,11 +89,11 @@ flowchart TB
   式 (8)(9) 的 `Sinkhorn-Knopp` 与 `t_max = 20`
   `../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:391-406`（Table 5 也是 20：`:1375-1378`）；
   论文 §4.3.1 说迭代放一个 kernel、反向在片上重算并整轮回放：`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:429`。
-  论文与源码在「起点 / 首步顺序 / 迭代次数 / eps」上的差异见正文 §5.2 的对照表。
+  论文与源码在“起点 / 首步顺序 / 迭代次数 / eps”上的差异见正文 §5.2 的对照表。
 * Engram 侧：`../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/engram/engram_sinkhorn_kernel.py:13-65,68-106,109-136,139-178`
   与 `engram_sinkhorn_cuda.py:19-250`；基线 `../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/torch/engram.py:6-96`。
 * 迭代收敛与稳定性数据：本图引用的数字来自 `code/02-sinkhorn-iterations/` 的
   **CPU 实际输出**（小矩阵、torch 2.1.1、fp32），不是硬件测量。
-* 「双随机」「Sinkhorn-Knopp」的定义以论文 §4.1–4.2 为准；
+* “双随机”“Sinkhorn-Knopp”的定义以论文 §4.1–4.2 为准；
   corpus 里那份第三方教程（`../tilelang-corpus/06-huawei-ascend/raw/pto-dsl/examples/aot/sinkhorn_demo/pto_sinkhorn_demo_zh.md:1-20`）
   是同一件事的转述，现在只作旁证。

@@ -5,25 +5,25 @@
       "id": "q1",
       "stem": "主干仓库 tile-ai/tilelang 的 PR 模板情况是？",
       "options": [
-        "有一份很长、要求逐项勾选的 PR 模板",
         "没有 PR 模板，正文自由；昇腾适配器仓库反过来有一份很长的模板",
+        "有一份很长、要求逐项勾选的 PR 模板",
         "有模板，但只有算子类 PR 必须用",
         "模板写在 CONTRIBUTING.md 的正文里，需要自己复制"
       ],
-      "answer": 1,
-      "explain": "见 §3.3 与 §7.2：主干 .github/ 下只有 ISSUE_TEMPLATE/、dependabot.yml 和 workflows/，没有 pull_request_template.md，所以正文是自由的、你更要自己写清「做了什么、为什么、怎么验证」。适配器仓库有且很长，把双后端、性能门槛、2 分钟用例预算都写成可勾选项。"
+      "answer": 0,
+      "explain": "见 §3.3 与 §7.2：主干 .github/ 下只有 ISSUE_TEMPLATE/、dependabot.yml 和 workflows/，没有 pull_request_template.md，所以正文是自由的、你更要自己写清“做了什么、为什么、怎么验证”。适配器仓库有且很长，把双后端、性能门槛、2 分钟用例预算都写成可勾选项。"
     },
     {
       "id": "q2",
       "stem": "大改动（改公共语义、换构建基座、加后端）走 RFC 的真实形态是？",
       "options": [
         "仓库有专门的 RFC 模板，放在 .github/ISSUE_TEMPLATE/ 里",
-        "RFC 只能通过邮件列表提交",
         "以普通 issue 提交，靠标题前缀 [RFC] / [RoadMap] 识别；仓库里没有 RFC 模板",
+        "RFC 只能通过邮件列表提交",
         "RFC 是 PR 的一种，必须先合并到 main 再讨论"
       ],
-      "answer": 2,
-      "explain": "见 §3.2：.github/ISSUE_TEMPLATE/ 里没有 RFC 模板，corpus 中 #2196、#3178、#2897、#2708 都以 issue 形式存在。因此「RFC 需要哪些章节」无法确认，本章第 12 节给的是从真实 RFC 反推出来的骨架，不是上游强制要求。"
+      "answer": 1,
+      "explain": "见 §3.2：.github/ISSUE_TEMPLATE/ 里没有 RFC 模板，corpus 中 #2196、#3178、#2897、#2708 都以 issue 形式存在。因此“RFC 需要哪些章节”无法确认，本章第 12 节给的是从真实 RFC 反推出来的骨架，不是上游强制要求。"
     },
     {
       "id": "q3",
@@ -31,23 +31,23 @@
       "options": [
         "每个 PR 打开时自动跑",
         "贡献者自己评论 @regression-perf 即可触发",
-        "合入 main 之后由 publish-docs 触发",
-        "由 maintainer 评论 @regression-perf 触发；外部贡献者不能自己触发，只能请求维护者跑"
+        "由 maintainer 评论 @regression-perf 触发；外部贡献者不能自己触发，只能请求维护者跑",
+        "合入 main 之后由 publish-docs 触发"
       ],
-      "answer": 3,
+      "answer": 2,
       "explain": "见 §9.3 与 §3.4：pr-regression-test-bot.yml 监听 issue_comment，评论者权限必须是 admin / maintain / write 才继续。它 checkout refs/pull/<n>/merge 装 PR 头、切到 main 装基线，再回帖 Markdown + PNG。"
     },
     {
       "id": "q4",
-      "stem": "仓库判定「一次基准对比是否构成回归」的规则是什么？",
+      "stem": "仓库判定“一次基准对比是否构成回归”的规则是什么？",
       "options": [
         "只要有单条 benchmark 变慢就判回归",
-        "至少 2 个 benchmark 同时掉破 0.90 才算；这条规则在 33 份真实报告、1901 个样本上校准过",
         "看算子耗时的绝对值有没有超过上限",
-        "由维护者逐条凭经验判断"
+        "由维护者逐条凭经验判断",
+        "至少 2 个 benchmark 同时掉破 0.90 才算；这条规则在 33 份真实报告、1901 个样本上校准过"
       ],
-      "answer": 1,
-      "explain": "见 §9.3：20 份报告干净、6 份真回归（14–23 条同时塌陷）、7 份只有单个离群值（最低 0.044x），用「两个同时下降」正好把真回归与噪声分开（6/6 抓到、0 误报）。注意本地 run_perf_regression.sh 的默认值与 PR bot 的判定器不同，要显式传参。"
+      "answer": 3,
+      "explain": "见 §9.3：20 份报告干净、6 份真回归（14–23 条同时塌陷）、7 份只有单个离群值（最低 0.044x），用“两个同时下降”正好把真回归与噪声分开（6/6 抓到、0 误报）。注意本地 run_perf_regression.sh 的默认值与 PR bot 的判定器不同，要显式传参。"
     },
     {
       "id": "q5",
@@ -72,25 +72,25 @@
       "id": "q7",
       "stem": "ci.yml 里的四个 job 及其触发条件，下面哪句正确？",
       "options": [
-        "lint、tests、ascend、cutedsl；草稿 PR 不会跑测试矩阵，且 self-hosted job 只对 tile-ai/tilelang 的 PR 生效",
         "build、test、deploy、docs 四个 job",
         "只有 tests 一个 job，其余靠手动 workflow_dispatch",
+        "lint、tests、ascend、cutedsl；草稿 PR 不会跑测试矩阵，且 self-hosted job 只对 tile-ai/tilelang 的 PR 生效",
         "lint、unit、e2e、release；四个 job 都无条件执行"
       ],
-      "answer": 0,
+      "answer": 2,
       "explain": "见 §3.4 与 §9.2：CI 分 lint（ubuntu-latest）、tests（NVIDIA / AMD / Metal 矩阵）、ascend（独立自托管 runner）与 cutedsl（needs: tests）四个 job；后三者的 if 都带 repository_owner == 'tile-ai' 与 !github.event.pull_request.draft。"
     },
     {
       "id": "q8",
-      "stem": "「能力先在适配器仓库验证，再以 [Ascend] PR 回主干」这条流程，本章的结论是？",
+      "stem": "“能力先在适配器仓库验证，再以 [Ascend] PR 回主干”这条流程，本章的结论是？",
       "options": [
         "已明确写进两个仓库的 CONTRIBUTING.md",
         "是上游的硬性规定，不符合的 PR 会被直接关闭",
-        "无法确认——两个仓库的 CONTRIBUTING.md、AGENTS.md、.github/ 里都没有成文规定，它是从 PR 标题模式与两棵树的现状推断出来的工作方式",
-        "只在适配器仓库里有成文规定"
+        "只在适配器仓库里有成文规定",
+        "无法确认，两个仓库的 CONTRIBUTING.md、AGENTS.md、.github/ 里都没有成文规定，它是从 PR 标题模式与两棵树的现状推断出来的工作方式"
       ],
-      "answer": 2,
-      "explain": "见 §7.4：能观察到的是 corpus 里一组 [Ascend] 前缀的 PR 快照与主干已有的 ascend 目录和 CI job，但对两个仓库针对「上游 / 回主干 / merge.*main」的检索没有任何命中。所以这是推断出的工作方式，不是可以引用的政策。"
+      "answer": 3,
+      "explain": "见 §7.4：能观察到的是 corpus 里一组 [Ascend] 前缀的 PR 快照与主干已有的 ascend 目录和 CI job，但对两个仓库针对“上游 / 回主干 / merge.*main”的检索没有任何命中。所以这是推断出的工作方式，不是可以引用的政策。"
     }
   ]
 }

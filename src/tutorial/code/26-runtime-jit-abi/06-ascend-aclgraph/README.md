@@ -2,7 +2,7 @@
 
 ## 目的
 
-正文「启动开销与执行模型」一节说明：一批小算子按 eager 逐条下发时，host 侧
+正文“启动开销与执行模型”一节说明：一批小算子按 eager 逐条下发时，host 侧
 （Python → C++、Tiling、申请 workspace、Launch）的耗时可能盖过 device 上的执行时间，
 这就是 host-bound；把下发序列捕获成一张图、之后只做图回放，是绕开它的标准做法。
 在昇腾上这个机制叫 ACLGraph，用 `torch.npu.NPUGraph` 暴露。

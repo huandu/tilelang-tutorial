@@ -4,7 +4,7 @@
   "kind": "steps",
   "direction": "TB",
   "section": "4.4.1",
-  "caption": "昇腾没有 CUDA 那样的通用软件流水，而是把「任务化 → 资源建模 → 求解 → 物化 → 同步」做成一整段，全部受 allow_autoschedule() 守卫（默认开启）。",
+  "caption": "昇腾没有 CUDA 那样的通用软件流水，而是把“任务化 → 资源建模 → 求解 → 物化 → 同步”做成一整段，全部受 allow_autoschedule() 守卫（默认开启）。",
   "steps": [
     {
       "label": "NormalizeControlFlowForSchedule",

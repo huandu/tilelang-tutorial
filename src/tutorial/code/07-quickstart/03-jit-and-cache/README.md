@@ -4,9 +4,9 @@
 
 把本章 6.1–6.3 节的三件事变成可执行的代码：
 
-1. **lazy 模式**：`@tilelang.jit` 修饰「返回 `PrimFunc`」的函数 → 调用得到
+1. **lazy 模式**：`@tilelang.jit` 修饰“返回 `PrimFunc`”的函数 → 调用得到
    `JITKernel`，可以反复调用、查看生成源码；
-2. **eager 模式**：`@tilelang.jit` 修饰「用 DSL 直接写 body」的函数 → 调用即编译并
+2. **eager 模式**：`@tilelang.jit` 修饰“用 DSL 直接写 body”的函数 → 调用即编译并
    执行，返回结果张量；
 3. **缓存**：同一份 kernel + 同样参数第二次编译应命中；改参数则 miss；
    演示 `tilelang.disable_cache()` / `tilelang.enable_cache()`。
@@ -41,7 +41,7 @@ cache : 已演示 disable_cache()/enable_cache() 一轮
 
 **正确性判据**：所有 `assert_close` 通过。
 **缓存判据**：第一次运行与第二次运行的编译耗时差距明显；`TILELANG_VERBOSE=1` 时
-第二次应看到「命中缓存」相关日志，而不是重新走 nvcc。
+第二次应看到“命中缓存”相关日志，而不是重新走 nvcc。
 
 ## 验证级别
 
@@ -60,5 +60,5 @@ cache : 已演示 disable_cache()/enable_cache() 一轮
 2. 第一次 `python jit_and_cache.py`，记下总耗时。
 3. 第二次再跑，观察是否明显变快、`~/.tilelang/cache/<version>/<platform>/` 下是否
    已经躺着上一次编译的产物。
-4. 设 `TILELANG_DISABLE_CACHE=1` 再跑一次，确认回到「每次重新编译」，以确认缓存
+4. 设 `TILELANG_DISABLE_CACHE=1` 再跑一次，确认回到“每次重新编译”，以确认缓存
    确实是你观察到的时间差的来源。

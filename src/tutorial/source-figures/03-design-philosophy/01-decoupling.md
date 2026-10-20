@@ -35,7 +35,7 @@ flowchart LR
 要点：
 
 * 四个调度维度在 v0.1.15 里**都有入口，也都有缺省**（见正文 2.3 节的表）。
-* 虚线表示「用户可以选择介入」；不介入时由编译器决定。
+* 虚线表示“用户可以选择介入”；不介入时由编译器决定。
 * 注意 `layout` 那条是双向的：用户可以在 `T.annotate_layout` 里写死，也可以留空让
   LayoutInference 推导（`_vendor/tilelang-v0.1.15/tilelang/transform/__init__.py:30-38`）。
 

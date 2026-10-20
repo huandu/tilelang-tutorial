@@ -2,7 +2,7 @@
 
 ## 1. 选择顺序：谁被 `"auto"` 选中
 
-`"auto"` 不是「最聪明的那一个」，而是**后端声明列表里第一个当前可用的**
+`"auto"` 不是“最聪明的那一个”，而是**后端声明列表里第一个当前可用的**
 （`tilelang/backend/module.py:167-171`）。
 
 ```text
@@ -32,12 +32,12 @@ Metal   (tilelang/metal/execution_backend.py)
 | `MetalKernelAdapter`（注册名 `torch`） | `tilelang/jit/adapter/torch/metal.py:14` | 无 | `torch.mps.compile_shader(...)`（`:67`） | 直接把 `torch.Tensor` 传给 MPS kernel | 无显式 stream | 只有 Metal 后端用（`tilelang/jit/kernel.py:390-391` 有 `assert is_metal_target(target)`） |
 | `CuTeDSLKernelAdapter` | `tilelang/jit/adapter/cutedsl/adapter.py:23` | Python 模块（`.py` 而不是 `.c`） | CuTeDSL 生成的 Python 执行器 | 通过生成的 Python 模块接收 torch 张量 | 由生成模块处理 | 走 CuTe DSL 的 NVIDIA 新路线 |
 
-> 记法：**adapter 名字说的是「用什么把 host 和框架接起来」，不是「用什么生成设备代码」。**
+> 记法：**adapter 名字说的是“用什么把 host 和框架接起来”，不是“用什么生成设备代码”。**
 > 同一个 CUDA device 源码可以被 tvm_ffi / nvrtc / cython 三种 adapter 包装，
 > 生成设备代码的是 codegen，二者在 `JITKernel._compile_artifact`（device codegen）
 > 与 `_create_adapter_from_artifact`（adapter）两步里分开。
 
-## 3. 「pto」不在 v0.1.15 里
+## 3. “pto”不在 v0.1.15 里
 
 | 名字 | v0.1.15 状态 | 判据 |
 | --- | --- | --- |
@@ -46,4 +46,4 @@ Metal   (tilelang/metal/execution_backend.py)
 | `pto` adapter | **仅 main / 未进 v0.1.15** | corpus 的 main 快照 `994b44e` 里有 `tilelang/jit/adapter/pto/{__init__,adapter,libgen,wrapper}.py` 与 `cython_wrapper.pyx` |
 
 详见正文 5.4 节。第 30 章会展开 PTO 路线本身，本章只把它当作
-「adapter 家族会被继续扩充」的证据。
+“adapter 家族会被继续扩充”的证据。

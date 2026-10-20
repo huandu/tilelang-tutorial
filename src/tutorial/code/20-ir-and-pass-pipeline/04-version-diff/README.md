@@ -36,8 +36,8 @@ python3 compare_ascend_pipelines.py --compare-main
 * `--compare-main` 会把进主干的 `v0.1.15` pipeline 与 corpus 的 **main 快照**
   （`../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/...`）的 pass 名做差集。
   在 2026-10-01 的核验里两侧**互差为空**——也就是说正文列出的这些昇腾 pass
-  **已经在 release 里**，不是「仅 main / 未进 v0.1.15」。这一条恰好反驳了
-  「昇腾自动调度只在 main 上」的常见误解。
+  **已经在 release 里**，不是“仅 main / 未进 v0.1.15”。这一条恰好反驳了
+  “昇腾自动调度只在 main 上”的常见误解。
 
 ## 验证级别
 

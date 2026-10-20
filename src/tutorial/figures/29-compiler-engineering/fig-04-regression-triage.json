@@ -15,12 +15,12 @@
       "sub": "REFRESH=1 bash maint/scripts/run_perf_regression.sh -k <算子/用例>；重跑后仍低于阈值才继续往下"
     },
     {
-      "label": "③ 定位「编译期变慢」还是「kernel 变慢」",
+      "label": "③ 定位“编译期变慢”还是“kernel 变慢”",
       "sub": "TILELANG_PASS_PROFILE=1 python3 <用例>.py → tilelang/tools/pass_timing.py 的 inclusive / self 用时",
       "tone": "accent"
     },
     {
-      "label": "④ 看「哪些 pass 改了 IR」",
+      "label": "④ 看“哪些 pass 改了 IR”",
       "sub": "TL_LOWER_TRACE=terminal python3 <用例>.py → tilelang/tools/lower_trace/ 逐 pass before/after diff（TILELANG_PASS_DIFF 已被取代）",
       "tone": "accent"
     },
@@ -31,7 +31,7 @@
     }
   ],
   "notes": [
-    "「编译慢」和「跑得慢」是两件事：pass_timing 量前者，benchmark 量后者；一个 pass 让编译慢 3 倍但产物一样时，kernel 性能不变。",
+    "“编译慢”和“跑得慢”是两件事：pass_timing 量前者，benchmark 量后者；一个 pass 让编译慢 3 倍但产物一样时，kernel 性能不变。",
     "pass_timing 给 inclusive 与 self 两个数，self 才是这个 pass 自己花掉的；看到外层 pass 很慢先看 self。",
     "回归判定需要样本量：单条掉到 0.044x 也不算回归，只有 ≥2 条同时掉破阈值才算。"
   ]

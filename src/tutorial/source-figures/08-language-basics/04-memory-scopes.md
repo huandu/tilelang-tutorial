@@ -37,7 +37,7 @@ flowchart TB
 要 Blackwell 的 TMEM 累加器                 → alloc_tmem
 ```
 
-## 4.2 `fragment` 为什么"看起来像 shared，实际在寄存器里"
+## 4.2 `fragment` 为什么“看起来像 shared，实际在寄存器里”
 
 ```text
 你写的：  C_f = T.alloc_fragment((128, 128), "float32")     # 64 KiB 的"逻辑"缓冲
@@ -91,9 +91,9 @@ tile 形状 x dtype x 多缓冲份数 = 占用
 
 ## 事实来源
 
-* `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:49-192, 254-289`
+* `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:49-191, 254-289`
 * `_vendor/tilelang-v0.1.15/tilelang/ascend/language/allocate.py:15-80, 103-125`
-* `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/allocate.py:126-157`
+* `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/allocate.py:140-157`
 * `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:131-151`
 * `_vendor/tilelang-v0.1.15/docs/programming_guides/language_basics.md:152-172`
 

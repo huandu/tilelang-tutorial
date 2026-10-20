@@ -2,7 +2,7 @@
 
 ## 目的
 
-把 `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/reduce.h:240-296` 的
+把 `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/reduce.h:240-295` 的
 `tl::AllReduce` 翻译成纯 Python：给定参与归约的线程数与线程步长 `scale`，
 
 * 逐级打印每一轮的 `offset`，以及这一轮走 **shared memory + barrier** 还是
@@ -60,7 +60,7 @@ reduced value       : 32896.0 (= sum(1..256))
 ## 重要边界
 
 * 这是**结构模型**，不是性能模型：不含任何延迟、带宽或 barrier 成本数字。
-* `batch > 1` 在脚本里只打印「barrier 数被摊薄」的说明，不模拟真实 workspace 布局。
+* `batch > 1` 在脚本里只打印“barrier 数被摊薄”的说明，不模拟真实 workspace 布局。
 * 昇腾侧的 reduce 走另一套指令（`ascend_reduce` 系列），本脚本不建模。
 
 ## 作者验证级别

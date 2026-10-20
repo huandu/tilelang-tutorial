@@ -25,7 +25,7 @@ graph LR
 **要点**
 
 * `GemmConfig` 里的每个数字都会变成内核的**模板参数**，所以运行期没有分支。
-* 缓存 key 覆盖源码、追踪到的 include、编译器版本与选项——改了头文件就会重新编译。
-* `DG_PRINT_CONFIGS=1` 会在「每个 shape 第一次被编译」时打印一行选中的 config
+* 缓存 key 覆盖源码、追踪到的 include、编译器版本与选项，改了头文件就会重新编译。
+* `DG_PRINT_CONFIGS=1` 会在“每个 shape 第一次被编译”时打印一行选中的 config
   （`heuristics.hpp:714-718`），是读懂这个库最省事的入口。
 

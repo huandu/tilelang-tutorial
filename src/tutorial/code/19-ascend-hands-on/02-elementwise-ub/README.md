@@ -2,14 +2,14 @@
 
 ## 目的
 
-本章 §4 的「第一个昇腾 kernel」。用最小代码展示 `GM → UB → Vector → UB → GM`
+本章 §4 的“第一个昇腾 kernel”。用最小代码展示 `GM → UB → Vector → UB → GM`
 的数据流，以及两个 `T.barrier_all()` 分别保护哪条跨 PIPE 依赖。
 
 ## 与官方样例的关系
 
 改写自 `_vendor/tilelang-ascend-v0.1.2.000/examples/elementwise/elementwise_add.py`：
 保留 tile 切分、`vid` 半边、两次 barrier 的语义，去掉 CLI 之外的无关部分，
-并加上「这一行在保护什么」的注释。**API 名与签名与 A 树一致，不与 M 树混用。**
+并加上“这一行在保护什么”的注释。**API 名与签名与 A 树一致，不与 M 树混用。**
 
 写死用到的 API（逐个在 A 树里核对过）：
 

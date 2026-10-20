@@ -36,7 +36,7 @@ python3 gemm_primitive_variants.py
   必须通过（fp16 输入 / fp32 累加）。
 * `gemm_primitive_variants.py`：四种组合都必须与
   `torch.matmul` 的对应写法一致；`clear_accum` 变体用 `k == 0` 清零，
-  结果必须与「先 `T.clear` 再累加」等价。
+  结果必须与“先 `T.clear` 再累加”等价。
 * 性能口径（若要做）：用 `tilelang.profiler.do_bench` 测主循环时间，并**同时**
   记录 GPU 型号、驱动、CUDA 版本与 TileLang 版本；不要把单机数字当成基线。
 

@@ -15,22 +15,22 @@
     },
     {
       "id": "q2",
-      "stem": "`is_ascend()` 用什么作为「这是昇腾机器」的判据？",
+      "stem": "`is_ascend()` 用什么作为“这是昇腾机器”的判据？",
       "options": [
-        "尝试 `import torch_npu` 是否成功",
         "查询 `/dev/davinci_manager` 设备节点是否存在",
+        "尝试 `import torch_npu` 是否成功",
         "读取环境变量 `ASCEND_HOME`",
         "调用 `torch.npu.is_available()`"
       ],
-      "answer": 1,
-      "explain": "见 §3.1：`config.py:24-26` 就是 `os.path.exists('/dev/davinci_manager')`，而且用 `lru_cache(maxsize=1)` 缓存。它只看设备节点存不存在，不检查卡是否真的可用；「能否 import」这类判据会在装了包但没卡的机器上误判。"
+      "answer": 0,
+      "explain": "见 §3.1：`config.py:24-26` 就是 `os.path.exists('/dev/davinci_manager')`，而且用 `lru_cache(maxsize=1)` 缓存。它只看设备节点存不存在，不检查卡是否真的可用；“能否 import”这类判据会在装了包但没卡的机器上误判。"
     },
     {
       "id": "q3",
       "stem": "关于 `topk_gate` 两个后端的并行单位，下面哪一句是对的？",
       "options": [
         "CUDA 版一行一个 block、32 个线程；Ascend 版一行一个 Vector 核，一条指令作用于 64 条 lane",
-        "两边都是「一行一个 block、32 个线程」，只是原语名不同",
+        "两边都是“一行一个 block、32 个线程”，只是原语名不同",
         "Ascend 版通过 `T.Kernel(num_vec_cores, threads=32)` 同时指定核数与线程数",
         "CUDA 版用的是 SIMD，Ascend 版用的是 SIMT"
       ],
@@ -42,48 +42,48 @@
       "stem": "为什么昇腾版的 `invalid_logits_ub` 在 `T.annotate_buffer_versions` 里写的是 1 而不是 `num_stages`？",
       "options": [
         "因为它只在最后一轮迭代才会被写",
-        "因为它的类型是 int32，不能多缓冲",
         "因为它不是流水数据，而是跨所有迭代共享的累积器；多份会让循环外的那次 `T.device_assert` 漏检",
+        "因为它的类型是 int32，不能多缓冲",
         "因为 UB 容量不够，装不下 6 份"
       ],
-      "answer": 2,
-      "explain": "见 §4.6：`scores_ub` 与 `out_ub` 是每个迭代一份的流式数据，所以给 `num_stages`；`invalid_logits_ub` 表达的是「整个 kernel 期间有没有出现过非有限值」，必须全程只有一份。写错会让错误被静默放过，而不是报错。"
+      "answer": 1,
+      "explain": "见 §4.6：`scores_ub` 与 `out_ub` 是每个迭代一份的流式数据，所以给 `num_stages`；`invalid_logits_ub` 表达的是“整个 kernel 期间有没有出现过非有限值”，必须全程只有一份。写错会让错误被静默放过，而不是报错。"
     },
     {
       "id": "q5",
       "stem": "Ascend 版用 `T.view` 把 int64 输出当成 int32 视图来写。如果删掉它前面的 `T.clear(out_ub)`，最可能发生什么？",
       "options": [
         "编译失败，因为 `T.view` 要求内存已被清零",
-        "索引结果的低 32 位仍然正确，高位是未初始化的垃圾，于是整体数值变成一个巨大的错误值",
         "没有任何影响，`T.copy` 会自动补零",
-        "只有 `num_tokens` 为奇数时才会出错"
+        "只有 `num_tokens` 为奇数时才会出错",
+        "索引结果的低 32 位仍然正确，高位是未初始化的垃圾，于是整体数值变成一个巨大的错误值"
       ],
-      "answer": 1,
-      "explain": "见 §4.7：int64 视图靠「低位写索引、高位保持 0」成立，而高位为 0 是 `T.clear(out_ub)` 建立的。删掉之后高位取决于 UB 里残留的内容——如果碰巧是 0，小 shape 的测试还会通过，属于间歇性错误。"
+      "answer": 3,
+      "explain": "见 §4.7：int64 视图靠“低位写索引、高位保持 0”成立，而高位为 0 是 `T.clear(out_ub)` 建立的。删掉之后高位取决于 UB 里残留的内容。如果碰巧是 0，小 shape 的测试还会通过，属于间歇性错误。"
     },
     {
       "id": "q6",
       "stem": "`T.alloc_reducer((1,), T.int32, op='min')` 这种写法，与手写 warp shuffle 相比，最重要的区别是什么？",
       "options": [
         "reducer 只能用整数类型，shuffle 只能用浮点",
+        "reducer 是无序短语义的延迟归约句柄，物理存储与跨线程通信方案由编译器按后端选择；手写 shuffle 则把通信方式写死了",
         "reducer 会被编译成 shared memory，shuffle 用寄存器",
-        "reducer 只在昇腾后端可用",
-        "reducer 是无序短语义的延迟归约句柄，物理存储与跨线程通信方案由编译器按后端选择；手写 shuffle 则把通信方式写死了"
+        "reducer 只在昇腾后端可用"
       ],
-      "answer": 3,
-      "explain": "见 §4.2(d)：`alloc_reducer` 的 docstring 明确说「Physical storage and the cross-thread communication plan are chosen by the compiler」。正因如此，同一个「取最小值」的语义在昇腾侧能被换成 `S.vmin`/`S.vcmin`；手写 `__shfl_xor` 就换不了了。"
+      "answer": 1,
+      "explain": "见 §4.2(d)：`alloc_reducer` 的 docstring 明确说“Physical storage and the cross-thread communication plan are chosen by the compiler”。正因如此，同一个“取最小值”的语义在昇腾侧能被换成 `S.vmin`/`S.vcmin`；手写 `__shfl_xor` 就换不了了。"
     },
     {
       "id": "q7",
       "stem": "关于 UE8M0 缩放因子的打包，下面哪一句是对的？",
       "options": [
-        "CUDA 一次打包 4 个（int32），昇腾一次打包 2 个（int16），因此同一份权重跨设备使用前必须重新打包",
         "两边都是 4 个，差异只体现在端序上",
         "打包因子只影响访存效率，不影响 sf 张量的形状",
+        "CUDA 一次打包 4 个（int32），昇腾一次打包 2 个（int16），因此同一份权重跨设备使用前必须重新打包",
         "昇腾不支持 UE8M0，只能用 e4m3 存尺度"
       ],
-      "answer": 0,
-      "explain": "见 §5.1、§5.6：`get_packed_ue8m0_pack_factor()` 返回 `2 if is_ascend() else 4`，对应 torch dtype 是 int16 / int32。打包因子改变 sf 张量的形状与字节顺序，是正确性问题而不只是性能问题；「昇腾不支持」说的是另一个选项 `use_e4m3_sf`。"
+      "answer": 2,
+      "explain": "见 §5.1、§5.6：`get_packed_ue8m0_pack_factor()` 返回 `2 if is_ascend() else 4`，对应 torch dtype 是 int16 / int32。打包因子改变 sf 张量的形状与字节顺序，是正确性问题而不只是性能问题；“昇腾不支持”说的是另一个选项 `use_e4m3_sf`。"
     },
     {
       "id": "q8",
@@ -91,11 +91,11 @@
       "options": [
         "为了把 bf16 数据转成 fp32 再做计算",
         "为了让连续访存变成非连续访存，避免 bank 冲突",
-        "因为一次乘加只能作用于同一个向量寄存器的 lane，要一起参与 FMA 的两个元素必须落在两个寄存器的同一 lane 位置上",
-        "因为昇腾不支持 `cos` / `sin` 查表，必须重排索引"
+        "因为昇腾不支持 `cos` / `sin` 查表，必须重排索引",
+        "因为一次乘加只能作用于同一个向量寄存器的 lane，要一起参与 FMA 的两个元素必须落在两个寄存器的同一 lane 位置上"
       ],
-      "answer": 2,
-      "explain": "见 §6.1 与习题 E14：`S.vcvt(..., part=0/1)` 的语义是 PART_EVEN / PART_ODD（偶/奇拆分），而 NeoX 口径要的是「前半 / 后半」配对，所以必须先重排到同一 lane 位置、算完再拆回去。旋转公式本身没有变，变的是操作数怎么排进 lane。"
+      "answer": 3,
+      "explain": "见 §6.1 与习题 E14：`S.vcvt(..., part=0/1)` 的语义是 PART_EVEN / PART_ODD（偶/奇拆分），而 NeoX 口径要的是“前半 / 后半”配对，所以必须先重排到同一 lane 位置、算完再拆回去。旋转公式本身没有变，变的是操作数怎么排进 lane。"
     }
   ]
 }

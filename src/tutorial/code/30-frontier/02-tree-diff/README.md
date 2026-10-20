@@ -2,7 +2,7 @@
 
 ## 目的
 
-回答「main 比 v0.1.15 多了什么」。脚本遍历两棵树、列出只在一侧存在的路径，
+回答“main 比 v0.1.15 多了什么”。脚本遍历两棵树、列出只在一侧存在的路径，
 并可以顺带检索一个符号出现在哪一侧。
 
 默认两侧是：
@@ -35,15 +35,15 @@ only in left  (gone on main): 2
 selftest: ok (main = v0.1.15 + the PR #3310 PTO files)
 ```
 
-「only in right」的 20 个文件正是 PR #3310（PTO 后端）引入的内容：
+“only in right”的 20 个文件正是 PR #3310（PTO 后端）引入的内容：
 `src/ascend/codegen/codegen_pto.*`、`src/ascend/codegen/rt_mod_pto.cc`、
 `src/ascend/codegen/sfu_precision.h`、`tilelang/contrib/ptodsl/`（9 个文件）、
 `tilelang/jit/adapter/pto/`（5 个文件），以及被搬到
 `src/backend/common/codegen/` 的 `codegen_py.{cc,h}`。
 
-「only in left」的 2 个文件是 `src/cuda/codegen/codegen_py.cc` 与 `.h`——它们不是
+“only in left”的 2 个文件是 `src/cuda/codegen/codegen_py.cc` 与 `.h`——它们不是
 被删掉，而是被搬到 `src/backend/common/codegen/`。这说明同一份快照里
-**新增和搬迁是混在一起的**，只看「有没有新文件」会漏掉搬迁类改动。
+**新增和搬迁是混在一起的**，只看“有没有新文件”会漏掉搬迁类改动。
 
 ## 作者实际做到的验证级别
 

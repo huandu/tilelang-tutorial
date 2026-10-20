@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "q1",
-      "stem": "在 v0.1.15 里，关于 T.copy「原语」的本质，下列说法正确的是？",
+      "stem": "在 v0.1.15 里，关于 T.copy“原语”的本质，下列说法正确的是？",
       "options": [
         "它等价于 PyTorch 的 dst.copy_(src)，总是走同一条高效路径",
         "前端就已经把这次搬运选成了 SIMT、cp.async 或 TMA 中的一种",
@@ -11,7 +11,7 @@
         "它是一个纯 Python 循环，性能和手写 for 循环一样"
       ],
       "answer": 2,
-      "explain": "原语是用户意图与硬件能力之间的契约：前端函数做完 extent 归一化后只发一条 call_intrin，同一行 T.copy 在 lowering 里可能变成 SIMT、cp.async、TMA 或 LDSM（见 §2.1、§4.1）。选项 0/1 把「意图」当成了「实现」，选项 3 忽略了它会降成硬件指令。"
+      "explain": "原语是用户意图与硬件能力之间的契约：前端函数做完 extent 归一化后只发一条 call_intrin，同一行 T.copy 在 lowering 里可能变成 SIMT、cp.async、TMA 或 LDSM（见 §2.1、§4.1）。选项 A、B 把“意图”当成了“实现”，选项 D 忽略了它会降成硬件指令。"
     },
     {
       "id": "q2",
@@ -23,18 +23,18 @@
         "extent 只能来自 buffer 的 shape，BufferRegion 的 extent 会被忽略"
       ],
       "answer": 0,
-      "explain": "copy_op.py 明确写了不支持 broadcast，且两个整 buffer 直接对拷时形状必须相等（见 §3.1）。选项 1 是最常见的误解，选项 2、3 都与源码不符。"
+      "explain": "copy_op.py 明确写了不支持 broadcast，且两个整 buffer 直接对拷时形状必须相等（见 §3.1）。选项 B 是最常见的误解，选项 C、D 都与源码不符。"
     },
     {
       "id": "q3",
       "stem": "T.copy 走 SIMT 路径、遇到源越界时默认读到什么值、怎么改？",
       "options": [
         "默认填 -inf，可用 T.annotate_safe_value 改",
+        "默认填 0，可用 T.annotate_safe_value({A: v}) 覆盖",
         "默认填 0，但只能通过 TMA descriptor 的 oob_fill 改",
-        "默认不填充，越界读是未定义行为",
-        "默认填 0，可用 T.annotate_safe_value({A: v}) 覆盖"
+        "默认不填充，越界读是未定义行为"
       ],
-      "answer": 3,
+      "answer": 1,
       "explain": "SIMT 路径的 safe_value 默认是 make_zero，可通过 T.annotate_safe_value 改成别的值（见 §4.2）。越界由谓词加 if_then_else 处理，不是未定义行为；oob_fill 属于 TMA 路径，两者不能混。"
     },
     {
@@ -47,7 +47,7 @@
         "它只在目标侧越界时生效"
       ],
       "answer": 1,
-      "explain": "昇腾的 pad_value 是 DMA 对齐填充，与「越界读替一个值」是两件事；把两者混在一起写 kernel 会在 tail 处理上出错（见 §4.2）。选项 0 正是最容易被误选的混淆。"
+      "explain": "昇腾的 pad_value 是 DMA 对齐填充，与“越界读替一个值”是两件事；把两者混在一起写 kernel 会在 tail 处理上出错（见 §4.2）。选项 A 正是最容易被误选的混淆。"
     },
     {
       "id": "q5",
@@ -67,10 +67,10 @@
       "options": [
         "先清零再归约，等价于默认的 clear=True",
         "只在昇腾适配器上有效，主干会忽略它",
-        "在已有 out 之上再合并一次：out = out ⊕ reduce(src)",
-        "把 out 当作被忽略的初值，结果会覆盖它"
+        "把 out 当作被忽略的初值，结果会覆盖它",
+        "在已有 out 之上再合并一次：out = out ⊕ reduce(src)"
       ],
-      "answer": 2,
+      "answer": 3,
       "explain": "clear=True 才从 0 / −inf / +inf 起算；clear=False 表示在已有 out 上再合并一次（见 §3.4、§4.4）。这不是实现细节，前端就会走不同分支。"
     },
     {
@@ -78,11 +78,11 @@
       "stem": "关于 T.atomic_add 的两条路径，下列哪项正确？",
       "options": [
         "tile-region 路径也支持 return_prev=True",
-        "由 get_extent() 能否推出区域区分路径，return_prev 只在标量路径可用",
         "两条路径的 memory_order 在 HIP 上都会被强制生效",
+        "由 get_extent() 能否推出区域区分路径，return_prev 只在标量路径可用",
         "昇腾的 T.set_atomic 是一次性原语，用完自动关闭"
       ],
-      "answer": 1,
+      "answer": 2,
       "explain": "判据是 get_extent() 能不能推出区域，而不是 dst 有几个元素；tile-region 路径用 return_prev 会直接抛 NotImplementedError（见 §3.5）。HIP 与 CuTeDSL 目前忽略 memory_order；set_atomic 是有状态开关，必须配对 set_atomic_none()。"
     },
     {
@@ -95,7 +95,7 @@
         "T.dual_copy / T.SimtVF / T.set_atomic 在主干就有，T.tile.* 属适配器"
       ],
       "answer": 3,
-      "explain": "T.tile.*、real_shape、tmp 属于昇腾适配器仓库，在主干 v0.1.15 里搜不到（见 §5.1）。反过来，T.dual_copy、T.SimtVF、T.SimdVF、T.set_atomic 在 v0.1.15 里就有，所以选项 2 是错的。"
+      "explain": "T.tile.*、real_shape、tmp 属于昇腾适配器仓库，在主干 v0.1.15 里搜不到（见 §5.1）。反过来，T.dual_copy、T.SimtVF、T.SimdVF、T.set_atomic 在 v0.1.15 里就有，所以选项 C 是错的。"
     }
   ]
 }

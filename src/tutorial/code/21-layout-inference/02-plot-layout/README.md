@@ -40,5 +40,5 @@ python3 plot_layout_demo.py
 
 > 注意：示例目录 `examples/plot_layout/layout_swizzle.py` 里的
 > `make_quarter_bank_swizzled_layout(8, 16, element_size)` 调用形式与 v0.1.15 的
-> buffer 版签名不一致（见本章「待核」）。本脚本不使用该 API，改用手写的 XOR 映射，
+> buffer 版签名不一致（见本章“待核”）。本脚本不使用该 API，改用手写的 XOR 映射，
 > 以免踩到版本漂移。

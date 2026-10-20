@@ -38,10 +38,10 @@ Qwen2.5-7B 的账本（bf16，模型卡 28 层 / 28 Q heads / 4 KV heads）
 ```
 
 **为什么分页。** KV 的长度事先不知道（输出长度未知、并发数变动），连续分配
-只能按上界预留；分页把「逻辑位置」和「物理位置」解耦，用一张 `block_table`
+只能按上界预留；分页把“逻辑位置”和“物理位置”解耦，用一张 `block_table`
 把逻辑块映射到任意物理块。代价是 attention kernel 里 KV 的地址从
-`k * block_N` 变成「查表 + 偏移」——第 15 章 4.6 的 paged KV 与本章第 5 节
-说的「间接寻址会破坏 TMA 静态描述符」是同一件事。
+`k * block_N` 变成“查表 + 偏移”，第 15 章 4.6 的 paged KV 与本章第 5 节
+说的“间接寻址会破坏 TMA 静态描述符”是同一件事。
 
 **数字从哪来。** `code/02-kv-ledger/kv_ledger.py`，可在任意机器上复算。
 `hidden_size=3584 / head_dim=128 / intermediate_size=18944` 三个字段模型卡没有

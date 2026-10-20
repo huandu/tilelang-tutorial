@@ -1,7 +1,7 @@
 {
   "id": "04-roofline-before-measure",
   "title": "先建立 roofline 预期，再测量",
-  "caption": "性能分析的正确顺序是先算理论上下界，再用 profiler 回答「差在哪一项」，而不是先测一堆数字再想它意味着什么。",
+  "caption": "性能分析的正确顺序是先算理论上下界，再用 profiler 回答“差在哪一项”，而不是先测一堆数字再想它意味着什么。",
   "kind": "steps",
   "direction": "TB",
   "section": "3.8",
@@ -32,8 +32,8 @@
     { "label": "改一个变量 → 重测 → 用同一口径复算 efficiency", "tone": "accent" }
   ],
   "notes": [
-    "bytes 用的是算法最小搬运量，不是 profiler 测到的 DRAM 流量；两者之差本身就是「多搬了」的证据。",
+    "bytes 用的是算法最小搬运量，不是 profiler 测到的 DRAM 流量；两者之差本身就是“多搬了”的证据。",
     "TileLang 的 tilelang.tools.Analyzer 是这个流程的静态实现：数 T.gemm 的 FLOPs、数 T.copy 跨 global 边界的字节，返回 total_flops / total_global_bytes / estimated_time；它是估算，不是实测。",
-    "昇腾侧 AIC 的 mad/mte1/mte2/fixpipe 与 AIV 的 vec/mte2/mte3 分母各自不同，不能相加成一个「总利用率」。"
+    "昇腾侧 AIC 的 mad/mte1/mte2/fixpipe 与 AIV 的 vec/mte2/mte3 分母各自不同，不能相加成一个“总利用率”。"
   ]
 }

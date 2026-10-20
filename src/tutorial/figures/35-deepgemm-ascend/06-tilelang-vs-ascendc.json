@@ -4,12 +4,31 @@
   "kind": "flow",
   "direction": "TB",
   "nodeMaxEm": 30,
-  "caption": "先看瓶颈在哪条流水线，再看形状是否冻结、访存是否规整；两条路的终点都是同一件事——和可信参考对齐。",
+  "caption": "先看瓶颈在哪条流水线，再看形状是否冻结、访存是否规整；两条路的终点都是同一件事，和可信参考对齐。",
   "nodes": [
-    { "id": "need", "label": "拿到一个昇腾算子需求", "tone": "default" },
-    { "id": "bottleneck", "label": "瓶颈在哪条流水线？", "shape": "diamond", "tone": "accent" },
-    { "id": "frozen", "label": "形状已冻结、要榨最后 2%？", "shape": "diamond", "tone": "accent" },
-    { "id": "regular", "label": "访存模式规整？", "shape": "diamond", "tone": "accent" },
+    {
+      "id": "need",
+      "label": "拿到一个昇腾算子需求",
+      "tone": "default"
+    },
+    {
+      "id": "bottleneck",
+      "label": "瓶颈在哪条流水线？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "frozen",
+      "label": "形状已冻结、要榨最后 2%？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
+    {
+      "id": "regular",
+      "label": "访存模式规整？",
+      "shape": "diamond",
+      "tone": "accent"
+    },
     {
       "id": "ascendc",
       "label": "Ascend C + MAD",
@@ -28,7 +47,12 @@
       "sub": "T.copy + 布局/多缓冲注解",
       "tone": "compute"
     },
-    { "id": "locate", "label": "先定位到具体 pipe", "sub": "FixPipe / 通信", "tone": "store" },
+    {
+      "id": "locate",
+      "label": "先定位到具体 pipe",
+      "sub": "FixPipe / 通信",
+      "tone": "store"
+    },
     {
       "id": "verify",
       "label": "和可信参考对齐",
@@ -37,18 +61,61 @@
     }
   ],
   "edges": [
-    { "from": "need", "to": "bottleneck" },
-    { "from": "bottleneck", "to": "frozen", "label": "算力" },
-    { "from": "bottleneck", "to": "regular", "label": "访存" },
-    { "from": "bottleneck", "to": "locate", "label": "FixPipe / 通信" },
-    { "from": "frozen", "to": "ascendc", "label": "是" },
-    { "from": "frozen", "to": "tilelang-ev", "label": "否" },
-    { "from": "regular", "to": "tilelang-reg", "label": "规整" },
-    { "from": "regular", "to": "ascendc", "label": "稀疏/不规则" },
-    { "from": "locate", "to": "frozen" },
-    { "from": "ascendc", "to": "verify" },
-    { "from": "tilelang-ev", "to": "verify" },
-    { "from": "tilelang-reg", "to": "verify" }
+    {
+      "from": "need",
+      "to": "bottleneck"
+    },
+    {
+      "from": "bottleneck",
+      "to": "frozen",
+      "label": "算力"
+    },
+    {
+      "from": "bottleneck",
+      "to": "regular",
+      "label": "访存"
+    },
+    {
+      "from": "bottleneck",
+      "to": "locate",
+      "label": "FixPipe / 通信"
+    },
+    {
+      "from": "frozen",
+      "to": "ascendc",
+      "label": "是"
+    },
+    {
+      "from": "frozen",
+      "to": "tilelang-ev",
+      "label": "否"
+    },
+    {
+      "from": "regular",
+      "to": "tilelang-reg",
+      "label": "规整"
+    },
+    {
+      "from": "regular",
+      "to": "ascendc",
+      "label": "稀疏/不规则"
+    },
+    {
+      "from": "locate",
+      "to": "frozen"
+    },
+    {
+      "from": "ascendc",
+      "to": "verify"
+    },
+    {
+      "from": "tilelang-ev",
+      "to": "verify"
+    },
+    {
+      "from": "tilelang-reg",
+      "to": "verify"
+    }
   ],
   "notes": [
     "主轴是瓶颈类型，不是“哪个更快”。",

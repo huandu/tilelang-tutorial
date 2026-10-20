@@ -2,11 +2,11 @@
 
 ## 目的
 
-把**同一个**算子「带融合 epilogue 的 GEMM」在六个系统里的写法并排放，用来观察：
+把**同一个**算子“带融合 epilogue 的 GEMM”在六个系统里的写法并排放，用来观察：
 
 * 用户必须提供的硬件相关决策有哪些（搬数据 / 切 tile / 同步）；
 * 哪些决策被搬进了编译器；
-* 语言的层次差异，而不是「谁的行数少」。
+* 语言的层次差异，而不是“谁的行数少”。
 
 统一参数（与 TileLang 官方 quickstart 一致）：`M = N = K = 1024`，fp16 输入、fp32
 累加，tile `128×128×32`，融合 ReLU。
@@ -22,9 +22,9 @@
 | `ascendc_leakyrelu_excerpt.cpp` | Ascend C | **真实片段**（逐元素，非 GEMM） | R14:350-440 |
 | `pto_dsl_matmul_excerpt.py` | PTO-DSL | **真实片段**（matmul 基线） | R19 |
 
-> 说明：CUTLASS-CuTe 与 Ascend C 两侧，本 corpus **没有**「GEMM + 融合 epilogue」的完整
-> 源文件，因此这里用各自仓库里能拿到的真实片段来展示「同层的写法长什么样」。缺口登记
-> 见本章 `references.md` 的「待补资料」第 2、3 条。
+> 说明：CUTLASS-CuTe 与 Ascend C 两侧，本 corpus **没有**“GEMM + 融合 epilogue”的完整
+> 源文件，因此这里用各自仓库里能拿到的真实片段来展示“同层的写法长什么样”。缺口登记
+> 见本章 `references.md` 的“待补资料”第 2、3 条。
 
 ## 运行前提与命令
 

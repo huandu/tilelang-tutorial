@@ -2,7 +2,7 @@
 
 ## 目的
 
-本章 §10.3。演示「AI Core 硬件异常发生时，自动把 kernel 的输入张量 dump 下来」。
+本章 §10.3。演示“AI Core 硬件异常发生时，自动把 kernel 的输入张量 dump 下来”。
 原理（见 `../references.md` 的 A5 条）：
 
 * 编译时在 kernel 参数末尾附一个 `ParamSizeInfo`，以 8 字节 MAGIC

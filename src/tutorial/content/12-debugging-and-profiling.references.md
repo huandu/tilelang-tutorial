@@ -5,11 +5,11 @@
 （commit `a35f8ddf45eba16c21211ec8822d56ce5363036f`，`VERSION` 文件 = `0.1.15`）、
 TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 （commit `89a9364e47a341fffdd65ed94786b1d4f9b6a78c`）。** 正文与示例中不再重复版本号，
-也不对「上游现在是什么状态」作任何未核验的断言。
+也不对“上游现在是什么状态”作任何未核验的断言。
 
 写作环境：macOS (Apple Silicon)、Python 3.11（miniconda）；**没有 NVIDIA GPU，也没有
-昇腾 NPU**。因此本章代码示例的最高验证级别是「仅静态核对」，两个纯计算脚本是
-「CPU 逻辑验证」（见 `code/README.md` 的验证级别总表）。**本章不包含任何自测性能数字。**
+昇腾 NPU**。因此本章代码示例的最高验证级别是“仅静态核对”，两个纯计算脚本是
+“CPU 逻辑验证”（见 `code/README.md` 的验证级别总表）。**本章不包含任何自测性能数字。**
 
 核验日期均为 2026-10-01。核验方式：在锁定版本的工作树上用 `grep -n` 定位定义行，
 阅读完整签名与 docstring，并逐行核对正文引用的代码片段。**这不是运行验证。**
@@ -71,7 +71,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | R2 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tutorials/logging.md` | `LOG` / `DLOG` / `VLOG` / `CHECK` 的关系；`TVM_LOG_LEVEL` 与 `TVM_LOG_DEBUG` 的定义与陷阱 | 已核验（2026-10-01） |
 | R3 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/lower_trace.md` | `TL_LOWER_TRACE` 的取值与输出目录结构；程序 API；edit-and-recompile 三文件工作流；三层实现（How It Works） | 已核验（2026-10-01）：全文阅读 |
 | R4 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/pass_diff.md` | legacy Pass Diff 的 `TILELANG_PASS_DIFF` 与 `pass_diff()` API、返回字段 | 已核验（2026-10-01） |
-| R5 | `_vendor/tilelang-v0.1.15/tilelang/tools/pass_visualizer/README.md` | Pass Visualizer 的结构树视角与「与 Pass Diff 的区别」 | 已核验（2026-10-01） |
+| R5 | `_vendor/tilelang-v0.1.15/tilelang/tools/pass_visualizer/README.md` | Pass Visualizer 的结构树视角与“与 Pass Diff 的区别” | 已核验（2026-10-01） |
 | R6 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/compile_only.md` | Compile-Only 的 CLI、target 规则、C/CUDA 目标差异、`CUDA codegen FFI missing` | 已核验（2026-10-01）：全文阅读 |
 | R7 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/layout_visualization.md` | `plot_layout` 与 `TL_LAYOUT_VISUALIZATION_*` 的用法、依赖（Matplotlib）、限制 | 已核验（2026-10-01） |
 | R8 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/analyzer.md` | `Analyzer` 的 API、结果字段、Limitations（只认 `T.gemm`、只认跨 global 的 `T.copy`、blockIdx.z 不计、峰值表只覆盖 cc 8.0/8.6/8.9） | 已核验（2026-10-01） |
@@ -80,9 +80,9 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | R10 | `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/document/detail/CANNCommunityEdition/CANNCommunityEdition_920beta1_devaids_Profiling_atlasprofiling_16_0005_html.md` | `msprof --output=<path> <app>` 的一键采集；`PROF_XXX` 目录内默认产物清单；Ascend RC 的 `msprof --export=on` | 已核验（2026-10-01） |
 | R11 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/tutorials/print.md` | `T.printf` / `T.dump_tensor` 的完整教程（编译选项、每个核 1 MB 上限、格式说明符、shape_info 语义） | 已核验（2026-10-01）：全文阅读 |
 | R12 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/tutorials/ascend_aicore_exception_dump_zh.md` | AICore 异常 dump 白皮书：工作流程、`ParamSizeInfo` 与 MAGIC 搜索、环境变量、路径规则、API 速查 | 已核验（2026-10-01）：全文阅读 |
-| R13 | `../tilelang-corpus/12-operator-libraries/raw/TileOPs/docs/design/roofline.md` | roofline 性能模型（`sol_time` / `efficiency`、算法最小搬运量的五条界定）——**TileOPs 是另一个库，此处只借方法学** | 已核验（2026-10-01）：阅读 §1 与 §2 |
-| R14 | `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/.agents/skills/tilelang-ascend/references/profiling.md` | 昇腾 profiling 配方：`do_bench` 单位与返回类型、`msprof` 后端口径、pipe 比例不可相加、`npusim record` 周期级测量注意事项 | 已核验（2026-10-01）：全文阅读 |
-| R15 | `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2504-17577-fulltext.md` | TileLang 论文全文（76 KB，逐页提取）；本章只用于确认「tile op / 依赖分析 / 自动调度」这套设计语境，**未从中取任何性能数字** | 已核验（2026-10-01）：grep 关键词（debug/profiling/roofline/autotune）后确认与本章无直接可引用结论 |
+| R13 | `../tilelang-corpus/12-operator-libraries/raw/TileOPs/docs/design/roofline.md` | roofline 性能模型（`sol_time` / `efficiency`、算法最小搬运量的五条界定），**TileOPs 是另一个库，此处只借方法学** | 已核验（2026-10-01）：阅读 §1 与 §2 |
+| R14 | `../tilelang-corpus/02-tilelang-core-repo/raw/.agents/skills/tilelang-ascend/references/profiling.md` | 昇腾 profiling 配方：`do_bench` 单位与返回类型、`msprof` 后端口径、pipe 比例不可相加、`npusim record` 周期级测量注意事项 | 已核验（2026-10-01）：全文阅读 |
+| R15 | `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2504-17577-fulltext.md` | TileLang 论文全文（76 KB，逐页提取）；本章只用于确认“tile op / 依赖分析 / 自动调度”这套设计语境，**未从中取任何性能数字** | 已核验（2026-10-01）：grep 关键词（debug/profiling/roofline/autotune）后确认与本章无直接可引用结论 |
 
 ---
 
@@ -113,11 +113,11 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 ## 待补资料
 
 * **本机无法验证的部分**：所有需要 NVIDIA GPU 或昇腾 NPU 的实测（SOL 图、msProf 报告、
-  `T.print` 实际输出、对拍实测误差）。本章的处理方式是给出「怎么测 + 判据」，不编造数字。
-* **`pass_visualizer` 对昇腾目标的 CLI 支持**：corpus 的 debug 文档明确说 CLI「currently
-  supports CUDA targets only」。如果之后上游补齐昇腾目标，本章 3.3 节需要相应更新。
+  `T.print` 实际输出、对拍实测误差）。本章的处理方式是给出“怎么测 + 判据”，不编造数字。
+* **`pass_visualizer` 对昇腾目标的 CLI 支持**：corpus 的 debug 文档明确说 CLI“currently
+  supports CUDA targets only”。如果之后上游补齐昇腾目标，本章 3.3 节需要相应更新。
 * **`Analyzer` 的峰值表覆盖范围**：目前只到 compute capability 8.6 / 8.9；若上游加入
   Blackwell（10.x）条目，3.8 节的 Limitations 需要同步修改。
 * **IKET**（CUDA 侧 timeline 标记工具）：corpus 的 `tools/iket.md` 与
   `_vendor/tilelang-v0.1.15/tilelang/tools/cuda/iket` 都存在，本章未展开，因为它需要外部
-  IKET runtime；若后续要补「kernel 内 timeline」小节，可从这两处入手。
+  IKET runtime；若后续要补“kernel 内 timeline”小节，可从这两处入手。

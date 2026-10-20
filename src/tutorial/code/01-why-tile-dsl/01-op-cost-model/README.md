@@ -66,7 +66,7 @@ RMSNorm(4096x4096)            67.1 MFLOP        64 MiB             1 F/B      me
   `../../../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
   （H100 SXM5，厂商公开资料，preliminary specs，未实测）；
 * 机器平衡点是本书用上面两个数算出来的比值，不是厂商给出的数字；
-* 算子成本按「理论最小访存量」计算，真实 kernel 会高于这个下界。
+* 算子成本按“理论最小访存量”计算，真实 kernel 会高于这个下界。
 
 ## 作者实际做到的验证级别
 
@@ -75,7 +75,7 @@ RMSNorm(4096x4096)            67.1 MFLOP        64 MiB             1 F/B      me
 
 ## 已知局限
 
-* 只统计「读入 + 写出」一行，不考虑中间量回写显存；这给了 memory-bound 算子一个**乐观**
+* 只统计“读入 + 写出”一行，不考虑中间量回写显存；这给了 memory-bound 算子一个**乐观**
   的下界（真实实现往往更差）。
 * 运算量用的是粗估常数（softmax 每元素 3 FLOP、RMSNorm 每元素 4 FLOP），目的在于判断
   数量级，不在于精确。

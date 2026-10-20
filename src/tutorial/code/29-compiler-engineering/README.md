@@ -1,11 +1,11 @@
 # 第 29 章 代码目录
 
-本章的示例都围绕「**改**编译器」展开。与第 20 章不同，这里的代码是要被拷进
+本章的示例都围绕“**改**编译器”展开。与第 20 章不同，这里的代码是要被拷进
 TileLang 源码树、编译、挂进 pipeline、然后被测试的。
 
 **本机（macOS / Apple Silicon，无 NVIDIA GPU、无昇腾 NPU，未安装 tilelang/tvm）
 没有任何一个示例被真正编译或运行过。** 每个示例的 README 都写清了自己的验证级别，
-请照实引用，不要把「仅静态核对」当成「运行验证」。
+请照实引用，不要把“仅静态核对”当成“运行验证”。
 
 ## 验证级别总表
 
@@ -18,7 +18,7 @@ TileLang 源码树、编译、挂进 pipeline、然后被测试的。
 
 ## 定位 `_vendor/`
 
-所有脚本都按「脚本所在目录向上数 4 层」定位书根，再拼 `_vendor/tilelang-v0.1.15/`。
+所有脚本都按“脚本所在目录向上数 4 层”定位书根，再拼 `_vendor/tilelang-v0.1.15/`。
 只要章节目录还在
 `.workspace/research/tilelang-book/chapters/29-compiler-engineering/` 下，
 脚本无需传参就能找到锁定版本的源码。

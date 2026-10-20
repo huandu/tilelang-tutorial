@@ -1,7 +1,7 @@
 # 第 14 章 习题答案
 
-与 `exercises.md` 一一对应（E1–E13）。每题给「解题思路 → 参考答案 →
-常见错误」。涉及数字的地方标出它是「本书推导」还是「厂商/上游资料数字」。
+与 `exercises.md` 一一对应（E1–E13）。每题给“解题思路 → 参考答案 →
+常见错误”。涉及数字的地方标出它是“本书推导”还是“厂商/上游资料数字”。
 
 ---
 
@@ -21,7 +21,7 @@
    收益有限，该去减少访存。
 
 **常见错误**：把 $2MNK$ 写成 $MNK$（漏掉乘加的 2）；把访存写成只算 $A$、$B$
-不算 $C$。注意这里的 $b$ 是「元素字节数」，不同 dtype 结果不同。
+不算 $C$。注意这里的 $b$ 是“元素字节数”，不同 dtype 结果不同。
 
 ---
 
@@ -48,7 +48,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
 
 ## E3 概念题 ★★
 
-**思路**：把每一级放回「账本」的三个维度（DRAM 流量、重叠、片上带宽）。
+**思路**：把每一级放回“账本”的三个维度（DRAM 流量、重叠、片上带宽）。
 
 **参考答案**：
 
@@ -61,11 +61,11 @@ $b=2$（fp16），$S=3$，`threads=128`。
    流水让第 $i$ 次计算与第 $i+1$ 次搬运重叠，把搬运延迟藏进计算时间里，
    于是张量核利用率上升。
 3. `T.annotate_layout` 改的是 buffer 的**物理布局**（数据在 shared memory 里
-   怎么摆），服务「shared→fragment 的片上带宽、bank conflict」；
+   怎么摆），服务“shared→fragment 的片上带宽、bank conflict”；
    `T.use_swizzle` 改的是 **block 的遍历顺序**（哪些 block 先跑），服务
-   「L2 命中率」。两者都只影响数据怎么流动，不改变乘加次数，所以不改变 FLOPs。
+   “L2 命中率”。两者都只影响数据怎么流动，不改变乘加次数，所以不改变 FLOPs。
 
-**常见错误**：把两个注解都说成「优化内存」而不区分对象；把 `T.use_swizzle`
+**常见错误**：把两个注解都说成“优化内存”而不区分对象；把 `T.use_swizzle`
 误认为改 shared 内部排布（那是 `T.annotate_layout`）。
 
 ---
@@ -85,12 +85,12 @@ $b=2$（fp16），$S=3$，`threads=128`。
      很大）；
    * (c) → batched GEMM（形状一致）；
    * (d) → stream-K（块数够多，问题是尾波量化）。
-3. 「用带宽换并行度」：变差的是**写出流量**（变成原来的 `split_k` 倍，
+3. “用带宽换并行度”：变差的是**写出流量**（变成原来的 `split_k` 倍，
    $b\,MNK/k$）以及原子合并的开销；变好的是**并行度/负载均衡**（grid 变大，
    核不再闲着）。
 
-**常见错误**：把 (d) 也选成 split-K。注意 split-K 解决的是「块太少」，
-(d) 的问题是「最后一波不满」，不同。
+**常见错误**：把 (d) 也选成 split-K。注意 split-K 解决的是“块太少”，
+(d) 的问题是“最后一波不满”，不同。
 
 ---
 
@@ -100,16 +100,16 @@ $b=2$（fp16），$S=3$，`threads=128`。
 
 1. `bz` 是 **K 方向的段号**：把 $K$ 切成 `split_k` 段，每个 block 只算
    `splitK = K // split_k` 这一段的部分和。
-2. `num_stages=0` 表示**不做软件流水**——`T.Pipelined` docstring 明确写
+2. `num_stages=0` 表示**不做软件流水**，`T.Pipelined` docstring 明确写
    “if `num_stages` is 0, pipeline will not be enabled”。这里写
    `T.Pipelined` 只是为了保留循环语法，实际是串行迭代。
 3. 因为 `split_k` 个 block 都要往同一个输出位置累加，必须原子相加；
-   用 `T.copy` 会变成「最后一个写的 block 覆盖前面的」，结果只等于
+   用 `T.copy` 会变成“最后一个写的 block 覆盖前面的”，结果只等于
    某一段的部分和（$K$ 的某一 1/4），而不是完整结果。
 4. 原子加的加法顺序不确定，用 fp16 累加会因舍入误差放大而丢精度；
    官方示例把输出声明为 fp32 就是为了让合并过程在高精度下进行。
 
-**常见错误**：认为 `num_stages=0` 是「默认最优值」；把 `T.atomic_add`
+**常见错误**：认为 `num_stages=0` 是“默认最优值”；把 `T.atomic_add`
 当成可有可无的写法。
 
 ---
@@ -119,7 +119,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
 **参考答案**：
 
 1. 因为各专家 M 不同、且要对齐到 `block_M` 的整数倍（padding），
-   grid 必须按「每个专家各自的 M 块数」累加得到 `total_m_blocks`，
+   grid 必须按“每个专家各自的 M 块数”累加得到 `total_m_blocks`，
    而不是按总 M 除以 block_M。
 2. `batch_offsets[g]` 是专家 $g$ 在**拼接张量**里的真实起始行；
    `batch_padded_offsets[g]` 是它在**对齐到 block_M 后**的起始偏移。
@@ -131,7 +131,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
    correct yet”，所以把 `copy_num_stages` 固定为 1。
 
 **常见错误**：把 `batch_offsets` 和 `batch_padded_offsets` 当成同一个量；
-忽略「ptr-backed 多级流水尚不正确」这条限制。
+忽略“ptr-backed 多级流水尚不正确”这条限制。
 
 ---
 
@@ -139,7 +139,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
 
 **参考答案**：
 
-1. 第 ⑤ 级（官方 intrinsic / 手动 MMA）。它没有 PyTorch 参考——对照物是
+1. 第 ⑤ 级（官方 intrinsic / 手动 MMA）。它没有 PyTorch 参考，对照物是
    CUTLASS 的 warp-level MMA 代码。
 2. 决定 warp 在 M/N 方向怎么划分（分区策略）。`threads`
    $=32\times(block\_row\_warps\times block\_col\_warps)=32\times4=128$。
@@ -151,7 +151,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
    都比 TileLang 的高层原语差很多。
 
 **常见错误**：把 `threads` 算成 `block_row_warps × block_col_warps`（忘了
-乘 32）；把 `stmatrix` 说成「写回 global」。
+乘 32）；把 `stmatrix` 说成“写回 global”。
 
 ---
 
@@ -170,13 +170,13 @@ $b=2$（fp16），$S=3$，`threads=128`。
 
 2. `sf_a_granularity_k` = **一个 A scale factor 覆盖多少个 K 元素**。
 3. 因为 scale 的块大小是**硬件指令定义的**：sm100 的 MXFP8 用 128，
-   MX 规范在昇腾侧是 32。这说明「block-scaled」这个概念虽然统一，但
+   MX 规范在昇腾侧是 32。这说明“block-scaled”这个概念虽然统一，但
    **粒度是硬件相关的**，前端只能把粒度作为参数暴露。
 4. 例：量化误差如何传播、累加顺序对结果的影响、scale 的舍入/上溢策略、
-   如何做数值验证（rtol/atol 怎么定）——都属于第 27 章。
+   如何做数值验证（rtol/atol 怎么定），都属于第 27 章。
 
-**常见错误**：把 `sf_*_granularity_k` 理解成「scale 的个数」而不是
-「每个 scale 覆盖的 K 宽度」。
+**常见错误**：把 `sf_*_granularity_k` 理解成“scale 的个数”而不是
+“每个 scale 覆盖的 K 宽度”。
 
 ---
 
@@ -187,7 +187,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
 1. 五件事：基线是谁；同一个 shape；同一个 dtype 与累加精度；同一个 epilogue；
    同一套测量协议。
 2. 三个要素：对比对象（标杆性能）、条件（定制 shape）、区间（0.98–1.2×）。
-   它是「对齐」的模板，因为它把「跟谁比、在什么条件下、差多少算合格」都写全了，
+   它是“对齐”的模板，因为它把“跟谁比、在什么条件下、差多少算合格”都写全了，
    而不是只给一个孤立的数字。
 3. 对比对象是 **Torch NPU**。compute-bound 的算子报 TFLOP/s（GEMM、GQA
    backward），memory-bound 的报有效 GB/s（FP8 casting）。
@@ -200,7 +200,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
    * 预热/重复次数、是否 flush L2 不一致；
    * shape 是否 padding、是否 batched（cuBLAS 可能走了 strided-batched API）。
 
-**常见错误**：只写「dtype 可能不同」而不写清哪一侧开了 TF32；把
+**常见错误**：只写“dtype 可能不同”而不写清哪一侧开了 TF32；把
 `do_bench` 默认的 `mean` 和 `min` 混用。
 
 ---
@@ -217,10 +217,10 @@ $b=2$（fp16），$S=3$，`threads=128`。
    $256\times256$，摊不开。
 3. 输出块数 $=\lceil256/128\rceil\times\lceil256/128\rceil=4$，远小于 SM 数
    （H100 有大量 SM），grid 太小；同时 K 很大可以切且不影响读入量，
-   所以适合 split-K。瓶颈在「并行度」，不在带宽本身。
+   所以适合 split-K。瓶颈在“并行度”，不在带宽本身。
 
-**常见错误**：只看 K 大就以为 compute-bound。算术强度看的是「总 FLOPs/总
-字节」，小 M/N 会把 AI 拉低。
+**常见错误**：只看 K 大就以为 compute-bound。算术强度看的是“总 FLOPs/总
+字节”，小 M/N 会把 AI 拉低。
 
 ---
 
@@ -241,10 +241,10 @@ $b=2$（fp16），$S=3$，`threads=128`。
 
 2. 后两组最可能掉 occupancy：累加器就占 256 个寄存器，已经超过 CUDA 常规
    的上限（255），必然溢出到 local memory。判断依据是 1.3 节的寄存器公式
-   与 CUDA 最佳实践里「cc7.0 每线程 32 个寄存器才能满 occupancy」的结论。
+   与 CUDA 最佳实践里“cc7.0 每线程 32 个寄存器才能满 occupancy”的结论。
 3. 第三组 (256,128,64,2) 单级就 48 KB，加到 3 级是 144 KB（仍 < 228 KB），
    第一组 (128,128,32,3) 加到 4 级是 64 KB（可以）。真正的限制通常先卡在
-   寄存器而不是 shared memory——所以答案要以「哪个约束先到」为准。
+   寄存器而不是 shared memory。所以答案要以“哪个约束先到”为准。
 
 **常见错误**：只算 shared memory 不算寄存器；忘记 `accum_dtype` 的
 `/4 Byte` 折算。
@@ -269,7 +269,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
 4. 与 `torch.matmul` 比时，要写清：同一 dtype、同一 shape、`2MNK` 口径、
    同一 `do_bench` 参数、是否 TF32、对比的是 `cublas` 还是 `cublasLt`。
 
-**常见错误**：直接抄别人的「比 cuBLAS 快 x 倍」而不写条件；用 `min` 和
+**常见错误**：直接抄别人的“比 cuBLAS 快 x 倍”而不写条件；用 `min` 和
 `mean` 混着比。
 
 ---
@@ -288,7 +288,7 @@ $b=2$（fp16），$S=3$，`threads=128`。
    | 同步 | 隐式（`T.Pipelined` 自动插） | 显式 `T.barrier_all()`（主干后端由 `InsertSync` 自动做） |
 
 2. 一维 grid + 除法反解：好处是 grid 维度简单、kernel 内可控，便于做
-   persistent 遍历；代价是要在 kernel 里做整数除法，且丢失了「x 维、y 维」
+   persistent 遍历；代价是要在 kernel 里做整数除法，且丢失了“x 维、y 维”
    的语义信息，不利于编译器做 swizzle 优化。NV 侧直接用多维 grid 更贴近
    硬件。
 3. 实验方案模板（不运行）：
@@ -305,4 +305,4 @@ $b=2$（fp16），$S=3$，`threads=128`。
    ```
 
 **常见错误**：用 CATLASS 的某个带后处理的 example 去比 TileLang 的纯 GEMM；
-或把「精度比对通过」当成「性能对齐」。
+或把“精度比对通过”当成“性能对齐”。

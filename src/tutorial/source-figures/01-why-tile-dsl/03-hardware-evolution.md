@@ -1,4 +1,4 @@
-# 图 3：硬件三阶段与「必须人工管理的资源」的增长
+# 图 3：硬件三阶段与“必须人工管理的资源”的增长
 
 对应正文第 4.2 节。
 
@@ -25,10 +25,10 @@ SIMT           张量核                异步搬运 + 专用存储
 
 ## 来源
 
-* NV 侧：「NVIDIA H100 is the first truly asynchronous GPU.」、TMA、thread block cluster、
-  distributed shared memory —— `../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
+* NV 侧：“NVIDIA H100 is the first truly asynchronous GPU.”、TMA、thread block cluster、
+  distributed shared memory ，`../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
   （H100，厂商公开资料）。
-* 昇腾侧：Cube/AIC 与 Vector/AIV 的分工、L1/L0A/L0B/L0C/UB 的角色、MTE 流水与 Set/Wait ——
+* 昇腾侧：Cube/AIC 与 Vector/AIV 的分工、L1/L0A/L0B/L0C/UB 的角色、MTE 流水与 Set/Wait ，
   `../tilelang-corpus/09-zhihu-da-zhi-ruo-yu/raw/zhihu-dazhiruoyu-deepseek-ascend.md`
   （**社区一手文章，非厂商官方文档**）。
 * 编译器为昇腾接管的同步与调度：`_vendor/tilelang-v0.1.15/tilelang/ascend/pipeline.py:108-114`

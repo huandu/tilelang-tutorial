@@ -1,12 +1,12 @@
 # 第 31 章习题答案
 
-与 `exercises.md` 的 E1–E13 一一对应。每题给「解题思路 → 参考答案 → 常见错误」。
+与 `exercises.md` 的 E1–E13 一一对应。每题给“解题思路 → 参考答案 → 常见错误”。
 
 ---
 
 ## E1
 
-**思路**：先问「改的是哪一层」，再问「这一层在仓库里的落点」，最后问「哪条测试能锁住它」。
+**思路**：先问“改的是哪一层”，再问“这一层在仓库里的落点”，最后问“哪条测试能锁住它”。
 
 **参考答案**
 
@@ -17,7 +17,7 @@
 | 3. 自动向量化 pass | 路径二 · 编译器 | `src/transform/<pass>.cc` + `tilelang/transform/__init__.py` + `tilelang/<backend>/pipeline.py` | `testing/python/transform/` |
 | 4. 支持自研加速器 | 路径三 · 后端 | `tilelang/<backend>/`（dialect、manifest、pipeline、codegen）+ `src/<backend>/` + CMake | `testing/python/backend/`、`testing/python/target/` |
 
-**常见错误**：把第 2 题当成路径一（因为「只是加个参数」）；把第 4 题只写成
+**常见错误**：把第 2 题当成路径一（因为“只是加个参数”）；把第 4 题只写成
 `tilelang/<backend>/codegen.py`（后端要四块实现区一起看）。
 
 ---
@@ -30,15 +30,15 @@
 
 四个模板：
 
-* `bug-report.yml`：必填「已读文档 + 已搜索 issue」两个复选、TileLang 版本、系统信息、
+* `bug-report.yml`：必填“已读文档 + 已搜索 issue”两个复选、TileLang 版本、系统信息、
   问题描述、可复现的最小代码；traceback 与 expected behavior 是可选。
-* `feature-request.yml`：必填「已搜索 issue」复选与 `Motivation`；`Solution`、
+* `feature-request.yml`：必填“已搜索 issue”复选与 `Motivation`；`Solution`、
   `Alternatives`、`Additional context` 可选。
 * `questions.yml`：必填两个复选与问题正文。
 * `release-plan.yml`：版本必填；里程碑、范围、任务、就绪检查、备注为可选项。
 
 `config.yml` 里 `blank_issues_enabled: true` 表示**允许开空白 issue**，模板是引导而非
-强制闸门。所以「没按模板填」不会被系统挡住，但内容不全的 issue 很难被处理。
+强制闸门。所以“没按模板填”不会被系统挡住，但内容不全的 issue 很难被处理。
 
 **常见错误**：以为 `bug-report.yml` 的 traceback 是必填（它其实不是）；
 以为没有 RFC 模板是因为漏了（不是，见 E3）。
@@ -47,7 +47,7 @@
 
 ## E3
 
-**思路**：用「列目录 + 检索文件内容」两步验证，不要凭印象。
+**思路**：用“列目录 + 检索文件内容”两步验证，不要凭印象。
 
 **参考答案**
 
@@ -61,11 +61,11 @@ RFC 专属标签配置，也没有。corpus 里的 RFC 都是普通 issue
 （构建基座、公共 API、多个后端）；改动**需要先决定方向再写代码**（例如换 TVM、
 改 reducer 所有权、定义 atomic 内存序）；改动**代价高、难以回退**。
 
-（3）因为这个结论把「我观察到的」和「文件规定的」分开了。如果我写成「RFC 必须包含
-某几节」，读者会以为那是上游要求；实际上仓库没写。把它标为无法确认，读者才知道
+（3）因为这个结论把“我观察到的”和“文件规定的”分开了。如果我写成“RFC 必须包含
+某几节”，读者会以为那是上游要求；实际上仓库没写。把它标为无法确认，读者才知道
 该去维护者那里确认，而不是照着一份自造规则提交。
 
-**常见错误**：从 corpus 的 RFC 标题前缀 `[RFC]` 推断「有 RFC 标签就一定存在模板」。
+**常见错误**：从 corpus 的 RFC 标题前缀 `[RFC]` 推断“有 RFC 标签就一定存在模板”。
 标签和模板是两回事。
 
 ---
@@ -78,8 +78,8 @@ RFC 专属标签配置，也没有。corpus 里的 RFC 都是普通 issue
 
 这条约束写在 `.agents/skills/tilelang-backend/SKILL.md`（以及它的
 `references/integration-checklist.md` 第 3 节 Pass Pipeline 里），原文是
-「Keep the complete pass order in `tilelang/<backend>/pipeline.py`」与
-「Keep target dispatch out of `tilelang/engine/lower.py`」。
+“Keep the complete pass order in `tilelang/<backend>/pipeline.py`”与
+“Keep target dispatch out of `tilelang/engine/lower.py`”。
 
 它更重要的一点是**不在 `CONTRIBUTING.md` 里**。主干仓库的 `CONTRIBUTING.md` 只覆盖
 环境、格式化、lint 与测试入口；架构约束、后端边界、测试可移植性这些规则散落在
@@ -108,7 +108,7 @@ RFC 专属标签配置，也没有。corpus 里的 RFC 都是普通 issue
 3. **不会**。`tests` 的 `if` 包含 `!github.event.pull_request.draft`，草稿 PR 跳过测试
    矩阵（`ascend`、`cutedsl` 同）。
 4. Metal 矩阵跑的是 `pytest ... -k metal ./python`，靠测试名过滤。名字里没有 `metal`
-   的 Metal 专属测试**不会**在这个 job 里被执行——要么改名，要么放到别的、由
+   的 Metal 专属测试**不会**在这个 job 里被执行，要么改名，要么放到别的、由
    `requires_metal` 控制并被收集的路径里。
 
 **常见错误**：以为 `github.repository_owner == 'tile-ai'` 会跳过 fork PR。它是防止
@@ -138,7 +138,7 @@ fork 仓库自己同步时白跑 runner；向 `tile-ai/tilelang` 提的 PR 仍�
 
 ## E7
 
-**思路**：逐条读模板第 1 节的勾选项，注意「有参考实现」与「无参考实现」是两个分支。
+**思路**：逐条读模板第 1 节的勾选项，注意“有参考实现”与“无参考实现”是两个分支。
 
 **参考答案**
 
@@ -147,12 +147,12 @@ fork 仓库自己同步时白跑 runner；向 `tile-ai/tilelang` 提的 PR 仍�
 2. 没有 AscendC 参考实现：要检查仓库里的性能反模式清单
    （`.agents/skills/tilelang-perf-optimization/references/performance-antipatterns.md`），
    并记录保留项及原因。
-3. **不能合入**。模板要求「适用时 AscendC 与 PTO 双后端均已通过；不支持的
-   dtype/shape/后端行为已显式说明，没有静默跳过」。只有单后端通过且没有说明，
+3. **不能合入**。模板要求“适用时 AscendC 与 PTO 双后端均已通过；不支持的
+   dtype/shape/后端行为已显式说明，没有静默跳过”。只有单后端通过且没有说明，
    属于未满足合入标准。
 
-**常见错误**：只说「做了性能测试」而不给 50% 与 2 倍这两个数字；或忽略
-「无参考实现」分支也要留证据。
+**常见错误**：只说“做了性能测试”而不给 50% 与 2 倍这两个数字；或忽略
+“无参考实现”分支也要留证据。
 
 ---
 
@@ -174,7 +174,7 @@ fork 仓库自己同步时白跑 runner；向 `tile-ai/tilelang` 提的 PR 仍�
    `CUDAPassPipelineBody` 为入口，昇腾的是 `tilelang/ascend/pipeline.py` 的
    `AscendPassPipelineBody`。
 
-**常见错误**：认为「注册了 FFI 全局函数」就等于「接进编译流程」。注册与挂载是两件事。
+**常见错误**：认为“注册了 FFI 全局函数”就等于“接进编译流程”。注册与挂载是两件事。
 
 ---
 
@@ -197,20 +197,20 @@ fork 仓库自己同步时白跑 runner；向 `tile-ai/tilelang` 提的 PR 仍�
 ascend examples + unit tests、ascend PR template、layout golden harness（路径里含
 `layout` 时）、format + lint。其中**需要 maintainer 触发**的是性能回归
 （`@regression-perf`）；脚本对这次输入不会列出它，因为没有任何一条路径命中
-性能相关规则——这一点本身就是个提醒：**性能门禁不会自动出现**。
+性能相关规则。这一点本身就是个提醒：**性能门禁不会自动出现**。
 
 （3）换成 `tilelang/cuda/pipeline.py` 后，类别变为 `backend pipeline`（没有 Ascend 后缀），
 不再出现 `ascend examples + unit tests` 与 `ascend PR template` 两条门禁，
 其余门禁（transform unit tests、backend contract tests、format + lint）保持不变。
 
 **常见错误**：把 `testing/...` 也判成 transform 门禁。脚本对 `testing/` 只列 lint，
-因为「测试文件本身」不触发测试要求。
+因为“测试文件本身”不触发测试要求。
 
 ---
 
 ## E10
 
-**思路**：先想清楚新原语会改变什么，再逐节填；重点是「非目标」和「兼容性」不能空。
+**思路**：先想清楚新原语会改变什么，再逐节填；重点是“非目标”和“兼容性”不能空。
 
 **参考答案（要点）**
 
@@ -262,17 +262,17 @@ Land lowering + tests, then the backend-specific fast paths.
 
 运行 `python3 rfc_lint.py scan-rfc.md` 应输出 `ok: scan-rfc.md`。
 
-（3）示例理由：「非目标」明确写出不做反向 scan、不做跨 CTA scan，是为了防止评审时
+（3）示例理由：“非目标”明确写出不做反向 scan、不做跨 CTA scan，是为了防止评审时
 范围被不断拉大；写清边界，评审者才能在有限范围内判断方案是否成立。
 
-**常见错误**：只填 `Proposal`，把 `Motivation` 写成「因为很方便」；或者忘了给
-`T.tile.scan` 的调用示例，被 `rfc_lint.py` 的「提到 T.* API 但没有代码块」规则抓到。
+**常见错误**：只填 `Proposal`，把 `Motivation` 写成“因为很方便”；或者忘了给
+`T.tile.scan` 的调用示例，被 `rfc_lint.py` 的“提到 T.* API 但没有代码块”规则抓到。
 
 ---
 
 ## E11
 
-**思路**：脚本判定的是「未勾选且没有原因」，因此要观察两种输入的差别。
+**思路**：脚本判定的是“未勾选且没有原因”，因此要观察两种输入的差别。
 
 **参考答案**
 
@@ -294,26 +294,26 @@ Land lowering + tests, then the backend-specific fast paths.
 
 再跑，输出 `ok: self-check.md`，退出码 0。
 
-（3）「勾上但没做」会把一个**未验证的状态**伪造成已验证。下游（评审者、后续修改者）
-会基于这个错误前提做决定；而不勾至少保留了「这里有缺口」的信息。这也对应昇腾仓库
-`AGENTS.md` 的第一条通用原则：「未验证的结果，不得表述为『已完成』或『已通过』」。
+（3）“勾上但没做”会把一个**未验证的状态**伪造成已验证。下游（评审者、后续修改者）
+会基于这个错误前提做决定；而不勾至少保留了“这里有缺口”的信息。这也对应昇腾仓库
+`AGENTS.md` 的第一条通用原则：“未验证的结果，不得表述为『已完成』或『已通过』”。
 
-**常见错误**：以为脚本能判断原因是否成立。它只检查「有没有写原因」。
+**常见错误**：以为脚本能判断原因是否成立。它只检查“有没有写原因”。
 
 ---
 
 ## E12
 
-**思路**：按「改动落在哪个 pass → 哪个测试目录 → 哪份黄金工具」的顺序规划。
+**思路**：按“改动落在哪个 pass → 哪个测试目录 → 哪份黄金工具”的顺序规划。
 
 **参考答案（要点）**
 
 1. 单元测试放 `testing/python/transform/test_tilelang_transform_layout_inference.py`
    （或按现有命名习惯新增 `test_tilelang_transform_*.py`）。文件名要描述**保护的行为**，
-   不是「新功能」。
+   不是“新功能”。
 2. 断言落在 **IR 节点**上：检查 layout 映射、区域表达式、buffer 身份，
    不要匹配 IR printer 的文本。`testing/ascend/README.md` 的原话是
-   「Inspect IR nodes instead of matching the IR printer's text.」
+   “Inspect IR nodes instead of matching the IR printer's text.”
 3. **需要**跑 `maint/layout_inference/run.py`。如果 golden 大面积变化，`--record` 之后
    必须逐条读 `expected/` 的 diff，确认每个变化的 layout 都是有意为之；
    记录不是批准。若同时改动了评分公式，还要跑 `--cute` 保持
@@ -335,7 +335,7 @@ Land lowering + tests, then the backend-specific fast paths.
 
 **参考答案（模板）**
 
-1. 我会选路径一（算子/示例）：`♥ help` 标签里最常见的是「某算子缺示例/缺边界」，
+1. 我会选路径一（算子/示例）：`♥ help` 标签里最常见的是“某算子缺示例/缺边界”，
    反馈周期短，且不需要先读懂 pass 框架。
 2. Step 2–8 的命令按第 10 节照抄，替换掉仓库地址、venv 路径与设备参数；例如
 
@@ -366,5 +366,5 @@ Land lowering + tests, then the backend-specific fast paths.
    Requesting maintainer to trigger @regression-perf.
    ```
 
-**常见错误**：把「没跑」写成省略，或者用「should pass」这类推测语气替代真实的
+**常见错误**：把“没跑”写成省略，或者用“should pass”这类推测语气替代真实的
 验证状态。

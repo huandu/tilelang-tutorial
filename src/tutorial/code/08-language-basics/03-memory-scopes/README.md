@@ -6,9 +6,9 @@
 
 1. 把 `alloc_shared / alloc_fragment / alloc_local / alloc_var / alloc_global` 五个
    分配函数与它们各自的 scope 对上；
-2. 说明为什么 `fragment` 「写成块形状、实际在寄存器里」；
+2. 说明为什么 `fragment` “写成块形状、实际在寄存器里”；
 3. 说明昇腾侧 `UB / L1 / L0A / L0B / L0C` 在主库与适配器仓库里的**两种拼法**；
-4. 给出一个能算「这块 tile 占多少字节、开几份缓冲还放不放得下」的小工具。
+4. 给出一个能算“这块 tile 占多少字节、开几份缓冲还放不放得下”的小工具。
 
 ## 文件
 
@@ -76,9 +76,9 @@ Against a 192 KiB on-chip budget (196608 B):
 
 ## 原文出处
 
-* `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:49-192, 254-289`
+* `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:49-191, 254-289`
 * `_vendor/tilelang-v0.1.15/tilelang/ascend/language/allocate.py:15-80, 103-125`
-* `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/allocate.py:126-157`
+* `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/allocate.py:140-157`
 * `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:131-151`
 * `_vendor/tilelang-v0.1.15/docs/programming_guides/language_basics.md:152-172`
 * `_vendor/tilelang-v0.1.15/docs/get_started/overview.md:76-90`

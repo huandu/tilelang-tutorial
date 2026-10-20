@@ -24,8 +24,8 @@ python3 dump_pass_order.py --names    # 只打印 pass 表达式，方便 diff
 
 * 每个 pipeline 的 `total pass invocations`：CUDA 与 Ascend 各自的 pass 调用数。
 * 每行格式 `序号 | L行号 | mod = <pass>(...)(mod) [if <guard>]`。
-* 末尾的 shared / cuda-only / ascend-only 三段，用于确认「两侧共享的 lowering 走廊」
-  与「各自特有的 pass」。
+* 末尾的 shared / cuda-only / ascend-only 三段，用于确认“两侧共享的 lowering 走廊”
+  与“各自特有的 pass”。
 
 行号即 `tilelang/cuda/pipeline.py` 与 `tilelang/ascend/pipeline.py` 里的真实行号，
 可直接与正文的表格对照。

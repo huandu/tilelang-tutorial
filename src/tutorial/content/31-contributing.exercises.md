@@ -30,14 +30,14 @@
 
 （2）从 corpus 里已有的 RFC 看，哪些类型的改动值得先写 RFC？给出至少两条判据。
 
-（3）本章说「RFC 需要哪些章节」属于「无法确认」。为什么这个结论本身是有价值的？
+（3）本章说“RFC 需要哪些章节”属于“无法确认”。为什么这个结论本身是有价值的？
 
 ---
 
 ## E4（★★，不需要硬件）约束写在哪里
 
-「完整的 pass 顺序必须留在 `tilelang/<backend>/pipeline.py`，不要把 target 分派写进
-`tilelang/engine/lower.py`」这条约束写在哪个文件里？为什么它**不在**
+“完整的 pass 顺序必须留在 `tilelang/<backend>/pipeline.py`，不要把 target 分派写进
+`tilelang/engine/lower.py`”这条约束写在哪个文件里？为什么它**不在**
 `CONTRIBUTING.md` 里这件事，对贡献者是一个重要提醒？
 
 ---
@@ -47,7 +47,7 @@
 读 `.github/workflows/ci.yml`，回答：
 
 1. 一共几个 job？各自的依赖关系是什么？
-2. `lint` job 里的「C++ API Style Audit」是阻断性的吗？依据是什么？
+2. `lint` job 里的“C++ API Style Audit”是阻断性的吗？依据是什么？
 3. 草稿（draft）PR 会不会跑 `tests` 矩阵？
 4. Metal 矩阵是怎么挑选测试的？一个名字里没有 `metal` 的 Metal 专属测试会怎样？
 
@@ -120,7 +120,7 @@ python3 rfc_lint.py --template > scan-rfc.md
 
 （2）运行 `python3 rfc_lint.py scan-rfc.md`，让它输出 `ok`。
 
-（3）说明你为什么把某一条写进「非目标」，而不是留空。
+（3）说明你为什么把某一条写进“非目标”，而不是留空。
 
 ---
 
@@ -131,18 +131,18 @@ cd code/03-checklist-gate
 python3 checklist_gate.py --template > self-check.md
 ```
 
-（1）把其中一条改成「勾上但并没有做」的写法（`- [ ]` 且不带原因），运行脚本，
+（1）把其中一条改成“勾上但并没有做”的写法（`- [ ]` 且不带原因），运行脚本，
 确认它报出 `unexplained`。
 
 （2）把它补上一个带跟踪 issue 的原因，确认脚本输出 `ok`。
 
-（3）解释为什么「勾上但没做」比「不勾」更危险。
+（3）解释为什么“勾上但没做”比“不勾”更危险。
 
 ---
 
 ## E12（★★★，不需要硬件）动手：为新 pass 设计测试落点
 
-你要新增一个 pass：把布局推导的结果从「按 buffer 记录」改成「按 buffer 区域记录」。
+你要新增一个 pass：把布局推导的结果从“按 buffer 记录”改成“按 buffer 区域记录”。
 
 请写出一份测试计划，至少回答：
 

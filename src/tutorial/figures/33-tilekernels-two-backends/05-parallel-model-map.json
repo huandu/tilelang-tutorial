@@ -5,7 +5,7 @@
   "width": 1000,
   "cellHeight": 58,
   "section": "4.5",
-  "caption": "CUDA 的并行是「32 个独立的小计算」，SIMD 宽度由编译器在向量化时决定；昇腾的并行是「一条 64 宽度的向量指令」，宽度必须由你写出来。",
+  "caption": "CUDA 的并行是“32 个独立的小计算”，SIMD 宽度由编译器在向量化时决定；昇腾的并行是“一条 64 宽度的向量指令”，宽度必须由你写出来。",
   "headers": ["维度", "NVIDIA GPU（SIMT）", "昇腾 NPU（SIMD）"],
   "rows": [
     {
@@ -14,7 +14,7 @@
       "tone": "cell"
     },
     {
-      "label": "「线程」存在吗",
+      "label": "“线程”存在吗",
       "cells": ["是：threads=32，线程有独立寄存器", "核这一层不存在；只在 T.SimtVF 里出现"],
       "tone": "cell"
     },
@@ -55,7 +55,7 @@
   ],
   "notes": [
     "昇腾的 T.Kernel(N) 只给一个主索引：想用线程就进 T.SimtVF(threads=...)（见 rand/randn_asc.py:34）。",
-    "「专家数超过一组」只有昇腾版需要处理（topk_gate_asc.py 的 num_groups > 1 慢路径），因为每条 SIMD 指令的宽度是硬件固定的。",
-    "推论：在昇腾上，tile 大小不是性能参数而是语法参数——vector_length / max_vregs_per_group 直接决定走哪条分支。"
+    "“专家数超过一组”只有昇腾版需要处理（topk_gate_asc.py 的 num_groups > 1 慢路径），因为每条 SIMD 指令的宽度是硬件固定的。",
+    "推论：在昇腾上，tile 大小不是性能参数而是语法参数，vector_length / max_vregs_per_group 直接决定走哪条分支。"
   ]
 }

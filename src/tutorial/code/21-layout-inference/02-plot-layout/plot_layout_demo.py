@@ -40,7 +40,7 @@ def main() -> None:
 
     # 3) 基础 fragment：复刻 mma load layout 的构造方式
     #    一个 8x8 的底座，thread = j//2 + 4*i，slot = j%2
-    #    （对照 src/layout/gemm_layouts.cc:45-53 的 MakeGemmFragment8x8）
+    #    （对照 src/layout/gemm_layouts.cc:45-52 的 MakeGemmFragment8x8）
     def forward_thread(i, j):
         return j // 2 + 4 * i
 

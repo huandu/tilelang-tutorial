@@ -11,7 +11,7 @@
         "TileLang 只用在推理侧，训练侧全部是 Ascend C"
       ],
       "answer": 1,
-      "explain": "见 §2.1、§2.2。TileLang 覆盖的是「两端 + 中间一小段」（mHC、路由、激活/量化）；最贵的两段 grouped GEMM 在 DeepGEMM-Ascend（Ascend C + MAD，第 35 章），两段通信在 DeepEP-Ascend（Ascend C，第 38 章）。"
+      "explain": "见 §2.1、§2.2。TileLang 覆盖的是“两端 + 中间一小段”（mHC、路由、激活/量化）；最贵的两段 grouped GEMM 在 DeepGEMM-Ascend（Ascend C + MAD，第 35 章），两段通信在 DeepEP-Ascend（Ascend C，第 38 章）。"
     },
     {
       "id": "q2",
@@ -27,7 +27,7 @@
     },
     {
       "id": "q3",
-      "stem": "mHC 论文 §4.3.2 用「重算」换显存。关于重算块长度 `L_r`，下面哪个说法正确？",
+      "stem": "mHC 论文 §4.3.2 用“重算”换显存。关于重算块长度 `L_r`，下面哪个说法正确？",
       "options": [
         "`L_r` 越大越好，因为重算次数少",
         "`L_r` 必须等于总层数 `L`",
@@ -35,15 +35,15 @@
         "重算块可以自由跨 stage 边界，不影响数值与调度"
       ],
       "answer": 2,
-      "explain": "见 §2.3。论文式 (20) 给出 `L_r* ≈ sqrt(nL/(n+2))`，并明确把重算边界与流水线 stage 对齐——因为重算依赖每个 stage 本地缓存的初始激活 `x_{l0}`。"
+      "explain": "见 §2.3。论文式 (20) 给出 `L_r* ≈ sqrt(nL/(n+2))`，并明确把重算边界与流水线 stage 对齐。因为重算依赖每个 stage 本地缓存的初始激活 `x_{l0}`。"
     },
     {
       "id": "q4",
-      "stem": "关于本章「三类资源的预算」，下面哪一条是对的？",
+      "stem": "关于本章“三类资源的预算”，下面哪一条是对的？",
       "options": [
         "算力与片内带宽都是实测值，卡间带宽是模型常量",
         "三类数字可以任意相减或相乘，因为单位相同",
-        "「90–95%」是相对厂商宣传的型号峰值算出来的",
+        "“90–95%”是相对厂商宣传的型号峰值算出来的",
         "算力与片内带宽来自源码里的硬件模型常量，卡间带宽来自厂商实测；三类只在同源内比较"
       ],
       "answer": 3,
@@ -51,39 +51,39 @@
     },
     {
       "id": "q5",
-      "stem": "在 2026-09-30 这次发布时点的现状清单里，下面哪一项属于「不支持」？",
+      "stem": "在 2026-09-30 这次发布时点的现状清单里，下面哪一项属于“不支持”？",
       "options": [
-        "EP 的 dispatch / combine",
         "Bucket 的 reduce-scatter / all-reduce",
+        "EP 的 dispatch / combine",
         "FlashMLA 昇腾的稀疏 prefill / decode",
         "DeepSelect 的 Lightning Indexer TopK（bf16）"
       ],
-      "answer": 1,
-      "explain": "见 §7.1 第三档。`DeepEP-Ascend/README.md:80` 写明 Bucket 的 batched all-gather 可用，但 reduce-scatter 与 all-reduce 的昇腾 kernel「are still being built」；其余三项都是第一档「可用」。"
+      "answer": 0,
+      "explain": "见 §7.1 第三档。`DeepEP-Ascend/README.md:80` 写明 Bucket 的 batched all-gather 可用，但 reduce-scatter 与 all-reduce 的昇腾 kernel“are still being built”；其余三项都是第一档“可用”。"
     },
     {
       "id": "q6",
       "stem": "profiler 显示某个算子 `aic_fixpipe` 接近饱和、`aic_mad` 只有一半。下面哪个做法最合适？",
       "options": [
         "调大 MAD 的 tile 尺寸，让 Cube 更忙",
-        "换一个更小的 tiling，减少片上占用",
         "减少 L0C→out 的搬运量，或把后续计算融进来",
+        "换一个更小的 tiling，减少片上占用",
         "判定为通信瓶颈，先去查 DualPipe 的调度"
       ],
-      "answer": 2,
-      "explain": "见 §5.2、§3.4。FixPipe 是唯一一条从 L0C 出去的流水线；`aic_fixpipe` 高而 `aic_mad` 不高时，方向是「少搬」而不是「调 MAD 的形状」（第 35 章 §5.5、第 19 章 §8.3）。"
+      "answer": 1,
+      "explain": "见 §5.2、§3.4。FixPipe 是唯一一条从 L0C 出去的流水线；`aic_fixpipe` 高而 `aic_mad` 不高时，方向是“少搬”而不是“调 MAD 的形状”（第 35 章 §5.5、第 19 章 §8.3）。"
     },
     {
       "id": "q7",
       "stem": "下面哪一种做法违反了本章 §4.4 的三条禁令？",
       "options": [
-        "把 dense GEMM 在 4096 形状上的 99.8% 利用率直接套到 M=128 的 decode 形状上",
         "把同一份 `HWDesc` 的 3500 GB/s 与同一台机器实测的 3463 GB/s 放在一起比较",
         "把同一张官方表格里的两列（Computation 与 Memory BW）各自除以对应的常量",
+        "把 dense GEMM 在 4096 形状上的 99.8% 利用率直接套到 M=128 的 decode 形状上",
         "用 `2MNK` 复算同一张表里的一行来标定这张表的口径"
       ],
-      "answer": 0,
-      "explain": "见 §4.4 与 §3.7。利用率的**分母**是那个形状自己的硬件模型，换形状就失效——第 35 章 §8 P10 把这条登记为常见坑。其余三项都属于「同源同机」的合法比较。"
+      "answer": 2,
+      "explain": "见 §4.4 与 §3.7。利用率的**分母**是那个形状自己的硬件模型，换形状就失效，第 35 章 §8 P10 把这条登记为常见坑。其余三项都属于“同源同机”的合法比较。"
     }
   ]
 }

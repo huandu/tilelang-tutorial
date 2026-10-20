@@ -11,7 +11,7 @@
 
 ### 目的
 
-核对自己对 MoE 推理里「host 侧四张表 → kernel 侧行号」这套契约的理解：
+核对自己对 MoE 推理里“host 侧四张表 → kernel 侧行号”这套契约的理解：
 
 1. `group_sizes` / `group_offsets` / `group_padded_offsets` / `group_idx_for_bx`
    分别是什么；

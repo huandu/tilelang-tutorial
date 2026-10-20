@@ -3,7 +3,7 @@
   "title": "Sinkhorn 迭代：同一个词，两处不同的用法",
   "kind": "steps",
   "direction": "TB",
-  "caption": "mHC 用「先行 softmax，再交替行列求和归一化」把每个 token 的 4×4 mix 矩阵推成双随机矩阵；Engram 则对大矩阵做行/列 L2 缩放，拆成四个 kernel 接力。",
+  "caption": "mHC 用“先行 softmax，再交替行列求和归一化”把每个 token 的 4×4 mix 矩阵推成双随机矩阵；Engram 则对大矩阵做行/列 L2 缩放，拆成四个 kernel 接力。",
   "steps": [
     {
       "label": "行 softmax + eps",
@@ -32,6 +32,6 @@
     "Engram 版本的差异：归一化用 L2 范数、没有 softmax，流水是 momentum → step → step_reduce → finalize。",
     "为什么放在一个 kernel 里：迭代状态能全部留在片上，只付一次进出的访存代价；repeat=10 若每轮一个 kernel 就是 20 次 launch。",
     "mHC 的反向在片上重算前向的每一轮迭代，把中间矩阵与行列和存进 shared memory（2×repeat 份），再逆序回放链式法则。",
-    "论文口径：mHC 把残差映射投影到双随机流形（Birkhoff 多胞形），Sinkhorn 迭代 t_max=20（论文 §4.1/§4.2、式 (6)(8)(9)）；代码默认 repeat=10，且两者对「一次迭代」的定义不同，不能直接换算。"
+    "论文口径：mHC 把残差映射投影到双随机流形（Birkhoff 多胞形），Sinkhorn 迭代 t_max=20（论文 §4.1/§4.2、式 (6)(8)(9)）；代码默认 repeat=10，且两者对“一次迭代”的定义不同，不能直接换算。"
   ]
 }

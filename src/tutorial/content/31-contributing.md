@@ -4,15 +4,15 @@
 
 读完本章，你能：
 
-1. 判断自己的改动属于哪条贡献路径——写算子/示例、改编译器、加/改后端——并说出该路径
+1. 判断自己的改动属于哪条贡献路径，写算子/示例、改编译器、加/改后端，并说出该路径
    在锁定版本仓库里**实际存在**的门禁（测试套件、CI job、脚本），而不是凭印象猜。
 2. 描述 TileLang 上游从 issue 到 RFC 到 PR 到 review 到 CI 的完整链路，并指出哪些环节
    有模板、哪些环节没有成文模板。
 3. 按 `docs/developer_guide/cpp_style.md` 与 `pyproject.toml` 的规则，写出一个能过
    `format.sh` 与 `pre-commit` 的改动。
 4. 说清 `testing/` 的组织方式、CI 会跑哪些套件，以及性能回归如何被检测、由谁触发。
-5. 说明昇腾侧两个仓库的分工与差异，并区分「仓库里写明的规则」与「只是观察到的事实」。
-6. 按本章的「第一次贡献清单」与「改动自检清单」独立完成并提交一个 PR。
+5. 说明昇腾侧两个仓库的分工与差异，并区分“仓库里写明的规则”与“只是观察到的事实”。
+6. 按本章的“第一次贡献清单”与“改动自检清单”独立完成并提交一个 PR。
 
 ## 前置知识
 
@@ -24,18 +24,18 @@
   后端边界，才看得懂路径二/路径三的评审意见。
 * 会用 `git`、`pytest`、`pre-commit`；不需要预先有开源贡献经验。
 
-本章所有关于「仓库里有什么」的判断，都以
+本章所有关于“仓库里有什么”的判断，都以
 [../../VERSIONS.md](../../VERSIONS.md) 锁定的两个版本为准：
 TileLang `v0.1.15`（`_vendor/tilelang-v0.1.15/`）与
 TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 （`_vendor/tilelang-ascend-v0.1.2.000/`）。凡是锁定版本里找不到依据的说法，本章会显式
-标注「无法确认」。写作环境没有 GPU、没有 NPU，因此本章不给出任何性能数字。
+标注“无法确认”。写作环境没有 GPU、没有 NPU，因此本章不给出任何性能数字。
 
 ---
 
 ## 1. 问题的由来
 
-前面三十章回答的是「怎么用」和「怎么改」。最后这一章回答剩下的问题：
+前面三十章回答的是“怎么用”和“怎么改”。最后这一章回答剩下的问题：
 **你改出来的东西，怎么变成上游的一部分？**
 
 这件事值得单独成章，因为它和写代码是两种技能，而且失败点很具体：
@@ -44,10 +44,10 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
   于是 PR 一直挂着。
 * 有人改了流水线的 pass 顺序，效果很好，但没在 `testing/python/transform/` 留下任何
   可回归的用例，维护者没法判断这个顺序以后会不会被别的 PR 改回去。
-* 有人在 `tilelang/engine/lower.py` 里加了一个目标分支，让新后端跑起来了——
+* 有人在 `tilelang/engine/lower.py` 里加了一个目标分支，让新后端跑起来了，
   而 `tilelang-backend` 这份仓库内指南明确要求把目标分派留在后端包里。
 
-换句话说：**上游接受的不只是「能跑」，而是「能被长期维护、能被别人复核」的改动。**
+换句话说：**上游接受的不只是“能跑”，而是“能被长期维护、能被别人复核”的改动。**
 本章就是把这份隐含契约摊开写成流程。
 
 还有一层背景必须说清楚：TileLang 不是一个仓库，而是**两个**。
@@ -65,7 +65,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 ### 2.1 三种路径
 
-把改动按「它碰到了哪一层」分成三类，每一类的典型 PR、需要的测试、评审关注点都不同。
+把改动按“它碰到了哪一层”分成三类，每一类的典型 PR、需要的测试、评审关注点都不同。
 
 | | 路径一 · 算子/示例 | 路径二 · 编译器 | 路径三 · 后端 |
 | --- | --- | --- | --- |
@@ -85,15 +85,15 @@ flowchart LR
 
 完整版图见 [figures/contribution-paths.md](figures/contribution-paths.md)。
 
-### 2.2 为什么不是「三种角色」而是「三种路径」
+### 2.2 为什么不是“三种角色”而是“三种路径”
 
 同一个人会在三条路径之间移动：先写算子摸清行为，再改编译器让它更快，最后发现某个后端
 缺原语就去补后端。路径决定的是**审稿人的口味**：
 
-* 审算子 PR 的人关心「数值对不对、覆盖了哪些 shape/dtype、有没有性能口径」；
-* 审编译器 PR 的人关心「语义是不是最小改动、IR 契约有没有被隐式改变、测试能不能
-  锁住这个行为」；
-* 审后端 PR 的人关心「接口边界、别的后端会不会被带崩、打包能不能成立」。
+* 审算子 PR 的人关心“数值对不对、覆盖了哪些 shape/dtype、有没有性能口径”；
+* 审编译器 PR 的人关心“语义是不是最小改动、IR 契约有没有被隐式改变、测试能不能
+  锁住这个行为”；
+* 审后端 PR 的人关心“接口边界、别的后端会不会被带崩、打包能不能成立”。
 
 ### 2.3 四道门
 
@@ -127,8 +127,8 @@ flowchart LR
 | `release-plan.yml` | 发布计划 | 版本、里程碑、范围、任务清单、就绪检查 |
 
 `config.yml` 里 `blank_issues_enabled: true`，也就是**允许空白 issue**。所以模板是
-「引导」而不是「闸门」：你不填模板也能开 issue，但内容不全的 issue 大概率只会换来
-一句「请给最小复现」。
+“引导”而不是“闸门”：你不填模板也能开 issue，但内容不全的 issue 大概率只会换来
+一句“请给最小复现”。
 
 `CONTRIBUTING.md:18-25` 把这条写成规则：
 
@@ -150,7 +150,7 @@ flowchart LR
    `github-issue-3178.md`（CUDA cache policy）、`github-issue-2897.md`（reducer 语义）、
    `github-issue-2708.md`（atomic 内存序）都以 issue 形式存在。
 
-因此，「RFC 需要哪些章节」这条**无法确认**——仓库没写。本章第 12 节给出一份从真实
+因此，“RFC 需要哪些章节”这条**无法确认**，仓库没写。本章第 12 节给出一份从真实
 RFC 反推出来的骨架，并在 `code/02-rfc-lint/` 里做成可检查的工具；读者要明白那是
 从范例归纳的经验，不是上游的强制要求。
 
@@ -187,8 +187,8 @@ pre-commit install --install-hooks
 用 `PYTHONPATH` 手工工作的方式。
 
 **主干仓库没有 PR 模板。** `.github/` 下只有 `ISSUE_TEMPLATE/`、`dependabot.yml` 和
-`workflows/`，没有 `pull_request_template.md`。所以主干 PR 的正文是自由的——
-这意味着**你更要自己把「做了什么、为什么、怎么验证的」写清楚**。昇腾仓库反过来，
+`workflows/`，没有 `pull_request_template.md`。所以主干 PR 的正文是自由的，
+这意味着**你更要自己把“做了什么、为什么、怎么验证的”写清楚**。昇腾仓库反过来，
 有一份很长的 PR 模板（第 7 节）。
 
 ### 3.4 review 与 CI
@@ -222,8 +222,8 @@ cutedsl          needs: [tests]             ci.yml:509-663
 * `tests`、`ascend`、`cutedsl` 的 `if` 都带 `github.repository_owner == 'tile-ai'`。
   这是防止 fork 仓库同步代码时白跑自家 self-hosted runner；向 `tile-ai/tilelang`
   提的 PR 满足这个条件，正常会跑。
-* `if` 里还有 `!github.event.pull_request.draft`——**草稿 PR 不会跑测试矩阵**。
-  所以「CI 没绿」有时只是因为你把它标成了 draft。
+* `if` 里还有 `!github.event.pull_request.draft`，**草稿 PR 不会跑测试矩阵**。
+  所以“CI 没绿”有时只是因为你把它标成了 draft。
 * `cutedsl` 的 `needs: [tests]`，只有 NVIDIA 矩阵通过后才会跑。
 * Metal 矩阵用的是 `-k metal ./python`，也就是靠 pytest 名字过滤；一个新加的、名字里
   没有 `metal` 的 Metal 测试不会在这个 job 里被执行。
@@ -231,7 +231,7 @@ cutedsl          needs: [tests]             ci.yml:509-663
 ### 3.5 合入之后
 
 `.github/workflows/publish-docs.yml` 在 PR `closed` 且 `merged == true` 且基分支是
-`main` 时构建文档（否则需要手动触发）。也就是说**文档构建不在 PR 阶段验证**——
+`main` 时构建文档（否则需要手动触发）。也就是说**文档构建不在 PR 阶段验证**，
 文档改动如果不在本地 `bash maint/scripts/build_docs.sh` 跑一遍，问题可能要到合入
 之后才暴露。
 
@@ -241,7 +241,7 @@ cutedsl          needs: [tests]             ci.yml:509-663
 
 ### 4.1 典型 PR 长什么样
 
-主干仓库的惯例是「一个算子一个目录」。锁定版本里 `examples/` 有 54 个子目录加 3 个顶层
+主干仓库的惯例是“一个算子一个目录”。锁定版本里 `examples/` 有 54 个子目录加 3 个顶层
 文件（`conftest.py`、`pytest.ini`、`quickstart.py`，见 VERSIONS.md），例如
 `examples/gemm/`、`examples/flash_attention/`、`examples/norm/`。
 
@@ -270,15 +270,15 @@ examples/<op_name>/
   > `{"kind": "cuda", "arch": "sm_100a"}` still requires the CUDA backend to be
   > built and registered. Mark it with `requires_cuda` even if no kernel runs.
 
-  也就是说，**「不跑 kernel、只生成源码」的测试同样可能要标 `requires_cuda`**。
+  也就是说，**“不跑 kernel、只生成源码”的测试同样可能要标 `requires_cuda`**。
   把这类测试不加标记地放进 `testing/python/`，会在 AMD 或 Metal 的 job 上失败。
 
 ### 4.3 评审关注什么
 
 1. 你比较的参考实现是谁，误差口径是什么。
-2. 新示例是否属于「已经有了同类」；重复造例会被要求合并或说明差异。
+2. 新示例是否属于“已经有了同类”；重复造例会被要求合并或说明差异。
 3. 是否混进了与算子无关的改动（格式化整仓、改公共 API）。
-4. 有没有把私有路径、token、机器名写进代码——`pre-commit` 的
+4. 有没有把私有路径、token、机器名写进代码，`pre-commit` 的
    `detect-private-key`、`check-added-large-files` 只兜住一部分，评审会看。
 
 ### 4.4 常见被拒原因
@@ -335,7 +335,7 @@ def LoopUnswitching():
 > Keep target dispatch out of `tilelang/engine/lower.py`.
 
 注意：这条规则写在 `tilelang-backend` 这份**仓库内指南**里，不在 `CONTRIBUTING.md` 里。
-这也是为什么本章反复说「路径决定审稿人的口味」：主干 PR 没有模板，很多约束只存在于
+这也是为什么本章反复说“路径决定审稿人的口味”：主干 PR 没有模板，很多约束只存在于
 这类指南和评审习惯中。
 
 ### 5.2 需要哪些测试
@@ -345,9 +345,9 @@ def LoopUnswitching():
   `test_tilelang_transform_pipeline_planning.py`。
 * 测试应当是 **IR 级**的：给一段输入 IR，跑改动的那一个 pass，断言输出 IR 的结构，
   而不是断言打印出来的文本。`testing/ascend/README.md` 把这条说得很直白：
-  「Inspect IR nodes instead of matching the IR printer's text.」
+  “Inspect IR nodes instead of matching the IR printer's text.”
 * 如果改的是**布局推导**，还有一份专门的黄金用例工具：
-  `maint/layout_inference/`。它用带注释的 IR 用例锁定「哪个 layout 胜出」：
+  `maint/layout_inference/`。它用带注释的 IR 用例锁定“哪个 layout 胜出”：
 
   ```bash
   python run.py                # 校验全部用例
@@ -357,8 +357,8 @@ def LoopUnswitching():
   python run.py --cute         # 对照 CuTe layout 代数
   ```
 
-  它的 README 明确警告：`--record` 不是批准，「Recording is not approval:
-  after `--record`, read the diff under `expected/`」。也就是说，改了布局代价模型
+  它的 README 明确警告：`--record` 不是批准，“Recording is not approval:
+  after `--record`, read the diff under `expected/`”。也就是说，改了布局代价模型
   却直接重录 golden，等于把回归锁换成橡皮图章。
 * 如果改的是**数学函数或精度相关的 lowering**，`maint/precision/` 里有
   `compare_ops.py` 与 `cuda_ops.cu`，它给出 TileLang、Triton、PyTorch、CUDA 各方
@@ -375,7 +375,7 @@ def LoopUnswitching():
 3. FFI 可见的名字（`tl.transform.*`、Python 侧导出的函数名、ObjectNode 的反射字段）
    有没有被改动；改了要不要兼容。
 4. 有没有把风格清理混进语义改动。`cpp_style.md:341-349` 的迁移政策写得明白：
-   「Avoid combining broad formatting changes with behavior changes.」
+   “Avoid combining broad formatting changes with behavior changes.”
 5. 是否碰了 `3rdparty/`。`cpp_style.md:1-10` 说得很直接：不要对 vendored 代码做
    大范围风格改动。
 
@@ -418,7 +418,7 @@ BackendContext selects a shared ExecutionBackend
 | 同 target kind 的变体 | 独立 `BackendModule` + 互斥的 `supports_target` 谓词 + 明确复用/替换了哪些组件 |
 | 新执行模式 | 只有当没有任何现成适配器能消费产物时，才实现 Build/JIT/Runtime |
 
-「目标后端」「Python 包名」「TVM target kind」「执行后端名」是四个不同的东西，
+“目标后端”“Python 包名”“TVM target kind”“执行后端名”是四个不同的东西，
 指南明确要求**不要把四者混为一谈**。
 
 ### 6.2 需要哪些测试
@@ -442,20 +442,20 @@ target 测试在 `testing/python/target/`。清单还要求同步更新
 
 ### 6.3 评审关注什么
 
-* 是不是「照抄 CUDA 后端」。清单有一句原话：
-  「Do not begin by copying the CUDA backend wholesale.」
+* 是不是“照抄 CUDA 后端”。清单有一句原话：
+  “Do not begin by copying the CUDA backend wholesale.”
 * 有没有把后端专有符号塞进 `tilelang.language.common` 或默认的 CUDA facade。
 * 有没有在共享 JIT/cache/export/autotuning 代码里按 target kind 分支；
   正确做法是按 **execution name** 分派。
 * 声明执行后端时，是不是真的做过冒烟。清单原话：
-  「Do not declare an execution backend merely because its name is already available.」
+  “Do not declare an execution backend merely because its name is already available.”
 * 原生源码有没有通过 backend 自己的 CMake 接入；`pyproject.toml` 是自动包含 Python
   包的，但 native source 不会自动生效。
 
 ### 6.4 常见被拒原因
 
-* 只让 target 解析成功就宣称「后端完成」。清单明确禁止：
-  「Do not report a backend complete when only registration or source generation passes.」
+* 只让 target 解析成功就宣称“后端完成”。清单明确禁止：
+  “Do not report a backend complete when only registration or source generation passes.”
 * 在 `tilelang/engine/lower.py` 里加 target 分支（第 5 节已经说过）。
 * 一个新 target kind 却忘了让 TVM 先认识它。
 * 把不支持的算子静默降级成另一个 target 的实现，而不是在 lowering 阶段报错。
@@ -476,7 +476,7 @@ target 测试在 `testing/python/target/`。清单还要求同步更新
 | `AGENTS.md` | 有（`.agents/skills/` 索引） | 有，且是中文的完整开发规范 |
 | `format.sh` | `pre-commit` 驱动（Ruff + clang-format + codespell + pymarkdown） | YAPF + Ruff + clang-format，并**校验工具版本**必须等于 `requirements-lint.txt` |
 | CI 的默认分支 | `main` | PR 工作流指南里写的是 `ascendc_pto` |
-| 行宽规范 | C++ `ColumnLimit: 80`（`.clang-format:5`） | Python/C++ 都写「行宽 100」（`AGENTS.md:119-121`） |
+| 行宽规范 | C++ `ColumnLimit: 80`（`.clang-format:5`） | Python/C++ 都写“行宽 100”（`AGENTS.md:119-121`） |
 
 最后两行值得单独强调：
 
@@ -525,7 +525,7 @@ target 测试在 `testing/python/target/`。清单还要求同步更新
   `[CI]`、`[Skills]`、`[Testing]`、`[Example]`（`:51`）。
 * 模板顶部的说明要求：**只勾选实际完成的项目**，跳过项要写原因和跟踪 Issue（`:1-5,68-70`）。
 
-这套要求里，「双后端 + 性能报告 + 2 分钟用例预算」是主干 PR 模板完全没有的。
+这套要求里，“双后端 + 性能报告 + 2 分钟用例预算”是主干 PR 模板完全没有的。
 
 ### 7.3 主干侧的昇腾入口
 
@@ -545,15 +545,15 @@ v0.1.15 里 `tilelang/ascend/` 与 `src/ascend/` 已经存在（VERSIONS.md 明�
 
 同一份 README 还给出一条判定规则：**共享行为放 `testing/python`，只有这个 fork 对共享
 代码的改动才在 `testing/ascend` 里加共享回归**。这意味着往主干提昇腾改动时，
-「这个测试该放哪个目录」本身就是评审会问的问题。
+“这个测试该放哪个目录”本身就是评审会问的问题。
 
 本地复现主干昇腾 CI 的命令是
 `bash maint/scripts/run_local_ci_test_ascend.sh`；它默认 4 个 example worker、
 32 个 unit-test worker，与 `ci.yml` 里的 `-n 4` / `-n 32` 对得上。
 
-### 7.4 「适配器先行、再回主干」——本章无法确认
+### 7.4 “适配器先行、再回主干”，本章无法确认
 
-本章开头的问题是「昇腾能力怎么进主干」。能观察到的事实是：
+本章开头的问题是“昇腾能力怎么进主干”。能观察到的事实是：
 
 * corpus 里有一组以 `[Ascend]` 开头的 PR 快照：`github-pr-3308.md`
   （Ascend 950 backend）、`github-pr-3310.md`（PTO backend for Ascend950）、
@@ -563,7 +563,7 @@ v0.1.15 里 `tilelang/ascend/` 与 `src/ascend/` 已经存在（VERSIONS.md 明�
   与独立的 CI job。
 * 适配器仓库是独立仓库，有自己的默认分支、版本号、CI 与发布节奏。
 
-但是：**「能力先进适配器验证，再以 `[Ascend]` PR 回主干」这条流程，在两个仓库的
+但是：**“能力先进适配器验证，再以 `[Ascend]` PR 回主干”这条流程，在两个仓库的
 `CONTRIBUTING.md`、`AGENTS.md`、`.github/` 里都没有成文规定。**
 我对两个仓库做了针对 `上游`、`upstream`、`回主干`、`merge.*main` 的检索，没有命中
 任何流程说明。因此本章把这条标为**无法确认**：它是从 PR 标题模式与两棵树的现状
@@ -642,11 +642,11 @@ bash format.sh --all                        # 全仓
 ```
 
 `format.sh` 本身不做风格判断，它把工作交给 `pre-commit`，并在最后检查工作区是否有
-未提交的改动——如果有，说明「格式化器改过你的文件」，脚本会退出 1，
+未提交的改动。如果有，说明“格式化器改过你的文件”，脚本会退出 1，
 要求你 review 并 stage。这是一个很好的自检信号：**format.sh 退出 1 并不代表你写错了，
 而是代表你有未纳入提交的格式化结果。**
 
-`.pre-commit-config.yaml` 装的钩子决定「什么算过」：
+`.pre-commit-config.yaml` 装的钩子决定“什么算过”：
 
 | 钩子 | 作用 |
 | --- | --- |
@@ -659,7 +659,7 @@ bash format.sh --all                        # 全仓
 
 `CONTRIBUTING.md:111-117` 给出的等价命令是 `pre-commit run --all-files`。
 另外 `.github/workflows/pr-reminder-bot.yml` 会在每个新 PR 打开时自动留言提醒跑
-`pre-commit run --all-files`——如果 CI 的 lint job 红了，先看这条留言。
+`pre-commit run --all-files`。如果 CI 的 lint job 红了，先看这条留言。
 
 ### 8.4 一个需要留意的版本漂移
 
@@ -730,12 +730,12 @@ testing/
 
 ### 9.3 性能回归如何被检测
 
-这是本章最「硬」的一段，因为锁定版本里有一条完整、可复核的机制。
+这是本章最“硬”的一段，因为锁定版本里有一条完整、可复核的机制。
 
 **触发方式：维护者手动评论。**
 `.github/workflows/pr-regression-test-bot.yml` 监听 `issue_comment`，只有当评论正文
 包含 `@regression-perf`、且评论者权限是 `admin` / `maintain` / `write` 时才继续
-（`:34-56`）。**外部贡献者不能自己触发它**——你只能请求维护者跑。
+（`:34-56`）。**外部贡献者不能自己触发它**。你只能请求维护者跑。
 
 **它做什么。**
 
@@ -762,7 +762,7 @@ MIN_COUNT = int(os.environ.get("PERF_REGRESSION_MIN_COUNT", "2"))
 
 用人话说：**单个 benchmark 的噪声不算回归；至少两个 benchmark 同时掉破 0.90 才算。**
 这条规则是在 33 份真实 bot 报告、1901 个样本上校准出来的，其中 6 例真回归、
-7 例单点离群，用「两个同时下降」正好区分开（6/6 抓到、0 误报）。
+7 例单点离群，用“两个同时下降”正好区分开（6/6 抓到、0 误报）。
 
 **本地也有等价脚本。** `maint/scripts/run_perf_regression.sh` 用 `git worktree` 拉一份
 基线、分别给当前 checkout 与基线建 venv 和 wheel，再跑
@@ -773,7 +773,7 @@ MIN_COUNT = int(os.environ.get("PERF_REGRESSION_MIN_COUNT", "2"))
 **一个诚实的观察**：`run_perf_regression.sh:66-67` 的默认值
 （`FAIL_ON_REGRESSION=0`、`REGRESSION_THRESHOLD=1.0`）与
 `test_perf_regression.py` 的默认值（阈值 0.90、至少 2 个）不一致。前者是通用本地脚本，
-默认不因回归失败（退出码不红），阈值 1.0 表示「任何变慢都算」；后者是 PR bot 用的
+默认不因回归失败（退出码不红），阈值 1.0 表示“任何变慢都算”；后者是 PR bot 用的
 判定器，默认更宽松。写这类脚本时不要只看默认值，要显式传参。
 
 **口径来自哪里。** corpus 里的 `../tilelang-corpus/12-operator-libraries/raw/tilelang-benchmark/`
@@ -801,7 +801,7 @@ Python 的 `try/except` 抓不住。它一个进程一个进程地送用例，wo
 * 单个算子全量测试 ≤ 2 分钟，超时用 marker 分流。
 
 这三条是**适配器仓库的 PR 模板**，不是主干的 CI 断言。本章把它引用出来，是因为它
-直接回答「性能回归如何被检测」这个问题在昇腾侧的那一半。
+直接回答“性能回归如何被检测”这个问题在昇腾侧的那一半。
 
 ---
 
@@ -865,7 +865,7 @@ bash format.sh
 pre-commit run --all-files
 ```
 
-`format.sh` 如果因为「格式化后工作区变脏」而退出 1，就 review 并 stage 那些改动，
+`format.sh` 如果因为“格式化后工作区变脏”而退出 1，就 review 并 stage 那些改动，
 再跑一次。
 
 **Step 7 · 跑对应套件**
@@ -901,12 +901,12 @@ Risk / limits:  已知的边界、未覆盖的 shape、需要 maintainer 触发�
 > Report unrelated or environment-specific containing-suite failures separately
 > instead of claiming that the whole suite passed.
 
-也就是说：**只报你真正跑过的**，别把「整个套件通过」写成结论。
+也就是说：**只报你真正跑过的**，别把“整个套件通过”写成结论。
 
 **Step 10 · 处理 review**
 
 昇腾模板里那句提醒对两个仓库都适用：
-「对检视意见逐条回复；需要修改时完成修改，并重新运行相关检查和用例。」
+“对检视意见逐条回复；需要修改时完成修改，并重新运行相关检查和用例。”
 （`pull_request_template.md:56`）
 
 ---
@@ -914,7 +914,7 @@ Risk / limits:  已知的边界、未覆盖的 shape、需要 maintainer 触发�
 ## 11. 改动自检清单
 
 对照第 29 章的测试与回归要求，把这份清单当作 push 前的最后一关。
-`code/03-checklist-gate/` 可以自动检查「跳过项有没有写原因」。
+`code/03-checklist-gate/` 可以自动检查“跳过项有没有写原因”。
 
 **通用**
 
@@ -971,28 +971,28 @@ Risk / limits:  已知的边界、未覆盖的 shape、需要 maintainer 触发�
 
 提功能时用 `feature-request.yml`。它的 `Motivation` 是**必填**，`Solution` 和
 `Alternatives` 是可选的。很多人反过来写：方案写一大堆，动机只有一句。
-评审者先想知道的是「现在谁被卡住了」。
+评审者先想知道的是“现在谁被卡住了”。
 
 ### 12.2 一个能被接受的 RFC 长什么样
 
 仓库没有 RFC 模板，所以本章从 corpus 里的真实 RFC 反推结构。
 以 `github-issue-2196.md`（从 forked TVM 迁移到 apache/tvm + tvm-ffi）为例，它的可取之处是：
 
-1. **先给结论，再给路径**。开头就说清「我们有一个可构建的下游分支，
-   想确认上游 fork 是长期策略还是历史遗留」。
-2. **把问题重新定义成一个可回答的问题**。它没有停在「我想换 TVM」，
-   而是把它转成：「tilelang_main 上的改动能不能被上游化、搬进 tilelang、
-   或者被新 apache/tvm 变得不必要？」
+1. **先给结论，再给路径**。开头就说清“我们有一个可构建的下游分支，
+   想确认上游 fork 是长期策略还是历史遗留”。
+2. **把问题重新定义成一个可回答的问题**。它没有停在“我想换 TVM”，
+   而是把它转成：“tilelang_main 上的改动能不能被上游化、搬进 tilelang、
+   或者被新 apache/tvm 变得不必要？”
 3. **给可核验的事实**。逐条列出 `tile-ai/tilelang` → `TileLang/tvm` 的子模块指向、
    commit 哈希、日期、分支名，并说明 `main` 是冻结的、真正承载改动的是
    `tilelang_main`。
-4. **主动降低对方的决策成本**。明确说「即使大方向不采纳，我们也可以把迁移中发现的
-   修复拆成小 PR 先提」。
+4. **主动降低对方的决策成本**。明确说“即使大方向不采纳，我们也可以把迁移中发现的
+   修复拆成小 PR 先提”。
 
 `github-issue-3178.md`（CUDA cache policy）是另一个范式，它把一篇 RFC 写成了
 可评审的规格：
 
-* 先区分「已有能力」与「缺失能力」：明确说现有 `eviction_policy` 是 TMA 的 L2 优先级，
+* 先区分“已有能力”与“缺失能力”：明确说现有 `eviction_policy` 是 TMA 的 L2 优先级，
   不是普通 global load/store 的 cache operator；
 * 给出**完整的状态枚举**：load 是 `.ca/.cg/.cs/.lu/.cv`，store 是
   `.wb/.cg/.cs/.wt`；
@@ -1009,30 +1009,30 @@ Risk / limits:  已知的边界、未覆盖的 shape、需要 maintainer 触发�
   ```
 
 * 写明非目标（不改 TMA eviction 语义、不自动推断策略、不改内存一致性语义）；
-* 写明失败行为：「A requested policy must never be silently ignored.」
+* 写明失败行为：“A requested policy must never be silently ignored.”
 
 反过来，**反例的特征**也很清楚：
 
 * 只描述方案、不描述当前行为，评审者要自己去读代码才知道你在改什么；
-* 声称「这会让编译器更快」，但没有任何可复现的口径或证据；
+* 声称“这会让编译器更快”，但没有任何可复现的口径或证据；
 * 不给非目标，讨论范围无限扩张；
 * 不给兼容性与回退方式，维护者无法判断风险；
-* 把「能不能做」和「该不该做」混在一起，讨论无法收敛。
+* 把“能不能做”和“该不该做”混在一起，讨论无法收敛。
 
 `code/02-rfc-lint/` 把这些章节做成可检查项。
 
 ### 12.3 礼貌与信息密度
 
 主干仓库有一份 Contributor Covenant 行为准则（`_vendor/tilelang-v0.1.15/CODE_OF_CONDUCT.md`）；
-锁定版本里的**昇腾适配器仓库没有 `CODE_OF_CONDUCT.md`**，所以「两个仓库遵循同一套
-行为准则」这一点无法确认。无论遵循哪份文本，技术讨论都可以归结为三条可操作的习惯：
+锁定版本里的**昇腾适配器仓库没有 `CODE_OF_CONDUCT.md`**，所以“两个仓库遵循同一套
+行为准则”这一点无法确认。无论遵循哪份文本，技术讨论都可以归结为三条可操作的习惯：
 
-1. **先给证据，再给判断。** 说「在我这里 `pytest testing/python/transform/test_x.py -x`
-   失败，traceback 如下」，比说「这个 pass 有 bug」有用得多。
+1. **先给证据，再给判断。** 说“在我这里 `pytest testing/python/transform/test_x.py -x`
+   失败，traceback 如下”，比说“这个 pass 有 bug”有用得多。
 2. **区分事实、推断、建议。** 昇腾仓库的 `AGENTS.md:63-77` 把这条写成了开发原则：
-   「未验证的结果，不得表述为『已完成』或『已通过』」「若当前环境无法完成验证，
-   必须明确说明验证缺口」。
-3. **对评审意见逐条回复。** 不是「已改」，而是「第 3 条我改成 X，理由是 Y」。
+   “未验证的结果，不得表述为『已完成』或『已通过』”“若当前环境无法完成验证，
+   必须明确说明验证缺口”。
+3. **对评审意见逐条回复。** 不是“已改”，而是“第 3 条我改成 X，理由是 Y”。
 
 信息密度的最低标准可以概括成一句话：**每条评论都应能让对方少问一个问题。**
 
@@ -1055,19 +1055,19 @@ Risk / limits:  已知的边界、未覆盖的 shape、需要 maintainer 触发�
   `testing/cpp/` 在 v0.1.15 是空的。可移植性由 `requires_cuda` / `requires_rocm` /
   `requires_metal` 等标记决定。
 * 性能回归：由 maintainer 评论 `@regression-perf` 触发
-  `pr-regression-test-bot`，判定规则是「至少 2 个 benchmark 同时掉破 0.90」，
+  `pr-regression-test-bot`，判定规则是“至少 2 个 benchmark 同时掉破 0.90”，
   这条规则在 33 份真实报告上校准过。昇腾侧另有 50% / 2× / 2 分钟三条 PR 模板要求。
 * 昇腾侧是两个仓库：适配器默认分支 `ascendc_pto`，主干有 `tilelang/ascend/`、
-  `src/ascend/` 与独立的 `ascend` CI job。「适配器先行、再以 `[Ascend]` PR 回主干」
+  `src/ascend/` 与独立的 `ascend` CI job。“适配器先行、再以 `[Ascend]` PR 回主干”
   这条流程**在两个仓库里都没有成文规定**，本章标为无法确认。
-* 最后一条，也是最像本书封面那句话的一条：**上游接受的是「可被复核、可被长期维护」
-  的改动，而不是「在我机器上能跑」的改动。**
+* 最后一条，也是最像本书封面那句话的一条：**上游接受的是“可被复核、可被长期维护”
+  的改动，而不是“在我机器上能跑”的改动。**
 
 ## 延伸阅读
 
 * 三种贡献路径的完整图与对照表：`figures/contribution-paths.md`
 * issue → RFC → PR → CI 的流程图：`figures/upstream-flow.md`
-* 两棵树的协作图（含「无法确认」说明）：`figures/two-tree-collaboration.md`
+* 两棵树的协作图（含“无法确认”说明）：`figures/two-tree-collaboration.md`
 * 可执行工具：`code/01-pr-scope-linter/`、`code/02-rfc-lint/`、
   `code/03-checklist-gate/`
 * 引用清单与核验状态：`references.md`

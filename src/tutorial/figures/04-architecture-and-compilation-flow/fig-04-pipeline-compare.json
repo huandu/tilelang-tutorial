@@ -57,7 +57,7 @@
       ]
     }
   ],
-  "caption": "两条 pipeline 共享同一条「tile op 之后」的标准 lowering 走廊，差异集中在三处：网格物化的参数、流水 / 调度由谁负责、同步与片上存储怎么合并。",
+  "caption": "两条 pipeline 共享同一条“tile op 之后”的标准 lowering 走廊，差异集中在三处：网格物化的参数、流水 / 调度由谁负责、同步与片上存储怎么合并。",
   "notes": [
     "完整清单：CUDA 73 步、Ascend 80 步，同名 pass 39 个，带条件守卫的分别是 CUDA 7 步、Ascend 17 步（脚本 ../code/pass-order/dump_pass_order.py）。",
     "步数口径：正文 4.5 / 4.7 节按 mod = <pass>(...) 语句统计；源图 fig-04 写的是 74 / 80，差异来自统计口径，以正文为准。",

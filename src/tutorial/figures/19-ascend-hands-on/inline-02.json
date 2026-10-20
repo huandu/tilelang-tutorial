@@ -3,7 +3,7 @@
   "title": "昇腾软件栈的分层",
   "kind": "layers",
   "inlineQuote": " 你的程序（PyTorch / TileLang kernel）\n        │\n   torch_npu  ← PyTorch 的昇腾后端",
-  "caption": "「装昇腾环境」是铺一条链子：从 NPU 硬件往上，驱动、CANN、毕昇编译器与 Ascend 运行时、TileLang 后端、torch_npu 各占一层，你的程序在最上面。",
+  "caption": "“装昇腾环境”是铺一条链子：从 NPU 硬件往上，驱动、CANN、毕昇编译器与 Ascend 运行时、TileLang 后端、torch_npu 各占一层，你的程序在最上面。",
   "layers": [
     {
       "label": "你的程序（PyTorch / TileLang kernel）",

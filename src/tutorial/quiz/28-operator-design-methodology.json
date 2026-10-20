@@ -3,63 +3,63 @@
   "items": [
     {
       "id": "q1",
-      "stem": "在本章的设计流程里，「写代码」是第几步？",
+      "stem": "在本章的设计流程里，“写代码”是第几步？",
       "options": [
-        "第一步，先写出来再优化",
         "最后一步（第五步），前面还有建模、定 tile、定流水、定特殊路径",
+        "第一步，先写出来再优化",
         "和建模同时进行，边写边算",
         "只有遇到性能问题时才需要写"
       ],
-      "answer": 1,
-      "explain": "见 §1.2 与图 1：顺序是建模 → 定 tile → 定流水 → 定特殊路径 → 写代码 → 对账，而且 ② ② 的顺序不能换（先定 tile 再定流水）。最容易跳过也最贵的两步是 ① 建模与 ② 定 tile。"
+      "answer": 0,
+      "explain": "见 §1.2 与图 1：顺序是建模 → 定 tile → 定流水 → 定特殊路径 → 写代码 → 对账，而且 ② 与 ③ 的顺序不能换（先定 tile 再定流水）。最容易跳过也最贵的两步是 ① 建模与 ② 定 tile。"
     },
     {
       "id": "q2",
       "stem": "roofline 给出的 SOL time 是什么性质的东西？",
       "options": [
         "一个实现可以达到的预测时间",
-        "一个能精确预测 kernel 效率的模型",
         "下界：再好也不可能快过它，真实实现一定更慢",
+        "一个能精确预测 kernel 效率的模型",
         "实测时间的滑动平均"
       ],
-      "answer": 2,
-      "explain": "见 §2.2：roofline 是判类工具，不是预测工具；它有三个输入都要自己声明——哪些字节算进去、用哪条 roof、哪个 shape，而且 roof 声明的是「最优实现会用哪个单元」。"
+      "answer": 1,
+      "explain": "见 §2.2：roofline 是判类工具，不是预测工具；它有三个输入都要自己声明，哪些字节算进去、用哪条 roof、哪个 shape，而且 roof 声明的是“最优实现会用哪个单元”。"
     },
     {
       "id": "q3",
       "stem": "用张量核 roof 给一个逐元素（norm / RoPE / quantize）算子定价，错在哪里？",
       "options": [
         "张量核 roof 的峰值数字本身就是编的",
-        "该算子实际跑在 CUDA core 上，用 tensor_core.fp16 定价会把平衡点从 12.72 抬到 161.97（12.7×）",
         "逐元素算子没有 flops，不能进 roofline",
+        "该算子实际跑在 CUDA core 上，用 tensor_core.fp16 定价会把平衡点从 12.72 抬到 161.97（12.7×）",
         "张量核不支持 fp16，所以选错了 roof"
       ],
-      "answer": 1,
+      "answer": 2,
       "explain": "见 §2.3 的 M2：在当前案例上两种读法都判 memory-bound，看起来无害；但工作量再重一点，这个 12.7 倍的偏移就足以让判类翻转，把你送去优化错误的东西。"
     },
     {
       "id": "q4",
       "stem": "关于 tile 尺寸与流量的关系，下列哪一项正确？",
       "options": [
-        "block_K 不进 traffic 公式（carver 复算显示前 8 名并列），所以要先定 M/N，再定 K",
         "block_K 对 DRAM 流量有直接分辨率，应该先调它",
         "tile 越大流量一定越小，这对任何算子都成立",
-        "stages 越多流量越小"
+        "stages 越多流量越小",
+        "block_K 不进 traffic 公式（carver 复算显示前 8 名并列），所以要先定 M/N，再定 K"
       ],
-      "answer": 0,
-      "explain": "见 §3.2 与 §4.3：traffic = b·MNK(1/block_N + 1/block_M) + b·MN，只含 M/N。「tile 越大越好」只对 compute-bound 的算子成立；对一个 AI ≈ 3 的算子，加大 tile 只会让寄存器先爆掉。"
+      "answer": 3,
+      "explain": "见 §3.2 与 §4.3：traffic = b·MNK(1/block_N + 1/block_M) + b·MN，只含 M/N。“tile 越大越好”只对 compute-bound 的算子成立；对一个 AI ≈ 3 的算子，加大 tile 只会让寄存器先爆掉。"
     },
     {
       "id": "q5",
-      "stem": "fusion / split 的四个问题里，哪一条解释了「瘦长 GEMM 反而要用 split-K」？",
+      "stem": "fusion / split 的四个问题里，哪一条解释了“瘦长 GEMM 反而要用 split-K”？",
       "options": [
+        "③ 融合会不会把 grid 缩到装不满设备（原来 64 块远少于 132 个 SM，split-K 给到 512 块）",
         "① 融合能省多少字节（split-K 反而多搬 67.1 MB）",
         "② 融合后要同时活着多少片上数据",
-        "③ 融合会不会把 grid 缩到装不满设备（原来 64 块远少于 132 个 SM，split-K 给到 512 块）",
         "④ 融合引入了什么新工作"
       ],
-      "answer": 2,
-      "explain": "见 §5.1：这条判据的意义就在于它在并行度不足时会给出与流量相反的答案——案例里两行「故意多搬字节」的取舍（split-K 与 split-KV）都出自这一条。"
+      "answer": 0,
+      "explain": "见 §5.1：这条判据的意义就在于它在并行度不足时会给出与流量相反的答案，案例里两行“故意多搬字节”的取舍（split-K 与 split-KV）都出自这一条。"
     },
     {
       "id": "q6",
@@ -75,14 +75,14 @@
     },
     {
       "id": "q7",
-      "stem": "案例（QK-Norm + RoPE + fp8 量化）的第一版「一行一 block」为什么被否掉？",
+      "stem": "案例（QK-Norm + RoPE + fp8 量化）的第一版“一行一 block”为什么被否掉？",
       "options": [
         "片上容量装不下",
         "指令形状不整除",
-        "累加器寄存器爆掉",
-        "总流量 315.23 MB，是理想值的 4.65 倍，其中 251.66 MB 全是查表被重复读"
+        "总流量 315.23 MB，是理想值的 4.65 倍，其中 251.66 MB 全是查表被重复读",
+        "累加器寄存器爆掉"
       ],
-      "answer": 3,
+      "answer": 2,
       "explain": "见 §6.3–6.4：payload 完全正确（63.57 MB），多出来的部分全是 norm 权重与 RoPE 表；下界从 15.05 µs 抬到 70.01 µs，调参救不了它，只能改设计（一个 block 处理几行）。"
     },
     {
@@ -91,10 +91,10 @@
       "options": [
         "给出精确的融合算子时间",
         "直接报错退出，提示超出支持范围",
-        "查不到 arch 就返回 None，estimated_time 静默退化成只有访存时间——它不报错，只是给你半个答案",
-        "自动回退到 CPU 模型继续估算"
+        "自动回退到 CPU 模型继续估算",
+        "查不到 arch 就返回 None，estimated_time 静默退化成只有访存时间。它不报错，只是给你半个答案"
       ],
-      "answer": 2,
+      "answer": 3,
       "explain": "见 §3.3：ARCH_CONFIGS 只有 80/86/89 三个条目；而且 total_flops 只统计 tl.gemm，total_global_bytes 只统计跨 global 的 tl.copy。正确用法是只取 GEMM-only 的 FLOPs 与跨 global 字节数去和手算账本对账。"
     }
   ]

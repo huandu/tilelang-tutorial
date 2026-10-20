@@ -16,7 +16,7 @@
     },
     {
       "label": "③ namespace + 别名（L39-44）",
-      "sub": "namespace tvm::tl { using namespace tirx; using namespace ffi; }——using namespace ffi 才能写 refl::GlobalDef"
+      "sub": "namespace tvm::tl { using namespace tirx; using namespace ffi; }，using namespace ffi 才能写 refl::GlobalDef"
     },
     {
       "label": "④ 算法：StmtExprVisitor / Mutator（L46-396）",
@@ -34,7 +34,7 @@
     }
   ],
   "notes": [
-    "静默失败一：VisitStmt_(const BufferStoreNode *op) 少写一个下划线会编译通过、pass 也跑，但重载永远不会被调用——唯一防线是一条必须命中的测试。",
+    "静默失败一：VisitStmt_(const BufferStoreNode *op) 少写一个下划线会编译通过、pass 也跑，但重载永远不会被调用，唯一防线是一条必须命中的测试。",
     "静默失败二：注册名与 Python 调用不一致只在运行时暴露，报错形态是 AttributeError: module ... has no attribute 'X'。",
     "Python pass 的骨架只有四块：imports → pass 工厂 → 闭包内的 pass_fn / @tirx.functor.mutator → return prim_func_pass(...)，它不需要 FFI 注册。"
   ]

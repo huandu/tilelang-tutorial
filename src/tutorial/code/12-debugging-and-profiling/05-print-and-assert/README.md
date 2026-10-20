@@ -2,7 +2,7 @@
 
 ## 目的
 
-编译期工具回答「IR 对不对」，运行期工具回答「数值对不对」。本示例把 `T.print` 的四种
+编译期工具回答“IR 对不对”，运行期工具回答“数值对不对”。本示例把 `T.print` 的四种
 用法与 `T.device_assert` 放在一起，并重点标注**单线程门控语义**——这是最容易踩的坑。
 
 门控规则（`_vendor/tilelang-v0.1.15/tilelang/cuda/language/print.py:155-194`）：

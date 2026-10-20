@@ -16,11 +16,11 @@
 
 * **由浅入深**：第一部分宏观（为什么、是什么、和谁比），第二部分实用（怎么用、先跑起来），
   第三部分深入（编译器、后端、芯片、方法论）。
-* **由宏观到微观**：每一章内部也按「它解决什么问题 → 用户怎么用 → 编译器怎么实现 →
-  代码在哪」推进。
+* **由宏观到微观**：每一章内部也按“它解决什么问题 → 用户怎么用 → 编译器怎么实现 →
+  代码在哪”推进。
 * **由稳定到前沿**：v0.1.15 里稳定的能力先讲透；只在 `main` 上、或只在未合入 PR 里的
   能力集中放在第 30 章，并显式标注状态。
-* **理论与工程并重**：每个结论都要有「为什么」和「代码在哪一行」；不写没有出处的性能数字。
+* **理论与工程并重**：每个结论都要有“为什么”和“代码在哪一行”；不写没有出处的性能数字。
 * **两条硬件主线**：NVIDIA 与华为昇腾；其他后端（ROCm / Metal / WebGPU / CPU）只在
   解释抽象设计时提及，不展开。
 
@@ -32,12 +32,12 @@
 
 | 章 | 标题 | 讲什么 | 依赖 |
 | --- | --- | --- | --- |
-| 01 | 为什么需要 Tile DSL | AI 算子的性能困境；硬件演进（SIMT→张量核→异步/专用存储）；CUDA/Triton/TileLang 的问题演进；DSL 谱系与「tile」概念的定义 | — |
+| 01 | 为什么需要 Tile DSL | AI 算子的性能困境；硬件演进（SIMT→张量核→异步/专用存储）；CUDA/Triton/TileLang 的问题演进；DSL 谱系与“tile”概念的定义 | — |
 | 02 | 从 PyTorch 到 kernel：算子在栈里的位置 | 训练/推理一次迭代里算子的角色；roofline 与算术强度；torch.compile/Inductor 边界；何时必须自己写 kernel | 01 |
 | 03 | TileLang 的设计哲学与编程模型 | tile / dataflow / schedule 解耦；三层接口（beginner/developer/expert）；composable 的含义；与 Triton 的取舍 | 01,02 |
 | 04 | 架构总览与一次编译的全流程 | 仓库结构与模块地图；Python→TIR→pass→codegen→runtime；各后端 pipeline 一览；版本与发布方式 | 03 |
 | 05 | 横向对比：CUDA / Triton / CUTLASS-CuTe / TVM / cuTile / Ascend C / PTO-DSL | 七个同类物的定位、抽象层次、适用场景；用同一段 GEMM 做对照 | 03,04 |
-| 06 | 芯片导论：NV GPU 与昇腾 NPU 的抽象对照 | 存储层级、执行单元、同步模型、异步机制；为什么「GPU 是 SIMT、NPU 是 SIMD」已经过时 | 01,05 |
+| 06 | 芯片导论：NV GPU 与昇腾 NPU 的抽象对照 | 存储层级、执行单元、同步模型、异步机制；为什么“GPU 是 SIMT、NPU 是 SIMD”已经过时 | 01,05 |
 
 ### 第二部分 · 实用：从会用到敢用（第 7–19 章）
 
@@ -62,7 +62,7 @@
 
 ### 第三部分 · 深入：编译期、后端与芯片（第 20–29 章）
 
-> 目标：从「会用」到「能改」。每章都要落到 v0.1.15 的具体文件与行号。
+> 目标：从“会用”到“能改”。每章都要落到 v0.1.15 的具体文件与行号。
 
 | 章 | 标题 | 讲什么 | 依赖 |
 | --- | --- | --- | --- |
@@ -88,24 +88,24 @@
 
 > 目标：把 2026-09-30 DeepSeek 面向昇腾开源的整套基础设施（官方发布说明见 corpus
 > `14-deepseek-ascend-stack/raw/deepseek-article-20260930.md`）逐层拆开讲透。
-> **TileLang 是主线**：每个组件都要回答「它的算子用 TileLang 怎么写 / 为什么这里
-> 没有用 TileLang / 两者边界在哪」。其他工具链（Ascend C、PTO、HCCL/URMA、
+> **TileLang 是主线**：每个组件都要回答“它的算子用 TileLang 怎么写 / 为什么这里
+> 没有用 TileLang / 两者边界在哪”。其他工具链（Ascend C、PTO、HCCL/URMA、
 > DeepJIT、CUDA/PTX）的用法与原理作为必要的辅助展开。
 >
 > 与前四部分的关系：第一、二部分给出 TileLang 的用法，第三部分给出编译期与后端原理，
 > 本部分把这些能力放到一个真实的生产栈里检验。所以本部分是**综合应用**，
-> 也是全书「华为优先」路线的落点。
+> 也是全书“华为优先”路线的落点。
 
 | 章 | 标题 | 讲什么 | 依赖 |
 | --- | --- | --- | --- |
 | 32 | DeepSeek 昇腾全栈：这次开源了什么 | 官方文章与六个仓库的清单；与 NVIDIA 侧组件的一一对应关系；训练/推理全流程里各自的位置；版本与可用性如何核验；本部分的学习路线与验证边界 | 19,25 |
 | 33 | TileKernels（上）：一份算法，两个后端 | 库结构（`*_kernel.py` 共享层 / `*_cuda.py` / `*_asc.py` + 运行期选择）；以 top-k gate 为例逐行对照 CUDA 与 Ascend 两种 TileLang 写法；量化算子族（per-token/per-block cast、SwiGLU 融合）；RoPE 与 Rand | 09,11,25 |
-| 34 | TileKernels（下）：Engram 与流形超连接 | Engram 条件记忆与 O(1) 查表；门控 kernel（融合 RMSNorm、前后向、梯度归约、Sinkhorn）；mHC 的 Sinkhorn 归一化与 mix 拆分/应用、多层重计算；「不是矩阵乘的算子」怎么写 TileLang | 33 |
+| 34 | TileKernels（下）：Engram 与流形超连接 | Engram 条件记忆与 O(1) 查表；门控 kernel（融合 RMSNorm、前后向、梯度归约、Sinkhorn）；mHC 的 Sinkhorn 归一化与 mix 拆分/应用、多层重计算；“不是矩阵乘的算子”怎么写 TileLang | 33 |
 | 35 | DeepGEMM-Ascend：把 GEMM 压到硬件极限 | MAD 原语抽象与 fractal/对齐/地址计算；稀疏加载与协程流水；scale factor 的 int16 打包与 MN-major；MQA logits（FixPipe bound）；MegaMoE 融合；HC prenorm 为什么用 TileLang 写 | 14,25,27 |
 | 36 | FlashMLA 昇腾稀疏注意力：算法与流水 | DSA 与 online softmax；skip-scale；1C2V 的推导；rescale 放在哪；ND2NZ 的时机；gather2、KV cache layout、高速 ND2NZ、icache、L1 bank 配平；哪些结论能回到 TileLang 表述 | 15,23,25 |
-| 37 | DeepSelect：算法先行的 TopK | 阈值筛选 + RadixSelect 的算法与期望复杂度证明；CUDA 侧用 PTX 与位运算压低常数的技巧；昇腾实现的差异；「算法决定上限、硬件决定常数」 | 13,28 |
+| 37 | DeepSelect：算法先行的 TopK | 阈值筛选 + RadixSelect 的算法与期望复杂度证明；CUDA 侧用 PTX 与位运算压低常数的技巧；昇腾实现的差异；“算法决定上限、硬件决定常数” | 13,28 |
 | 38 | DeepEP-Ascend：专家并行通信与计算重叠 | EP dispatch/combine、FP8 dispatch、延迟 epilogue；HCCL/HCOMM、UBMEM、URMA；DeepJIT 运行时编译；PP/Bucket/Engram 现状；128 卡超节点带宽读法；DualPipe 与 EPLB 的位置 | 16,26,35 |
-| 39 | 端到端：128 卡超节点上的训练与推理 | 把六个组件拼回一条流水线；一次 decode step 的账；训练侧的并行与通信重叠；MFU/带宽检查清单；从「能跑」到「跑满」；如何为这套生态贡献 | 32–38 |
+| 39 | 端到端：128 卡超节点上的训练与推理 | 把六个组件拼回一条流水线；一次 decode step 的账；训练侧的并行与通信重叠；MFU/带宽检查清单；从“能跑”到“跑满”；如何为这套生态贡献 | 32–38 |
 
 ## 每章的必备结构
 
@@ -128,7 +128,7 @@
 * 第 20–29 章依赖第 4 章与第 7–12 章的工具方法。
 * 第 30–31 章依赖第三部分。
 * 第 32–39 章依赖第二、三部分；部分内部只有弱依赖（33 前置，35–38 可并行，39 收口）。
-* 所有章节都可以并行写作；跨章引用一律用「见第 N 章」的相对表述，不写死路径。
+* 所有章节都可以并行写作；跨章引用一律用“见第 N 章”的相对表述，不写死路径。
 
 ## 明确不做的事（范围边界）
 

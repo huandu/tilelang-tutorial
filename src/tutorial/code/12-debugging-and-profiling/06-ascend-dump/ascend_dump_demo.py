@@ -64,10 +64,10 @@ def build_printf_kernel(T, tilelang):
 
 def run_print_demo() -> int:
     import tilelang
-    import tilelang.ascend.language as T  # 昇腾方言的 T.printf / T.dump_tensor 在这里
+    import tilelang.language as T  # A 树（适配器）方言提供 T.printf / T.dump_tensor
 
     factory = build_printf_kernel(T, tilelang)
-    src = tilelang.lower(factory(64, 64), target="ascend").kernel_source
+    src = tilelang.lower(factory(64, 64), target="ascendc").kernel_source
     assert "printf" in src or "PRINTF" in src, "设备端打印没有出现在生成源码里"
     print("已生成 AscendC 源码，且里面含设备端打印调用。")
     return 0
@@ -81,7 +81,7 @@ def run_exception_dump_demo() -> int:
     import torch  # noqa: F401  （导入顺序本身就是演示的一部分）
 
     import tilelang
-    import tilelang.ascend.language as T  # noqa: F401
+    import tilelang.language as T  # A 树（适配器）方言
     from tilelang.tools.ascend_exception_dump_bin import parse_exception_dump
 
     @tilelang.jit(

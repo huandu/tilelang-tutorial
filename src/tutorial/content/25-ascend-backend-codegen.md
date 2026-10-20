@@ -4,7 +4,7 @@
 
 读完本章，你应当能：
 
-1. 说清「昇腾后端」在锁定版本里其实是**四条可执行的编译路线**，并指出每一条的
+1. 说清“昇腾后端”在锁定版本里其实是**四条可执行的编译路线**，并指出每一条的
    **入口、生成物、编译器**分别是什么；
 2. 把 `T.alloc_shared` / `T.alloc_l1` / `T.alloc_l0a` / `T.alloc_l0b` / `T.alloc_l0c`
    逐条对应到 UB / L1 / L0A / L0B / L0C，并说出它们最终写进 CCE 源文件的
@@ -14,7 +14,7 @@
 4. 说明 `T.dual_copy`、`T.SimtVF` / `T.SimdVF`、`T.Pipelined` 这三类昇腾专属原语
    在代码生成阶段各自体现在哪里，并知道 `T.tile.*` **在 v0.1.15 里不存在**；
 5. 写出 NV 与昇腾两条后端在生成物、工具链、指令层次、同步模型上的结构对照；
-6. 在没有 NPU 的机器上，用「读源码 + 打印生成物清单 + 静态审计」三步，对一份
+6. 在没有 NPU 的机器上，用“读源码 + 打印生成物清单 + 静态审计”三步，对一份
    昇腾生成代码做出可信的核查。
 
 ## 前置知识
@@ -32,12 +32,12 @@
 写作环境是 macOS (Apple Silicon)，**没有 NVIDIA GPU，也没有昇腾 NPU**，没有安装
 CANN 与 bisheng。因此本章：
 
-* 所有「生成什么代码」的结论，都来自**逐行阅读锁定版本的 codegen 与 lowering
+* 所有“生成什么代码”的结论，都来自**逐行阅读锁定版本的 codegen 与 lowering
   源码**，而不是运行结果；
-* 所有「谁编译、编译出什么」的结论，都来自**编译器调用点的源码**；
-* **不含任何本机实测的性能数字**；引用到的厂商数字都注明出处与「厂商自述」；
+* 所有“谁编译、编译出什么”的结论，都来自**编译器调用点的源码**；
+* **不含任何本机实测的性能数字**；引用到的厂商数字都注明出处与“厂商自述”；
 * `code/05-emit-ascend-c/` 里有一个真实可编译的 kernel，但它的 `--emit` 模式
-  **本机从未运行过**，只提供了「在昇腾机器上怎么核对」的清单。
+  **本机从未运行过**，只提供了“在昇腾机器上怎么核对”的清单。
 
 本章的引用行号由 `code/04-cite-check/check_citations.py` 逐个核对过（见 §7.4）。
 
@@ -45,7 +45,7 @@ CANN 与 bisheng。因此本章：
 
 ## 1. 问题的由来：一次 `target="ascend"` 之后到底发生了什么
 
-第 19 章告诉你：在昇腾上写 TileLang，要先决定用哪棵树。但「用哪棵树」只是开始。
+第 19 章告诉你：在昇腾上写 TileLang，要先决定用哪棵树。但“用哪棵树”只是开始。
 真正决定你能不能用、好不好调、出问题找谁的是**生成物**这一层：
 
 * 编译器吐出来的是一份 **CCE/Ascend C 源文件**，还是一份 **MLIR 文本**？
@@ -55,11 +55,11 @@ CANN 与 bisheng。因此本章：
 * 用户写的 `T.copy` 到底变成哪一条硬件搬运指令，`T.gemm` 又变成哪一条矩阵指令？
 
 这四个问题，就是本章的全部内容。答案在锁定版本里是**明确的、可逐行核对的**，
-但它们分散在三个仓库、四种目标名、五套目录结构里——这一章把它们收拢到一张表上。
+但它们分散在三个仓库、四种目标名、五套目录结构里。这一章把它们收拢到一张表上。
 
-### 1.1 先固定「四条路线」这个词
+### 1.1 先固定“四条路线”这个词
 
-锁定版本（见 [../../VERSIONS.md](../../VERSIONS.md)）里，与「昇腾代码生成」相关的
+锁定版本（见 [../../VERSIONS.md](../../VERSIONS.md)）里，与“昇腾代码生成”相关的
 可执行路线一共**四条**：
 
 | 代号 | 树 / 仓库 | 目标 | 生成物 | 编译器 |
@@ -69,14 +69,14 @@ CANN 与 bisheng。因此本章：
 | **A2** | 同上 | `target="pto"` | PTO-DSL C++（`pto::Tile` / `TLOAD` / `TMATMUL` 模板） | `bisheng --cce-aicore-arch=dav-c220\|dav-c310 -xcce` → `.so` |
 | **L1** | corpus 快照 `tilelang-mlir-ascend` | TVM target kind `npuir` | AscendNPU IR（MLIR 文本） | `bishengir-compile --enable-hivm-compile=true …` → `.o` |
 
-前两条（A1/A2）就是适配器仓库自述里说的 **「Ascend C & PTO」路线**，L1 是
-**「AscendNPU IR」路线**；两者在同一句自述里被并列为「两条技术路线」
+前两条（A1/A2）就是适配器仓库自述里说的 **“Ascend C & PTO”路线**，L1 是
+**“AscendNPU IR”路线**；两者在同一句自述里被并列为“两条技术路线”
 （`_vendor/tilelang-ascend-v0.1.2.000/README.md:12`）。M1 则是 2026-09-30 随
 PR3308 进入主干的那条，它自带一套自动调度与同步插入
 （`../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3308.md`）。
 
 **这四条的 API 不通用、target 名不通用、编译器参数也不通用。** 后面每一节都会
-明确写「这是哪一条」。
+明确写“这是哪一条”。
 
 ### 1.2 一个必须先纠正的直觉：`T.tile.*` 不在主干里
 
@@ -96,7 +96,7 @@ PR3308 进入主干的那条，它自带一套自动调度与同步插入
 
 第 19 章 §2 已给出完整机器模型，这里只留下**会直接改变生成代码形状**的四件事。
 
-### 2.1 AI Core 是「一 Cube + 两 Vector」的物理组
+### 2.1 AI Core 是“一 Cube + 两 Vector”的物理组
 
 昇腾 950PR 的规格是 **32/28 个 Cube Core、64/56 个 Vector Core**
 （`../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/hardware/zh_hardware_processor.md:57-58`），
@@ -110,8 +110,8 @@ extern "C" __global__ __cube__        // kCube：纯 Cube
 ```
 
 `kernel_mode_` 由函数体预扫描得到（有没有 Cube、有没有 Vector）；`__mix__(1, 2)`
-的注释写得很直接：「dav-3510's direct AIC-to-AIV data paths require the physical
-1:2 group」。所以**「一个 kernel 里混用 Cube 与 Vector」在代码生成层就是换一个
+的注释写得很直接：“dav-3510's direct AIC-to-AIV data paths require the physical
+1:2 group”。所以**“一个 kernel 里混用 Cube 与 Vector”在代码生成层就是换一个
 函数限定符**，剩下的由 `AssignCore`（把任务分到 `kCoreCube` / `kCoreVector`，
 `src/ascend/transform/assign_core.cc:64-75`、`core_mask.h:26-37`）与
 `MixedKernel(sids=…)`（`tilelang/ascend/language/kernel.py:176-228`）负责。
@@ -137,13 +137,13 @@ GM (HBM)
 两个细节值得记：
 
 * `alloc_l0c` 会**顺手打上 L0C 布局**（`make_ascend_l0c_layout`，`:65-69`）；
-* `alloc_l0a` / `alloc_l0b` **不打布局**，注释说「Layout is deferred to the
-  consuming gemm operation」（`:37-52`）——布局由消费它的 GEMM 按 transpose
-  标志推断。这就是为什么你没有「给 L0A 指定 K-major 还是 MN-major」的 API。
+* `alloc_l0a` / `alloc_l0b` **不打布局**，注释说“Layout is deferred to the
+  consuming gemm operation”（`:37-52`），布局由消费它的 GEMM 按 transpose
+  标志推断。这就是为什么你没有“给 L0A 指定 K-major 还是 MN-major”的 API。
 
 ### 2.3 四条搬运/收尾流水线，七个搬运代号
 
-搬运不是「一句 memcpy」，而是按**源/目的 scope 组合**选出的固定通路。枚举在
+搬运不是“一句 memcpy”，而是按**源/目的 scope 组合**选出的固定通路。枚举在
 `src/ascend/op/oob_padding.h:32-44`，选择逻辑在
 `src/ascend/op/oob_padding.cc:46-68`：
 
@@ -171,7 +171,7 @@ L1  → L0A.sf / L0B.sf   （MX 尺度因子的槽位加载）
 **这张表是整章的骨架**：后面 §4.3 说 `T.copy` 怎么落到这七条通路之一，§4.5 说
 `T.dual_copy` 为什么走 FIX，§4.6 说 Vector 区域为什么用 V。
 
-### 2.4 同步是「pipe 到 pipe 的事件」，不是线程屏障
+### 2.4 同步是“pipe 到 pipe 的事件”，不是线程屏障
 
 因为执行单元是分离的（MTE1/2/3 搬运、M 计算、FIX 收尾、V 向量），依赖必须表达成
 **流水线之间的一次通知**。codegen 把这种事件拆成三样东西：
@@ -185,13 +185,13 @@ L1  → L0A.sf / L0B.sf   （MX 尺度因子的槽位加载）
    `asc_sync_wait(...)`（`codegen_ascend.cc:1349-1364`）。
 
 跨核（Cube↔Vector）另有一套：`asc_sync_inter/subblock/block/intra_arrive|_wait`
-（`codegen_ascend.cc:274-292,1366-1381`）。**用户不需要写它们**——
+（`codegen_ascend.cc:274-292,1366-1381`）。**用户不需要写它们**，
 `InsertSync` 在 `LowerScheduledTIR` 之前插好（`tilelang/ascend/pipeline.py:113-115`）。
 
 ### 2.5 四条路线的一张总图
 
 见 [figures/01-two-routes.md](figures/01-two-routes.md)。要点是：**M1 只进主干，
-A1/A2 与 L1 各自在自己的仓库/分支里**；四者的「生成物」形态完全不同。
+A1/A2 与 L1 各自在自己的仓库/分支里**；四者的“生成物”形态完全不同。
 
 ---
 
@@ -234,7 +234,7 @@ def matmul_relu(A, B, block_M: int = 256, block_N: int = 224, block_K: int = 128
     return C
 ```
 
-这里有四个「读代码就能看见」的事实：
+这里有四个“读代码就能看见”的事实：
 
 1. **没有 `threads=`**：`T.Kernel` 在昇腾方言里只接受一个 grid extent，
    传多维或 `threads=` 会被 Python 层直接拒绝
@@ -249,7 +249,7 @@ def matmul_relu(A, B, block_M: int = 256, block_N: int = 224, block_K: int = 128
 
 ### 3.2 A1 / A2：同一件事在适配器里的两种写法
 
-适配器侧的等价 kernel 长相完全不同——`T.Kernel(..., is_npu=True)` 会额外绑定一个
+适配器侧的等价 kernel 长相完全不同，`T.Kernel(..., is_npu=True)` 会额外绑定一个
 子核号（官方示例里写成 `vid`；这里只写 Cube 侧，所以用 `_` 忽略）：
 
 ```python
@@ -304,7 +304,7 @@ def matmul(M, N, K, block_M, block_N, K_L1, dtype="float16", accum_dtype="float"
 
 ### 4.1 入口是三层的
 
-「后端」不是单一函数，而是三个注册点：
+“后端”不是单一函数，而是三个注册点：
 
 1. **target 归一化**：`normalize_ascend_target` 把字符串 `"ascend"` 变成
    `Target({"kind": "ascend"})`，`normalize_asc_target` 接受缩写 `"asc"`
@@ -316,7 +316,7 @@ def matmul(M, N, K, block_M, block_N, K_L1, dtype="float16", accum_dtype="float"
 3. **device codegen 函数名**：`tilelang/ascend/codegen.py:5-9` 把它绑到
    FFI 函数 `target.build.tilelang_ascend` / `..._without_compile`。
 
-所以「昇腾后端在哪里」的准确答案是：**入口在 `tilelang/ascend/`，实现在
+所以“昇腾后端在哪里”的准确答案是：**入口在 `tilelang/ascend/`，实现在
 `src/ascend/`，两者通过 `target.build.tilelang_ascend` 这一个 FFI 名连接。**
 
 ### 4.2 pass 管线：昇腾不是把 CUDA 的管线换掉几个 pass
@@ -358,10 +358,10 @@ pass，**真正的 pass 调用是 73 次**，与第 4、20 章的表一致；方
 
 ### 4.3 `T.copy` 的降级：从 scope 到 intrinsic
 
-这是全章最「可操作」的一张表。`tilelang/ascend/language/copy_op.py:230-372` 先做
+这是全章最“可操作”的一张表。`tilelang/ascend/language/copy_op.py:230-372` 先做
 Ascend 侧的参数归一化（`l2_cache_ctrl` 字符串→整数、`pad_value`/`data_select`、
 `transpose`），然后把 `tl.tileop.copy` **重拼成** `tl.tileop.ascend_copy`
-（`:362-371`）——这一步很关键，它是「方言 op 与通用 op 分家」的分界。
+（`:362-371`）。这一步很关键，它是“方言 op 与通用 op 分家”的分界。
 
 接着 `src/ascend/op/copy.cc` 按 `GetDMAPath` 选出的通路组装实参，
 `src/ascend/codegen/codegen_ascend.cc` 把它们变成文本：
@@ -389,7 +389,7 @@ Ascend 侧的参数归一化（`l2_cache_ctrl` 字符串→整数、`pad_value`/
 `code/02-scope-dma-pipes/scope_dma_pipes.py` 会把上面三张表（scope、通路、pipe）
 从源码里抽出来并做四条一致性检查。
 
-### 4.3.1 两张「实参长什么样」的原文
+### 4.3.1 两张“实参长什么样”的原文
 
 与其记住 intrinsic 的名字，不如记住它**要几个实参、每个实参是什么**。下面两段是
 锁定版本里 `EmitUbufToGmCopy_` 与 `EmitL1ToL0Copy_` 的原文（
@@ -421,11 +421,11 @@ void CodeGenTileLangAscend::EmitL1ToL0Copy_(const CallNode *op, bool is_l0a) {
 三个可迁移的读法：
 
 * 实参里出现 `"(__gm__ uint8_t*)("` / `"(__ubuf__ uint8_t*)("`，说明这个 intrinsic
-  是**指针风格**的，参数顺序就是「目的、源」；
+  是**指针风格**的，参数顺序就是“目的、源”；
 * `static_cast<asc_store_l2_cache_mode>(...)` 说明 `l2_cache_ctrl` 最终变成了
   C++ 枚举转换，而不是一个裸整数（对应的 Python 侧归一化在
   `copy_op.py:166-227`）；
-* `is_transpose` 只影响**函数名的选择**，不影响实参个数——所以你在生成代码里看到
+* `is_transpose` 只影响**函数名的选择**，不影响实参个数。所以你在生成代码里看到
   `_transpose` 后缀，就知道上游某个 `T.copy` 带了 `transpose=True`。
 
 ### 4.4 `T.gemm` 的降级：只有一条路，就是 L0 MAD
@@ -440,7 +440,7 @@ static String SelectInst(const GemmNode &op, int block_size, Target target) {
 }
 ```
 
-`ComputeWarpPartition` 也固定返回 `{1, 1}`——因为昇腾没有 warp 概念。
+`ComputeWarpPartition` 也固定返回 `{1, 1}`。因为昇腾没有 warp 概念。
 所以 M 树的 GEMM 只有一种形态：**A 在 L0A、B 在 L0B、结果累加到 L0C 的 MAD**
 （`asc_mmad`，`codegen_ascend.cc:1652-1667`）。区别只在参数：
 
@@ -466,16 +466,16 @@ MAD 原语，M/N/K 是它的循环维度（源码里 `node_M/node_N/node_K` 必�
   `[M, N] → [M/2, N]` 是 M-split（`dual_dst_ctl=0b01`），
   `[M, N] → [M, N/2]` 是 N-split（`0b10`）；静态 extent 必须是偶数。
 * **两条实现**：
-  * `L0C→UB` 是**硬件双目的**拷贝——它不是软件劈成两条，而是在
+  * `L0C→UB` 是**硬件双目的**拷贝。它不是软件劈成两条，而是在
     `asc_copy_l0c2ub` 的实参里传 `asc_dual_dst_mode`（`codegen_ascend.cc:1469-1492`）；
   * `GM→UB`、`UB→GM`、`UB→L1` 是**逐 AIV 的软件拷贝**，用 `cthread`
     （子核 ID）把区域切片，`RewriteDualCopy` 在 layout/OOB/调度之前完成这次改写
     （`tilelang/ascend/pipeline.py:63-68`、`src/ascend/transform/rewrite_dual_copy.cc`）。
 
 还有一条**会静默出错**的限制：`dav-950` 不支持在 `cc→ub` 双目的拷贝里做类型转换。
-`dual_copy` 在 Python 层主动拦截——只要 src 的 scope 是 `shared.l0c` 且
+`dual_copy` 在 Python 层主动拦截，只要 src 的 scope 是 `shared.l0c` 且
 dtype 不同，就直接 `raise ValueError`，并建议你改用单独拷贝或在 VF 区域里 cast
-（`copy_op.py:140-151`）。这是本章最值得记住的一个「编译期保护」。
+（`copy_op.py:140-151`）。这是本章最值得记住的一个“编译期保护”。
 
 ### 4.6 `T.SimtVF` / `T.SimdVF`：两个区域，两套约束
 
@@ -496,7 +496,7 @@ dtype 不同，就直接 `raise ValueError`，并建议你改用单独拷贝或�
 
 `VFChecker`（`tilelang/ascend/analysis/vf_checker.py`）在管线中途就检查区域内的
 分配与访问合法性，位置在 `InsertNd2Nz` 之后
-（`tilelang/ascend/pipeline.py:93-95`）——因为有的 UB→L1 拷贝要先被改写成
+（`tilelang/ascend/pipeline.py:93-95`）。因为有的 UB→L1 拷贝要先被改写成
 SIMD scatter 才合法。
 
 ### 4.7 `T.Pipelined` 与多缓冲：注解 → 求解 → 物理版本
@@ -513,9 +513,9 @@ buffer slot 的是三件事：
    再改写布局（`tilelang/ascend/pipeline.py:114,135`）。
 
 如果用户**自己**做了 ping-pong（`buf[l % 2]`），要用
-`T.annotate_manual_multi_buffer(buf, {flat: 3})` 告诉编译器「别再给我加一维」，
+`T.annotate_manual_multi_buffer(buf, {flat: 3})` 告诉编译器“别再给我加一维”，
 它只负责分析依赖并补 `set_flag`/`wait_flag`（`annotations.py:107-162`）。
-**两种多缓冲不要叠加**——这正是第 19 章 §7.5 末尾的警告。
+**两种多缓冲不要叠加**。这正是第 19 章 §7.5 末尾的警告。
 
 ### 4.8 A 树的两条 codegen
 
@@ -531,7 +531,7 @@ buffer slot 的是三件事：
 | 编译器 | `bisheng --npu-arch=dav-2201 -std=c++17 -xasc … --shared`（`libgen.py:150-183`） | `bisheng --cce-aicore-arch=dav-c220\|dav-c310 -std=gnu++17 -xcce -I3rdparty/pto-isa/include …`（`libgen.py:185-230`） |
 
 一个容易忽略的差别：A 树的中端用的是**传统 TileLang 管线**
-——`PipelinePlanning` + `InjectSoftwarePipeline`（`tilelang/engine/phase.py:103-104`），
+`PipelinePlanning` + `InjectSoftwarePipeline`（`tilelang/engine/phase.py:103-104`），
 同步用 `AscendSyncInsert` / `AscendSyncInsertVS`（`:121-122`）；而 M 树把这两件
 事换成了 `AutoSchedule` + `InsertSync`。这解释了为什么两棵树的 `pass_configs`
 完全不同（`TL_ASCEND_*` 只在 A 树，`tilelang/transform/pass_config.py:38-62`）。
@@ -583,7 +583,7 @@ codegen 头里 `#include <pto/pto-inst.hpp>`，模板层在
 `src/tl_templates/pto/common.h` 里把 `pto::Tile<...>` 落成 L1 / L0A / L0B / L0C /
 UB 各自的 `TileMatL1` / `TileMatL0A` / `TileUbDataND` 别名
 （`../tilelang-corpus/06-huawei-ascend/raw/pto-dsl/README.md` 也确认了
-「tilelang-ascend 用 PTO-ISA 作为 codegen 后端」这一点）。
+“tilelang-ascend 用 PTO-ISA 作为 codegen 后端”这一点）。
 
 **状态提示**：把 PTO 后端带进主干的是 PR3310。corpus 里有两份互相矛盾的快照：
 PR 页面快照（2026-09-30，`../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3310.md`）
@@ -594,19 +594,19 @@ PR 页面快照（2026-09-30，`../tilelang-corpus/08-frontier-unmerged/raw/gith
 还有两层容易混淆的粒度，值得在名词上分开：
 
 * **PTO micro instruction**：流水线同步、`pto.vlds` / `pto.vsts` / `pto.vadd`
-  这类微操作。它是「一个向量循环」级别的东西；
+  这类微操作。它是“一个向量循环”级别的东西；
 * **PTO tile instruction**：`pto.tload` / `pto.tadd` / `pto.trowsum` 这类
   整 tile 的操作，内部展开成一串 micro instruction 加同步 flag
   （`../tilelang-corpus/06-huawei-ascend/raw/PTO-Gym/docs/PTO-tile-Instruction-SPEC.md:18-46`）。
 
-PTO 生态里的 **`ptoas`** 是这套指令的汇编器：PTO-Gym 把「一个可运行用例」拆成
+PTO 生态里的 **`ptoas`** 是这套指令的汇编器：PTO-Gym 把“一个可运行用例”拆成
 `kernel.pto`（设备侧 PTO 源）、`launch.cpp`、`main.cpp`、`golden.py`、`compare.py`
 五个文件，用 `ptoas` + bisheng 编成可执行文件再比对 golden
 （`../tilelang-corpus/06-huawei-ascend/raw/PTO-Gym/README.md:1-40`）。
-TileLang 不写 `.pto` 汇编，而是发 `pto::` 模板的 C++——两者最终都会经过 PTO-ISA
+TileLang 不写 `.pto` 汇编，而是发 `pto::` 模板的 C++，两者最终都会经过 PTO-ISA
 这一层，但**中间形态不同**。
 
-如果你要判断「某个 PTO tile instruction 在 spec 里到底怎么定义」，权威来源是
+如果你要判断“某个 PTO tile instruction 在 spec 里到底怎么定义”，权威来源是
 `pto-spec`（ASL 形式化定义，工作树自述为架构 `0.58.7`：
 466 条 scalar instruction form、96 条 bundle/command、118 个 direct Tile operation、
 905 个 ASL 单元，`../tilelang-corpus/06-huawei-ascend/raw/pto-spec/README.md:1-40`），
@@ -616,7 +616,7 @@ TileLang 不写 `.pto` 汇编，而是发 `pto::` 模板的 C++——两者最�
 
 ## 5. 与 NV 后端的结构对照
 
-第 24 章会展开 NV 侧；这里只给结构对照表，供你定位「同一个抽象在两边落在哪」。
+第 24 章会展开 NV 侧；这里只给结构对照表，供你定位“同一个抽象在两边落在哪”。
 NV 侧来源：`tilelang/cuda/backend.py:69-120`、
 `tilelang/cuda/pipeline.py:69-275`；昇腾侧来源见 §4.2。
 
@@ -634,8 +634,8 @@ NV 侧来源：`tilelang/cuda/backend.py:69-120`、
 | 编译器 | `nvcc` / NVRTC | `bisheng` + `ld.lld` |
 | 产物 | cubin / fatbin | 链接好的 CCE ELF（`aibin`） |
 
-一句话：**NV 是「一个线程块一组线程 + shared/register」；昇腾是「Cube 核 + 两个
-Vector 子核 + 五块片上 buffer + 四条搬运/收尾流水线」**。这是两侧 codegen、
+一句话：**NV 是“一个线程块一组线程 + shared/register”；昇腾是“Cube 核 + 两个
+Vector 子核 + 五块片上 buffer + 四条搬运/收尾流水线”**。这是两侧 codegen、
 同步 pass、多缓冲模型完全不同的根因。见
 [figures/05-nv-vs-ascend.md](figures/05-nv-vs-ascend.md)。
 
@@ -643,15 +643,15 @@ Vector 子核 + 五块片上 buffer + 四条搬运/收尾流水线」**。这是
 
 * NV 侧同步的是**线程**：同一个 block 里的 128/256 个线程要看到同一份 shared
   memory，所以 `ThreadSync` 插的是 `__syncthreads()` / mbarrier 这类
-  「等到所有线程到齐」的屏障；
+  “等到所有线程到齐”的屏障；
 * 昇腾侧同步的是**流水线**：MTE2 把数据放进 UB 之后，V 才能读；M 把结果写进 L0C
-  之后，FIX 才能搬。这里没有「所有线程到齐」的概念，只有「MTE2 → V 这一对事件
-  完成了吗」。所以 `InsertSync` 产出的是 `hard_event`（一对 pipe 名），
+  之后，FIX 才能搬。这里没有“所有线程到齐”的概念，只有“MTE2 → V 这一对事件
+  完成了吗”。所以 `InsertSync` 产出的是 `hard_event`（一对 pipe 名），
   codegen 发出的是 `asc_sync_notify/wait`。
 
 把这两件事当成同一种东西，是理解昇腾自动同步时最常见的错误：昇腾的
 `num_stages` 之所以能自动决定 buffer 版本数，正是因为每条依赖都能写成
-「生产 pipe → 消费 pipe + 距离」，而这恰好是一个可求解的约束问题（第 23 章）。
+“生产 pipe → 消费 pipe + 距离”，而这恰好是一个可求解的约束问题（第 23 章）。
 
 ---
 
@@ -689,27 +689,27 @@ ls _vendor/tilelang-v0.1.15/src/ascend/                                # 无 pto
 ```
 
 PTO codegen（`codegen_ascend_pto.cc`、`rt_mod_ascend_pto.cc`、
-`tl_templates/pto/`）只存在于适配器仓库。任何看到「在 v0.1.15 里用
-`target="pto"`」的说法，都要先确认他指的是哪棵树。
+`tl_templates/pto/`）只存在于适配器仓库。任何看到“在 v0.1.15 里用
+`target="pto"`”的说法，都要先确认他指的是哪棵树。
 
 ### 6.3 issue 3317：两条路线怎么选，**没有维护者结论**
 
-corpus 收了这个问题：*「It seems there are two Ascend 950 backends, which is
-suggested to use」*（`../tilelang-corpus/08-frontier-unmerged/raw/github-issue-3317.md`）。
+corpus 收了这个问题：*“It seems there are two Ascend 950 backends, which is
+suggested to use”*（`../tilelang-corpus/08-frontier-unmerged/raw/github-issue-3317.md`）。
 该 issue 已被关闭，但抓取到的页面里**只有提问正文、标签与元信息，没有维护者回答**
 （帖子里的 Activity 区没有可见评论）。因此：
 
-* 不要引用它作为「官方推荐用某一条」的依据；
-* 它唯一能支撑的结论是「社区已经意识到存在两条昇腾 950 路线，并且这是一个
-  需要被回答的问题」。
+* 不要引用它作为“官方推荐用某一条”的依据；
+* 它唯一能支撑的结论是“社区已经意识到存在两条昇腾 950 路线，并且这是一个
+  需要被回答的问题”。
 
 需要选路线时，唯一可靠的依据还是各自仓库的适用范围：
-PR3308 明确写「target hardware is Ascend 950 (dav-3510)，A2/A3 请用社区维护的
-TileLang-Ascend」；PR3310 的评审快照是 draft，但 main 快照已合入它（见 §4.10）
+PR3308 明确写“target hardware is Ascend 950 (dav-3510)，A2/A3 请用社区维护的
+TileLang-Ascend”；PR3310 的评审快照是 draft，但 main 快照已合入它（见 §4.10）
 （PR3308 正文见
 `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3308.md`）。
 
-### 6.4 三个具体的「会咬人」的点
+### 6.4 三个具体的“会咬人”的点
 
 1. **arch 字符串不通用**。M 树默认 `dav-3510`（`tilelang/contrib/bisheng.py:91-96`），
    A 树 AscendC 用 `--npu-arch=dav-2201`，A 树 PTO 用
@@ -717,7 +717,7 @@ TileLang-Ascend」；PR3310 的评审快照是 draft，但 main 快照已合入�
    （`tilelang/jit/adapter/libgen.py:150-190`）。写死一个值换树就会失败。
 2. **`dual_copy` 不做类型转换**。L0C→UB 的 src/dst dtype 必须一致，否则
    Python 层直接报错（`copy_op.py:140-151`）。
-3. **`SimdVF` 的宽度必须整**。2048-bit 不是「建议」，是
+3. **`SimdVF` 的宽度必须整**。2048-bit 不是“建议”，是
    `ValidateSimdVectorType` 的 `LOG(FATAL)` 条件（`codegen_ascend.cc:408-434`）。
 
 ---
@@ -786,17 +786,17 @@ extern "C" __global__ __mix__(1, 2) void main_kernel(__gm__ bfloat16* A,
 }
 ```
 
-这段骨架的价值不在于「它长得对」，而在于**它把要核对的位置都标出来了**：
+这段骨架的价值不在于“它长得对”，而在于**它把要核对的位置都标出来了**：
 如果你在真机上打印出来的代码里，某条搬运的名字、pipe 对或 buffer 限定符与这里
-不符，就说明你对 §4 的某一步理解错了——或者你用的不是这一条路线。
+不符，就说明你对 §4 的某一步理解错了，或者你用的不是这一条路线。
 
-### 7.3 没有卡时的「三级可信度」
+### 7.3 没有卡时的“三级可信度”
 
 任何关于昇腾运行结果的结论，只可能属于下面三级之一，写文档时必须标清楚：
 
 | 级别 | 你能说什么 | 不能说什么 |
 | --- | --- | --- |
-| 仅静态核对 | 源码里确实这么写；API 名存在；生成物会长什么样 | 「跑通了」「性能是 X」 |
+| 仅静态核对 | 源码里确实这么写；API 名存在；生成物会长什么样 | “跑通了”“性能是 X” |
 | CPU/仿真验证 | camodel 之类的仿真里逻辑正确 | 上板性能 |
 | 真实硬件运行 | 有输入的实测结果 | 无条件的跨设备推广 |
 
@@ -810,13 +810,13 @@ python3 chapters/25-ascend-backend-codegen/code/04-cite-check/check_citations.py
 ```
 
 它会把 `chapter.md` / `exercises.md` / `solutions.md` / `references.md` 里每个
-`path:line` 逐个解析，拒绝「文件不存在」与「行号越界」。
+`path:line` 逐个解析，拒绝“文件不存在”与“行号越界”。
 
 ---
 
 ## 8. 本章小结
 
-* 「昇腾后端」= **四条路线**：M1（主干 `target="ascend"`，CCE/Ascend C + bisheng
+* “昇腾后端”= **四条路线**：M1（主干 `target="ascend"`，CCE/Ascend C + bisheng
   dav-3510）、A1（适配器 `ascendc`，AscendC 类库 + bisheng dav-2201）、
   A2（适配器 `pto`，PTO-DSL + bisheng `-xcce`）、L1（MLIR 仓库 `npuir`，
   AscendNPU IR + `bishengir-compile`）。
@@ -831,7 +831,7 @@ python3 chapters/25-ascend-backend-codegen/code/04-cite-check/check_citations.py
   只在适配器里。**
 * **版本差异**：v0.1.15 只有一个昇腾目标 `ascend`，没有 PTO；main 源码快照已合入
   PTO（PR3310，commit `994b44e`）；issue 3317 没有维护者结论。
-* 与 NV 的差别不是「换几个 pass」，而是**执行单元、线程模型、片上存储、
+* 与 NV 的差别不是“换几个 pass”，而是**执行单元、线程模型、片上存储、
   矩阵指令、同步模型整条链都不同**。
 
 ## 延伸阅读

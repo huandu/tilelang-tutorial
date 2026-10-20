@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-# From _vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:40.
+# From _vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:41-42.
 TMA_MAX_BOX_DIM = 256
 TMA_SMEM_ADDR_ALIGN = 128
 

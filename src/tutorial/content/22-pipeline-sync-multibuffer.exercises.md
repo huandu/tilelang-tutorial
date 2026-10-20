@@ -3,7 +3,7 @@
 说明：
 
 * 难度标注为 `★`（基础）/ `★★`（需要综合本章内容）/ `★★★`（推理链条较长或动手）。
-* 「需要硬件」一栏中，`否` 表示只需要一台能跑 Python 的机器；`TileLang` 表示需要装
+* “需要硬件”一栏中，`否` 表示只需要一台能跑 Python 的机器；`TileLang` 表示需要装
   TileLang v0.1.15（**不需要 GPU**）；`是（GPU）` 表示需要真实加速器。
 * 所有题目只依赖第 22 章及更早章节的知识；涉及后续章节的地方会显式提示。
 * 本章写作环境没有 NVIDIA GPU，也没有昇腾 NPU。题面里出现的所有数字都来自
@@ -14,11 +14,11 @@
 
 ## E1 概念题 ★ 不需要硬件
 
-1. 给出「依赖距离」的定义；`d = 0` 与 `d ≥ 1` 分别对应什么样的程序行为？
+1. 给出“依赖距离”的定义；`d = 0` 与 `d ≥ 1` 分别对应什么样的程序行为？
 2. `_vendor/tilelang-v0.1.15/src/ascend/transform/auto_schedule/dependency_analysis.h`
-   用 `distance = -1` 表示「未解析的跨迭代依赖」。结合源码注释说明：这个 `-1`
+   用 `distance = -1` 表示“未解析的跨迭代依赖”。结合源码注释说明：这个 `-1`
    最终可能被翻译成哪两种不同的东西？
-3. 为什么说「把 copy 全挪到循环前面」不是流水的合法实现方式？至少给出两个理由。
+3. 为什么说“把 copy 全挪到循环前面”不是流水的合法实现方式？至少给出两个理由。
 
 ---
 
@@ -103,9 +103,9 @@ new_node->shape = {PrimExpr(num_stages) * buf->shape[0]};
 
 1. `stage_expr` 与 `parity_cycle` 分别是什么？用 `num_stages = 3`、
    `k = 0..7` 列一张表。
-2. 为什么等待 mbarrier 时必须带 `parity`，只给「槽位号」不够？
-3. 为什么注释特别说「只有显式带 `ptx_arrive_barrier` 的 barrier，或 ISP 自己创建的
-   `pipeline_mbar`」才展开？如果连 tcgen05 MMA 内部管理的 arrive barrier 也一起
+2. 为什么等待 mbarrier 时必须带 `parity`，只给“槽位号”不够？
+3. 为什么注释特别说“只有显式带 `ptx_arrive_barrier` 的 barrier，或 ISP 自己创建的
+   `pipeline_mbar`”才展开？如果连 tcgen05 MMA 内部管理的 arrive barrier 也一起
    展开，会出什么问题？（这一问只需给出合理推断。）
 
 ---
@@ -128,7 +128,7 @@ new_node->shape = {PrimExpr(num_stages) * buf->shape[0]};
 ## E7 代码阅读题 ★★★ 不需要硬件
 
 `MergeSharedMemoryAllocations` 的 arena 打包规则是：区间按 `(start, -size, name)`
-排序；最优先分配、同起点大者先分配；分配时选「对齐后浪费最少」的空洞（best fit）；
+排序；最优先分配、同起点大者先分配；分配时选“对齐后浪费最少”的空洞（best fit）；
 归还时与相邻空洞合并。
 
 给定（对齐 0，容量无限，分配顺序按 `(start, -size, name)`）：
@@ -146,7 +146,7 @@ new_node->shape = {PrimExpr(num_stages) * buf->shape[0]};
    `T` 会被放到哪里？arena 大小会变吗？
 3. 现在把对齐从 0 改成 32（其它不变），重新算一遍。arena 大了多少？
    多出来的空间花在哪里？
-4. 用一句话解释：为什么「对齐要求」在这个模型里等价于「凭空多出一段不能用的碎片」。
+4. 用一句话解释：为什么“对齐要求”在这个模型里等价于“凭空多出一段不能用的碎片”。
 
 ---
 
@@ -181,19 +181,19 @@ python3 flag_budget.py --cross-core
 2. `--sharing` 在第 2 档把 `allocator sum` 从 8 降到 6：这 2 个槽是怎么省出来的？
    真 pass 里对应的机制叫什么？
 3. 为什么 `--cross-core` 在第 4 档仍然放得下？
-4. 请设计一个「同步点数变多、但 flag 需求不变」的场景，并说明它在真实 kernel 里
+4. 请设计一个“同步点数变多、但 flag 需求不变”的场景，并说明它在真实 kernel 里
    对应什么写法。
 
 ---
 
 ## E10 概念题 ★★ 不需要硬件
 
-本章 §5.1 说「漏一个同步会偶发出错」。
+本章 §5.1 说“漏一个同步会偶发出错”。
 
-1. 用「WAR hazard + 环上槽位轮转」描述一个会**偶发**产生错误结果的最小场景。
-2. 为什么「重复跑 1000 次都过」不能作为同步正确的证据？请给出一个能反证的
+1. 用“WAR hazard + 环上槽位轮转”描述一个会**偶发**产生错误结果的最小场景。
+2. 为什么“重复跑 1000 次都过”不能作为同步正确的证据？请给出一个能反证的
    检验方案（不需要真跑）。
-3. 上游文档把「条件执行」单独列成一节。请说明：一个带 `if active(i)` 的循环，
+3. 上游文档把“条件执行”单独列成一节。请说明：一个带 `if active(i)` 的循环，
    在 `iteration` 与 `counter` 两种索引模式下，生产者与消费者可能算出不同槽位的
    原因是什么。
 
@@ -242,7 +242,7 @@ if (IsCrossCore(sp)) { ...CrossCoreSetFlag / WaitFlag... }   // 规则 2
 
 ## E13 概念题 ★★★ 不需要硬件
 
-本章 §8.3 说「WS 与流水是两套都会插同步的机制」。
+本章 §8.3 说“WS 与流水是两套都会插同步的机制”。
 
 1. 在 v0.1.15 的 CUDA pass 顺序里，WS 的三趟 pass 与
    `PipelinePlanning` / `InjectSoftwarePipeline` 谁先谁后？给出文件与行号。
@@ -272,6 +272,6 @@ TL_LOWER_TRACE=terminal python3 lower_num_stages.py --num-stages 3
    具体改了哪几行（贴出 diff 片段）。
 
 > 注意：这一题**不需要** NVIDIA GPU；但要装 TileLang。如果你和作者一样在没有
-> TileLang 的机器上，请改为「阅读 `code/01/README.md` 与上游单测
-> `test_pipeline_planning_before_after_copy_gemm_num_stages_plan`，写出你预期的输出」
+> TileLang 的机器上，请改为“阅读 `code/01/README.md` 与上游单测
+> `test_pipeline_planning_before_after_copy_gemm_num_stages_plan`，写出你预期的输出”
 > 并明确指出哪几项你**没有**验证过。

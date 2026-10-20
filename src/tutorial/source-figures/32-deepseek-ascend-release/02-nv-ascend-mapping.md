@@ -24,11 +24,11 @@
   运行期按设备自动选后端。
 * **实现不可迁移**：稀疏加载、协程流水、地址计算、同步插入都是各自平台特有的。
 * **哪里并不对应**（正文 §4.3 展开）：
-  * scaling factor 打包格式不同——昇腾把**一对** UE8M0 打包进 `int16` 且按 MN-major 存，
+  * scaling factor 打包格式不同，昇腾把**一对** UE8M0 打包进 `int16` 且按 MN-major 存，
     NV 侧 SM100 把**四个** UE8M0 打包进一个 `torch.int`；
-  * 功能子集不同——FlashMLA 的融合 norm-RoPE-attn-RoPE-cast 只支持 CUDA，
+  * 功能子集不同，FlashMLA 的融合 norm-RoPE-attn-RoPE-cast 只支持 CUDA，
     DeepSelect 的昇腾实现只支持 bf16 / int32；
-  * 语义不同——DeepEP-Ascend 的 stream 行为与支持模式是昇腾特有的。
+  * 语义不同，DeepEP-Ascend 的 stream 行为与支持模式是昇腾特有的。
 
 来源：`../../../tilelang-corpus/14-deepseek-ascend-stack/raw/DeepGEMM-Ascend/README.md:3,55-56`、
 `.../DeepGEMM/README.md:64-67`、`.../DeepEP-Ascend/README.md:3,62`、

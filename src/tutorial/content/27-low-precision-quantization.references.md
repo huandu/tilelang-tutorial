@@ -13,12 +13,12 @@
 * 数值结论全部来自 `code/01`–`code/05` 的 CPU 实跑（验证级别：CPU 逻辑验证）；
 * 硬件结论全部来自 `_vendor/` 的源码或 corpus 的厂商文档；
 * **没有任何一条性能数字来自本机实测**，正文里唯一引用的性能数字（BitNet）
-  是上游样例给出的，见「关于性能数字的说明」。
+  是上游样例给出的，见“关于性能数字的说明”。
 
 **编号约定**：下表的 `S*` / `A*` / `R*` 与
 `code/06-tilelang-audit/tilelang_audit.py` 的检查编号**一一对应**；
 每张表末尾那些没有对应检查的条目编号继续往下排（`S31+`、`A6+`、`R11+`），
-表示「本章引用过，但没有做成机器检查」。一条命令复查全部对应关系：
+表示“本章引用过，但没有做成机器检查”。一条命令复查全部对应关系：
 
 ```bash
 # 在 code/06-tilelang-audit/ 下运行；期望：通过 44 / 失败 0
@@ -75,9 +75,9 @@ python3 tilelang_audit.py
 | S42 | `src/cuda/op/gemm_blockscaled.cc:46-90` | CUDA 侧的块缩放指令选择：SM100 的 TCGEN05（A/B 在 SMEM、C 在 TMEM）或 SM120 的 `mma.sync` | 已核验（2026-10-01）；未做成机器检查 |
 | S43 | `examples/dequantize_gemm/quantize/nvfp4.py:180-196` | `blockscaled_chunk_kmajor_word_offset`：CUTLASS `BlockScaledBasicChunk` 的 K-major 词坐标 | 已核验（2026-10-01）；`code/06` N2；**未运行** |
 | S44 | `examples/bitnet-1.58b/utils_quant.py:16-30` | 三值权重（`1/mean|w|`）与 per-token int8 激活（`Qp/absmax`）的量化规则 | 已核验（2026-10-01）；**未运行** |
-| S45 | `examples/bitnet-1.58b/README.md` | 上游给出的 A100 性能与显存数字（见「关于性能数字的说明」） | 已核验（2026-10-01）：文本存在；**未复现** |
+| S45 | `examples/bitnet-1.58b/README.md` | 上游给出的 A100 性能与显存数字（见“关于性能数字的说明”） | 已核验（2026-10-01）：文本存在；**未复现** |
 
-**负向断言**（`code/06` N1）：主干 `tilelang` 包下**没有** quantize 子包——
+**负向断言**（`code/06` N1）：主干 `tilelang` 包下**没有** quantize 子包，
 v0.1.15 的量化工具只出现在 `examples/dequantize_gemm/quantize/` 与
 `testing/python/quantize/` 两个示例目录里，以及
 `examples/dequantize_gemm/quantize/nvfp4.py` 这个文件。
@@ -106,7 +106,7 @@ v0.1.15 的量化工具只出现在 `examples/dequantize_gemm/quantize/` 与
 
 | id | 本地路径 | 上游链接 | 用途 | 核验状态 |
 | --- | --- | --- | --- | --- |
-| R1 | `06-huawei-ascend/raw/catlass/include/catlass/catlass.hpp:48` | https://gitcode.com/cann/catlass | `MX_SCALE_GROUP_NUM = 32`——MX 粒度在昇腾侧的唯一定义 | 已核验（2026-10-01）；`code/06` R1 |
+| R1 | `06-huawei-ascend/raw/catlass/include/catlass/catlass.hpp:48` | https://gitcode.com/cann/catlass | `MX_SCALE_GROUP_NUM = 32`，MX 粒度在昇腾侧的唯一定义 | 已核验（2026-10-01）；`code/06` R1 |
 | R2 | `06-huawei-ascend/raw/catlass/include/catlass/gemm/block/block_mmad_mx_tla.hpp:101-145` | 同上 | `L1_SCALE_FACTOR_K` 与 `L1SCALEA/L1SCALEB_TILE_SIZE` 的公式：scale 在 L1 的深度是模板参数 | 已核验（2026-10-01）；`code/06` R2 |
 | R3 | `06-huawei-ascend/raw/catlass/examples/59_ascend950_a8w4_mx_matmul/README.md` 与 `a8w4_mx.cpp:57` | 同上 | A8W4 MX 示例：`float8_e4m3_t` × `float4_e2m1x2_t`、scale 为 `float8_e8m0_t`、公式 `C = (MxScaleA x A) * (MxScaleB x B) + Bias` | 已核验（2026-10-01）；`code/06` R3；**未编译、未运行** |
 | R4 | `06-huawei-ascend/raw/catlass/experimental/attention/ascend950_fp8_mx_flash_attention_infer/mxfp8_flash_attention_infer.md` | 同上 | MXFP8 FlashAttention：block size=32、`float8_e8m0_t` scale、在 L1→L0 阶段反量化、P 需要静态量化系数、Online Softmax 在 FP32 完成 | 已核验（2026-10-01）；`code/06` R4 |
@@ -137,7 +137,7 @@ v0.1.15 的量化工具只出现在 `examples/dequantize_gemm/quantize/` 与
 
 ## 关于性能数字的说明
 
-本章只出现一处「性能数字」，并且明确标注了来源：
+本章只出现一处“性能数字”，并且明确标注了来源：
 
 | 数字 | 来源 | 条件 | 状态 |
 | --- | --- | --- | --- |
@@ -168,7 +168,7 @@ v0.1.15 的量化工具只出现在 `examples/dequantize_gemm/quantize/` 与
    如果后续要写硬件章节，建议补抓完整的 Blackwell tuning guide 与
    CUTLASS 的 block-scaled 文档。
 3. **昇腾侧的 MXFP8/MXFP4 缺少端到端的数值误差公开数据。**
-   CATLASS 的示例只给「Compare success」这样的通过/失败判据，
+   CATLASS 的示例只给“Compare success”这样的通过/失败判据，
    没有给出误差量级；本章的昇腾数值结论因此只引用模板参数与数据流，
    不给误差数字。
 4. **没有 MXINT8 / MXINT4 的硬件资料。** OCP MX 规范里包含整数变体，

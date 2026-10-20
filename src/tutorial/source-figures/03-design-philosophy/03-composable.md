@@ -1,4 +1,4 @@
-# 图 3：composable —— 一个 kernel 里的两层
+# 图 3：composable ，一个 kernel 里的两层
 
 对应正文 **2.6 与 3.3 节**。图为
 `_vendor/tilelang-v0.1.15/examples/dequantize_gemm/example_dequant_gemm_bf16_mxfp4_hopper.py`

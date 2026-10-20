@@ -8,7 +8,7 @@
   "section": "3.5",
   "nodes": [
     { "id": "r6", "label": "用 fp64 参考重算同一输入", "tone": "muted" },
-    { "id": "r5", "label": "每次不一样 → 进入「偶发」分支", "tone": "muted" },
+    { "id": "r5", "label": "每次不一样 → 进入“偶发”分支", "tone": "muted" },
     { "id": "s1", "label": "假设 1：缺 barrier", "sub": "读到没写完的 shared", "tone": "warn" },
     {
       "id": "s2",

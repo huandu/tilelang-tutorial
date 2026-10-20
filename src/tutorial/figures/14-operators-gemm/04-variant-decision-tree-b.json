@@ -26,6 +26,6 @@
   "notes": [
     "形状一致 → batched：直接按 batch 展开，比 pointer table 的间接寻址更简单也更快",
     "形状不同 / 动态 → grouped：G 个专家、每个 M 各不相同，最典型就是 MoE",
-    "指针表版本无法做多级软件流水（copy_num_stages = 1），是「不拼接」换来的代价"
+    "指针表版本无法做多级软件流水（copy_num_stages = 1），是“不拼接”换来的代价"
   ]
 }

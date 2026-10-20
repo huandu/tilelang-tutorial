@@ -32,7 +32,7 @@ fp8 dtype: <TileLang 返回的 fp8 类型> | 结构检查完成（未评估数�
 int4 打包后形状: (1024, 512) （最后一维减半）
 ```
 
-* **正确性判据**：本示例只断言「打包后的形状减半」这类结构性事实；
+* **正确性判据**：本示例只断言“打包后的形状减半”这类结构性事实；
   fp8 / int4 的数值判据（误差上界、scale 表示、舍入顺序）属于第 27 章，
   这里不做断言。
 * **本机没有 GPU，以上输出均未产生。** 作者实际做到的是静态核对：
@@ -46,7 +46,7 @@ int4 打包后形状: (1024, 512) （最后一维减半）
   硬件的打包格式。官方 sm100 示例用 `uint32` 每 4 个 K-block 打包一个
   E8M0 scale，并放在 TMEM 里（见 `examples/blockscaled_gemm_sm100/`）；
   昇腾侧则由 `T.gemm_blockscaled` 方言把粒度固定为 32。
-* dequantize 没有独立函数：它在 TileLang 里表现为「搬入时做一次乘 scale」的
+* dequantize 没有独立函数：它在 TileLang 里表现为“搬入时做一次乘 scale”的
   `T.copy` + 普通 `T.gemm`，粒度（per-tensor / per-channel / per-group /
   fine-grained）决定元数据与额外算力。官方示例见
   `examples/dequantize_gemm/`。

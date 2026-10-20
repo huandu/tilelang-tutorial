@@ -8,8 +8,8 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 写作环境：macOS (Apple Silicon)、Python 3.11；**没有 NVIDIA GPU、没有昇腾 NPU、
 没有安装 tilelang/tvm**（`import tilelang` → `ModuleNotFoundError`，
-`command -v nvcc` 无输出）。因此本章代码示例的最高验证级别是「仅静态核对」；
-可离线运行的三个脚本是「CPU 逻辑验证」（见 `code/` 下各 README）。
+`command -v nvcc` 无输出）。因此本章代码示例的最高验证级别是“仅静态核对”；
+可离线运行的三个脚本是“CPU 逻辑验证”（见 `code/` 下各 README）。
 **本章不包含任何自测性能数字**，也不包含任何编译/运行结果。
 
 核验日期均为 2026-10-01。核验方式：在锁定版本的工作树上用 `grep -n` / `sed -n`
@@ -64,7 +64,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | S25 | `tilelang/jit/kernel.py:243` | JIT 编译时装配 pass timing 工具 | 已核验（2026-10-01） |
 | S26 | `tilelang/tools/lower_trace/__init__.py:49`（`lower_trace`）、`tilelang/tools/lower_trace/core.py:648`、`:663`（`create_pass_instrument` / `enable`） | IR Lower Trace 的程序 API | 已核验（2026-10-01） |
 | S27 | `tilelang/utils/pass_diff.py:1030`（`pass_diff`） | 旧 IR diff 工具的程序 API | 已核验（2026-10-01） |
-| S28 | `docs/tools/lower_trace.md`、`docs/tools/pass_diff.md`（顶部「Superseded — use IR Lower Trace」admonition） | 工具的官方说明与被取代关系 | 已核验（2026-10-01）：逐行读顶部段落 |
+| S28 | `docs/tools/lower_trace.md`、`docs/tools/pass_diff.md`（顶部“Superseded — use IR Lower Trace”admonition） | 工具的官方说明与被取代关系 | 已核验（2026-10-01）：逐行读顶部段落 |
 | S29 | `src/op/builtin.h:115-130`（`kDisableDataRaceCheck` `:115`、`kDisableBufferInitCheck` `:122`、`kEnableDumpIR` `:129`、`kDumpIRDir` `:130`）、`src/op/builtin.cc:28-42` | pass config 常量的定义与注册 | 已核验（2026-10-01） |
 | S30 | `tilelang/transform/pass_config.py:10`、`:52-68`、`:344-347` | `PassConfigKey` 枚举、两个检查开关、`TL_PASS_PROFILE*` | 已核验（2026-10-01） |
 
@@ -83,7 +83,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 | id | 引用位置 | 用途 | 核验状态 |
 | --- | --- | --- | --- |
-| S37 | `maint/scripts/run_perf_regression.sh:1-32`（用法与环境变量）、`:150-168`（baseline worktree）、`:240-369`（wheel 缓存）、`:412-493`（跑两遍 + 对比 + 汇总） | 「改动前后回归判定」的主入口 | 已核验（2026-10-01）：逐段落读 |
+| S37 | `maint/scripts/run_perf_regression.sh:1-32`（用法与环境变量）、`:150-168`（baseline worktree）、`:240-369`（wheel 缓存）、`:412-493`（跑两遍 + 对比 + 汇总） | “改动前后回归判定”的主入口 | 已核验（2026-10-01）：逐段落读 |
 | S38 | `maint/scripts/test_perf_regression.py:24-32`（`THRESHOLD` / `MIN_COUNT` 与标定注释）、`:243-257`（判定与措辞） | 判定规则的唯一出处 | 已核验（2026-10-01） |
 | S39 | `maint/scripts/compare_perf_regression.py:20-90`（payload 解析与 speedup）、`:293`、`:303`、`:324`（`--fail-on-regression` 与阈值） | 对比器与退出码 | 已核验（2026-10-01） |
 | S40 | `maint/scripts/run_current_regression.py:44-56`（`git` 状态字段）、`:104-146`（缓存 payload 结构：`results` / `failures` / `git`） | `--old` / `--new` 输入 JSON 的 schema | 已核验（2026-10-01）：`grep -n` 核对字段名 |
@@ -95,10 +95,10 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 | id | 引用位置 | 用途 | 核验状态 |
 | --- | --- | --- | --- |
-| S44 | `docs/developer_guide/cpp_style.md`（corpus 副本：`../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/developer_guide/cpp_style.md`） | 命名、TVM object/handle 用法、`*Node` 指针边界、反射字段兼容性 | 已核验（2026-10-01）：读「Formatting / Naming / TVM Object And FFI Types / ObjectNode Fields」四节 |
+| S44 | `docs/developer_guide/cpp_style.md`（corpus 副本：`../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/developer_guide/cpp_style.md`） | 命名、TVM object/handle 用法、`*Node` 指针边界、反射字段兼容性 | 已核验（2026-10-01）：读“Formatting / Naming / TVM Object And FFI Types / ObjectNode Fields”四节 |
 | S45 | `CONTRIBUTING.md:40-62`（风格与审计）、`:64-93`（开发环境）、`:111-127`（lint 与测试命令） | 贡献流程的官方说明 | 已核验（2026-10-01）：逐行读 |
-| S46 | `CMakeLists.txt:374-389`（`file(GLOB TILE_LANG_SRCS ...)`）、`:469`（`add_library(tilelang_objs ...)`） | 「新增 `.cc` 要重新 configure」的依据 | 已核验（2026-10-01） |
-| S47 | `src/ascend/CMakeLists.txt:1-42`（`:15-20` always 源、`:22` `if(NOT USE_ASCEND) return()`、`:32-38` active 源含 `src/ascend/transform/*.cc`） | 昇腾条件编译与「缺对象类型会 `Cannot find object type index`」 | 已核验（2026-10-01） |
+| S46 | `CMakeLists.txt:374-389`（`file(GLOB TILE_LANG_SRCS ...)`）、`:469`（`add_library(tilelang_objs ...)`） | “新增 `.cc` 要重新 configure”的依据 | 已核验（2026-10-01） |
+| S47 | `src/ascend/CMakeLists.txt:1-42`（`:15-20` always 源、`:22` `if(NOT USE_ASCEND) return()`、`:32-38` active 源含 `src/ascend/transform/*.cc`） | 昇腾条件编译与“缺对象类型会 `Cannot find object type index`” | 已核验（2026-10-01） |
 | S48 | `maint/layout_inference/README.md` | golden layout harness：为什么 cost model 的改动需要金标准 | 已核验（2026-10-01）：读全文 |
 | S49 | `maint/host_checks/README.md`、`maint/precision/README.md` | host 侧 10 个故意报错的复现脚本；精度对照表 | 已核验（2026-10-01）：读开头段落 |
 | S50 | `maint/scripts/audit_cpp_api_style.py`、`maint/scripts/apply_mit_license.sh`、`maint/scripts/check_mit_license.sh` | `maint/scripts/` 里的自检脚本清单 | 已核验（2026-10-01）：`ls`；`audit_cpp_api_style.py:601` 是 `main()` |
@@ -107,8 +107,8 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 | id | 引用位置 | 用途 | 核验状态 |
 | --- | --- | --- | --- |
-| A1 | `AGENTS.md:59-75`（四条通用原则）、`:79-113`（核心算子开发原则，含「不要凭记忆猜 API」`:83-87`）、`:117-122`（命名与行宽） | 适配器仓库的硬约束 | 已核验（2026-10-01）：逐行读 |
-| A2 | `AGENTS.md:24-28`（Pass 分析与设计 skills：`tilelang-pass-analyzer` / `-pass-workflow-analyzer` / `-pass-design`）、`.agents/skills/`（含 `tilelang-pass-generate`） | 「新 Pass 定位」被显式写进工作约定 | 已核验（2026-10-01）：`ls .agents/skills` |
+| A1 | `AGENTS.md:59-75`（四条通用原则）、`:79-113`（核心算子开发原则，含“不要凭记忆猜 API”`:83-87`）、`:117-122`（命名与行宽） | 适配器仓库的硬约束 | 已核验（2026-10-01）：逐行读 |
+| A2 | `AGENTS.md:24-28`（Pass 分析与设计 skills：`tilelang-pass-analyzer` / `-pass-workflow-analyzer` / `-pass-design`）、`.agents/skills/`（含 `tilelang-pass-generate`） | “新 Pass 定位”被显式写进工作约定 | 已核验（2026-10-01）：`ls .agents/skills` |
 | A3 | `VERSION`（仓库内写 `0.1.4`）、tag `TileLang-ascend-v0.1.2.000-release` | 版本以 tag 为准 | 已核验（2026-10-01）：与 `../../VERSIONS.md` 一致 |
 | A4 | `src/transform/` 清单（`ascend_sync_insert.cc`、`ascend_storage_rewrite.cc`、`ascend_memory_planning.cc`、`ascend_lower_parallel_to_vector.cc`、`cross_core_pipeline.cc`、`ascend_combinecv.cc` …） | 适配器是另一套昇腾 pass 词汇 | 已核验（2026-10-01）：`ls` |
 | A5 | `maint/scripts/`（`ci_performance.py`、`performance.py`、…）、`ci/operator_test_manifest.yaml`、`testing/`（仅 `cpp/` 与 `python/`） | 适配器自己的测试/性能入口，与主干不同 | 已核验（2026-10-01）：`ls` |
@@ -121,7 +121,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | R2 | `../tilelang-corpus/12-operator-libraries/raw/tilelang-benchmark/debug.py` | 上游用来给结果加 ±5% 抖动的辅助脚本 | 已核验（2026-10-01）：读全文；**正文未引用其数值** |
 | R3 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/developer_guide/cpp_style.md` | 官方 C++ 风格指南的 corpus 副本（与 `_vendor/` 内文档一致） | 已核验（2026-10-01）：与 `_vendor/tilelang-v0.1.15/docs/developer_guide/cpp_style.md` 对照 |
 | R4 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/lower_trace.md`、`.../tools/pass_diff.md` | 两个调试工具的官方文档副本 | 已核验（2026-10-01） |
-| R5 | `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/`（`testing/python/debug/test_pass_timing.py`、`test_pass_diff.py`、`test_pass_events.py`、`tilelang/tools/pass_timing.py` …） | corpus 里的源码镜像；**版本可能与 v0.1.15 不同，正文一律以 `_vendor/` 为准** | 已核验（2026-10-01）：仅用于确认文件存在 |
+| R5 | `../tilelang-corpus/02-tilelang-core-repo/raw/`（`testing/python/debug/test_pass_timing.py`、`test_pass_diff.py`、`test_pass_events.py`、`tilelang/tools/pass_timing.py` …） | corpus 里的源码镜像；**版本可能与 v0.1.15 不同，正文一律以 `_vendor/` 为准** | 已核验（2026-10-01）：仅用于确认文件存在 |
 | R6 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/`（`github-tile-ai-tilelang-ascend.md` 等） | 适配器仓库的一手镜像 | 已核验（2026-10-01）：仅作背景 |
 
 ## 十、本章自产材料
@@ -152,7 +152,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 | 缺什么 | 为什么需要 | 建议来源 |
 | --- | --- | --- |
-| 官方「如何写一个 pass」的教程 | v0.1.15 的 `docs/` 里没有这样一篇：`docs/developer_guide/` 只有 `cpp_style.md`，`docs/compiler_internals/` 只有 4 篇（`inject_fence_proxy` / `letstmt_inline` / `metal_tilelang_development` / `tensor_checks`）。本章 3.2–3.4 的「五步法」是从源码归纳的，不是引用官方教程 | 上游若新增 `docs/contributing/writing-a-pass.md` 之类的文档；或维护者的一份 issue 说明 |
-| 一次真实编译 + 测试的完整日志 | 本章所有「能编译 / 测试通过」的说法都停在**待验证**。需要一台有 CUDA 的机器，把 `code/02-cpp-pass-template/README.md` 的六步跑通并留档 | 任一有 sm_80+ GPU 与 nvcc 的开发机 |
+| 官方“如何写一个 pass”的教程 | v0.1.15 的 `docs/` 里没有这样一篇：`docs/developer_guide/` 只有 `cpp_style.md`，`docs/compiler_internals/` 只有 4 篇（`inject_fence_proxy` / `letstmt_inline` / `metal_tilelang_development` / `tensor_checks`）。本章 3.2–3.4 的“五步法”是从源码归纳的，不是引用官方教程 | 上游若新增 `docs/contributing/writing-a-pass.md` 之类的文档；或维护者的一份 issue 说明 |
+| 一次真实编译 + 测试的完整日志 | 本章所有“能编译 / 测试通过”的说法都停在**待验证**。需要一台有 CUDA 的机器，把 `code/02-cpp-pass-template/README.md` 的六步跑通并留档 | 任一有 sm_80+ GPU 与 nvcc 的开发机 |
 | `maint/scripts/run_perf_regression.sh` 的实测输出样例 | 本章只能引用判定规则与脚本结构，给不出真实报告样例 | 上游 CI 产出的 PR 机器人报告（`maint/scripts/run_perf_regression.sh` 的运行结果） |
 | 适配器 `.agents/skills/` 下 4 个 pass 相关 skill 的正文 | `AGENTS.md:24-28` 只列了名字与一句话职责；要判断它们与本章方法论是否一致，需要读 `SKILL.md` 正文 | 适配器仓库 `.agents/skills/tilelang-pass-*/` |

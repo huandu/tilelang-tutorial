@@ -1,7 +1,7 @@
 {
   "id": "02-modulo-schedule",
   "title": "从 stage/order 到模调度",
-  "caption": "模调度把「迭代 k 的 stage s」映射到第 k+s 个物理时隙；prologue 与 epilogue 就是这条映射在边界的余数。",
+  "caption": "模调度把“迭代 k 的 stage s”映射到第 k+s 个物理时隙；prologue 与 epilogue 就是这条映射在边界的余数。",
   "kind": "flow",
   "direction": "TB",
   "nodeMaxEm": 20,
@@ -35,6 +35,6 @@
   "notes": [
     "num_stages = 3、循环体 = copy A / copy B / gemm 时，stage = [0, 0, 2]、order = [0, 1, 2]。",
     "版本数 = use − def + 1 = (N−1) − 0 + 1 = 3；prologue 与 epilogue 逐轮展开并带边界检查，稳态 body 不带守卫。",
-    "启动间隔 II：稳态里相邻两次「同一 stage 语句」的间距，真实机器上 II = max(计算时间, 搬运时间, 依赖约束)。"
+    "启动间隔 II：稳态里相邻两次“同一 stage 语句”的间距，真实机器上 II = max(计算时间, 搬运时间, 依赖约束)。"
   ]
 }

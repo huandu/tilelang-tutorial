@@ -7,7 +7,7 @@
 1. 用 `make_ascend_major_k_layout` / `make_ascend_l0c_layout` 理解
    **分形物理形状**（`C0 = 32 字节 / 元素大小 = 256 / bits`）；
 2. 用 `try_extract_fractal_layout` 读出布局的语义标签（kind / c0 / axis），
-   理解 `NormalizeAscendFractalStorage` 为什么需要「canonical tag」才能工作
+   理解 `NormalizeAscendFractalStorage` 为什么需要“canonical tag”才能工作
    （`_vendor/tilelang-v0.1.15/src/ascend/layout/ascend_layouts.h:82-120`）。
 
 ## 运行前提

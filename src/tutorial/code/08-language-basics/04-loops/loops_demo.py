@@ -11,7 +11,7 @@ installed). ``python3 -m py_compile loops_demo.py`` passes. Signatures checked i
   * ``vectorized`` :322
   * aliases ``Serial`` :297 / ``Unroll`` :309 / ``Vectorized`` :349
   * CUDA extras (``T.Parallel(prefer_async=...)``, ``T.unroll(unroll_factor=...)``):
-    ``tilelang/cuda/language/loop.py:16-79``
+    ``tilelang/cuda/language/loop.py:18-87``
 """
 
 import tilelang

@@ -26,13 +26,13 @@ import path from 'node:path';
 export const VENDOR_REPOS = [
   {
     dir: 'tilelang-v0.1.15',
-    repo: 'tile-ai',
+    repo: 'tile-ai/tilelang',
     ref: 'v0.1.15',
     note: '全书的分析基线',
   },
   {
     dir: 'tilelang-v0.1.14',
-    repo: 'tile-ai',
+    repo: 'tile-ai/tilelang',
     ref: 'v0.1.14',
     note: '用于对照版本差异',
   },
@@ -52,7 +52,7 @@ const CORPUS_REPOS = [
   ['05-nvidia-backend/raw/cutlass/', 'NVIDIA/cutlass', 'main'],
   // The corpus keeps a `main` clone, so this subtree is pinned to the commit
   // recorded in its `PROVENANCE.md` rather than to the release tag.
-  ['02-tilelang-core-repo/raw/', 'tile-ai', '994b44eca1a8'],
+  ['02-tilelang-core-repo/raw/', 'tile-ai/tilelang', '994b44eca1a8'],
   [
     '07-tilelang-ascend-adapter/raw/tilelang-ascend/',
     'tile-ai/tilelang-ascend',
@@ -125,6 +125,12 @@ const SYNTHESIS_NOTES = {
   },
   'README.md': { slug: '', title: '编者笔记索引' },
 };
+
+/**
+ * Paths the chapters cite specifically to prove that they are absent from the
+ * pinned release. They must stay as code text instead of becoming 404 links.
+ */
+const KNOWN_MISSING_VENDOR_PATHS = new Set(['agent/core', 'src/transform/vendored']);
 
 /** Human-readable form of the `:a-b,c` line suffix the book appends to paths. */
 function lineLabel(lines) {
@@ -220,9 +226,9 @@ function splitLineSpec(target) {
   let rest = target.trim().replace(/[,\s]+$/, '');
   const specs = [];
   for (;;) {
-    const match = /:(\d+(?:[-,]\d+)*)$/.exec(rest);
+    const match = /:\s*((?:\d+(?:-\d+)?)(?:\s*,\s*\d+(?:-\d+)?)*)$/.exec(rest);
     if (match === null) break;
-    specs.unshift(match[1]);
+    specs.unshift(match[1].replace(/\s+/g, ''));
     rest = rest.slice(0, match.index).replace(/[,\s]+$/, '');
   }
   return { filePath: rest, lines: specs.join(',') };
@@ -237,7 +243,16 @@ function encodePath(filePath) {
     .replace(/^\/+/, '')
     .replace(/\/+$/, '')
     .split('/')
-    .map((segment) => encodeURIComponent(segment))
+    .map((segment) => {
+      let decoded = segment;
+      try {
+        decoded = decodeURIComponent(segment);
+      } catch {
+        // Leave malformed percent escapes untouched; encodeURIComponent below
+        // will turn the literal percent sign into a valid path segment.
+      }
+      return encodeURIComponent(decoded);
+    })
     .join('/');
 }
 
@@ -248,8 +263,12 @@ function githubBlob(repo, ref, filePath, lines) {
     lines === undefined || lines === ''
       ? ''
       : (() => {
-          const [first, last] = lines.split(/[-,]/);
-          return last !== undefined && last !== '' ? `#L${first}-L${last}` : `#L${first}`;
+          const [firstRange = ''] = lines.split(',');
+          const [first, last] = firstRange.split('-');
+          if (first === '') return '';
+          return last !== undefined && last !== '' && Number(last) >= Number(first)
+            ? `#L${first}-L${last}`
+            : `#L${first}`;
         })();
   return `https://github.com/${repo}/blob/${ref}/${encodePath(clean)}${anchor}`;
 }
@@ -322,9 +341,23 @@ export function createResolver(index, context) {
   function resolveVendor(target) {
     // The book sometimes writes `../../_vendor/<dir>/<path>` and URL-encodes
     // the spaces in doc file names; both forms mean the same checkout.
-    const { filePath, lines } = splitLineSpec(
-      target.replace(/^(\.\.\/)+/, '').replace(/%20/g, ' '),
-    );
+    const normalized = target
+      .replace(/^(\.\.\/)+/, '')
+      .replace(/%20/g, ' ')
+      .replace(/\s*\/\s*/g, '/')
+      .trim();
+    const { filePath, lines } = splitLineSpec(normalized);
+    // Commands, brace-expanded sets and deliberately elided paths are prose,
+    // not one repository file.  Linking them produces plausible-looking 404s.
+    if (
+      /[{}]|&&|\|\||(^|\/)\.\.\.($|\/)/.test(filePath) ||
+      /(^|\/)\s|\s($|\/)/.test(filePath) ||
+      filePath.includes(':') ||
+      (filePath.match(/_vendor\//g) ?? []).length > 1 ||
+      [...KNOWN_MISSING_VENDOR_PATHS].some((known) => filePath.endsWith(known))
+    ) {
+      return null;
+    }
     const at = filePath.indexOf('_vendor/');
     const relative = at < 0 ? filePath : filePath.slice(at + '_vendor/'.length);
     for (const repo of VENDOR_REPOS) {
@@ -424,6 +457,7 @@ export function createResolver(index, context) {
     const { filePath, lines } = splitLineSpec(target);
     const marker = 'tilelang-corpus/';
     const at = filePath.indexOf(marker);
+    if (filePath.includes('*')) return null;
     // Some citations list several ranges (`…:7-35, :94-118`) or use a
     // placeholder (`<类别>`) in prose; normalise both before matching.
     let local = filePath
@@ -487,6 +521,12 @@ export function createResolver(index, context) {
       };
     }
 
+    // Provenance files belong to the private corpus, not to the cloned
+    // upstream repository named in the surrounding path.
+    if (/(^|\/)PROVENANCE\.md$/.test(local)) {
+      return { href: '/references/', external: false, label: '资料库索引', exact: true };
+    }
+
     for (const [prefix, repo, ref] of CORPUS_REPOS) {
       if (!local.startsWith(prefix) && local !== prefix.replace(/\/$/, '')) continue;
       const inside = local.slice(prefix.length);
@@ -512,13 +552,26 @@ export function createResolver(index, context) {
           };
         }
       }
-      return {
-        href: githubBlob(repo, ref, inside, lines),
-        external: true,
-        label: `${repo.slice(repo.indexOf('/') + 1)}/${inside}${suffix}`,
-        exact: true,
-        title: `${repo} @ ${ref}`,
-      };
+      const label = `${repo.slice(repo.indexOf('/') + 1)}/${inside}${suffix}`;
+      const basename = inside.replace(/\/$/, '').split('/').pop() ?? '';
+      const extensionlessFile = new Set(['Dockerfile', 'LICENSE', 'Makefile', 'NOTICE', 'VERSION']);
+      const directory =
+        inside.endsWith('/') || (!basename.includes('.') && !extensionlessFile.has(basename));
+      return directory
+        ? {
+            href: githubTree(repo, ref, inside),
+            external: true,
+            label,
+            exact: true,
+            title: `${repo} @ ${ref}`,
+          }
+        : {
+            href: githubBlob(repo, ref, inside, lines),
+            external: true,
+            label,
+            exact: true,
+            title: `${repo} @ ${ref}`,
+          };
     }
     const hiascend = /^06-huawei-ascend\/raw\/hiascend\/llms-content\/(.+?)\.md$/.exec(local);
     if (hiascend !== null) {
@@ -607,7 +660,19 @@ export function createResolver(index, context) {
       return { href: '/', external: false, label: '教程首页' };
     }
     const figureDir = /^(?:\.\.\/)*figures\/?$/.exec(cleaned);
-    if (figureDir !== null) return { href: '#figures', external: false };
+    if (figureDir !== null) {
+      // Chapters whose figures are all inline have no trailing `#figures`
+      // appendix. Point the directory reference at the first actual figure so
+      // the anchor exists in every chapter that has figures.
+      if (context.firstFigureId !== undefined) {
+        return {
+          href: `#fig-${context.firstFigureId}`,
+          external: false,
+          label: '本章图示',
+        };
+      }
+      return null;
+    }
 
     // Sibling links between the republished synthesis notes.
     const note = /^(?:\.\.\/)*(?:(\d\d)-)?([a-z-]+)\.md$/.exec(cleaned);

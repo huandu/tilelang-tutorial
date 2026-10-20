@@ -14,7 +14,7 @@
 3. 把同一个算子的 **Ascend C 写法**与 TileLang 写法摆在一起对照，逐条说出
    TileLang 省掉了什么（`TPipe`/`TQue` 的建队、L1→L0 的 `LoadData`、
    `SetFlag`/`WaitFlag` 的配对管理），并说得出**什么时候仍然应该直接写 Ascend C**。
-4. 正确回答「用哪棵树」：适配器仓库 `tilelang-ascend`（Ascend C & PTO 路线，配套
+4. 正确回答“用哪棵树”：适配器仓库 `tilelang-ascend`（Ascend C & PTO 路线，配套
    `tilelang.language`）与主干 `v0.1.15` 的昇腾方言（`tilelang.ascend.language`），
    两套 API **不通用**；并会用昇腾专属原语 `T.alloc_l1/l0a/l0b/l0c`、
    `T.dual_copy`、`T.SimtVF`/`T.SimdVF`、`T.Pipelined`、`T.annotate_buffer_versions`。
@@ -30,7 +30,7 @@
 ## 前置知识
 
 * 第 6 章：NV GPU 与昇腾 NPU 的抽象对照（存储层级、执行单元、同步模型的整体图景）。
-  本章把那张图落到「能执行的代码」上。
+  本章把那张图落到“能执行的代码”上。
 * 第 7 章：`@tilelang.jit`、`T.Kernel`、`T.copy`、`T.Parallel` 的语义，以及 JIT 与缓存。
 * 第 9 章：`T.copy` / `T.gemm` / `T.reduce_*` / `T.fill` 的语义与降级行为。
 * 第 11 章：`T.Pipelined` 与多缓冲的基本概念、`num_stages` 的含义。
@@ -48,12 +48,12 @@
 写作环境是 macOS (Apple Silicon)、Python 3.11，**没有 NVIDIA GPU，也没有昇腾 NPU**
 （见 [`../../VERSIONS.md`](../../VERSIONS.md)）。因此本章遵守两条硬规矩：
 
-1. **所有 kernel 示例的最高验证级别是「仅静态核对」**：代码能通过
+1. **所有 kernel 示例的最高验证级别是“仅静态核对”**：代码能通过
    `python3 -m py_compile`，API 名与签名逐个在锁定版本的源码里比对过，
-   **但没有任何一条性能数字、任何一个「Kernel Output Match!」来自本机实测**。
+   **但没有任何一条性能数字、任何一个“Kernel Output Match!”来自本机实测**。
 2. 任何需要真实硬件才能产生结果的步骤，一律写成
-   **前提 / 命令 / 期望输出 / 验证级别** 四段式。凡是「期望输出」都以
-   「在满足前提的机器上应当看到」表述，**不写成我们测过**。
+   **前提 / 命令 / 期望输出 / 验证级别** 四段式。凡是“期望输出”都以
+   “在满足前提的机器上应当看到”表述，**不写成我们测过**。
 
 本章出现的性能数字只有两类来源：**厂商公开资料 / 上游文档 / 上游样例里的数字**
 （带 corpus 路径）与**本书的公式推导**（由 `code/` 里的纯 Python 程序复算）。
@@ -66,16 +66,16 @@
 | **A 树（适配器）** | `_vendor/tilelang-ascend-v0.1.2.000/` | TileLang-Ascend 适配器仓库，tag `TileLang-ascend-v0.1.2.000-release`。走 Ascend C & PTO 两条 codegen 路线，前端用 `import tilelang.language as T` |
 | **M 树（主干）** | `_vendor/tilelang-v0.1.15/` | TileLang 主干 `v0.1.15`。昇腾后端已进主干，前端用 `import tilelang.ascend.language as T` |
 
-第 7 节会把两棵树的 API 逐项对照。**本章第 4、5 节的「第一个 kernel」用的是 A 树，
+第 7 节会把两棵树的 API 逐项对照。**本章第 4、5 节的“第一个 kernel”用的是 A 树，
 因为那两个官方 example 长在 A 树里；第 7 节的现代原语用的是 M 树的方言。**
 
 ---
 
-## 1. 问题的由来：在昇腾上写算子，「难」在哪
+## 1. 问题的由来：在昇腾上写算子，“难”在哪
 
 ### 1.1 一份 kernel 要在三层地方同时正确
 
-在 GPU 上写 CUDA kernel，你操心的是「这段代码对不对、快不快」。在昇腾上写 Ascend C
+在 GPU 上写 CUDA kernel，你操心的是“这段代码对不对、快不快”。在昇腾上写 Ascend C
 kernel，除了这两件事，你还必须显式地操心**第三件事：数据在哪一级存储、由哪个搬运单元
 搬进来、和哪条流水线同步**。原因是昇腾 AI Core 的计算单元和存储单元是被**显式分层**
 暴露给程序员的：
@@ -87,22 +87,22 @@ kernel，除了这两件事，你还必须显式地操心**第三件事：数据
 * 这些单元各自是一条异步流水线，之间的先后关系必须由 **PipeBarrier / SetFlag / WaitFlag**
   显式保证。
 
-于是「一份 kernel 正确」被拆成三个互相独立的义务：**算法正确**、**tiling 正确（每级存储
-装得下）**、**同步正确（不读到没搬完的数据）**。本章要解决的核心痛点，就是第三条——它
+于是“一份 kernel 正确”被拆成三个互相独立的义务：**算法正确**、**tiling 正确（每级存储
+装得下）**、**同步正确（不读到没搬完的数据）**。本章要解决的核心痛点，就是第三条。它
 最容易错、最难调、也最花时间。
 
 ### 1.2 为什么昇腾线是本教材的第一优先级
 
 本教材的硬件优先级是 **昇腾 > NVIDIA**。原因不是性能对比，而是**可迁移性**：昇腾把
-「计算单元、存储层级、搬运单元、同步」这四件事全部显式暴露，逼着你在写算子时就建立
+“计算单元、存储层级、搬运单元、同步”这四件事全部显式暴露，逼着你在写算子时就建立
 正确的机器模型；一旦建立了这个模型，回头看 NVIDIA 的 shared memory / fragment /
 `cp.async` / `mbarrier`，只是同一套抽象换了一组名字。反过来，先写 CUDA 再看昇腾，
-很容易把「寄存器累加器」的直觉错误地带到 L0C 上。
+很容易把“寄存器累加器”的直觉错误地带到 L0C 上。
 
 ### 1.3 本章路线图
 
-本章按「装环境 → 跑最小 kernel → 对照 Ascend C → 认全原语 → 调优 → 入图部署 → 调试 →
-避坑」推进，每一步都能独立执行：
+本章按“装环境 → 跑最小 kernel → 对照 Ascend C → 认全原语 → 调优 → 入图部署 → 调试 →
+避坑”推进，每一步都能独立执行：
 
 ```
 §3 环境      §4 add（UB/Vector）      §5 GEMM（L1/L0/Cube）
@@ -124,7 +124,7 @@ kernel，除了这两件事，你还必须显式地操心**第三件事：数据
 
 ## 2. 概念与模型：昇腾的机器长什么样
 
-这一节是本章的「地图」。所有后续代码都能在这张图上找到位置。
+这一节是本章的“地图”。所有后续代码都能在这张图上找到位置。
 
 ### 2.1 AI Core：AIC（Cube）与 AIV（Vector）是两块核
 
@@ -137,7 +137,7 @@ Cube 和 Vector 各自带独立的 Scalar 调度单元，分别叫 **AIC**（AI 
 这条事实有两个直接后果，本章会反复用到：
 
 * **同一个 kernel 里 Cube 和 Vector 可以并行**，但它们之间的数据传递要过 GM/L2（M 树
-  用「Workspace 消除」把这个过程自动化，见 §7.6）。
+  用“Workspace 消除”把这个过程自动化，见 §7.6）。
 * **Vector 侧每个核有两个子单元**，所以 A 树的 kernel 里会出现 `vid ∈ {0,1}`，
   A 树示例里用 `VEC_NUM = 2` 手动把一块 tile 劈成两半（见 §4）。
 
@@ -156,7 +156,7 @@ Cube 和 Vector 各自带独立的 Scalar 调度单元，分别叫 **AIC**（AI 
 | BT / FB | 1 KB / 7 KB | bias / 量化·relu 参数 | 由编译器管理 |
 
 **关键对照**：NVIDIA 的累加器在寄存器（fragment）里，昇腾的累加器在 **L0C** 里。
-所以「我把 C 累加在寄存器里」这个 CUDA 直觉在昇腾上不成立；昇腾的 GEMM 是
+所以“我把 C 累加在寄存器里”这个 CUDA 直觉在昇腾上不成立；昇腾的 GEMM 是
 **读 L1 → 搬进 L0A/L0B → Cube 算出 L0C → 写回 GM（或经 UB 做后处理）**。
 
 ### 2.3 搬运单元与流水线 PIPE：MTE1 / MTE2 / MTE3 / FixPipe
@@ -172,17 +172,17 @@ Cube 和 Vector 各自带独立的 Scalar 调度单元，分别叫 **AIC**（AI 
 
 此外还有 **V**（Vector 计算）、**M**（Cube 计算）、**S**（Scalar）、**FIX** 等流水。
 **每一条 PIPE 都是异步的**：`GM → UB` 的 MTE2 拷贝发出后不会自动等它完成，Vector
-就可能读到旧数据。这就是同步存在的全部理由——**跨 PIPE 的数据依赖必须显式同步**。
+就可能读到旧数据。这就是同步存在的全部理由，**跨 PIPE 的数据依赖必须显式同步**。
 
 ### 2.4 同步模型：PipeBarrier 与 SetFlag/WaitFlag
 
 Ascend C 提供两种同步 API（来源同上）：
 
-* **`PipeBarrier<PIPE_X>()`**：在**同一条序列**内约束顺序。它保证「前序指令的所有读写
-  全部完成后，后序指令才开始」。注意：同一条 PIPE 内的指令虽然按顺序**发射**，但**前
+* **`PipeBarrier<PIPE_X>()`**：在**同一条序列**内约束顺序。它保证“前序指令的所有读写
+  全部完成后，后序指令才开始”。注意：同一条 PIPE 内的指令虽然按顺序**发射**，但**前
   一条不一定执行完**后一条就可以开始，所以需要 barrier。
 * **`SetFlag<SrcPipe, DstPipe>(id)` / `WaitFlag<SrcPipe, DstPipe>(id)`**：在**两条序列**
-  之间建立一对「锁」。语义是：**SetFlag 在「前序指令的所有读写完成」后把标志位置 1；
+  之间建立一对“锁”。语义是：**SetFlag 在“前序指令的所有读写完成”后把标志位置 1；
   WaitFlag 若发现标志位为 0 就阻塞，为 1 则把标志位清 0 并放行后续指令。**
 
 在 TileLang 里，这两者都能写：
@@ -215,7 +215,7 @@ Ascend C 提供两种同步 API（来源同上）：
 
 ### 2.6 一个必须先记住的结论：两棵树
 
-「TileLang 昇腾」在锁定版本里不是一个东西，而是**两条路线、两棵树**：
+“TileLang 昇腾”在锁定版本里不是一个东西，而是**两条路线、两棵树**：
 
 | | A 树适配器（`tilelang.language`） | M 树主干 950 后端（`tilelang.ascend.language`） |
 | --- | --- | --- |
@@ -237,7 +237,7 @@ Ascend C 提供两种同步 API（来源同上）：
 
 ### 3.1 软件栈分层与版本要求
 
-「装昇腾环境」不是装一个包，而是铺一条链子：
+“装昇腾环境”不是装一个包，而是铺一条链子：
 
 ```
  你的程序（PyTorch / TileLang kernel）
@@ -255,7 +255,7 @@ Ascend C 提供两种同步 API（来源同上）：
        NPU 硬件
 ```
 
-CANN 是「昇腾异构计算架构」，对上支持 AI 框架、对下服务 AI 处理器与编程，是整个栈的
+CANN 是“昇腾异构计算架构”，对上支持 AI 框架、对下服务 AI 处理器与编程，是整个栈的
 中枢（来源：`../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/cann/zh_cann.md`）。
 驱动是最底下的一层，负责设备管理、资源调度与 Host/Device 通信，提供 `npu-smi` 等工具
 （来源：`.../cann/zh_cann_driver.md`）。毕昇是 Host-Device 异构编译器，TileLang 生成的
@@ -270,7 +270,7 @@ Ascend C 就交给它编译成 `.so`（来源：`.../cann/zh_cann_bisheng.md`）
 | Python | ≥ 3.10（安装脚本检查） | 见上游安装指南 |
 | 目标设备 | A2 / A3 | Ascend 950（默认 `dav-3510`） |
 
-> ⚠️ 上面这些是**上游自述的版本要求**，不是我们验证过的组合。实际部署请以厂商发布说明为准。
+> 注意：上面这些是**上游自述的版本要求**，不是我们验证过的组合。实际部署请以厂商发布说明为准。
 
 ### 3.2 第一步：驱动与 CANN
 
@@ -294,7 +294,7 @@ which bisheng
 
 **验证级别**：仅静态核对（本书作者未在有 NPU 的机器上执行过）。
 
-> 为什么要有 `set_env.sh`：CANN 的安装是「解包 + 设环境变量」，不是写进系统路径。
+> 为什么要有 `set_env.sh`：CANN 的安装是“解包 + 设环境变量”，不是写进系统路径。
 > M 树自述明确要求把 CANN 环境按你的工具包说明配好再编译/运行，且**不假定任何固定
 > 安装路径**（`_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:30-42`）。
 
@@ -317,7 +317,7 @@ python -c "import torch, torch_npu; print(torch.npu.is_available())"
 
 **验证级别**：仅静态核对（未实测）。
 
-> M 树的后端自述把「`torch.npu.is_available()` 返回 `True`」写成了安装完成的判据
+> M 树的后端自述把“`torch.npu.is_available()` 返回 `True`”写成了安装完成的判据
 > （`_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:20-24`）。本章 `code/01-env-check`
 > 就是这段检查的可执行版。
 
@@ -381,7 +381,7 @@ source set_env.sh
 
 * 把仓库根目录导出为 `TL_ROOT`；
 * 把 `TL_ROOT` 加到 `PYTHONPATH` 最前面（所以 `import tilelang` 拿到的是这棵树）；
-* 设置 `ACL_OP_INIT_MODE=1`——注释写明是为了「使用 torch_npu 时不导入 tvm」。
+* 设置 `ACL_OP_INIT_MODE=1`，注释写明是为了“使用 torch_npu 时不导入 tvm”。
 
 **期望输出**：`echo $TL_ROOT` 指向仓库根；`python -c "import tilelang; print(tilelang.__file__)"`
 指向这棵树的 `tilelang/`。
@@ -425,7 +425,7 @@ python3 code/01-env-check/env_check.py
 ### 3.6 没有 NPU 时能做什么：camodel 仿真与静态核对
 
 如果你手边没有 A5/950 的硬件，还有一条官方路线：**A5 camodel（cycle-accurate model）**
-仿真。原理是用 `libruntime_camodel.so` 替换 `libruntime.so`——对外接口完全一致，内部用
+仿真。原理是用 `libruntime_camodel.so` 替换 `libruntime.so`，对外接口完全一致，内部用
 CPU 模拟 NPU 行为（来源：A 树编程指南 `docs/TileLang-Ascend Programming Guide.md:194-276`）。
 
 **前提**：装了包含 A5 simulator 镜像（`Ascend950PR_9599`）的 CANN，CANN ≥ 9.0.0。
@@ -447,11 +447,11 @@ Done!
 1000 倍以上，**只能验功能，不能测性能**；不支持 `torch.npu`，数据要用 `rtMalloc`/`rtMemcpy`。
 
 **验证级别**：仅静态核对（未运行）。若你的机器满足前提，这是本章所有 kernel 示例最
-现实的「无卡运行」方式——**但请以实际输出为准，不要相信本节给出的示例文字**。
+现实的“无卡运行”方式。**但请以实际输出为准，不要相信本节给出的示例文字**。
 
 ---
 
-## 4. 用法（二）：第一个昇腾 kernel —— 逐元素 add
+## 4. 用法（二）：第一个昇腾 kernel ，逐元素 add
 
 ### 4.1 选择哪个例子
 
@@ -460,7 +460,7 @@ A 树的 `examples/elementwise/` 下有 3 个文件：
 | 文件 | 内容 | 适合谁 |
 | --- | --- | --- |
 | `elementwise_add.py` | 最小：GM→UB→Add→GM，2 个 `T.barrier_all()` | **第一次跑昇腾，从这里开始** |
-| `elementwise_add_pipeline.py` | 手写双缓冲 + 多类 flag | 想看「多缓冲和同步长什么样」 |
+| `elementwise_add_pipeline.py` | 手写双缓冲 + 多类 flag | 想看“多缓冲和同步长什么样” |
 | `setvalue_example.py` | `T.tile` 的写值类原语 | 之后再看 |
 
 我们选 `elementwise_add.py`。
@@ -527,8 +527,8 @@ print("Kernel Output Match!")
 
 * **①** `tilelang.cache.clear_cache()`：清内核缓存。开发期每次改 kernel 都应该清，否则
   可能拿到上一次编译的 `.so`。**上线不要清**（缓存是启动开销的一部分）。
-* **②** `@tilelang.jit(out_idx=[-1])`：把 Python 函数变成「调用即编译」的 JIT 入口。
-  `out_idx=[-1]` 说「最后一个参数 `C` 是输出，由 runtime 分配并返回」。
+* **②** `@tilelang.jit(out_idx=[-1])`：把 Python 函数变成“调用即编译”的 JIT 入口。
+  `out_idx=[-1]` 说“最后一个参数 `C` 是输出，由 runtime 分配并返回”。
 * **③** `m_num * n_num`：把二维输出切成 `block_M × block_N` 的块，块数就是 grid 大小。
   这里**假设 M、N 能被 tile 整除**，例子不处理尾块（尾块见 §11 坑 P7）。
 * **④** `T.Kernel(m_num * n_num, is_npu=True) as (cid, vid)`：**这是 A 树的昇腾写法**。
@@ -536,20 +536,20 @@ print("Kernel Output Match!")
   是这一个逻辑核里的两个 **Vector 子单元**。对照 M 树：`T.Kernel(N) as bx`，**没有
   `vid`**，子核改用 `T.MixedKernel(N, sids=2)`。
 * **⑤** `bx = cid // n_num; by = cid % n_num`：昇腾只有 1D 网格，所以二维坐标要自己从
-  一维 `cid` 还原。这个「除法取模」是昇腾 kernel 的标志性写法。
+  一维 `cid` 还原。这个“除法取模”是昇腾 kernel 的标志性写法。
 * **⑥** `T.alloc_ub(...)`：在 **UB** 上申请缓冲，形状是 `(block_M // VEC_NUM, block_N)`
-  ——因为一块 tile 被两个 `vid` 各拿一半。**UB 是 Vector 的唯一输入输出区**
+因为一块 tile 被两个 `vid` 各拿一半。**UB 是 Vector 的唯一输入输出区**
   （A 树里 `alloc_ub` 的 scope 是 `shared.ub`，见
   `_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/allocate.py:156`）。
 * **⑦** `with T.Scope("V")`：声明这段代码跑在 **Vector** 核上。A 树用 `T.Scope("C")` /
   `T.Scope("V")` 显式指定 Cube / Vector；M 树由编译器自动分配核。
 * **⑧** `T.copy(GM_region, ub_buf)`：**MTE2** 的 `GM → UB` 搬运。`A[...]` 的起始下标
-  `bx * block_M + vid * block_M // VEC_NUM` 正是「第 bx 块的第 vid 半」。
+  `bx * block_M + vid * block_M // VEC_NUM` 正是“第 bx 块的第 vid 半”。
 * **⑨** `T.barrier_all()`：**第一次同步**。它保证两次 `T.copy`（MTE2 搬运）**全部完成**
   后，才允许后面的 `T.tile.add`（Vector 计算）读 `a_ub` / `b_ub`。这就是 §2.4 里
-  「SetFlag 等前序读写完成」的全屏障版本。**它是 MTE2 → V 的依赖**。
+  “SetFlag 等前序读写完成”的全屏障版本。**它是 MTE2 → V 的依赖**。
 * **⑩** `T.tile.add(c_ub, a_ub, b_ub)`：Vector 的逐元素加（等价于 `c_ub = a_ub + b_ub`）。
-  输入输出都在 UB——这是 Vector 单元的硬约束。
+  输入输出都在 UB。这是 Vector 单元的硬约束。
 * **⑪** `T.barrier_all()`：**第二次同步**。保证 `T.tile.add`（V）**全部完成**后，才允许
   后面的 `T.copy` 把 `c_ub` 写回 GM。**它是 V → MTE3 的依赖**。
 * **⑫** `T.copy(ub_buf, GM_region)`：**MTE3** 的 `UB → GM` 搬运。
@@ -583,7 +583,7 @@ barrier 保护的是**不同方向**的依赖：⑨ 是 `MTE2 → V`（读前等
 
 ### 4.4 第二个版本：手写双缓冲
 
-当数据块很多、`GM → UB` 是瓶颈时，你会希望「搬下一块的同时算这一块」。
+当数据块很多、`GM → UB` 是瓶颈时，你会希望“搬下一块的同时算这一块”。
 `elementwise_add_pipeline.py` 手工实现了这件事，用 `stages = 2` 个缓冲轮转：
 
 ```python
@@ -615,8 +615,8 @@ for mm in T.serial(vec_proc):
 
 这里出现了三对 flag：**`mte3 → mte2`（归还槽位）**、**`mte2 → v`（数据就绪）**、
 **`v → mte3`（计算完成）**。手工双缓冲的心智负担就在这：**每加一个缓冲版本，就要多管一组
-「能写了吗 / 写完了吗」的 flag**。M 树把这套交给 `T.annotate_buffer_versions` + 自动
-调度（§7.5），A 树则要你手写——这是「两棵树怎么选」最实际的判据之一。
+“能写了吗 / 写完了吗”的 flag**。M 树把这套交给 `T.annotate_buffer_versions` + 自动
+调度（§7.5），A 树则要你手写。这是“两棵树怎么选”最实际的判据之一。
 
 ### 4.5 期望输出与验证
 
@@ -647,8 +647,8 @@ Kernel Output Match!
 ### 5.1 为什么 GEMM 的最小例子只有几行核心代码
 
 因为 A 树的 `T.gemm_v0` 已经把 `L1 → L0A/L0B` 的搬运、Cube 的 MAD、写回 L0C 全部包了。
-你在例子里只能看到「搬进 L1」「调 gemm」两件事。**这恰恰是本章要你记住的重点：高级
-原语隐藏了 L0 的细节，但你必须知道它藏在哪**——否则遇到容量/对齐问题时你无从下手。
+你在例子里只能看到“搬进 L1”“调 gemm”两件事。**这恰恰是本章要你记住的重点：高级
+原语隐藏了 L0 的细节，但你必须知道它藏在哪**。否则遇到容量/对齐问题时你无从下手。
 
 ### 5.2 逐行解释
 
@@ -679,7 +679,7 @@ with T.Kernel(m_num * n_num, is_npu=True) as (cid, _):     # ① 同一个 1D �
 
 逐条解读：
 
-* **②** L1 只放 **`K_L1`** 列，不是整个 K。这意味着「沿 K 分块、反复复用同一块 L1 缓冲」
+* **②** L1 只放 **`K_L1`** 列，不是整个 K。这意味着“沿 K 分块、反复复用同一块 L1 缓冲”
   是写进代码结构的，不是编译器的优化。
 * **③** `T.alloc_L0C((block_M, block_N), accum_dtype)`，`accum_dtype="float"`（fp32）。
   **L0C 就是这块 tile 的累加器**，它在整个 K 循环里一直活着。
@@ -688,10 +688,10 @@ with T.Kernel(m_num * n_num, is_npu=True) as (cid, _):     # ① 同一个 1D �
     （`_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/ascend.py:418`）；
   * docstring 明确写 **A、B 必须在 L1（`T.alloc_L1`），C 必须在 L0C（`T.alloc_L0C`）**，
     `gemm_v0` 内部负责 `L1 → L0A/L0B` 的搬运；
-  * `init=(k == 0)`：**第一次迭代清零累加器，之后累加**。写错这一位就会出现「结果里
-    混进了上一次调用的残值」这种最难查的错误（见 §11 坑 P9）。
+  * `init=(k == 0)`：**第一次迭代清零累加器，之后累加**。写错这一位就会出现“结果里
+    混进了上一次调用的残值”这种最难查的错误（见 §11 坑 P9）。
 * **⑦ / ⑨** 两次 `barrier_all()`：⑦ 是 `MTE2 → MTE1/M`（L1 数据就绪），⑨ 是 `M → MTE2`
-  （L1 可以安全地被下一轮覆盖）。注意这里用的是全屏障，代价是**没有流水重叠**——这就是
+  （L1 可以安全地被下一轮覆盖）。注意这里用的是全屏障，代价是**没有流水重叠**。这就是
   为什么它是最小例子而不是高性能例子。
 
 ### 5.3 GM→L1→L0A/L0B→Cube→L0C→GM 的完整数据流
@@ -730,7 +730,7 @@ with T.Kernel(m_num * n_num, is_npu=True) as (cid, _):     # ① 同一个 1D �
    的默认布局约定不同**，跨界抄代码必错。
 3. **tile 尺寸受每级容量约束**：`block_M×K_L1` 的 fp16 元素要放进 L1（512 KB），
    `block_M×block_N` 的 fp32 累加要放进 L0C（128 KB）。128×256 的 fp32 累加是 128 KB，
-   **刚好等于 L0C 的容量上限**——所以官方示例用 `block_N=256` 时基本没有再往上加的余地。
+   **刚好等于 L0C 的容量上限**。所以官方示例用 `block_N=256` 时基本没有再往上加的余地。
    需要更大 `block_N` 就得靠 `kL0Size` 调整 L0 的双缓冲（`gemm_v0` 的 `kL0Size` 参数
    docstring 有说明：half 精度、`block_M=128, block_N=256` 时推荐 `kL0Size=64`）。
 
@@ -759,7 +759,7 @@ Kernel Output Match!
 
 ## 6. Ascend C 对照：同一个算子，手写要做什么
 
-这一节回答「TileLang 到底省了什么」。我们拿**同一个逐元素 add**和**同一个 GEMM**
+这一节回答“TileLang 到底省了什么”。我们拿**同一个逐元素 add**和**同一个 GEMM**
 分别看 Ascend C 怎么写。
 
 ### 6.1 Ascend C 的最小向量 add
@@ -826,20 +826,20 @@ private:
 | 声明 GM 参数 | `SetGlobalBuffer`（①） | `T.Tensor(...)` 参数 |
 | 在 UB 上申请空间 | `pipe.InitBuffer` + `AllocTensor`（②③） | `T.alloc_ub(...)` |
 | GM→UB 搬运 | `DataCopy`（④） | `T.copy(...)` |
-| 「数据到了才计算」 | `EnQue`/`DeQue`（⑤⑥） | `T.barrier_all()` |
+| “数据到了才计算” | `EnQue`/`DeQue`（⑤⑥） | `T.barrier_all()` |
 | 计算 | `Add(...)`（⑦） | `T.tile.add(...)` |
 | 释放缓冲 | `FreeTensor`（⑧） | 不需要（编译器做内存规划） |
 | UB→GM 写回 | `DataCopy`（⑨） | `T.copy(...)` |
 | 流水对象与队列 | 手工 `TPipe`/`TQue`（⑩） | 不需要 |
 | 打核间/流水同步 | 手工 `SetFlag`/`WaitFlag` | `barrier_all`（A 树）/ 自动（M 树） |
 
-**TileLang 省掉的正是「缓冲生命周期管理 + 队列 + 同步配对」这三件事。** 注意 `EnQue` 与
-`DeQue` 不只是「入队出队」——官方文档明确写它们「实现了内存读写同步功能」（inplace 版本
+**TileLang 省掉的正是“缓冲生命周期管理 + 队列 + 同步配对”这三件事。** 注意 `EnQue` 与
+`DeQue` 不只是“入队出队”，官方文档明确写它们“实现了内存读写同步功能”（inplace 版本
 仍然保留它们就是为了这个），这正是 TileLang 里 `barrier_all()` 或自动同步对应的东西。
 
 ### 6.2 Ascend C 的 GEMM：CATLASS `00_basic_matmul`
 
-手写一个昇腾 GEMM，即使借助华为的模板库 CATLASS，也要写这么多「非算法」的东西
+手写一个昇腾 GEMM，即使借助华为的模板库 CATLASS，也要写这么多“非算法”的东西
 （`../tilelang-corpus/06-huawei-ascend/raw/catlass/examples/00_basic_matmul/basic_matmul.cpp`）：
 
 ```cpp
@@ -858,20 +858,20 @@ auto aicCoreNum = platform_ascendc::PlatformAscendCManager::GetInstance()->GetCo
 ```
 
 以及 host 侧一大段 `aclrtMalloc` / `aclrtMemcpy` / `aclrtCreateStream` / workspace 计算 /
-`aclrtSynchronizeStream`——这部分 TileLang 交给 `torch_npu` 与 runtime 处理。
+`aclrtSynchronizeStream`。这部分 TileLang 交给 `torch_npu` 与 runtime 处理。
 
 这段代码里有三类**只有懂硬件才写得对**的决定（对应 §1.1 的三层义务）：
 
 1. **流水策略**（`MmadAtlasA2Pingpong<true>`）：要不要 ping-pong 双缓冲。
-2. **L1 / L0 的 tile 形状**（②③）：两级的 tile 是**分开指定**的——L1 是 128×256×256，
+2. **L1 / L0 的 tile 形状**（②③）：两级的 tile 是**分开指定**的，L1 是 128×256×256，
    L0 是 128×256×64。也就是说，**L1→L0 还要再按 K 切一次**。
 3. **Block swizzle**（④）：`GemmIdentityBlockSwizzle<3, 0>` 决定 block 在 M/N 上的遍历
-   顺序（`<offset, direction>`，与 CATLASS swizzle 文档里「M≥N 用 offset=3/direction=0」
+   顺序（`<offset, direction>`，与 CATLASS swizzle 文档里“M≥N 用 offset=3/direction=0”
    的判据一致）。
 
 ### 6.3 TileLang 省掉了什么（对照表）
 
-`tilelang/ascend/README.md` 自带一张「你写什么 / Ascend C 你可以跳过什么 / 编译器做什么」
+`tilelang/ascend/README.md` 自带一张“你写什么 / Ascend C 你可以跳过什么 / 编译器做什么”
 的对照表（`_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:144-152`），整理如下：
 
 | 领域 | 你在 TileLang 里写 | 你可以跳过的 Ascend C | 编译器做什么 |
@@ -883,7 +883,7 @@ auto aicCoreNum = platform_ascendc::PlatformAscendCManager::GetInstance()->GetCo
 | 调度与流水 | 按需写 `T.Pipelined(...)` | 手工调度与缓冲槽位轮转 | 给 AIC/AIV 分配任务；调度重叠与多缓冲 |
 | 同步 | **什么都不写（按顺序写操作即可）** | Set/Wait flag 与 flag ID 管理 | 推导流水与 Cube/Vector 依赖；插入成对 flag |
 
-同一份文档还补了一句重要的**边界**：自动调度只负责「任务顺序与依赖」，**不意味着**它会把
+同一份文档还补了一句重要的**边界**：自动调度只负责“任务顺序与依赖”，**不意味着**它会把
 任意 `T.Parallel` 代码自动张量化成 SIMD 指令（`.../ascend/README.md:153-155`）。
 
 ### 6.4 什么时候仍然应该写 Ascend C
@@ -897,12 +897,12 @@ TileLang 不是万能的。下面几类情况仍然值得（或必须）直接�
 4. **目标设备/SDK 组合尚未被 TileLang 后端覆盖**（A 树自述只验证了 A2/A3；M 树只针对
    Ascend 950）。
 
-反过来，**只要你要的是「把 tile 级的数据流写清楚、让编译器管同步」**，TileLang 就是
+反过来，**只要你要的是“把 tile 级的数据流写清楚、让编译器管同步”**，TileLang 就是
 更省事、更不容易错的那条路。
 
 ---
 
-## 7. 昇腾专属原语与「用哪棵树」
+## 7. 昇腾专属原语与“用哪棵树”
 
 这一节是本章的技术核心。所有 API 名都在两棵树的源码里逐条核对过。
 
@@ -954,16 +954,16 @@ tile  = T.alloc_shared((block_M, block_N), T.float32)  # UB（scope "shared.dyn"
 所以你不用自己写 layout 注解；`alloc_l0a`/`alloc_l0b` 的布局**延后到消费它的 GEMM**，
 由 GEMM 根据 transpose 标志推断 K-major 还是 MN-major。
 
-> 注意：`T.alloc_shared` 在 M 树昇腾方言里被**刻意覆盖**成「分配 UB」，而不是 CUDA 的
-> shared memory（`tilelang/ascend/language/__init__.py` 的注释写明「Ascend UB takes bool
-> buffers in the requested scope, without CUDA's static-scope hack」）。
+> 注意：`T.alloc_shared` 在 M 树昇腾方言里被**刻意覆盖**成“分配 UB”，而不是 CUDA 的
+> shared memory（`tilelang/ascend/language/__init__.py` 的注释写明“Ascend UB takes bool
+> buffers in the requested scope, without CUDA's static-scope hack”）。
 
 ### 7.3 `T.dual_copy`：一次拷贝劈成两个 AIV
 
 `T.dual_copy` 是 M 树独有的、把一块逻辑 tile 分给**两个 AIV 子核**的拷贝原语
 （`_vendor/tilelang-v0.1.15/tilelang/ascend/language/copy_op.py:53`）。规则（docstring 原文）：
 
-* 它必须在**混合 kernel** 里用——你还要在同一个 kernel 里提供 **Cube 侧的工作**；
+* 它必须在**混合 kernel** 里用。你还要在同一个 kernel 里提供 **Cube 侧的工作**；
   `dual_copy` 本身不会把纯 Vector kernel 变成两 AIV 启动。
 * 形状推断：对 rank ≥ 2 的区域，**恰有一个尾部维度是 2:1**：
   * `[M, N] → [M/2, N]`：**M-split**（`dual_dst_ctl=0b01`）；
@@ -1003,15 +1003,15 @@ with T.SimdVF():
 ```
 
 两者都接受 `latency=`（周期数）作为调度模型的输入；不填则由编译器估算
-（`SKILL.md` §8.3）。**不要**把它和「实测周期」混为一谈。
+（`SKILL.md` §8.3）。**不要**把它和“实测周期”混为一谈。
 
 ### 7.5 `T.Pipelined` 与 `T.annotate_buffer_versions`
 
-`T.Pipelined(iters, num_stages=k)` 表达「这个循环要做软件流水」（语义见第 11 章）。
+`T.Pipelined(iters, num_stages=k)` 表达“这个循环要做软件流水”（语义见第 11 章）。
 在昇腾侧有两条必须记住的约束（A 树 `docs/tutorials/t_pipelined.md:119-180`）：
 
 1. **`T.Pipelined` 不支持嵌套**；
-2. **核内流水与核间流水不能同时开**，要混用时改用「flat pattern」：`T.Pipelined` 管核间
+2. **核内流水与核间流水不能同时开**，要混用时改用“flat pattern”：`T.Pipelined` 管核间
    （Cube↔Vector 的 workspace 交接），核内用 `T.serial` + 手写 flag 管。
 
 `T.annotate_buffer_versions` 是 M 树 AutoSchedule 的**版本控制旋钮**
@@ -1028,7 +1028,7 @@ with T.SimdVF():
 
 * **`iteration`**：用**扁平化后的词法循环下标**选槽位。即使某次迭代被 guard 跳过，槽位
   时钟照走。
-* **`counter`**：用一个**单调计数器**，只在「一次完整的活跃 buffer epoch 完成」后推进。
+* **`counter`**：用一个**单调计数器**，只在“一次完整的活跃 buffer epoch 完成”后推进。
   被 guard 跳过的迭代不推进计数器。
 * **`auto`**：规则（无条件、单 owner）时走 `iteration` 快路径；条件执行/不规则/多 owner
   时自动改用 `counter`。
@@ -1044,7 +1044,7 @@ for step in T.Pipelined(iterations, num_stages=num_stages):
     ...
 ```
 
-**这份版本注解和 A 树的「手写 `buf[stages, ...]` 首维」是两件事**：M 树里编译器按注解
+**这份版本注解和 A 树的“手写 `buf[stages, ...]` 首维”是两件事**：M 树里编译器按注解
 自己给 buffer 加版本维，你**不要**再手动加一个 stage 维，否则等于要求双缓冲两次
 （`references/synchronization.md` 明确警告）。
 
@@ -1085,7 +1085,7 @@ msprof op --kernel-name="your_kernel_func_name" python your_kernel_script.py
 ```
 
 它输出：**计算内存热力图、Roofline 瓶颈分析图、Cache 热力图、通算流水图、算子代码热点图**。
-适合在真实环境里快速定位「内存还是计算卡住了」。
+适合在真实环境里快速定位“内存还是计算卡住了”。
 
 **（b）`msprof op simulator`：仿真，看指令级细节**
 
@@ -1120,8 +1120,8 @@ print(profile.dur_us, profile.tflops(2 * M * N * K), profile.gbps(bytes_moved))
 
 `do_bench` 的合法 backend 是 `"event" / "cupti" / "cudagraph" / "wall" / "msprof" / "msprof_detail"`
 （`_vendor/tilelang-v0.1.15/tilelang/profiler/bench.py:31-66`）；在 NPU 上只能用
-`"event"`、`"msprof"`、`"wall"`（源码里显式拒绝 cupti/cudagraph：`"timing requires
-CUDA/HIP; use 'event', 'msprof', or 'wall' for NPU"`）。
+`"event"`、`"msprof"`、`"wall"`（源码里显式拒绝 cupti/cudagraph：`“timing requires
+CUDA/HIP; use 'event', 'msprof', or 'wall' for NPU”`）。
 
 `msprof_detail` 返回的 `KernelProfile` 字段（`tilelang/profiler/msprof.py:60-134`）正是瓶颈
 判读要用的东西：
@@ -1148,7 +1148,7 @@ AIC 与 AIV 的比值加在一起当成一个统一时间轴的占比**；`do_be
 拿到 `KernelProfile` 后，按下面的顺序读（`figures/05-tuning-decision.md`）：
 
 ```
-先看 dur_ns 与算术强度 —— 是 memory-bound 还是 compute-bound？（第 2 章的账要重算一遍）
+先看 dur_ns 与算术强度，是 memory-bound 还是 compute-bound？（第 2 章的账要重算一遍）
         │
    ┌────┴─────────────────────────────────────────────┐
    ▼                                                  ▼
@@ -1185,30 +1185,30 @@ AIC 与 AIV 的比值加在一起当成一个统一时间轴的占比**；`do_be
    * 向量：UB 上同时存活 `k` 份输入/输出。
 2. **`T.annotate_buffer_versions({buf: (n, mode)})`**：当某个关键 buffer 的版本数需要被
    强制固定（例如它就是慢，需要保证双缓冲），用 `(2, "counter")` 之类锁死；当某个 buffer
-   承载跨迭代的「进位」值（必须保留上一轮），用 `{buf: 1}` 退出多缓冲。
+   承载跨迭代的“进位”值（必须保留上一轮），用 `{buf: 1}` 退出多缓冲。
 3. **`T.annotate_unlimit_memory("shared", "shared.l1")`**：在**调查阶段**临时移除调度器
-   的容量约束，看是不是容量把版本数卡住了。**它不是扩容魔法**——取消约束后如果物理分配
+   的容量约束，看是不是容量把版本数卡住了。**它不是扩容魔法**，取消约束后如果物理分配
    超了，kernel 会启动失败。用完要撤掉。
 
-一个实用流程（`references/synchronization.md` 的「Tune performance with T.Stage」）：
+一个实用流程（`references/synchronization.md` 的“Tune performance with T.Stage”）：
 **先保住一个正确的自动调度基线并记录延迟 → 只改一件事 → 看生成代码确认改动真的生效 →
 在相同 harness 上对拍 → 只有可重复的设备时间提升才采纳**。注意：自动调度器解出来的
-「更小的 II」只是个建模值，**不等于**设备上的实测性能（见 `SKILL.md` §12.3）。
+“更小的 II”只是个建模值，**不等于**设备上的实测性能（见 `SKILL.md` §12.3）。
 
 ### 8.5 core ratio 的调整
 
-「core ratio」是 Cube 与 Vector 的配比（AIC:AIV）。昇腾的 AI Core 是 1:N 组合，n 由硬件
+“core ratio”是 Cube 与 Vector 的配比（AIC:AIV）。昇腾的 AI Core 是 1:N 组合，n 由硬件
 平台信息决定。TileLang 提供两个层次的调节：
 
 1. **让编译器配比（推荐）**：M 树默认设定 `threads` 参数（只允许 1 或 2）时，
    **vid 消除 + Auto CV Ratio** 会自动把 UB 申请与搬运按核排布处理好，你的写法可以从
-   「`alloc_shared((block_M // 2, block_N))` + `vid` 偏移」简化为
-   「`alloc_shared((block_M, block_N))` + 不带 `vid` 的 `T.copy`」
+   “`alloc_shared((block_M // 2, block_N))` + `vid` 偏移”简化为
+   “`alloc_shared((block_M, block_N))` + 不带 `vid` 的 `T.copy`”
    （A 树 README 的 “Vid reduction & Auto CV Ratio”，以及
    `docs/tutorials/vid_reduction_and_auto_cv_ratio.md`）。
 2. **显式指定子核数**：M 树用 `T.MixedKernel(NUM_BLOCKS, sids=2) as (bx, sid)` 显式控制每个
    block 用几个 AIV（`1` 或 `2`），并在代码里按 `sid` 切分输出。`SKILL.md` §3.2 特别提醒：
-   **按 buffer 的实际 extent 去切**——一个「半宽」的本地 buffer 不能再被切一次。
+   **按 buffer 的实际 extent 去切**，一个“半宽”的本地 buffer 不能再被切一次。
 
 **判据**：如果 `aiv_vec` 很低、`aic_mad` 也很低，而 `dur` 高，先怀疑核配比/负载不均；
 如果 `aiv_vec` 高但 `aiv_mte2/3` 低，说明 Vector 已经打满，这时**再加 AIV 没用**，
@@ -1217,7 +1217,7 @@ AIC 与 AIV 的比值加在一起当成一个统一时间轴的占比**；`do_be
 ### 8.6 一个可复用的调优流程
 
 本章 `code/08-msprof-bench/bench_msprof.py` 给了一个最小可改的骨架；`code/12-tuning-sweep/`
-给了一个纯 Python 的配置扫描驱动（先把「测什么、比什么、怎么记」定下来，再上机器跑）。
+给了一个纯 Python 的配置扫描驱动（先把“测什么、比什么、怎么记”定下来，再上机器跑）。
 原则来自 `SKILL.md` §12：
 
 1. 先固定**可调用边界**（只测 kernel launch，还是含分配/初始化/多次 kernel）；
@@ -1234,14 +1234,14 @@ AIC 与 AIV 的比值加在一起当成一个统一时间轴的占比**；`do_be
 ### 9.1 为什么要入图
 
 当你要连续跑一串小算子时（例如 `RMSNorm → RoPE`），每次 launch 都要走一遍
-Python + 框架 + runtime 的下发路径，**Host 侧开销会盖过设备侧计算时间**——这叫
-Host-bound。ACLGraph 的解法是把「下发即执行」改成 **capture + replay 两阶段**：
+Python + 框架 + runtime 的下发路径，**Host 侧开销会盖过设备侧计算时间**。这叫
+Host-bound。ACLGraph 的解法是把“下发即执行”改成 **capture + replay 两阶段**：
 
 * **Capture**：首次执行时，把一串 NPU 操作记录成一张静态的计算图；
 * **Replay**：之后一次调用重放整张图，绕过 CPU 侧的 Python 与框架调度。
 
-A 树编程指南明确写了它的**边界**：aclGraph「对 HostBound 场景做运行时加速，**不承载图
-编译和图优化功能**」（`docs/TileLang-Ascend Programming Guide.md:2564-2587`）。
+A 树编程指南明确写了它的**边界**：aclGraph“对 HostBound 场景做运行时加速，**不承载图
+编译和图优化功能**”（`docs/TileLang-Ascend Programming Guide.md:2564-2587`）。
 
 ### 9.2 ACLGraph 的捕获与重放
 
@@ -1316,10 +1316,10 @@ output = kernel(q, k, v)
 目录里还带一个 **libtorch C++ 集成示例**（`demo_libtorch/`），演示在没有 Python 的应用里
 怎么调（`examples/torch_tl_ascend/README.md`）。
 
-> 另外一条更轻的路是直接用 `torch_npu` 当「张量容器」：JIT 出来的 kernel 收 `.npu()`
+> 另外一条更轻的路是直接用 `torch_npu` 当“张量容器”：JIT 出来的 kernel 收 `.npu()`
 > 张量、返回 `.npu()` 张量，就能和 `torch.nn.Module` 里的其它算子混排（本章所有例子都是
-> 这样写的）。真正的「集成」问题出现在你需要 **autograd、自定义 backward、或者
-> torch.compile 图内**的时候——那时才需要 `torch_tl_ascend` 这类桥。
+> 这样写的）。真正的“集成”问题出现在你需要 **autograd、自定义 backward、或者
+> torch.compile 图内**的时候。那时才需要 `torch_tl_ascend` 这类桥。
 
 ### 9.4 集成检查清单
 
@@ -1357,10 +1357,10 @@ def debug_kernel(...): ...
 老写法 `TL_PTO_DEBUG=1` 现在**只对 `target="pto"` 是兼容的进程级设置**，它**不会**给
 AscendC 后端打开调试 flag（`docs/tutorials/print.md` 的 Note 段落）。
 
-> ⚠️ 一个需要你自己核对的差异：A 树 `examples/print/elementwise_print.py` 里仍然写着
+> 注意：一个需要你自己核对的差异：A 树 `examples/print/elementwise_print.py` 里仍然写着
 > `os.environ["TL_PTO_DEBUG"] = "1"`，而 `docs/tutorials/print.md` 与编程指南都改成了
-> 「优先用 `compile_flags`」。**两者不一致**。以你所用版本的实际行为为准，并以文档为准
-> 优先用 `compile_flags`——见 `references.md` 的「待补资料」第 3 条。
+> “优先用 `compile_flags`”。**两者不一致**。以你所用版本的实际行为为准，并以文档为准
+> 优先用 `compile_flags`，见 `references.md` 的“待补资料”第 3 条。
 
 **性能代价**：设备端打印会明显拖慢算子（每次打印/断言都要额外的硬件交互），且**每个核上
 `dump`/`printf` 的总空间上限是 1 MB**。**只在调试期开，上线一定关掉。**
@@ -1461,9 +1461,9 @@ print(func.get_kernel_source())
 
 ## 11. 常见坑清单（昇腾特有）
 
-下面 14 条按「装环境 → 写代码 → 同步 → 性能」排列，每条都给出**症状 + 根因 + 怎么查**。
+下面 14 条按“装环境 → 写代码 → 同步 → 性能”排列，每条都给出**症状 + 根因 + 怎么查**。
 来源分布：P1–P3 来自本章 §3 的环境层经验；P4–P9 综合 M 树
-`SKILL.md` 第 10 节「Common Pitfalls」与 A 树编程指南的同名条目；
+`SKILL.md` 第 10 节“Common Pitfalls”与 A 树编程指南的同名条目；
 P10–P11 来自 M 树 `references/synchronization.md`（flag 配对与缓冲所有权）；
 P12–P14 来自 `SKILL.md` §6/§12 与 `references/profiling.md`。
 
@@ -1515,16 +1515,16 @@ P12–P14 来自 `SKILL.md` §6/§12 与 `references/profiling.md`。
   **退出路径上的 final drain**。
 * **P11｜`T.barrier_all()` 被当成万能同步。** 症状：加了 barrier 还是错。
   根因：`barrier_all`（`PIPE_ALL` 全屏障）只等**它之前已发出的本核异步操作**；
-  它**不是 buffer ownership 的交接**，也保护不了「屏障之后又出现的新 store 复用同一物理缓冲」
+  它**不是 buffer ownership 的交接**，也保护不了“屏障之后又出现的新 store 复用同一物理缓冲”
   的情况。真正的 buffer 复用要 producer→consumer 与 consumer→producer **两个方向**都有
   配对的 flag。
 
 ### 性能
 
 * **P12｜叠加了流水却没有变快。** 根因候选：
-  （a）**核内/核间流水被嵌套**（`T.Pipelined` 里套 `T.Pipelined`）——不支持，要用 flat pattern；
-  （b）**片上容量不够**，多缓冲被容量卡住——用 `T.annotate_unlimit_memory` 调查，或减小 tile；
-  （c）用户已经把 buffer 手动加了 stage 维，又开了自动多缓冲——**等于双缓冲两次**；
+  （a）**核内/核间流水被嵌套**（`T.Pipelined` 里套 `T.Pipelined`），不支持，要用 flat pattern；
+  （b）**片上容量不够**，多缓冲被容量卡住，用 `T.annotate_unlimit_memory` 调查，或减小 tile；
+  （c）用户已经把 buffer 手动加了 stage 维，又开了自动多缓冲，**等于双缓冲两次**；
   （d）本来就不是瓶颈所在（例如 Cube 已满，却还在调 MTE）。
 * **P13｜在 Host-bound 场景里调 kernel。** 症状：单 kernel 很快，端到端很慢。
   根因：launch 开销盖过计算。查：连续小算子的链式调用上 ACLGraph（§9）。
@@ -1570,15 +1570,15 @@ P12–P14 来自 `SKILL.md` §6/§12 与 `references/profiling.md`。
 ## 延伸阅读
 
 * **[R1] A 树自述与安装**：`_vendor/tilelang-ascend-v0.1.2.000/README.md`、
-  `install_ascend.sh`、`set_env.sh` —— 环境准备的第一手材料（§3）。
+  `install_ascend.sh`、`set_env.sh` ，环境准备的第一手材料（§3）。
 * **[R2] A 树编程指南**：`_vendor/tilelang-ascend-v0.1.2.000/docs/TileLang-Ascend Programming Guide.md`
-  —— 开发环境、语法、原语、调试、性能调优、入图一站式（§3–§10）。
+  开发环境、语法、原语、调试、性能调优、入图一站式（§3–§10）。
 * **[R3] M 树昇腾后端自述**：`_vendor/tilelang-v0.1.15/tilelang/ascend/README.md`
-  —— 950 快速开始、AutoSchedule 说明、与 Ascend C 的分工对照表（§6.3、§7）。
+  950 快速开始、AutoSchedule 说明、与 Ascend C 的分工对照表（§6.3、§7）。
 * **[R4] M 树昇腾使用手册（skill 文档）**：
   `_vendor/tilelang-v0.1.15/.agents/skills/tilelang-ascend/SKILL.md`
   与其 `references/synchronization.md`、`references/profiling.md`
-  —— 两棵树差异、原语语义、常见坑、调优流程的最完整单点来源（§7、§8、§11）。
+  两棵树差异、原语语义、常见坑、调优流程的最完整单点来源（§7、§8、§11）。
 * **[R5] 官方样例**：M 树 `examples/ascend/`（`example_gemm.py`、`example_vecadd.py`、
   `example_rmsnorm.py`、`example_per_token_cast_to_fp8.py`）；A 树
   `examples/{elementwise,gemm,aclgraph,torch_tl_ascend,print,exception_dump_test}/`。

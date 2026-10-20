@@ -9,8 +9,8 @@ TileKernels 里有**两个**叫 Sinkhorn 的算子族，很容易混为一谈：
 * `engram/sinkhorn_*`：对一张 `(num_rows, head_dim)` 的大矩阵交替做 **L2 行缩放 /
   列缩放**，并被拆成 `momentum → step → step_reduce → finalize` 四个 kernel。
 
-脚本把两个过程都在 CPU 上跑一遍，好让读者看出「迭代结构」「归一化用什么范数」
-「有没有 softmax」「状态大小」这四点上的差别。
+脚本把两个过程都在 CPU 上跑一遍，好让读者看出“迭代结构”“归一化用什么范数”
+“有没有 softmax”“状态大小”这四点上的差别。
 
 ## 运行前提
 
@@ -57,20 +57,20 @@ python3 sinkhorn_iterations.py
   `1.4e-6`。上表里的 `max|col_sum-1| ≈ 1.1e-6` 并不是误差没收敛，而是 `eps = 1e-6`
   本身留下的固定偏移——kernel 里每一步都是除以 `(sum + eps)`（
   `../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/tile_kernels/mhc/sinkhorn_cuda.py:39,43,48,52`）。**这就是为什么 kernel 里的 `repeat`
-  是个可调参数**：它决定「快」与「准」的取舍。
+  是个可调参数**：它决定“快”与“准”的取舍。
   另外要注意口径：**论文用的迭代次数是 `t_max = 20`**
   （`../tilelang-corpus/14-deepseek-ascend-stack/raw/paper-deepseek-mhc.md:405-406`），
-  而本脚本与仓库测试用的是 `repeat = 10`；两者的「一次迭代」定义并不相同
+  而本脚本与仓库测试用的是 `repeat = 10`；两者的“一次迭代”定义并不相同
   （论文一次 = 行 + 列，代码从 softmax 后的列归一化开始计数）。
-  要做论文口径的对照，先读正文 §5.2 那张「论文 vs 源码」表。
+  要做论文口径的对照，先读正文 §5.2 那张“论文 vs 源码”表。
 * **offset ±100 两行**：即使把整个 4×4 矩阵平移到 ±100，结果仍然有限。原因是
   **先做行 softmax**（内部减掉行最大值），这与你熟悉的 online softmax 稳定性
   是同一个道理。
-* **Engram 版**：`iterate = row_scale ⊗ matrix ⊗ col_scale` 是「矩阵外积缩放」，
+* **Engram 版**：`iterate = row_scale ⊗ matrix ⊗ col_scale` 是“矩阵外积缩放”，
   归一化用的是 **L2 范数**而不是和。每做一次行步，行 L2 变成 1；再做一次列步，
   列 L2 变成 1，行 L2 又偏离 1。交替几轮后行/列的缩放分布稳定下来（互为倒数），
-  最后由 `finalize` 用一个 `alpha` 把全局因子定死——所以你会看到「finalize 之后
-  每一行的 L2 范数正好等于 `alpha = sqrt(head_dim)`」。
+  最后由 `finalize` 用一个 `alpha` 把全局因子定死——所以你会看到“finalize 之后
+  每一行的 L2 范数正好等于 `alpha = sqrt(head_dim)`”。
 
 ## 作者实际做到的验证级别
 
@@ -84,8 +84,8 @@ python3 sinkhorn_iterations.py
 * 小矩阵（`3 × 4`、`2 × 4 × 4`）不代表真实规模。mHC 的真实矩阵是每个 token 一个
   `4 × 4`（`hc = 4`）；Engram 的矩阵在测试里是 `10⁵ × 5120` 量级
   （`tests/engram/test_engram_sinkhorn.py:98`）。
-* L2 交替缩放的收敛速度与矩阵本身有关；脚本只展示「它会收敛」和「`finalize` 做什么」，
+* L2 交替缩放的收敛速度与矩阵本身有关；脚本只展示“它会收敛”和“`finalize` 做什么”，
   不给收敛率。
 * Engram 版在真实训练里挂在哪个参数上（哪一步用哪个 kernel 组合），TileKernels
   仓库里没有调用方，本章只能给出**源码 → 行为推断**，详见正文 §5.3 与
-  `../references.md` 的「待补资料」。
+  `../references.md` 的“待补资料”。

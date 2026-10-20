@@ -1,6 +1,6 @@
 {
   "id": "05-ascend-ub-pipeline",
-  "title": "昇腾上一次「逐元素 + 归约」的 UB 用法",
+  "title": "昇腾上一次“逐元素 + 归约”的 UB 用法",
   "kind": "steps",
   "direction": "TB",
   "section": "3.4",
@@ -19,7 +19,7 @@
   ],
   "notes": [
     "三个与 CUDA 侧不同的点：UB 就是 T.alloc_shared（主干没有 alloc_ub）；线程域要显式开 T.SimtVF；tile 大小由 UB 容量反向决定",
-    "Pipelined 循环让「搬下一块」和「算这一块」重叠；UB 放不下就得减 tile 或减缓冲份数",
+    "Pipelined 循环让“搬下一块”和“算这一块”重叠；UB 放不下就得减 tile 或减缓冲份数",
     "适配器版还多 real_shape / tmp 参数与 T.Scope(\"V\")"
   ]
 }

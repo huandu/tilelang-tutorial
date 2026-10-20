@@ -13,7 +13,10 @@
       "label": "Host 侧开销",
       "values": ["Python / 框架 / runtime 开销逐次累加", "一次调用重放整张图，把下发开销摊掉"]
     },
-    { "label": "capture 阶段", "values": ["不存在", "只记录、不执行；真正的执行在 g.replay()"] },
+    {
+      "label": "capture 阶段",
+      "values": ["不存在", "只记录、不执行；真正的执行在 g.replay()"]
+    },
     {
       "label": "边界",
       "values": ["小算子时 Host 开销盖过设备计算", "只治 Host-bound，不做图编译与图优化"]
@@ -23,10 +26,10 @@
       "values": ["形状可变", "入图要求形状静态，图里不能夹带 host 侧同步"]
     }
   ],
-  "caption": "ACLGraph 把「下发即执行」改成 capture + replay 两阶段，换取更小的交互开销；代价是形状必须静态。",
+  "caption": "ACLGraph 把“下发即执行”改成 capture + replay 两阶段，换取更小的交互开销；代价是形状必须静态。",
   "notes": [
     "确认生效：Host 日志里搜 capture model，0 = 关闭（默认）、1 = 开启；需要先设好 ASCEND_HOST_LOG_FILE_NUM / ASCEND_PROCESS_LOG_PATH / ASCEND_GLOBAL_LOG_LEVEL。",
     "A 树需要 TL_ASCEND_AUTO_SYNC / TL_ASCEND_MEMORY_PLANNING / TL_ASCEND_AUTO_CV_SYNC / TL_ASCEND_AUTO_CV_COMBINE 四个 pass config。",
-    "vLLM-Ascend 的图路径只覆盖 decode，prefill 仍走 eager——因为 prefill 形状变化频繁。"
+    "vLLM-Ascend 的图路径只覆盖 decode，prefill 仍走 eager。因为 prefill 形状变化频繁。"
   ]
 }

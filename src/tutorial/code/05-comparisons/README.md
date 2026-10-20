@@ -1,7 +1,7 @@
 # 第 05 章 代码
 
-本章是**对比**章，代码的作用不是「跑出性能」，而是把同一个算子在不同抽象层次上的
-写法并排摆出来，让你看见「少掉的代码被谁吃掉了」。
+本章是**对比**章，代码的作用不是“跑出性能”，而是把同一个算子在不同抽象层次上的
+写法并排摆出来，让你看见“少掉的代码被谁吃掉了”。
 
 ## 目录
 
@@ -18,7 +18,7 @@
 * `01-unified-gemm-relu/` 下的所有文件都是 **`仅静态核对`**：
   * 涉及 TileLang API 的，逐个在 `_vendor/tilelang-v0.1.15/` 中比对了名字与签名；
   * 涉及 Triton / CUDA / CUTLASS-CuTe / Ascend C / PTO-DSL 的，标注了来源，
-    并明确区分「真实片段」与「教学伪代码」；
+    并明确区分“真实片段”与“教学伪代码”；
   * **没有任何一个文件在本机执行过**。
 * `02-abstraction-layers/abstraction_layers.py` 是唯一可以真正跑起来的脚本，
   其验证级别是 **`在 CPU 上验证过逻辑`**（纯 Python，无第三方依赖）。
@@ -33,5 +33,5 @@ python3 02-abstraction-layers/abstraction_layers.py
 python3 -m py_compile 01-unified-gemm-relu/*.py 02-abstraction-layers/*.py
 ```
 
-在真实硬件上如何验证各片段，见 `01-unified-gemm-relu/README.md` 末尾的「在有卡机器上
-怎么验证」。
+在真实硬件上如何验证各片段，见 `01-unified-gemm-relu/README.md` 末尾的“在有卡机器上
+怎么验证”。

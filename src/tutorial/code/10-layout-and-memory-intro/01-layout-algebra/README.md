@@ -8,8 +8,8 @@
 2. 32B / 64B / 128B 三种 bank swizzle 的 XOR 置换表，并验证它们是**双射**；
 3. `MakeGemmFragment8x8` 的线程/寄存器槽映射，并验证每个线程恰好 2 个槽。
 
-它是对硬件行为的**模型**，不是 benchmark：脚本从不声称任何加速比，只统计「一个 warp
-访问了多少个不同 bank」以及「映射是不是双射」。
+它是对硬件行为的**模型**，不是 benchmark：脚本从不声称任何加速比，只统计“一个 warp
+访问了多少个不同 bank”以及“映射是不是双射”。
 
 ## 运行前提
 
@@ -55,9 +55,9 @@ all checks passed
 | `xor2x2` / `xor4x4` / `xor8x8` | `_vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:376-393` |
 | 32B / 64B / 128B 的 2D swizzle | `_vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:442-530` |
 | `make_{quarter,half,full}_bank_swizzled_layout` 的对外签名 | `_vendor/tilelang-v0.1.15/tilelang/layout/swizzle.py:94-126` |
-| `MakeGemmFragment8x8` | `_vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:47-53` |
+| `MakeGemmFragment8x8` | `_vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:47-52` |
 | bank 宽度 4B、32 banks、连续字到连续 bank | `../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-best-practices.md:1545-1554` |
-| 「读一列 → 所有线程撞同一个 bank；padding 到 33 消除」 | `../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-best-practices.md:2622-2641` |
+| “读一列 → 所有线程撞同一个 bank；padding 到 33 消除” | `../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-best-practices.md:2622-2641` |
 
 ## 验证级别
 
@@ -66,6 +66,6 @@ all checks passed
 
 ## 已知边界
 
-* 32B / 64B swizzle 的分组只有 2 / 4 个 16B 单元，所以「一列在 8 行内的散布」上限是
+* 32B / 64B swizzle 的分组只有 2 / 4 个 16B 单元，所以“一列在 8 行内的散布”上限是
   分组宽度（2 / 4），不是 8；脚本据此把校验式写成 `散度数 == 分组宽度`，而不是硬编码 8。
 * 脚本只覆盖 bank 冲突的**共享内存**模型；不涉及 L1 命中、合并访存或指令发射。

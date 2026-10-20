@@ -5,10 +5,10 @@
 
 | 目录 | 内容 | 对应正文 | 验证级别 |
 | --- | --- | --- | --- |
-| `01-head-roofline/` | 复现报告 `:85-111` 的算存比表（`cube_cycles` / `mem_cycles`），推出「head ≥ 64 才是 compute bound」 | §3.1 | **本机运行过**；输出与报告表逐行一致（`--assert-report` 通过） |
+| `01-head-roofline/` | 复现报告 `:85-111` 的算存比表（`cube_cycles` / `mem_cycles`），推出“head ≥ 64 才是 compute bound” | §3.1 | **本机运行过**；输出与报告表逐行一致（`--assert-report` 通过） |
 | `02-fixpipe-bound/` | 复现 1C1V 的绑定算术：解出 `B_TOPK > 73.14`，复算 MTE2 队列 32 个 token 与 HF32 关闭后的 8192 周期 | §3.2–§3.3 | **本机运行过**；关键数字与报告一致 |
-| `03-online-softmax-skip-scale/` | NumPy 版「带 skip-scale 的 online softmax」，与「一次算完的参考实现」对拍；演示阈值 0 / 6 / 极大三档 | §2.2–§2.3 | **本机运行过**；只验证算法等价性 |
-| `04-tilelang-expressibility/` | 「TileLang 能表达吗」的 A/B/C 三分类清单，并在锁定源码树里做存在性/缺失性检查 | §6 | **本机运行过**（静态核对工具） |
+| `03-online-softmax-skip-scale/` | NumPy 版“带 skip-scale 的 online softmax”，与“一次算完的参考实现”对拍；演示阈值 0 / 6 / 极大三档 | §2.2–§2.3 | **本机运行过**；只验证算法等价性 |
+| `04-tilelang-expressibility/` | “TileLang 能表达吗”的 A/B/C 三分类清单，并在锁定源码树里做存在性/缺失性检查 | §6 | **本机运行过**（静态核对工具） |
 
 ## 运行环境
 

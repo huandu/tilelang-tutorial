@@ -1,7 +1,7 @@
 # 图 2：多缓冲的内存布局与槽位轮转
 
 对应正文第 2.3、4.4 节。要点：流水在 IR 上的落地方式是**给被跨 stage 读写的 buffer
-最外层加一个「版本」维**，把「一份 A tile」变成「num_stages 份 A tile」；每一轮
+最外层加一个“版本”维**，把“一份 A tile”变成“num_stages 份 A tile”；每一轮
 访问哪一份由 `iteration % num_stages` 决定。
 
 ## Mermaid 版本
@@ -56,16 +56,16 @@ flowchart TB
 
 ## 尺寸怎么变
 
-`ComputeBufferVersions` 先做活跃期分析，得到每个 buffer 的「定义 stage」与「最后被
-使用的 stage」，然后：
+`ComputeBufferVersions` 先做活跃期分析，得到每个 buffer 的“定义 stage”与“最后被
+使用的 stage”，然后：
 
 ```text
 num_versions = use_stage - def_stage + 1        （上界）
 ```
 
-对于「stage 0 写、stage `num_stages - 1` 读」的典型 GEMM 体，
+对于“stage 0 写、stage `num_stages - 1` 读”的典型 GEMM 体，
 `num_versions = num_stages`。如果 buffer 只在同一个 stage 内被写后立即被读，
-版本数会退化成 1 —— 也就是**不做多缓冲**。
+版本数会退化成 1 ，也就是**不做多缓冲**。
 
 ```text
 stage 注解:   copy A -> stage 0    copy B -> stage 0
@@ -113,4 +113,4 @@ GEMM 的片上占用上界 = num_stages × (A + B)
   `../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`。
 * 合并与复用 shared 分配的 pass：
   `_vendor/tilelang-v0.1.15/src/transform/merge_shared_memory_allocations.cc:1576-1660`
-  —— 所以上面的乘积是**上界**，实际占用可能更小。
+  所以上面的乘积是**上界**，实际占用可能更小。

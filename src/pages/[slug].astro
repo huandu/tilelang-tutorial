@@ -30,6 +30,7 @@ const { previous, next } = siblings(chapter.slug);
 const toc = chapter.toc.filter((entry) => entry.level === 2 || entry.level === 3);
 const topLevel = toc.filter((entry) => entry.level === 2);
 const difficulty = (value: number): string => '★'.repeat(Math.min(Math.max(value, 1), 3));
+const quizLabels = ['A', 'B', 'C', 'D'] as const;
 ---
 
 <TutorialLayout
@@ -250,6 +251,9 @@ const difficulty = (value: number): string => '★'.repeat(Math.min(Math.max(val
                             type="radio"
                             value={String(optionIndex)}
                           />
+                          <span class="pt-0.5 font-mono text-xs opacity-50">
+                            {quizLabels[optionIndex]}
+                          </span>
                           <span class="text-sm leading-relaxed">{option}</span>
                         </label>
                       ))}

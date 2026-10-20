@@ -2,7 +2,7 @@
 
 ## 目的
 
-把「先能用，再用好」讲成四个可对照的 kernel：
+把“先能用，再用好”讲成四个可对照的 kernel：
 
 | kernel | x 被读几遍 | 中间量在哪 | 什么时候用 |
 | --- | --- | --- | --- |
@@ -52,7 +52,7 @@ for name, k in (
 * `layer_norm_fwd` 的 `Y` 与 `F.layer_norm` 一致；`Mean`/`Rstd` 与
   `x.mean(-1)` / `x.var(-1, unbiased=False).add(eps).rsqrt()` 一致。
 
-**性能口径**：RMSNorm 的账本下界是「读 x + 写 y」，
+**性能口径**：RMSNorm 的账本下界是“读 x + 写 y”，
 有效带宽 ≈ `2 * M * N * sizeof(dtype) / latency`。把它与该卡的 peak bandwidth 比，
 就知道离下界还有多远。**本机没有这些数字。**
 

@@ -36,13 +36,13 @@
     {
       "id": "foundry",
       "label": "tile-ai/TileFoundry",
-      "sub": "「编译器交给 agent」的生成流水线；产出打上 foundry 标签的 PR",
+      "sub": "“编译器交给 agent”的生成流水线；产出打上 foundry 标签的 PR",
       "tone": "compute"
     },
     {
       "id": "sight",
       "label": "tile-ai/TileSight",
-      "sub": "tile 级性能解析模型，可在 CPU 上算，回答「为什么这个 tiling 更好」"
+      "sub": "tile 级性能解析模型，可在 CPU 上算，回答“为什么这个 tiling 更好”"
     },
     {
       "id": "bench",

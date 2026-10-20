@@ -6,7 +6,7 @@
 > **一律以 `../../tilelang-book/_vendor/tilelang-v0.1.15/` 为准**，本文只作导航。
 
 这份文档回答一个问题：**我写的一行 Python，最后变成了什么，中间经过了谁。**
-所有文件路径都相对 `02-tilelang-core-repo/raw/tilelang/`（主干 clone，commit 见
+所有文件路径都相对 `02-tilelang-core-repo/raw/`（主干 clone，commit 见
 该目录 `PROVENANCE.md`）。
 
 ## 1. 一次编译的全部参与者
@@ -57,7 +57,7 @@ Host wrapper + 二进制
 | `eager/`、`ast/`、`parser/` | 前端实现细节 | 调试语法问题时看这里 |
 
 设计要点：这些原语**不直接展开成 CUDA**，而是先建立 IR 层的事实（buffer、访问关系、
-并行域），把优化空间留给 pass。这就是论文里 "decouple scheduling space from dataflow"
+并行域），把优化空间留给 pass。这就是论文里 “decouple scheduling space from dataflow”
 的实际含义。
 
 ## 3. 承重 pass：六个必须理解的地方
@@ -81,24 +81,24 @@ lower_thread_binding=False`），线程域只在 `T.SimtVF` 内部出现。**这
 * 是否需要插入 layout 转换（以及代价）。
 
 昇腾额外需要 `NormalizeAscendFractalStorage`、`InsertNd`、
-`AscendInsertOOBPadding`——因为 Cube 的物理布局（fractal / ND→NZ / 对齐）是硬约束。
+`AscendInsertOOBPadding`。因为 Cube 的物理布局（fractal / ND→NZ / 对齐）是硬约束。
 
 ### 3.4 `LowerTileOp`
 把 tile 级 op 展开成具体的指令或子图（MMA 序列、搬运序列）。在这之后就不再有
-「tile op」这个概念，只剩 TIR 语句。调试 tile 语义问题时，在这一步前后对比 IR 最有效。
+“tile op”这个概念，只剩 TIR 语句。调试 tile 语义问题时，在这一步前后对比 IR 最有效。
 
 ### 3.5 `VectorizeLoop` / `UnrollLoop` / `StorageRewrite`
 常规但重要：向量化、展开、片上存储复用与分配。`StorageRewrite` 决定 buffer 复用，
-也是「关掉某个优化后性能突变」的常见原因。
+也是“关掉某个优化后性能突变”的常见原因。
 
 ### 3.6 `ThreadSync`（CUDA）/ `InsertSync` + `AscendThreadSync`（昇腾）
-根据读写集推导 barrier/fence 并插入。**多数「结果偶发错误」都在这里。**
+根据读写集推导 barrier/fence 并插入。**多数“结果偶发错误”都在这里。**
 昇腾侧还要处理不同流水（MTE/Cube/Vector/Fixpipe）之间的完成协议，以及
 `RewriteFlagToBuf`（把 flag 变成 buffer）这类目标机器特有的做法。
 
 ## 4. 昇腾独有的前半段
 
-昇腾 pipeline 在 layout/向量化阶段之前插入了整段「调度」：
+昇腾 pipeline 在 layout/向量化阶段之前插入了整段“调度”：
 
 ```
 RewriteDualCopy                # L0C→UB 双目标搬运展开
@@ -119,16 +119,16 @@ LowerScheduledTIR → RestoreWhileLoops
 ```
 
 这段是 TileLang@Ascend 的核心竞争力：把 Ascend C 里人肉维护的
-「这一轮 MTE2 搬到哪了 / Cube 什么时候能吃 / 何时能覆盖 UB」变成约束求解问题。
+“这一轮 MTE2 搬到哪了 / Cube 什么时候能吃 / 何时能覆盖 UB”变成约束求解问题。
 细节见 `09-zhihu-da-zhi-ruo-yu/raw/zhihu-dazhiruoyu-deepseek-ascend.md`。
 
 ## 5. 怎么自己看一遍（可复现的操作）
 
 1. 选一个 kernel（推荐 `examples/gemm/`）编译，拿到 IRModule。
 2. 用 `tilelang/tools/lower_trace` 或 `pass_diff` 打印各 pass 前后的 IR。
-3. 按上面的「承重 pass」列表逐条对照：每一步 IR 里多了/少了什么。
+3. 按上面的“承重 pass”列表逐条对照：每一步 IR 里多了/少了什么。
 4. 用 `plot_layout` / `layout_visualization` 看 layout 的实际形态。
-5. 把结论写下来。这份笔记就是「读懂 TileLang 编译器」的证据。
+5. 把结论写下来。这份笔记就是“读懂 TileLang 编译器”的证据。
 
 相关工具页面（官方文档源文件）：
 `01-tilelang-official-docs/raw/site/_sources/tools/{lower_trace,pass_diff,analyzer,

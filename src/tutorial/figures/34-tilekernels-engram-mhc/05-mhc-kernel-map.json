@@ -4,7 +4,7 @@
   "kind": "flow",
   "direction": "TB",
   "nodeMaxEm": 24,
-  "caption": "mHC 的一半算子在每层的前向/反向里，另一半是因为「反向要重算」才存在的；prenorm GEMM 走 DeepGEMM（Ascend C 主体 + TileLang），其余 mix/Sinkhorn 算子是纯 TileLang。",
+  "caption": "mHC 的一半算子在每层的前向/反向里，另一半是因为“反向要重算”才存在的；prenorm GEMM 走 DeepGEMM（Ascend C 主体 + TileLang），其余 mix/Sinkhorn 算子是纯 TileLang。",
   "nodes": [
     { "id": "expand", "label": "expand", "sub": "首层：单流 → 4 条分支" },
     { "id": "prenorm", "label": "prenorm GEMM", "sub": "DeepGEMM-Ascend", "tone": "compute" },
@@ -54,7 +54,7 @@
   "notes": [
     "论文 §4.3 的三条基础设施设计与图里的三组 kernel 一一对应：§4.3.1 Kernel Fusion ↔ pre_big_fuse 与两个应用 kernel；§4.3.2 Recomputing ↔ multilayer_recompute；§4.3.3 DualPipe 上的重叠 ↔ 流水边界（属第 38 章）。",
     "multilayer_recompute 不减少计算，反而多做一遍前向；换来的是不必保存每层的 residual（[n,4,h]，是 layer_input 的 4 倍）。论文给出最优块长 L*_r ≈ sqrt(nL/(n+2))，并要求重算块与流水级对齐。",
-    "参数梯度总是「先写部分和、再单独归约」：pre_split_mixes_bwd → *_bwd_reduce，与 Engram 的 grad_w_reduce 同一种模式。",
+    "参数梯度总是“先写部分和、再单独归约”：pre_split_mixes_bwd → *_bwd_reduce，与 Engram 的 grad_w_reduce 同一种模式。",
     "prenorm GEMM 是论文明确划在 TileLang 之外的那一段（式 (14)–(15)）；它的性能表在 DeepGEMM-Ascend README 里（厂商自报：算力 3–82 TFLOPS，带宽 519–3463 GB/s），本图不含实测数据。"
   ]
 }

@@ -26,10 +26,10 @@
     },
     { "label": "产物", "values": ["GPU 代码", "GPU / NPU 代码"] }
   ],
-  "caption": "同样写块级程序，「tile 里的布局、搬运机制、流水深度」这些决定最终是谁做的：两条路线的答案不同。",
+  "caption": "同样写块级程序，“tile 里的布局、搬运机制、流水深度”这些决定最终是谁做的：两条路线的答案不同。",
   "notes": [
-    "上表的 Triton 观点来自 2019 年原始论文（MAPL'19），只用来说明两条路线的设计取向，不做「今天的 Triton 还是不是这样」的断言。",
+    "上表的 Triton 观点来自 2019 年原始论文（MAPL'19），只用来说明两条路线的设计取向，不做“今天的 Triton 还是不是这样”的断言。",
     "TileLang developer 层官方类比 Triton（docs/deeplearning_operators/matmul.md:19）；Triton 自己也有更低层的 Gluon 编程模型。",
-    "Triton 2019 版语言里「CUDA-like concurrency primitives … are inexistent」，这正是 TileLang 保留 expert 层的理由之一。"
+    "Triton 2019 版语言里“CUDA-like concurrency primitives … are inexistent”，这正是 TileLang 保留 expert 层的理由之一。"
   ]
 }

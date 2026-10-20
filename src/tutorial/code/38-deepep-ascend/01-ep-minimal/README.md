@@ -53,4 +53,4 @@ python3 ep_minimal.py --summary  # 只看约束检查结果
 **CPU 逻辑验证**。作者在 macOS (Apple Silicon) / Python 3.11 上实际运行过本脚本
 （含 `--summary`）。**没有任何一行 DeepEP-Ascend kernel 被运行过**——
 本机没有昇腾 NPU（见 [`../../../VERSIONS.md`](../../../VERSIONS.md)）。
-所有「约束」都来自对源码的静态阅读，行号可在快照 commit `3b25377d04b2` 上复核。
+所有“约束”都来自对源码的静态阅读，行号可在快照 commit `3b25377d04b2` 上复核。

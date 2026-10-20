@@ -11,11 +11,11 @@
         "输出累加器 out_accum"
       ],
       "answer": 1,
-      "explain": "见 §2.3。代码把阈值预先除以 sm_scale（config.h:43；kernel_body.h:1660-1662 的 rescale_threshold_div_sm_scale），比较时用的是未缩放的行最大差值，二者等价。最容易误选 A——直接读「一般取 6」会以为作用在 P 上，但 exp(6) 那个上界只有在缩放后的尺度上才成立。"
+      "explain": "见 §2.3。代码把阈值预先除以 sm_scale（config.h:43；kernel_body.h:1660-1662 的 rescale_threshold_div_sm_scale），比较时用的是未缩放的行最大差值，二者等价。最容易误选 A，直接读“一般取 6”会以为作用在 P 上，但 exp(6) 那个上界只有在缩放后的尺度上才成立。"
     },
     {
       "id": "q2",
-      "stem": "官方把「每个 AI Core 负责的 q head 数」定为 64 而不是 128，下列哪一条是报告给出的理由组合？",
+      "stem": "官方把“每个 AI Core 负责的 q head 数”定为 64 而不是 128，下列哪一条是报告给出的理由组合？",
       "options": [
         "128 个 head 会让 bf16 累加溢出",
         "128 会让 L0C 溢出（O 需 256 KB > L0C 128 KB），且 MMAD 的 M = 64 已足以打满 Cube 吞吐",
@@ -23,7 +23,7 @@
         "128 个 head 会超过 topk = 512 的上限"
       ],
       "answer": 1,
-      "explain": "见 §3.1。报告 :116 给了两条：head = 128 时 O（128×512 float32 = 256 KB）把 L0C 完全占满，accumulator 只能挪到 UB；而 micro-benchmark 显示 MMAD 的 M 取 64 就打满吞吐，所以 128 没必要。C 是常见误选：1C2V 分 128 个 head 是能整除的，真正的障碍是 L0C 与「没必要」。"
+      "explain": "见 §3.1。报告 :116 给了两条：head = 128 时 O（128×512 float32 = 256 KB）把 L0C 完全占满，accumulator 只能挪到 UB；而 micro-benchmark 显示 MMAD 的 M 取 64 就打满吞吐，所以 128 没必要。C 是常见误选：1C2V 分 128 个 head 是能整除的，真正的障碍是 L0C 与“没必要”。"
     },
     {
       "id": "q3",
@@ -35,23 +35,23 @@
         "rescale 只能在 L1 上完成"
       ],
       "answer": 0,
-      "explain": "见 §3.2。报告 :120 的原话是「L0C 上的数据只能被 FixPipe 搬出或被 CUBE Core 用作累加器，无法原地乘以标量」。若强行保留，只能把 L0C 拉到 UB、乘完再「乘单位矩阵」放回，代价是 64×64×512 的矩阵乘，关 HF32 后 8192 周期。C 描述的是另一条理由（head = 128 时容量不够），不是「不能原地乘标量」的原因。"
+      "explain": "见 §3.2。报告 :120 的原话是“L0C 上的数据只能被 FixPipe 搬出或被 CUBE Core 用作累加器，无法原地乘以标量”。若强行保留，只能把 L0C 拉到 UB、乘完再“乘单位矩阵”放回，代价是 64×64×512 的矩阵乘，关 HF32 后 8192 周期。C 描述的是另一条理由（head = 128 时容量不够），不是“不能原地乘标量”的原因。"
     },
     {
       "id": "q4",
       "stem": "报告里那条 B_TOPK > 73.14 的结论，前提配置是什么？",
       "options": [
         "最终代码采用的 1C2V 配置",
-        "1C1V 下「FixPipe 不成为带宽瓶颈」的条件",
+        "1C1V 下“FixPipe 不成为带宽瓶颈”的条件",
         "UB 能装下 B_TOPK 个 token 的条件",
         "MTE2 队列深度不成为瓶颈的条件"
       ],
       "answer": 1,
-      "explain": "见 §3.3 与习题 E6。报告 :142 整段都在论证「能不能用 1C1V」，FixPipe 的 128 B/cycle 是 1C1V 单元的口径。最终代码是 1C2V + B_TOPK = 64（config.h:53-55），并不受这条约束。把两者混起来会得出「代码违反了报告」的错误结论。"
+      "explain": "见 §3.3 与习题 E6。报告 :142 整段都在论证“能不能用 1C1V”，FixPipe 的 128 B/cycle 是 1C1V 单元的口径。最终代码是 1C2V + B_TOPK = 64（config.h:53-55），并不受这条约束。把两者混起来会得出“代码违反了报告”的错误结论。"
     },
     {
       "id": "q5",
-      "stem": "为什么「KV 从显存直接搬到 L1 并随路完成 ND2NZ」这条路在昇腾上走不通？",
+      "stem": "为什么“KV 从显存直接搬到 L1 并随路完成 ND2NZ”这条路在昇腾上走不通？",
       "options": [
         "L1 硬件不支持 ND2NZ 转换",
         "这样每个 token 要发两次 MTE2 请求",
@@ -59,23 +59,23 @@
         "NZ 排布需要额外的 scale factor 才能读出"
       ],
       "answer": 2,
-      "explain": "见 §3.4。报告 :152 的结论是：AI Core 内部的 BIU 只会在源和目标都连续时触发访存合并，「只有源连续、目的不连续」无法合并，L2 带宽利用率很低。L1 本身是支持随路 ND2NZ 的（Q 就是这么搬的，kernel_body.h:1379-1397），所以 A 错；B 说的是 KV cache layout 那条优化。"
+      "explain": "见 §3.4。报告 :152 的结论是：AI Core 内部的 BIU 只会在源和目标都连续时触发访存合并，“只有源连续、目的不连续”无法合并，L2 带宽利用率很低。L1 本身是支持随路 ND2NZ 的（Q 就是这么搬的，kernel_body.h:1379-1397），所以 A 错；B 说的是 KV cache layout 那条优化。"
     },
     {
       "id": "q6",
       "stem": "kv_nd2nz_for_prefill_vf 为什么采用 column（head dim）major 的外层循环？",
       "options": [
         "为了让 L2 缓存命中率更高",
-        "因为 vsstb 的 post-update 只接受正 offset，写指针必须单调前进",
         "因为 bf16 的数据必须在 head 维上对齐才能写",
-        "为了让 SIMD VF 全程只用 PAT_ALL 一种 mask"
+        "为了让 SIMD VF 全程只用 PAT_ALL 一种 mask",
+        "因为 vsstb 的 post-update 只接受正 offset，写指针必须单调前进"
       ],
-      "answer": 1,
+      "answer": 3,
       "explain": "见 §5.3 技巧③。kernel_body.h:294-296 的注释写明：vsstb 只接受正的 post-update offset，所以必须找一个只增不减的遍历顺序，这就是改用 column-major 的原因。这不是缓存友好的通用考量，而是被某条指令的语义反推出来的代码形状。"
     },
     {
       "id": "q7",
-      "stem": "按本章 §6 的三分类，下面哪一项属于「必须用 Ascend C / SIMD VF 内建」的 C 类？",
+      "stem": "按本章 §6 的三分类，下面哪一项属于“必须用 Ascend C / SIMD VF 内建”的 C 类？",
       "options": [
         "online softmax 的 rescale（逐元素乘 + 行归约）",
         "用 T.simd.vsstb 做 ND2NZ 的写回",
@@ -83,7 +83,7 @@
         "把两个 GEMM 用 T.Pipelined 排成流水"
       ],
       "answer": 2,
-      "explain": "见 §6.1–§6.4。判据是「换一条语义相近的指令，结论还成立吗」：gather2 的收益完全来自 burst_count/src_stride 这一个参数位，T.copy 抽象层没有暴露它，所以是 C 类。A 与 D 是 A 类；B 是 B 类——M 树里有 T.simd.vsstb（simd.py:482），只是需要进 T.SimdVF 并手写 stride/mask。最易误选 B。"
+      "explain": "见 §6.1–§6.4。判据是“换一条语义相近的指令，结论还成立吗”：gather2 的收益完全来自 burst_count/src_stride 这一个参数位，T.copy 抽象层没有暴露它，所以是 C 类。A 与 D 是 A 类；B 是 B 类，M 树里有 T.simd.vsstb（simd.py:482），只是需要进 T.SimdVF 并手写 stride/mask。最易误选 B。"
     }
   ]
 }

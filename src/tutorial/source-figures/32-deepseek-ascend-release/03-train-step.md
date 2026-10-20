@@ -26,9 +26,9 @@
 ## 要点
 
 * **TileLang 直接覆盖 ①④⑦ 的一部分**（TileKernels 那几块），②③⑤⑥ 交给 Ascend C。
-* **MegaMoE 把 ②–⑥ 融合**：DeepGEMM-Ascend 的 README 写它「fuses EP dispatch, two
-  grouped GEMMs, SwiGLU, and combine」，所以这条链上的边界是可以移动的。
-* **通信是异步的**：② 与 ⑥ 都是「发起 → 算别的 → `wait()`」的形式，见
+* **MegaMoE 把 ②–⑥ 融合**：DeepGEMM-Ascend 的 README 写它“fuses EP dispatch, two
+  grouped GEMMs, SwiGLU, and combine”，所以这条链上的边界是可以移动的。
+* **通信是异步的**：② 与 ⑥ 都是“发起 → 算别的 → `wait()`”的形式，见
   DeepEP-Ascend README 的 overlap 示例。
 * **DualPipe / EPLB 不在这份发布清单里**，但 DeepEP-Ascend 为 EPLB 预留了
   `lb_prefetch_weights` / `lb_reduce_grads`（Ascend kernel 尚未实现）。

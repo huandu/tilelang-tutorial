@@ -42,6 +42,6 @@
   "notes": [
     "T.Fragment = forward_index（逻辑下标 → 物理下标）+ forward_thread（线程号）+ replicate（副本数）。",
     "T.alloc_fragment((block_M, block_N)) 描述的是整个线程块的寄存器切片，不是每个线程各存一份。",
-    "plot_layout(fragment) 会按线程染色并标上 T/L，把「凭感觉的 fragment」变成看得见的表。"
+    "plot_layout(fragment) 会按线程染色并标上 T/L，把“凭感觉的 fragment”变成看得见的表。"
   ]
 }

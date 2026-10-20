@@ -2,7 +2,7 @@
 
 ## 目的
 
-调试「生成错误（generation issue）」的第一原则：**先看编译器到底产出了什么**，
+调试“生成错误（generation issue）”的第一原则：**先看编译器到底产出了什么**，
 再去猜哪一行 TileLang 写错了。`tilelang.tools.compile_only` 把 kernel 降到源码
 就停下，不做 device 编译、不启动，也不需要 GPU/CUDA driver。
 
@@ -68,7 +68,7 @@ int32_t add_kernel(half* A, half* B, half* C) {
 
 * compile-only **只做 lowering**，不调用 nvcc，因此拿不到 PTX/SASS。
 * `--target auto` 会被拒绝：它需要探测设备；compile-only 要求显式目标。
-* 输入文件会被当作普通 Python 模块导入，顶层代码会执行；示例里不要写「启动 kernel」
+* 输入文件会被当作普通 Python 模块导入，顶层代码会执行；示例里不要写“启动 kernel”
   这类语句，只定义 kernel。
 
 ## 作者实际做到的验证级别

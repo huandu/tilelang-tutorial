@@ -15,12 +15,12 @@
 粒度由**共享内存里一个 swizzle 原子有多大**决定；测试与示例里最常用的三种是
 （`tilelang/layout/swizzle.py:94-126`）：
 
-* `make_full_bank_swizzled_layout(buffer)` —— 128B；
-* `make_half_bank_swizzled_layout(buffer)` —— 64B；
-* `make_quarter_bank_swizzled_layout(buffer)` —— 32B。
+* `make_full_bank_swizzled_layout(buffer)` ，128B；
+* `make_half_bank_swizzled_layout(buffer)` ，64B；
+* `make_quarter_bank_swizzled_layout(buffer)` ，32B。
 
 > 名称里的数字是**字节宽度**，不是 bank 数。一个 bank 是 4B，所以 128B = 32 个 bank 的
-> 宽度，「full bank」指这个 swizzle 原子横跨整组 32 个 bank。
+> 宽度，“full bank”指这个 swizzle 原子横跨整组 32 个 bank。
 
 ## swizzle 前 / 后：同一个 8×64 fp16 tile 的物理摆放
 

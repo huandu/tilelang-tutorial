@@ -30,7 +30,7 @@
   ],
   "notes": [
     "②–⑥ 这一整段可以被 MegaMoE 融成一个 kernel：deepseek-ai/DeepGEMM-Ascend 的 README 写它 fuses EP dispatch、两个 grouped GEMM、SwiGLU 与 combine。",
-    "通信是异步的：② 与 ⑥ 都是「发起 → 算别的 → wait()」的形式，用于把通信与计算重叠。",
+    "通信是异步的：② 与 ⑥ 都是“发起 → 算别的 → wait()”的形式，用于把通信与计算重叠。",
     "DualPipe（流水并行）与 EPLB（专家负载均衡）不在这份发布清单里，但 DeepEP-Ascend 为 EPLB 预留了 lb_prefetch_weights / lb_reduce_grads（Ascend kernel 尚未实现）。"
   ]
 }

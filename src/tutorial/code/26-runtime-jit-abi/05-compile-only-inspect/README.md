@@ -2,7 +2,7 @@
 
 ## 目的
 
-正文把「一次编译」拆成 lower → codegen → adapter 三段。本示例在**没有 GPU**的
+正文把“一次编译”拆成 lower → codegen → adapter 三段。本示例在**没有 GPU**的
 机器上走完前两段：
 
 1. `scale_add.get_tir(N, alpha)` —— 与 JIT wrapper 用的是同一个入口

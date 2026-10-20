@@ -14,7 +14,7 @@
 
 这个乘积是**上界**：TileLang 会合并 shared 分配、并复用 live range 不重叠的存储
 （`MergeSharedMemoryAllocations`），所以实际占用可能更小。反过来也要注意：累加器
-fragment 走寄存器、barrier 还另有开销，所以这个数字不是「剩余全部可用」。
+fragment 走寄存器、barrier 还另有开销，所以这个数字不是“剩余全部可用”。
 
 ## 运行前提
 
@@ -63,9 +63,9 @@ allocation——那需要 GPU。
 ## 关于 228 KiB 这个数
 
 `h100-sm-shared-228kb` 这个预设来自厂商公开资料里 H100 的
-「Shared Memory Size / SM | Configurable up to 228 KB」，指**每个 SM 可配置的 shared
-memory 上限**（该 SM 的 shared + L1 合计 256 KB）。它不是「每个 block 一定能申请到
-228 KB」的承诺：单 block 能申请多少，还要看 driver/运行时允许的上限与其它资源占用。
+“Shared Memory Size / SM | Configurable up to 228 KB”，指**每个 SM 可配置的 shared
+memory 上限**（该 SM 的 shared + L1 合计 256 KB）。它不是“每个 block 一定能申请到
+228 KB”的承诺：单 block 能申请多少，还要看 driver/运行时允许的上限与其它资源占用。
 把 228 KB 当预算用是保守做法；真要压到极限，请以目标机器上编译+启动的实测结果为准。
 
 出处：`../../references.md` 的 R5 与 R6。

@@ -29,7 +29,7 @@ graph TB
 * **HCOMM**：建端点与信道、拿 Jetty；设备侧从 Jetty 里读出 SQ/CQ 的地址与深度。
 * **UBMEM**：统一总线内存，对端显存可按地址访问；要求每对 peer 直连。
 * **URMA**：单边内存访问；数据路径上只有 WRITE 与 WRITE_WITH_NOTIFY，没有 READ、没有双边握手。
-* 两个「域」都是 `{1, num_ranks}`：整个 EP group 被当成单个 UB 域（对应 NVIDIA 侧的「无 RDMA 域」）。
+* 两个“域”都是 `{1, num_ranks}`：整个 EP group 被当成单个 UB 域（对应 NVIDIA 侧的“无 RDMA 域”）。
 
 **边界**：图中 HCCL / HCOMM 的头文件由 CANN 提供，不在 corpus 快照里；
 本图只根据 README 措辞与源码里的调用点描述分工，不代表 CANN 内部实现。

@@ -11,8 +11,8 @@
    arena 打包器（`_vendor/tilelang-v0.1.15/src/transform/merge_shared_memory_allocations.cc`，
    `FreeList` 与 `LinearScanPack`）。
 
-它回答两个问题：**「这个 num_stages 还放得下吗」** 和
-**「哪些 buffer 能复用同一段 shared memory」**。
+它回答两个问题：**“这个 num_stages 还放得下吗”** 和
+**“哪些 buffer 能复用同一段 shared memory”**。
 
 ## 运行前提
 
@@ -55,13 +55,13 @@ num_stages=5  stage=[0, 0, 0, 4]  versions: A_shared=5, B_shared=5, S_shared=5
 
 1. **arena 通常小于 no-reuse 之和**：epilogue 场景里 `C_shared` 的活跃区间
    `[51, 53)` 与 A/B 的 `[3, 51)` 不重叠，于是它被放到了 offset 0——
-   这就是「哪些 buffer 能复用」的判据：**活跃区间不重叠 + 对齐满足**。
+   这就是“哪些 buffer 能复用”的判据：**活跃区间不重叠 + 对齐满足**。
 2. **长活跃期的 buffer 会吃掉复用**：carry 场景里 `S_shared` 每次迭代都活着，
    区间覆盖整段循环，任何 tile 都躲不开它，arena 于是等于 no-reuse 之和。
 3. **多缓冲与复用是同一笔预算里的两项**：`num_stages` 每加一，A/B 的版本数各加一，
    在 carry 场景下 5 档就顶穿 228 KiB 预算。这对应正文 §3.5 的
-   「多缓冲与 buffer 复用冲突」。
-4. 对齐（默认 128 B）会让「刚好放得下」变成「刚好放不下」——这就是
+   “多缓冲与 buffer 复用冲突”。
+4. 对齐（默认 128 B）会让“刚好放得下”变成“刚好放不下”——这就是
    `MergeSharedMemoryAllocations` 里 `align_bytes` 与
    `kSmemAlignmentMap`（TMA/MMA swizzle 的显式对齐）存在的理由。
 

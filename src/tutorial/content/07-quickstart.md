@@ -13,43 +13,43 @@
 3. 用 `kernel.get_kernel_source()` 把生成的 CUDA 打印出来，并**对照 Python 讲清
    三段关系**：网格 → `blockIdx` / `__launch_bounds__`；`T.Parallel` → 线程 +
    向量化；`T.copy` → 128-bit 访存（或 TMA / cp.async）。
-4. 说清 `@tilelang.jit` 的 lazy / eager 两种用法，以及"编译一次、多次复用"在
+4. 说清 `@tilelang.jit` 的 lazy / eager 两种用法，以及“编译一次、多次复用”在
    哪一步发生。
-5. 说清编译缓存的两级结构与 key 的构成，能回答"我改了参数 / 改了 pass / 换了
-   版本，为什么不命中"。
+5. 说清编译缓存的两级结构与 key 的构成，能回答“我改了参数 / 改了 pass / 换了
+   版本，为什么不命中”。
 6. 写出昇腾侧同一个 `C = A + B`，并指出它与 CUDA 版的三处结构性差异。
 7. 拿到一条安装或运行报错时，按本章第 8 节的清单定位到具体原因。
 
 ## 前置知识
 
-* 第 4 章「架构总览与一次编译的全流程」：知道 `Python → IRModule → pass → 设备源码
+* 第 4 章“架构总览与一次编译的全流程”：知道 `Python → IRModule → pass → 设备源码
   → host wrapper → 可调用对象` 这条链，知道后端分岔点在哪。
-* 第 6 章「芯片导论：NV GPU 与昇腾 NPU 的抽象对照」：知道"线程 / warp / SM"与
-  "core / Cube / Vector / UB / L1"这些词指的是什么。
+* 第 6 章“芯片导论：NV GPU 与昇腾 NPU 的抽象对照”：知道“线程 / warp / SM”与
+  “core / Cube / Vector / UB / L1”这些词指的是什么。
 * 会写 Python；用过 `pip` 或 `conda` 装过包；见过装饰器（`@decorator`）。
 * **不需要**写过 CUDA，也不需要读过 TVM。本章出现的每个硬件词第一次出现时都会
   先用一句话解释。
 
-本章只回答一个问题：**"我要写第一个能跑的 TileLang 程序，从哪一步开始？"**
+本章只回答一个问题：**“我要写第一个能跑的 TileLang 程序，从哪一步开始？”**
 语言细节在第 8 章，原语语义在第 9 章，调优在第 11 章，昇腾深入在第 19、25 章。
 
 ---
 
 ## 1. 问题的由来
 
-### 1.1 为什么第一个动手章要从「装 + 跑」开始
+### 1.1 为什么第一个动手章要从“装 + 跑”开始
 
 TileLang 是一门**嵌入式在 Python 里的 DSL**：你写的仍然是 Python 函数，但函数体
 里的 `T.Kernel` / `T.copy` / `T.gemm` 不是普通函数调用，而是会被解释成一段
 IR、再被编译成设备代码。这件事意味着两件事：
 
-* **"能导入"不等于"能编译"，"能编译"不等于"能跑"**。环境（Python 版本、libc、
+* **“能导入”不等于“能编译”，“能编译”不等于“能跑”**。环境（Python 版本、libc、
   CUDA 工具链、CANN）错了，失败会发生在三个阶段中的任何一个，报错信息各不相同。
-* **你写的东西和真正执行的东西不是一回事**。所以第一个 kernel 的重点不是"写得多
-  漂亮"，而是**写完以后能把生成的代码调出来看**。
+* **你写的东西和真正执行的东西不是一回事**。所以第一个 kernel 的重点不是“写得多
+  漂亮”，而是**写完以后能把生成的代码调出来看**。
 
 这一章的结构就是照着这两个事实排的：先把环境钉死（第 3 节），再写一个最小 kernel
-（第 4 节），马上把生成代码调出来对照（第 5 节），最后讲清"编译一次、复用多次"
+（第 4 节），马上把生成代码调出来对照（第 5 节），最后讲清“编译一次、复用多次”
 （第 6 节）。
 
 ### 1.2 本章的版本纪律
@@ -65,7 +65,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`（见
    `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md` 与
    `_vendor/tilelang-ascend-v0.1.2.000/README.md`、`install_ascend.sh`。
 2. **不把 `main` 当 v0.1.15**。corpus 里那份主仓库快照比 v0.1.15 多一个提交，
-   凡涉及"有没有某功能"的判断都靠 `grep`，不靠印象。
+   凡涉及“有没有某功能”的判断都靠 `grep`，不靠印象。
 3. **不宣称未验证的运行结果**。写这一章的本机是 macOS（Apple Silicon），
    **没有 NVIDIA GPU，没有昇腾 NPU，也没有安装 tilelang**。因此：
    * 需要加速器的示例一律标注 **仅静态核对**，并给出真机验证步骤；
@@ -83,21 +83,21 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`（见
 
 ## 2. 概念与模型：一个 kernel 的四个部件
 
-先不给代码，先给一张"看代码时的坐标系"。任何一个 TileLang kernel，剥到最里面，
+先不给代码，先给一张“看代码时的坐标系”。任何一个 TileLang kernel，剥到最里面，
 都是四样东西（对照图见 `figures/02-first-kernel-anatomy.md`）：
 
 | 部件 | 你写的 | 它回答的问题 | 会被编译器兑现成 |
 | --- | --- | --- | --- |
-| **网格（grid）** | `with T.Kernel(...) as bx:` | "这段计算被切成多少块并行执行？" | CUDA 的 grid，`bx` → `blockIdx.x`；昇腾的核编号 |
-| **buffer** | `T.alloc_shared` / `T.alloc_fragment` | "数据放在哪一级存储上？" | shared / register 数组；昇腾的 UB / L1 / L0* |
-| **搬运（copy）** | `T.copy(src, dst)` | "一个 tile 怎么从一级存储到另一级？" | LDG/STG、`cp.async`、TMA；昇腾的 MTE |
-| **并行域（parallel）** | `for i in T.Parallel(n):` | "这 n 个元素各做一次，具体谁做？" | 线程映射 + 向量化 |
+| **网格（grid）** | `with T.Kernel(...) as bx:` | “这段计算被切成多少块并行执行？” | CUDA 的 grid，`bx` → `blockIdx.x`；昇腾的核编号 |
+| **buffer** | `T.alloc_shared` / `T.alloc_fragment` | “数据放在哪一级存储上？” | shared / register 数组；昇腾的 UB / L1 / L0* |
+| **搬运（copy）** | `T.copy(src, dst)` | “一个 tile 怎么从一级存储到另一级？” | LDG/STG、`cp.async`、TMA；昇腾的 MTE |
+| **并行域（parallel）** | `for i in T.Parallel(n):` | “这 n 个元素各做一次，具体谁做？” | 线程映射 + 向量化 |
 
-关键在这里：**前两列是人写的，后两列是编译器补的**。你只写"要对 256 个元素各做一次
-加法"，至于用 256 个线程还是 32 个线程各做 8 个、要不要凑成 128-bit 访存，编译器自己
-决定。这就是 TileLang 说的"block-level，不是 thread-level"
+关键在这里：**前两列是人写的，后两列是编译器补的**。你只写“要对 256 个元素各做一次
+加法”，至于用 256 个线程还是 32 个线程各做 8 个、要不要凑成 128-bit 访存，编译器自己
+决定。这就是 TileLang 说的“block-level，不是 thread-level”
 （`_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:41` 的原文是
-"the code inside `T.Kernel` operates at the **block level**, not the thread level"）。
+“the code inside `T.Kernel` operates at the **block level**, not the thread level”）。
 
 想要 thread-level 也能写（`T.get_thread_binding()`，属 expert 层），但那是第 8 章之后
 的话题。本章只用 block-level。
@@ -141,12 +141,12 @@ python -c "import tilelang; print(tilelang.__version__)"
 `Installation.md:15` 给的就是这一行。也可以从 Release Page 下载预先编好的 wheel
 再 `pip install <wheel 文件>`（`Installation.md:19-21`），或直接从 GitHub 源码装
 （`Installation.md:25-27`，`pip install git+https://github.com/tile-ai/tilelang.git`
-—— 注意它装的是那个分支的源码，不是你本地的 checkout）。
+注意它装的是那个分支的源码，不是你本地的 checkout）。
 
 **要复现本书这一版**，把版本号钉住：用与 `_vendor/tilelang-v0.1.15/VERSION` 一致的
 版本字符串安装（例如 `pip install "tilelang==0.1.15"`），或从 Release Page 取版本
 字符串为 `0.1.15` 的那个 wheel。**不要用没钉版本的 `pip install tilelang` 去复现
-本章的结论**——那样装到的是别的版本，后面的行号和缓存 key 都可能不一样。
+本章的结论**。那样装到的是别的版本，后面的行号和缓存 key 都可能不一样。
 
 还有一个 **nightly 渠道**（`Installation.md:332-341`）：
 
@@ -263,7 +263,7 @@ USE_ASCEND=ON USE_CUDA=OFF python -m pip install -e . -v --no-build-isolation
 加进 `PYTHONPATH`，并设 `ACL_OP_INIT_MODE=1`（避免在 `torch_npu` 场景下导入 tvm）。
 
 两个仓库都声明自己是**针对特定昇腾代际**的：主干后端是 Ascend 950；独立仓库说
-"specifically tested and validated on **A2 and A3**"（`README.md:51-52`）。
+“specifically tested and validated on **A2 and A3**”（`README.md:51-52`）。
 装之前先确认你的机器在哪一档。
 
 ---
@@ -301,32 +301,32 @@ def vector_add_direct(N, block_N=256, threads=256, dtype="float16"):
 
 ### 4.2 逐行解释
 
-**`@T.prim_func`**：把一个 Python 函数标记成"要编译成 TIR 的 kernel"。函数体的
-参数注解 `A: T.Tensor((N,), dtype)` 不是类型提示，而是**缓冲区声明**——告诉编译器
-"`A` 是一个长度 `N`、元素类型 `dtype` 的一维张量"。
+**`@T.prim_func`**：把一个 Python 函数标记成“要编译成 TIR 的 kernel”。函数体的
+参数注解 `A: T.Tensor((N,), dtype)` 不是类型提示，而是**缓冲区声明**，告诉编译器
+“`A` 是一个长度 `N`、元素类型 `dtype` 的一维张量”。
 
 **`with T.Kernel(T.ceildiv(N, block_N), threads=threads) as bx:`**：这是**网格**。
-`T.Kernel` 在锁定版本里的 docstring 原文是 "Construct a kernel launch frame:
-**a grid of tile programs**"，并且强调 "This is the target-neutral launch: the part
-every backend shares"（`_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:431-435`）。
+`T.Kernel` 在锁定版本里的 docstring 原文是 “Construct a kernel launch frame:
+**a grid of tile programs**”，并且强调 “This is the target-neutral launch: the part
+every backend shares”（`_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:431-435`）。
 两点要读懂：
 
-* 网格的尺寸是 `ceil(N / block_N)`——**这个 kernel 被切成了多少个 tile 程序**；
+* 网格的尺寸是 `ceil(N / block_N)`。**这个 kernel 被切成了多少个 tile 程序**；
 * `bx` 是**当前 tile 程序的编号**（从 0 到 `ceil(N/block_N)-1`）。在 CUDA 上它落到
-  `blockIdx.x`；在昇腾上一维核网格落到 core 编号。**它是"第几块"，不是"第几个线程"。**
+  `blockIdx.x`；在昇腾上一维核网格落到 core 编号。**它是“第几块”，不是“第几个线程”。**
 
 `threads=256` 是 CUDA 方言多出来的参数（`tilelang/cuda/language/kernel.py:13-36`），
-只是"每块有多少线程"的一条**提示 / 上限**，不是"总线程数"。默认 128。
+只是“每块有多少线程”的一条**提示 / 上限**，不是“总线程数”。默认 128。
 
 **`for i in T.Parallel(block_N):`**：这是**并行域**。`T.Parallel` 的 docstring 说它是
-"Tools to construct nested parallel for loop … used to create element-wise tensor
-expression"（`tilelang/language/loop.py:13-20`）。它的语义是："这块的 `block_N` 个元素
-各做一次操作"；**`i` 不是线程号**，而是这块里的**元素下标**。谁来执行、每个线程做
+“Tools to construct nested parallel for loop … used to create element-wise tensor
+expression”（`tilelang/language/loop.py:13-20`）。它的语义是：“这块的 `block_N` 个元素
+各做一次操作”；**`i` 不是线程号**，而是这块里的**元素下标**。谁来执行、每个线程做
 几个、要不要向量化，都在 `LayoutInference` 里被推导出来
 （`loop.py:24-67` 解释了布局注解的约束与理由）。
 
 **`C[bx*block_N + i] = A[...] + B[...]`**：就是逐元素加法。`bx*block_N + i` 把
-"第几块"和"块内第几个"拼成全局下标。**边界不用你管**：N 不能整除 `block_N` 时，
+“第几块”和“块内第几个”拼成全局下标。**边界不用你管**：N 不能整除 `block_N` 时，
 编译器会自己补判断（见第 5.3 节的生成结果）。
 
 ### 4.3 版本 B：加上显式 buffer 与 `T.copy`
@@ -358,15 +358,15 @@ def vector_add_buffered(N, block_N=256, threads=256, dtype="float16"):
 * `T.alloc_fragment(shape, dtype)`：分配一块**寄存器级别**的 buffer（默认
   `scope="local.fragment"`，`tilelang/language/allocate.py:81`）。另一个常用的是
   `T.alloc_shared(...)`，默认落在片上共享存储（`allocate.py:49`）。**选哪个是语义，
-  不是性能开关**——第 8 章会展开。
+  不是性能开关**，第 8 章会展开。
 * `T.copy(src, dst)`：tile 级搬运。它的 docstring 明确说，`T.copy` 只是构造一个 tile
-  级操作，"low-level loop construction and any scope-specific decisions happen
-  during lowering"（`tilelang/language/copy_op.py:59-113`）——也就是说，
-  **你写的是"搬这块"，生成的是 `cp.async` / TMA / 向量化 LDG-STG 之类的具体东西**。
+  级操作，“low-level loop construction and any scope-specific decisions happen
+  during lowering”（`tilelang/language/copy_op.py:59-113`），也就是说，
+  **你写的是“搬这块”，生成的是 `cp.async` / TMA / 向量化 LDG-STG 之类的具体东西**。
   注意 `A[bx * block_N]` 这种写法：源只给**首地址**，形状从目标 `A_local` 推出来
-  （docstring 里的 "Syntactic Sugar" 一段，`copy_op.py:96-99`）。
+  （docstring 里的 “Syntactic Sugar” 一段，`copy_op.py:96-99`）。
 
-版本 A 和 B 的**结果一模一样**，区别只在"数据先不先落到片上"。对照读它们，是理解
+版本 A 和 B 的**结果一模一样**，区别只在“数据先不先落到片上”。对照读它们，是理解
 `T.copy` 与 `T.Parallel` 分工的最快方式（官方 `elementwise.md` 也是按这个顺序讲的）。
 
 ### 4.4 二维版本与官方示例
@@ -383,13 +383,13 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=threads) as 
 
 这段取自 `elementwise.md:57-87`（官方 2-D 向量加示例）。有一个**很容易踩的坑**：
 `T.Kernel` 的第一个参数对应 `bx`（`blockIdx.x`，沿 N 方向），第二个对应 `by`
-（`blockIdx.y`，沿 M 方向）——**参数顺序是"N 在前、M 在后"**，和第 4 章讲 GEMM 时
+（`blockIdx.y`，沿 M 方向），**参数顺序是“N 在前、M 在后”**，和第 4 章讲 GEMM 时
 的约定一致。写反了不会报错，只会算错位置。
 
-锁定版本仓库里还有一个"编译 + 校验 + 打印源码"的完整示例：
+锁定版本仓库里还有一个“编译 + 校验 + 打印源码”的完整示例：
 `_vendor/tilelang-v0.1.15/examples/elementwise/example_elementwise_add.py`。它用的是
 `@tilelang.jit` 的 **eager** 写法（`in_dtype` / `out_dtype` 都当参数传），并且
-`main()` 里自带 `torch.testing.assert_close`——这是把"能不能跑对"写进示例里的好习惯。
+`main()` 里自带 `torch.testing.assert_close`。这是把“能不能跑对”写进示例里的好习惯。
 
 ### 4.5 再进一步：官方 `quickstart.py` 的 GEMM + ReLU
 
@@ -445,8 +445,8 @@ kernel.export_sources(kernel_path="k.cu", host_path="host.c")   # 写到文件
 | （Python 里根本没有 `threadIdx.x`） | `((int)threadIdx.x) * 8` | TileLang**自动插入**线程索引；stride 就是向量宽度 8。循环变量 `i` 在生成代码里消失了 |
 
 这张表的最后一行最值得盯住：**你从没写过 `threadIdx.x`，它却出现在生成代码里**。
-这正是"block-level"的含义——`T.Parallel` 把你的意图翻译成线程映射，中间还顺手做了
-向量化。你想验证"我的 kernel 有没有被向量化"，看这一处就够了：出现 `uint4` /
+这正是“block-level”的含义，`T.Parallel` 把你的意图翻译成线程映射，中间还顺手做了
+向量化。你想验证“我的 kernel 有没有被向量化”，看这一处就够了：出现 `uint4` /
 `float4` / `__half2` 这类类型，说明命中了向量化。
 
 ### 5.3 两种形态：向量化版 vs 边界判断版
@@ -470,8 +470,8 @@ extern "C" __global__ void __launch_bounds__(256) main_kernel(bfloat16_t* __rest
 }
 ```
 
-文档在 `elementwise.md:133` 的评语是：**边界判断会挡住向量化**——除了尾部那一组，
-其余线程本来都能跑更优的代码。这就是"为什么 tile 尺寸要和 shape 对齐"的第一课：
+文档在 `elementwise.md:133` 的评语是：**边界判断会挡住向量化**，除了尾部那一组，
+其余线程本来都能跑更优的代码。这就是“为什么 tile 尺寸要和 shape 对齐”的第一课：
 不是为了好看，是为了让编译器敢向量化。
 
 ---
@@ -482,10 +482,10 @@ extern "C" __global__ void __launch_bounds__(256) main_kernel(bfloat16_t* __rest
 
 锁定版本里编译入口有两个：
 
-* 模块级 `tilelang.compile(prim_func, out_idx=-1, target="cuda")`：适合"我已经有一个
-  构造好的 `PrimFunc`"。返回一个 `JITKernel`（`tilelang/jit/__init__.py:94`）。
+* 模块级 `tilelang.compile(prim_func, out_idx=-1, target="cuda")`：适合“我已经有一个
+  构造好的 `PrimFunc`”。返回一个 `JITKernel`（`tilelang/jit/__init__.py:94`）。
 * 装饰器 `@tilelang.jit`：把函数包成 `JITImpl`（`tilelang/jit/__init__.py:588`），
-  调用它时再决定"编译"还是"直接执行"。
+  调用它时再决定“编译”还是“直接执行”。
 
 第 4 节的两个版本都能配 `tilelang.compile` 用；本章 `code/01-first-kernel/` 就是这种
 写法。
@@ -495,7 +495,7 @@ extern "C" __global__ void __launch_bounds__(256) main_kernel(bfloat16_t* __rest
 `JITImpl` 的 docstring 写得很清楚（`tilelang/jit/__init__.py:271-330`）：模式**自动
 推断**，看修饰的函数是**返回 `PrimFunc`**（lazy）还是**用 DSL 直接写 body**（eager）。
 
-**lazy 模式**——函数自己返回 `@T.prim_func`：
+**lazy 模式**，函数自己返回 `@T.prim_func`：
 
 ```python
 @tilelang.jit(out_idx=-1, target="cuda")
@@ -511,7 +511,7 @@ kernel = build_add(1 << 20)   # 返回的是一个 JITKernel
 c = kernel(a, b)              # 再手动调用
 ```
 
-**eager 模式**——函数用 DSL 直接写、返回输出张量：
+**eager 模式**，函数用 DSL 直接写、返回输出张量：
 
 ```python
 @tilelang.jit
@@ -532,7 +532,7 @@ c = add_eager(a, b)           # 编译并立刻执行
 两种模式在锁定版本里都有真实使用：官方 `examples/elementwise/example_elementwise_add.py`
 与 `examples/quickstart.py` 都是 eager（`T.const` + 参数注解），而
 `examples/ascend/example_vecadd.py` 是 lazy（返回 `@T.prim_func`）。**要复用、要看
-源码、要接 autotuner，用 lazy；要"像调用普通函数"，用 eager。**
+源码、要接 autotuner，用 lazy；要“像调用普通函数”，用 eager。**
 
 ### 6.3 编译缓存：两级，一个 key
 
@@ -556,7 +556,7 @@ pass_configs / compile_flags
 version / platform                      # 来自 _get_base_key()，macOS 还含 torch 版本
 ```
 
-从这张表可以直接推出第 8 节里几个"为什么没生效"的答案：
+从这张表可以直接推出第 8 节里几个“为什么没生效”的答案：
 
 * **改了注释或空白** → `func.script()` 不变 → 同一 key，**命中**。
 * **改了 tile 参数**（如 `block_N`）→ `args_repr` 变 → 新 key，**不命中**。
@@ -582,7 +582,7 @@ TILELANG_DISABLE_CACHE=1 python my_kernel.py     # env.py:372-374
 TILELANG_CACHE_DIR=/tmp/tl-cache python my_kernel.py   # env.py:368，换个缓存目录
 ```
 
-### 6.4 复用与"探查"
+### 6.4 复用与“探查”
 
 缓存带来的直接好处是**复用**：同一个 `(kernel, 参数)` 组合，第一次编译、之后是命中。
 在 `JITKernel` 上还能：
@@ -599,7 +599,7 @@ TILELANG_CACHE_DIR=/tmp/tl-cache python my_kernel.py   # env.py:368，换个缓�
 **实例方法**（`kernel_cache.py:455`）。而独立仓库 `tilelang-ascend` **有**
 `tilelang.cache.clear_cache()`（`_vendor/tilelang-ascend-v0.1.2.000/tilelang/cache/__init__.py:70`），
 它的示例里也是这么调的。**照抄独立仓库的示例到主干上会在这一行报
-`AttributeError`**——这类"两个仓库同名不同面"的坑，第 19 章还会遇到。本章
+`AttributeError`**。这类“两个仓库同名不同面”的坑，第 19 章还会遇到。本章
 `code/04-api-surface-check/` 把这条差异做成了可复现的检查。
 
 ---
@@ -639,16 +639,16 @@ def main(A: T.Tensor((N,), "float32"), B: T.Tensor((N,), "float32"), C: T.Tensor
    所以昇腾必须在 import 那一行换名字。混用两个 `T` 会拿到签名不同的
    `T.Kernel`。
 2. **网格是一维核网格**：昇腾的 `T.Kernel(*blocks)` **没有 `threads=` 参数**，
-   而且明确只接受一个网格维度：`kernel.py:139-174` 的 docstring 写着 "a 1-D grid of
-   AI cores"，多给一维会直接 `raise ValueError`。线程域改由
+   而且明确只接受一个网格维度：`kernel.py:139-174` 的 docstring 写着 “a 1-D grid of
+   AI cores”，多给一维会直接 `raise ValueError`。线程域改由
    `with T.SimtVF(threads=...)` 在 kernel 内部单独声明
-   （`tilelang/ascend/language/frame.py:107`）。也就是说：**CUDA 上"网格 + 线程"是
-   一次 launch 里的两层，昇腾上"核网格 + 线程域"是两个独立的东西。**
+   （`tilelang/ascend/language/frame.py:107`）。也就是说：**CUDA 上“网格 + 线程”是
+   一次 launch 里的两层，昇腾上“核网格 + 线程域”是两个独立的东西。**
 3. **片上存储的起点不同**：CUDA 上 `T.alloc_shared` 就是 shared memory；昇腾上
    `T.alloc_shared` 落到 **UB（Unified Buffer，统一缓冲）**，而 `T.alloc_l1` /
    `alloc_l0a` / `alloc_l0b` / `alloc_l0c` 才是 L1 与 Cube 的各级缓冲
    （`tilelang/ascend/language/allocate.py:15,26,37,46,55`）。同一个函数名在两台机器
-   上指向不同物理存储——这正是第 6 章讲的"抽象是共享的、物理是各自的"。
+   上指向不同物理存储。这正是第 6 章讲的“抽象是共享的、物理是各自的”。
 
 昇腾的 `T.Kernel` docstring 里甚至自带一个最小例子（`ascend/language/kernel.py:165-168`）：
 
@@ -664,9 +664,9 @@ with T.Kernel(NUM_CORES) as bx:
 一处**有意的简化**要说明：官方 `examples/ascend/example_vecadd.py` 还在每个 UB buffer
 上加了一行 `T.annotate_buffer_versions({...})`。本章的示例没写它，因为按该 API 的
 docstring，`num_stages > 1` 时多缓冲份数是由自动调度器算出来的，这条注解只是
-「锁定份数 / 控制索引模式」的可选手段（
+“锁定份数 / 控制索引模式”的可选手段（
 `_vendor/tilelang-v0.1.15/tilelang/ascend/language/annotations.py:19-38`）。
-这是本章唯一一处「应当等价、但作者未在 NPU 上验证」的取舍，第 11、19、23 章会展开。
+这是本章唯一一处“应当等价、但作者未在 NPU 上验证”的取舍，第 11、19、23 章会展开。
 
 ### 7.2 与独立仓库方言的差异（一句话版）
 
@@ -698,7 +698,7 @@ v0.1.15。要把同一段代码搬到独立仓库的方言上，以及理解两�
 
 ## 8. 常见安装 / 运行错误与排查
 
-按"先环境、再导入、再编译、再运行、再数值"的顺序排查。每条都给出**看哪一行**。
+按“先环境、再导入、再编译、再运行、再数值”的顺序排查。每条都给出**看哪一行**。
 
 **① 装不上 / 装完导入失败**
 
@@ -708,7 +708,7 @@ v0.1.15。要把同一段代码搬到独立仓库的方言上，以及理解两�
 | 安装报 libc 相关错 | glibc < 2.28（`Installation.md:7`） | 升级到 Ubuntu 20.04+；用 `ldd --version` 看 |
 | 源码构建找不到 CUDA | 没装 host CUDA 且没用 pip 工具链 | 走 `Installation.md:101-124` 的 pip CUDA 路线，或 `-DUSE_CUDA=OFF`（同时也要关掉其它后端） |
 | `--recursive` 忘了加，编译报缺 TVM | submodule 没拉全 | `git submodule update --init --recursive` |
-| `import tilelang` 报找不到 `libtilelang.so` | 走了 `PYTHONPATH` 路线但没 build，或 `PYTHONPATH` 指错 | `Installation.md:135-158`：先在 `build/` 里 cmake + make，再设 `PYTHONPATH`；开发模式下日志会提示 "Loading tilelang libs from dev root" |
+| `import tilelang` 报找不到 `libtilelang.so` | 走了 `PYTHONPATH` 路线但没 build，或 `PYTHONPATH` 指错 | `Installation.md:135-158`：先在 `build/` 里 cmake + make，再设 `PYTHONPATH`；开发模式下日志会提示 “Loading tilelang libs from dev root” |
 
 **② 导入成功但一编译就报错**
 
@@ -718,14 +718,14 @@ v0.1.15。要把同一段代码搬到独立仓库的方言上，以及理解两�
 | 报 layout 相关错 | 某个 `T.Parallel` 在全流程结束后仍没有合法布局注解 | 提示信息会带源码 span（`TILELANG_ENABLE_IR_SPAN`，`env.py:400`），直接跳到那一行看 |
 | 昇腾编译报容量 / 约束不可解 | 片上存储放不下（L1/UB 是硬约束） | 减 `num_stages` 或 tile 尺寸；错误通常发生在编译期而不是运行期 |
 
-**③ 编译过了但跑起来不对 / 看着"改了没生效"**
+**③ 编译过了但跑起来不对 / 看着“改了没生效”**
 
 | 现象 | 最可能的原因 | 怎么办 |
 | --- | --- | --- |
 | 明明改了参数却很快 | 命中缓存，你改的字段没进 key | 见 6.3；确认改的是 `func.script()` / `args_repr` / `pass_configs` 里出现的东西 |
 | 改了 C++ pass 没生效 | 缓存 key 默认不含库内容哈希 | `TILELANG_DISABLE_CACHE=1`，或打开 `TILELANG_KERNEL_CACHE_USE_LIB_STAMP`（`env.py:375`） |
 | 数值不对，且只在边界错 | tile 尺寸和 shape 不整除 + 写出了越界 | 看生成代码有没有 `if (... < N)`；第 12 章的定位方法会展开 |
-| 昇腾上"编译通过但跑不出来" | 缺 `bisheng` / `ld.lld`，或 `ASCEND_HOME_PATH` 没设 | 3.4 节三条前置条件逐条查；`code/06-env-check/check_env.py --ascend` |
+| 昇腾上“编译通过但跑不出来” | 缺 `bisheng` / `ld.lld`，或 `ASCEND_HOME_PATH` 没设 | 3.4 节三条前置条件逐条查；`code/06-env-check/check_env.py --ascend` |
 | `torch.npu.is_available()` 为 False | `torch_npu` 版本不匹配或 CANN 没 `source` | 先 `source .../ascend-toolkit/set_env.sh`，再确认 `torch-npu >= 2.6.0.RC1` |
 | 照抄独立仓库示例报 `AttributeError: clear_cache` | 主干没有顶层 `tilelang.cache.clear_cache()` | 见 6.4；主干请用 `tilelang.disable_cache()` |
 
@@ -776,10 +776,10 @@ python code/04-api-surface-check/check_api_surface.py   # API 是否真的存在
 
 如果只能记住三句话：
 
-1. **先跑 `check_env.py`，再动手装**——大部分失败是环境，不是代码。
+1. **先跑 `check_env.py`，再动手装**，大部分失败是环境，不是代码。
 2. **写完第一个 kernel 的第一件事是 `get_kernel_source()`**，把 Python 和 CUDA
    对上看。
-3. **"改了没生效"优先怀疑缓存**，`TILELANG_DISABLE_CACHE=1` 是最快的排除法。
+3. **“改了没生效”优先怀疑缓存**，`TILELANG_DISABLE_CACHE=1` 是最快的排除法。
 
 ## 延伸阅读
 

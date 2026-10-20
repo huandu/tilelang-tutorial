@@ -35,6 +35,6 @@ flowchart TB
                 vLLM-Ascend 的图路径只覆盖 decode，prefill 仍走 eager。
 ```
 
-**一句话。** kernel 写得再好，也只有在「形状/元数据契约」「dtype 与 layout」
-「stream 与图模式」三件事都对上之后才会跑出效果；这三件事都不在 kernel 里，
+**一句话。** kernel 写得再好，也只有在“形状/元数据契约”“dtype 与 layout”
+“stream 与图模式”三件事都对上之后才会跑出效果；这三件事都不在 kernel 里，
 而在本章第 6–7 节的框架与部署约束里。

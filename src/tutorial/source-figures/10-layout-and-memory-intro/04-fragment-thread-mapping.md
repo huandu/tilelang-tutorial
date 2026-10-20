@@ -10,7 +10,7 @@
 
 ## 例子：`MakeGemmFragment8x8`（8×8 → 32 线程 × 2 槽）
 
-源码（`_vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:47-53`）：
+源码（`_vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:47-52`）：
 
 ```cpp
 Fragment MakeGemmFragment8x8() {
@@ -50,7 +50,7 @@ Fragment MakeGemmFragment8x8() {
 * **布局是编译器推出来的，不是随便选的。** 上面这个形状由 `T.gemm` 选中的 MMA 指令
   决定；换成别的原子指令（wgmma / tcgen05 / MFMA）就换成另一张表。
 * **它是可打印的。** `plot_layout(fragment)` 会把每个格子按线程染色并标上 `T`/`L`，
-  这正是把「凭感觉的 fragment」变成「看得见的表」的工具（见正文第 3.4 节）。
+  这正是把“凭感觉的 fragment”变成“看得见的表”的工具（见正文第 3.4 节）。
 
 逐格内容由 `../code/01-layout-algebra/layout_algebra.py` 按上面的公式枚举生成，
 并额外校验了它确实是双射（每个线程恰好 2 个槽）。

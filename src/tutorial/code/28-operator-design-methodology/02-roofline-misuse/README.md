@@ -51,7 +51,7 @@ M5  charging a transcendental the same as a multiply
 
 ## 性能口径
 
-**不测量任何性能。** 每条误读的「正确读法」也仍然是模型值，不是实测值。
+**不测量任何性能。** 每条误读的“正确读法”也仍然是模型值，不是实测值。
 
 ## 作者实际做到的验证级别
 
@@ -61,7 +61,7 @@ M5  charging a transcendental the same as a multiply
 ## 已知局限
 
 * 八条误读里，M5 与 M6 的量化只覆盖了该误读的一种形态；同一条误读在别的算子上
-  会给出别的倍数（脚本里都写了「为什么」）。
+  会给出别的倍数（脚本里都写了“为什么”）。
 * M5 用的是**昇腾**的 ops/cycle 表（`estimate_latency.h:57-68`）。本 corpus 内
   NVIDIA 侧没有等价的 SFU 吞吐表，脚本按这个事实直说，不编数字。
 * 所有倍数都是在默认机器 profile 下的结果；换机器 profile 会变。

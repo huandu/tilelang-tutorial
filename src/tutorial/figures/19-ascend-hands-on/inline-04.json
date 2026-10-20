@@ -32,7 +32,7 @@
     { "from": "l0c", "to": "gmc", "label": "FixPipe / DataCopy" }
   ],
   "notes": [
-    "累加器在 L0C（128KB、fp32）而不是寄存器：这是「把 C 累加在寄存器里」这个 CUDA 直觉在昇腾上不成立的原因。",
+    "累加器在 L0C（128KB、fp32）而不是寄存器：这是“把 C 累加在寄存器里”这个 CUDA 直觉在昇腾上不成立的原因。",
     "只有 GM → L1 的 DataCopy 与 L0C → GM 的写回是你写出来的；L1 → L0A/L0B 的 LoadData 与 Cube 的 MAD 都包在 T.gemm_v0 里。"
   ]
 }

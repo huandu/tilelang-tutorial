@@ -54,6 +54,6 @@
   ],
   "notes": [
     "SIMT 越界读默认填 0，可用 T.annotate_safe_value({A: v}) 改；TMA 的填充只能在 descriptor 参数层面改。",
-    "昇腾的 pad_value 是 DMA 对齐填充：与「越界读替一个值」是两件事。"
+    "昇腾的 pad_value 是 DMA 对齐填充：与“越界读替一个值”是两件事。"
   ]
 }

@@ -1,6 +1,6 @@
 # 图 4：反量化可以融合在哪一级
 
-用于正文第 4.3 节。同一个「W 是低精度、要乘 scale 才能用」的问题，有三个融合位置，
+用于正文第 4.3 节。同一个“W 是低精度、要乘 scale 才能用”的问题，有三个融合位置，
 代价和适用条件都不同。
 
 ```text
@@ -45,9 +45,9 @@
 
 ## 一个容易写错的细节
 
-位置 C 的「整数累加是精确的」只在**累加器是整数**时成立。如果权重是 fp8 而累加器
-是 fp16，那么位置 C 的 scale 乘法仍然精确，但累加本身已经有误差——
-这类错误在「只换累加器」的实验里就能看出来（见 `code/03-error-model/error_model.py`
+位置 C 的“整数累加是精确的”只在**累加器是整数**时成立。如果权重是 fp8 而累加器
+是 fp16，那么位置 C 的 scale 乘法仍然精确，但累加本身已经有误差，
+这类错误在“只换累加器”的实验里就能看出来（见 `code/03-error-model/error_model.py`
 实验 C：同样的输入，累加器从 fp16 换成 fp32，中位误差从 `1.2e-4` 掉到 `1.2e-9`）。
 
 ## 来源
@@ -56,4 +56,4 @@
 * `_vendor/tilelang-v0.1.15/examples/dequantize_gemm/example_dequant_gemm_w4a8.py:10-22`（符号扩展）。
 * `_vendor/tilelang-ascend-v0.1.2.000/examples/quant_batch_matmul/example_quant_batch_matmul.py:49-88`（位置 C）。
 * `../tilelang-corpus/06-huawei-ascend/raw/catlass/include/catlass/gemm/block/block_mmad_mx_tla.hpp:101-110,522-563`（位置 B）。
-* `../tilelang-corpus/06-huawei-ascend/raw/catlass/experimental/attention/ascend950_fp8_mx_flash_attention_infer/mxfp8_flash_attention_infer.md`（「在 Cube 矩阵乘的 L1→L0 阶段完成反量化」）。
+* `../tilelang-corpus/06-huawei-ascend/raw/catlass/experimental/attention/ascend950_fp8_mx_flash_attention_infer/mxfp8_flash_attention_infer.md`（“在 Cube 矩阵乘的 L1→L0 阶段完成反量化”）。

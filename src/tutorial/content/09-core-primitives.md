@@ -4,10 +4,10 @@
 
 读完本章，你应当能够：
 
-1. 说清 TileLang 的「原语（primitive）」到底是什么：它不是普通的 Python 函数，而是
+1. 说清 TileLang 的“原语（primitive）”到底是什么：它不是普通的 Python 函数，而是
    **一个写进 TIR 的 tile op 或 extrinsic**，函数体只负责参数校验与 IR 组装，真正的语义
    与硬件选择发生在 lowering/codegen 阶段。
-2. 对 `T.copy` 写出「源/目标作用域 → 指令形态」的对照：什么时候是普通 SIMT
+2. 对 `T.copy` 写出“源/目标作用域 → 指令形态”的对照：什么时候是普通 SIMT
    copy、什么时候是 `cp.async`、什么时候是 TMA（`cp.async.bulk.tensor`）、什么时候是
    `ldmatrix`/`stmatrix`/TMEM 搬运，以及在昇腾上落到 L1/L0/UB/GM 的哪条 DMA 路径。
 3. 解释 `T.copy` 的**越界与 padding 语义**：谓词从哪里来、默认填什么值、怎么用
@@ -16,19 +16,19 @@
    `policy` 如何决定 warp 划分、`clear_accum` 为什么会影响 IR 里的读写标记，以及
    `accum_dtype` 在 v0.1.15 里由谁决定。
 5. 解释 `T.reduce_sum` / `T.reduce_max` / `T.reduce_min` 的 `clear` 语义，以及
-   「线程内归约 + 跨线程 butterfly 归约」这条分工线，知道
+   “线程内归约 + 跨线程 butterfly 归约”这条分工线，知道
    `tl::AllReduce<...>` 在什么宽度上走 shared memory、什么宽度上走 shuffle。
 6. 说明原子操作（`T.atomic_add` 等）的两种形态：标量地址路径与 tile-region 路径，
    各自的限制（`return_prev`、`memory_order`、`use_tma`）。
 7. 说明 `T.fill` / `T.clear` 的实现是一条并行循环，而不是特殊的硬件指令。
-8. 分清「v0.1.15 里就有的原语」与「只在昇腾适配器仓库里的 `T.tile.*`」，
+8. 分清“v0.1.15 里就有的原语”与“只在昇腾适配器仓库里的 `T.tile.*`”，
    并能读懂 `T.dual_copy`、`T.SimtVF`、`T.SimdVF` 的适用条件。
 
 ## 前置知识
 
 * 第 03 章：tile / dataflow / schedule 解耦，三层接口（beginner / developer / expert）。
 * 第 04 章：一次编译的全流程，Python 前端 → TIR → pass → codegen。
-* 第 06 章：NV 与昇腾的存储层级与执行单元对照，本章只补「原语怎么落到这些层级」。
+* 第 06 章：NV 与昇腾的存储层级与执行单元对照，本章只补“原语怎么落到这些层级”。
 * 第 08 章：buffer 与内存作用域（`global` / `shared` / `local.fragment`）、
   `T.Kernel` / `T.Parallel` / `T.Pipelined` 的基本写法。
 
@@ -38,7 +38,7 @@
 
 ---
 
-## 1. 问题的由来：原语是「接口」，不是「实现」
+## 1. 问题的由来：原语是“接口”，不是“实现”
 
 ### 1.1 同一个 `T.copy`，可以变成四种东西
 
@@ -49,18 +49,18 @@
 >   TMA 异步拷贝 `cp.async.bulk`、老的异步拷贝 `cp.async` 等），取决于 target 与
 >   提示；但**可观测语义是同步的**：语句之后使用 `dst` 是安全的。
 
-对用过 PyTorch 的人，这句话的第一反应可能是「那就当 `dst.copy_(src)` 用」。这个直觉
-在结果上是错的——不是结果值错，而是**成本模型错**。同一行 `T.copy(A[...], A_shared)`：
+对用过 PyTorch 的人，这句话的第一反应可能是“那就当 `dst.copy_(src)` 用”。这个直觉
+在结果上是错的，不是结果值错，而是**成本模型错**。同一行 `T.copy(A[...], A_shared)`：
 
-* 在 Hopper 上、形状对齐、目标 shared buffer 加了 swizzle——它可能是**一条 TMA 指令**，
+* 在 Hopper 上、形状对齐、目标 shared buffer 加了 swizzle。它可能是**一条 TMA 指令**，
   由单个线程发起，搬运整块 tile，不占用计算线程的寄存器带宽；
-* 同一行，如果目标维度不是 16 字节对齐，或显式写了 `disable_tma=True`——它回退成
+* 同一行，如果目标维度不是 16 字节对齐，或显式写了 `disable_tma=True`。它回退成
   一个 SIMT 并行循环，每个线程用 `ld.global` 搬几个元素；
-* 如果反过来是 `shared → fragment`——它可能是 `ldmatrix`；
-* 在昇腾上同一行——它是 `DataCopy` / `ND2NZ` / `LoadData` / `Fixpipe` 中的某一条，
+* 如果反过来是 `shared → fragment`。它可能是 `ldmatrix`；
+* 在昇腾上同一行。它是 `DataCopy` / `ND2NZ` / `LoadData` / `Fixpipe` 中的某一条，
   由源和目标的 scope 决定。
 
-所以「原语（primitive）」这个词在这里要有比「库函数」更强的含义：**原语是用户意图与
+所以“原语（primitive）”这个词在这里要有比“库函数”更强的含义：**原语是用户意图与
 硬件能力之间的一个契约**。你写的是意图（把这片刻搬过去、把这两个 tile 乘起来、
 沿这个轴求和），编译器负责选择实现。你越了解契约的边界，就越能预测它选了哪条实现。
 
@@ -74,8 +74,8 @@
 | 带提示的 tile 原语 | `T.copy(..., prefer_instruction="tma", eviction_policy=...)`、`T.gemm(..., policy=...)` | 只剩细节 | 用注解影响选择，语义不变 |
 | 线程/硬件原语 | `T.async_copy` + `T.ptx_wait_group`、`T.mbarrier_wait_parity`、昇腾 `T.set_atomic` | 同步正确性要自己负责 | 手工流水、手工同步能达到的极限 |
 
-本章主要讲第一、二层，并在需要解释机制时下探到第三层。**本章不教你怎么调优**——调优
-要看第 11、12 章；本章只回答「每个原语到底承诺了什么、编译器把它变成了什么」。
+本章主要讲第一、二层，并在需要解释机制时下探到第三层。**本章不教你怎么调优**，调优
+要看第 11、12 章；本章只回答“每个原语到底承诺了什么、编译器把它变成了什么”。
 
 ---
 
@@ -95,13 +95,13 @@ T.copy(A[...], A_shared)                    # ① 前端：校验 + 组装 IR
 
 三条事实值得单独记下来：
 
-1. **前端大部分时候只做「把参数变成 region」**。`T.copy` 的前端函数
+1. **前端大部分时候只做“把参数变成 region”**。`T.copy` 的前端函数
    （`_vendor/tilelang-v0.1.15/tilelang/language/copy_op.py:59-130`）做完 extent 归一化后，
    只有一行真正发射 IR：`call_intrin("handle", Op.get("tl.tileop.copy"), src, dst, ...)`
    （同文件 `:130`）。
 2. **有一个例外：标量 copy 直接退化成 `BufferStore`**。当两边都是没有 extent 的
    `BufferLoad` 时，前端直接生成 `dst[...] = src[...]`（同文件 `:121-128`）。这就是
-   「tile op 只在需要成块搬运时出现」。
+   “tile op 只在需要成块搬运时出现”。
 3. **后端只认 op 名字和注解，不认 Python**。CUDA 侧的指令选择在
    `_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:716` 的
    `SelectCopyInstForLowering`；昇腾侧在 `src/ascend/op/copy.cc`。它们读的都是
@@ -132,11 +132,11 @@ T.copy(A[...], A_shared)                    # ① 前端：校验 + 组装 IR
 | `T.SimtVF` / `T.SimdVF` | `SIMT_VF` / `SIMD_VF` block | —（昇腾专属） | `SimtVF` 走 `asc_vf_call` 线程体；`SimdVF` 生成 MicroAPI 向量指令 | `tilelang/ascend/language/frame.py:107-143,179-195`；`src/ascend/codegen/codegen_ascend.cc:401-403,904-940` |
 
 > **一句话读法**：左列是你能写的东西，第二列是编译器内部记得的东西，第三、四列是它
-> 最终可能变成的东西。「可能」是重点——精确的映射由 target + layout + 注解共同决定。
+> 最终可能变成的东西。“可能”是重点，精确的映射由 target + layout + 注解共同决定。
 
 ### 2.3 存储作用域是原语的坐标系
 
-所有原语的合法性都可以用一个问题筛掉一半：「源和目标各自在哪个 scope？」v0.1.15 里
+所有原语的合法性都可以用一个问题筛掉一半：“源和目标各自在哪个 scope？”v0.1.15 里
 通用的 scope 名有 `global`、`shared` / `shared.dyn`、`local.fragment`、`local`；昇腾
 再细化出 `shared.l1`、`shared.ub`、`shared.l0a`、`shared.l0b`、`shared.l0c`、
 `shared.tmem`（NV 侧 TMEM）等。
@@ -148,12 +148,12 @@ T.copy(A[...], A_shared)                    # ① 前端：校验 + 组装 IR
   （`tilelang/ascend/language/gemm_op.py:94-95`）；CUDA 侧 `AllowTcgen5Mma` 要求
   A 在 shared 或 TMEM、B 在 shared、**C 在 TMEM**
   （`src/cuda/op/gemm.cc:80-87`）。C 放在 fragment 上就永远不会选到 `tcgen05`。
-* `T.copy` 的指令选择本质是「scope 对 + 对齐 + dtype 对」三件事的组合
+* `T.copy` 的指令选择本质是“scope 对 + 对齐 + dtype 对”三件事的组合
   （见 §4.1）。昇腾的 `T.copy` 前端甚至先检查两个整 buffer 的**元素总数**是否相等，
   然后才允许形状不同（为了 ND↔NZ 与转置路径）
   （`tilelang/ascend/language/copy_op.py:296-308`）。
 
-### 2.4 三类原语，三种「必须自己盯住的东西」
+### 2.4 三类原语，三种“必须自己盯住的东西”
 
 把本章的原语按职责分三类，会更容易记住各自的坑：
 
@@ -161,10 +161,10 @@ T.copy(A[...], A_shared)                    # ① 前端：校验 + 组装 IR
 | --- | --- | --- | --- |
 | 搬运类 | `T.copy`、`T.async_copy`、`T.tma_copy`、`T.copy_cluster`、`T.dual_copy` | 存储层级之间的带宽与延迟（HBM↔SMEM、GM↔UB/L1/L0） | **边界与对齐**：越界怎么填、行宽够不够 32B / 128bit、swizzle 与指令是否匹配 |
 | 计算类 | `T.gemm`、`T.reduce_*`、`T.tile.*`、`T.simd.*` | 计算单元（Tensor Core / Cube / Vector）与寄存器 | **scope 组合与形状约束**：M/N/K 必须静态、归约宽度必须是 2 的幂、L0C 才能接 dual_copy |
-| 元操作类 | `T.fill`、`T.clear`、`T.transpose`、`T.atomic_*` | 没有专属硬件，落在通用并行/向量指令上 | **语义是否被误读**：`clear=False` 是「合并」不是「清零」、`set_atomic` 是有状态的、`return_prev` 只在标量路径可用 |
+| 元操作类 | `T.fill`、`T.clear`、`T.transpose`、`T.atomic_*` | 没有专属硬件，落在通用并行/向量指令上 | **语义是否被误读**：`clear=False` 是“合并”不是“清零”、`set_atomic` 是有状态的、`return_prev` 只在标量路径可用 |
 
-这张分类不是学术划分，而是一条排障顺序：**搬运类的问题通常表现为"数值对但很慢"，
-计算类的问题通常表现为编译期报错，元操作类的问题通常表现为"数值悄悄不对"**。
+这张分类不是学术划分，而是一条排障顺序：**搬运类的问题通常表现为“数值对但很慢”，
+计算类的问题通常表现为编译期报错，元操作类的问题通常表现为“数值悄悄不对”**。
 本章 §5.2 的错误表按同一顺序排列。
 
 ---
@@ -189,16 +189,16 @@ with T.Kernel(T.ceildiv(M, block_M), T.ceildiv(N, block_N), threads=128) as (bx,
 要点：
 
 * **extent 从哪来**：`Buffer` 用它的 shape，`BufferRegion` 用每个维度的 extent，
-  `BufferLoad`（`A[i, j]` 这种「起始地址」写法）用推断出的区域。缺 extent 的一侧按
+  `BufferLoad`（`A[i, j]` 这种“起始地址”写法）用推断出的区域。缺 extent 的一侧按
   另一侧的秩补齐为 1（`tilelang/language/copy_op.py:38-46`）。这只是有限的语法糖，
-  **不是通用广播**——同一份 docstring 明确写了「we don't support something like
-  broadcast」（同文件 `:99-102`）。
+  **不是通用广播**，同一份 docstring 明确写了“we don't support something like
+  broadcast”（同文件 `:99-102`）。
 * **两个整 buffer 直接对拷时形状必须相等**（同文件 `:24-25`）。
 * **一维切片要写清楚**：`T.copy(A[begin:begin+tile], a)`（`examples/ascend/example_vecadd.py`）。
 * **同步语义**：`T.copy` 是同步的。降级成 `cp.async` 时，编译器会自己补
   `commit`/`wait`（官方文档 `instructions.md:46-52`）。
 * **dtype 不同会自动插转换**：SIMT 路径里 `if (src->dtype != dst->dtype) value =
-  Cast(dst->dtype, value)`（`src/op/copy.cc:508-509`）。这不是免费操作——它会让
+  Cast(dst->dtype, value)`（`src/op/copy.cc:508-509`）。这不是免费操作。它会让
   向量化宽度变小，也可能让某些后端直接拒收。写 `fp32 → fp16` 的整块搬运前先想清楚
   为什么需要它。
 * **`coalesced_width` 只影响 SIMT 循环的向量化宽度**，它被贴在 `T.copy` 生成的最外层
@@ -206,7 +206,7 @@ with T.Kernel(T.ceildiv(M, block_M), T.ceildiv(N, block_N), threads=128) as (bx,
   它根本没有作用点。
 * **`loop_layout` 是给 SIMT 循环的 loop layout 提示**，与 TMA/LDSM/STSM/TMEM 互斥：
   一旦选到那些指令形态，前端会直接 fatal（`src/cuda/op/copy.cc:549-562`）。
-  它的用途是让这次搬运的线程映射与某个 fragment layout 对齐，而不是「调优开关」。
+  它的用途是让这次搬运的线程映射与某个 fragment layout 对齐，而不是“调优开关”。
 * **`eviction_policy` 只影响缓存行为**：`evict_normal` / `evict_first` / `evict_last`
   被映射成整数 id 挂在注解上（`tilelang/language/copy_op.py:54-56`），能读懂它的只有
   CUDA 的 TMA / load-store 降级路径；其它 target 会忽略它。
@@ -226,7 +226,7 @@ T.ptx_wait_group(0)                                     # 自己等
 （不是 global→shared，或 dtype 不同），它**直接编译失败**，不会静默退回同步拷贝
 （`src/cuda/op/copy_analysis.cc:560-575`）。
 
-`T.tma_copy` 是 TMA 的「半个序列」：load 只发 `expect_tx + tma_load`，store 只发
+`T.tma_copy` 是 TMA 的“半个序列”：load 只发 `expect_tx + tma_load`，store 只发
 `tma_store + arrive`，不收尾（`tilelang/language/copy_op.py:242-263`）。它要求你显式
 传 `barrier` 并自己 `T.mbarrier_wait_parity(...)`。
 
@@ -249,13 +249,13 @@ with T.Kernel(T.ceildiv(M, block_M), T.ceildiv(N, block_N), threads=256) as (bx,
 
 * M/N/K 从 A/B/C 的**最后两维**推出来（`tilelang/language/gemm_op.py:77-88`），并且
   **必须是静态常数**，否则前端直接报错（同文件 `:90-92`）。
-* `transpose_A/B` 只改变「哪个维度是 M/K」的解释：`transpose_A=False` 时
+* `transpose_A/B` 只改变“哪个维度是 M/K”的解释：`transpose_A=False` 时
   A 是 `[M, K]`，`True` 时是 `[K, M]`；`transpose_B=False` 时 B 是 `[K, N]`，
   `True` 时是 `[N, K]`（同文件 `:78-81`）。
 * `policy` 是 warp 划分策略，取值 `Square` / `FullRow` / `FullCol`
   （`tilelang/tileop/base.py:5-12`），默认 `Square`。它对 layout 的影响见 §4.3。
-* `clear_accum=True` 除了语义上「先清零再累加」，还会把 C 的 **access region 从 `rw`
-  改成 `w`**（`tilelang/language/gemm_op.py:103`）——这会喂给依赖分析与同步插入。
+* `clear_accum=True` 除了语义上“先清零再累加”，还会把 C 的 **access region 从 `rw`
+  改成 `w`**（`tilelang/language/gemm_op.py:103`）。这会喂给依赖分析与同步插入。
   所以它不是一个纯运行期开关。
 * **`accum_dtype` 不是 v0.1.15 `T.gemm` 的参数**。累加精度由 C 的 dtype 决定，而 C 的
   dtype 又是指令选择的一等输入（`src/cuda/op/gemm.cc:44-76` 里 `CheckWgmma` 第一件事就
@@ -275,7 +275,7 @@ T.reduce_min(A_local, row_min, dim=-1, clear=False) # 在 out 已有值之上“
 
 * `dim` 支持负数，前端先做 `dim += rank` 归一化
   （`tilelang/language/reduce_op.py:13-16`）。
-* 输出 shape 必须严格等于「去掉被归约轴」或「被归约轴变成 1」二者之一
+* 输出 shape 必须严格等于“去掉被归约轴”或“被归约轴变成 1”二者之一
   （同文件 `:63-71`）。
 * `clear=True`（默认）表示**先初始化再写结果**：sum 从 0 起、max 从 `-inf` 起、
   min 从 `+inf` 起（`reduce_max`/`reduce_min`/`reduce_sum` 的 docstring，同文件
@@ -326,8 +326,8 @@ T.fill(C_local[:, 0:64], -1.0)  # 也可以只填一个 region
 
 `T.clear(buffer)` 的定义就是 `fill(buffer, 0)`（`tilelang/language/fill_op.py:48-72`）。
 它接受 `Buffer`、`BufferRegion`、`BufferLoad`；`BufferLoad` 会先被还原成 region
-（同文件 `:27-38`）。适配器仓库的语言参考甚至直接写「`T.clear` `T.fill`：nothing
-special，它们会被转成 `T.Parallel`」
+（同文件 `:27-38`）。适配器仓库的语言参考甚至直接写“`T.clear` `T.fill`：nothing
+special，它们会被转成 `T.Parallel`”
 （`_vendor/tilelang-ascend-v0.1.2.000/docs/language_ref/tilelibrary.md:206-209`）。
 这条在 v0.1.15 源码里成立：`FillNode::MakeSIMTLoop` 就是生成嵌套 `ForKind::kParallel`
 循环（`src/op/fill.cc:152-172`）。
@@ -381,7 +381,7 @@ with T.SimdVF():                       # 或 with T.SimtVF(threads=...)
   `src0[i]` 还是 `src1[i]`（`T.tile.select.md`）。
 
 另外，适配器把这些 API 的临时 workspace 统一成一个仅关键字参数 `tmp`：不传就由编译器
-分配，传了就是「这次调用完整的 target-specific 字节 arena」，其 dtype 只决定字节几何，
+分配，传了就是“这次调用完整的 target-specific 字节 arena”，其 dtype 只决定字节几何，
 不表示数值类型（`_vendor/tilelang-ascend-v0.1.2.000/docs/language_ref/tilelibrary.md:64-100`）。
 
 ### 3.8 `T.dual_copy`（昇腾专有）
@@ -401,7 +401,7 @@ with T.Kernel(num_blocks) as bx:
 
 （骨架取自 `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:60-115`。）
 
-它的语义是「**一次搬运，两个 AIV 各处理半边**」：
+它的语义是“**一次搬运，两个 AIV 各处理半边**”：
 
 * 划分方向由 shape 自动推断：`[M,N] ↔ [M/2,N]` 是 M 分裂（`dual_dst_ctl=0b01`），
   `[M,N] ↔ [M,N/2]` 是 N 分裂（`0b10`）。**有且只能有一个**尾部维度满足 2:1
@@ -471,12 +471,12 @@ CUDA 侧的指令选择是一条有优先级的判定链，实现在
   不满足就退回同步路径（同文件 `:427-437`）。
 * `ldmatrix`/`stmatrix` 只在 `shared → fragment` / `fragment → shared` 时被考虑，
   TMEM 搬运只在 SM100 的 TMEM 与 fragment 之间（同文件 `:402-419`）。
-* 默认路径**先试 TMA store，再试同步形态**——注意 load 方向默认不会自动选 TMA，
+* 默认路径**先试 TMA store，再试同步形态**，注意 load 方向默认不会自动选 TMA，
   除非显式 `prefer_instruction="tma"` 或 `T.tma_copy`（同文件 `:796-807`）。
 
 这套判定在 **layout 推导阶段就会跑一次**（`src/cuda/op/copy.cc:528-547`），因为
-选出来的指令形态不同，需要的 layout 也不同。这就是为什么「换个指令」会连带改变
-shared memory 的 swizzle——它们不是两件独立的事。
+选出来的指令形态不同，需要的 layout 也不同。这就是为什么“换个指令”会连带改变
+shared memory 的 swizzle。它们不是两件独立的事。
 
 还有一条容易踩的规则：如果给 `T.copy` 传了 `loop_layout=`，但实际选出的指令不是
 `Normal` 或 `CPAsync`，编译器会直接报错（`src/cuda/op/copy.cc:549-562`）。因为
@@ -495,7 +495,7 @@ if (src_oob_safe_value.defined()) safe_value = src_oob_safe_value.value();
 value = if_then_else(src_predicate, value, safe_value);   // :520
 ```
 
-也就是说：**源越界时读到的是「安全值」，默认 0**；目标越界时整条 store 被
+也就是说：**源越界时读到的是“安全值”，默认 0**；目标越界时整条 store 被
 `IfThenElse` 包住（同文件 `:525`）。安全值可以用 `T.annotate_safe_value({A: v})`
 改掉（`tilelang/language/annotations.py:69-74`），它在 lowering 时被挂到
 `CopyNode::src_oob_safe_value`（`src/op/copy.cc:94-116`）。
@@ -507,8 +507,8 @@ value = if_then_else(src_predicate, value, safe_value);   // :520
 **昇腾路径**另有自己的 padding 概念，而且**不是越界填充**，是 DMA 对齐填充：
 `T.copy(..., pad_value=v)` 会把行宽向上取整到下一个 32B 边界，用 `v` 填 pad lane
 （`tilelang/ascend/language/copy_op.py:278-287`）。实现上前端先发一条
-`T.ascend_set_copy_pad_value(v)`——**必须单独作为一条语句**，这样 AutoSchedule 才能
-在「标量写 pad 寄存器」与「读该寄存器的 MTE2 拷贝」之间插入 `PIPE_S → PIPE_MTE2`
+`T.ascend_set_copy_pad_value(v)`，**必须单独作为一条语句**，这样 AutoSchedule 才能
+在“标量写 pad 寄存器”与“读该寄存器的 MTE2 拷贝”之间插入 `PIPE_S → PIPE_MTE2`
 同步（同文件 `:332-351`）。
 
 ### 4.3 `T.gemm` 的 layout 与指令选择
@@ -545,8 +545,8 @@ shared layout；`wgmma`/`tcgen05` 不复用（同文件 `:398-400`）。这意�
 从 mma 换成 wgmma，shared buffer 的 layout 可能整个变掉。
 
 昇腾侧简单得多：`ascend::Gemm::SelectInst` 永远返回 `ascend.mad`，
-warp 划分恒为 `(1,1)`（`src/ascend/op/gemm.cc:24-45`）。差异被放进了「从 L1 到
-L0A/L0B 的搬运」和「Cube 的 unit flag」这两处，而不是藏在 GEMM 内部。
+warp 划分恒为 `(1,1)`（`src/ascend/op/gemm.cc:24-45`）。差异被放进了“从 L1 到
+L0A/L0B 的搬运”和“Cube 的 unit flag”这两处，而不是藏在 GEMM 内部。
 
 ### 4.4 reduce 的跨线程归约
 
@@ -596,11 +596,11 @@ offset <  32 → x = Reducer()(x, shfl_xor_sync(-1, x, offset));      // 走 war
 昇腾侧的对应物不是 `T.atomic_add` 而是两种风格：
 
 * **store-mode**：`T.set_atomic("add", "float32")` 打开硬件标志，之后普通的
-  `T.copy`（L0C→GM）或 `T.dual_copy`（UB→GM）写回就变成「读-改-写」的原子规约，
+  `T.copy`（L0C→GM）或 `T.dual_copy`（UB→GM）写回就变成“读-改-写”的原子规约，
   用完必须 `T.set_atomic_none()` 关掉（`tilelang/ascend/language/mode.py:63-105`）。
   这个标志是**有状态的**，忘记关掉会让后面的普通 store 也变成累加。
-* **适配器 API**：`T.tile.atomic_add(dst_gm, src_local)` 直接表达「把本地 tensor 原子
-  累加到 GM」，V1 只支持 `UB→GM` 与 `L0C→GM`
+* **适配器 API**：`T.tile.atomic_add(dst_gm, src_local)` 直接表达“把本地 tensor 原子
+  累加到 GM”，V1 只支持 `UB→GM` 与 `L0C→GM`
   （`_vendor/tilelang-ascend-v0.1.2.000/tilelang/language/ascend_tile.py:313-341`；
   `_vendor/tilelang-ascend-v0.1.2.000/src/op/ascend.cc:748-761`）。
 
@@ -621,7 +621,7 @@ GM ──T.copy(GM→L1)──▶ L1 ──T.copy(L1→L0A/L0B)──▶ L0A/L0B
 ```
 
 每一步都对应 §2.2 表里的一行。`T.dual_copy` 在这里的作用不只是搬数据，而是把
-「L0C 的累加器」按 M 或 N 切成两半交给两个 AIV，否则 Vector 侧的并行度只有一半。
+“L0C 的累加器”按 M 或 N 切成两半交给两个 AIV，否则 Vector 侧的并行度只有一半。
 
 ---
 
@@ -649,14 +649,14 @@ GM ──T.copy(GM→L1)──▶ L1 ──T.copy(L1→L0A/L0B)──▶ L0A/L0B
 
 | 症状 | 真实原因 | 检查点 |
 | --- | --- | --- |
-| `T.gemm` 报 "requires static tile dimensions" | M/N/K 是符号表达式 | 用常数 tile 尺寸；符号只出现在 K 轴上也不行（`gemm_op.py:90-92`） |
+| `T.gemm` 报 “requires static tile dimensions” | M/N/K 是符号表达式 | 用常数 tile 尺寸；符号只出现在 K 轴上也不行（`gemm_op.py:90-92`） |
 | `T.gemm` 报 `M_A`/`K_A` 形状不匹配 | `transpose_A/B` 与 buffer 的实际排布不一致 | 口径：A `[M,K]`、B（`transpose_B=False`）`[K,N]`（`gemm_op.py:77-88`） |
 | reduce 报 shape error | 输出既不是压缩 shape 也不是 keepdim shape | 二选一，别写第三种（`reduce_op.py:63-71`） |
 | reduce 编译期 `static_assert` 失败 | 参与归约的线程宽度不是 2 的幂 | `threads/scale` 必须是 2 的幂（`reduce.h:245-247`） |
 | `T.atomic_add(..., return_prev=True)` 抛 `NotImplementedError` | 用了 tile-region 路径 | `return_prev` 只在标量路径可用（`atomic.py:304-305`） |
 | `T.copy(loop_layout=...)` 报 fatal | 实际选出的指令不是 SIMT/CPAsync | 加 `disable_tma=True` / `prefer_instruction="sync"`（`cuda/op/copy.cc:549-562`） |
-| 昇腾 `T.copy` 报 element count mismatch | 两个整 buffer 元素数不等 | Ascend 只允许「元素数相等、形状不同」（`ascend/language/copy_op.py:296-304`） |
-| 昇腾 `dual_copy` 报 "Cannot infer split direction" | 尾部两个维度都不是 2:1，或都不是 | 有且只能有一个 2:1（`ascend/language/copy_op.py:122-134`） |
+| 昇腾 `T.copy` 报 element count mismatch | 两个整 buffer 元素数不等 | Ascend 只允许“元素数相等、形状不同”（`ascend/language/copy_op.py:296-304`） |
+| 昇腾 `dual_copy` 报 “Cannot infer split direction” | 尾部两个维度都不是 2:1，或都不是 | 有且只能有一个 2:1（`ascend/language/copy_op.py:122-134`） |
 | 昇腾寄存器值不对 | `set_atomic` 忘了 `set_atomic_none()` | 它是**有状态**的全局开关 |
 | 文档里 `clear=False` 看不懂 | v0.1.15 `reduce_sum` docstring 的 Note 段把取值写成了 `True` | 以代码为准：只有 `clear=False` 才会把已有 `out` 载入 fragment 再累加（`reduce_op.py:141-158`） |
 
@@ -671,7 +671,7 @@ GM ──T.copy(GM→L1)──▶ L1 ──T.copy(L1→L0A/L0B)──▶ L0A/L0B
 2. **看每一次 pass 前后的 IR**：设 `TL_LOWER_TRACE=1` 跑同一个脚本，会得到每个 pass
    的 before/after diff，以及最终 codegen 产出的源码文件。工具说明见
    `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/lower_trace.md`
-   （R10）。这条路径最适合回答「tile op 是在哪一步变成具体指令的」——
+   （R10）。这条路径最适合回答“tile op 是在哪一步变成具体指令的”，
    `tl.LowerTileOp` 这个 pass 的注册在
    `src/transform/lower_tile_op.cc:1477-1486`，pass 本体在 `:207-224`。
 3. **看 layout**：想知道某个 `T.gemm` 的 policy 到底把 fragment 切成了什么形状，
@@ -679,14 +679,14 @@ GM ──T.copy(GM→L1)──▶ L1 ──T.copy(L1→L0A/L0B)──▶ L0A/L0B
    第 10 章会专门讲这件事，这里只需要知道有这条路。
 
 三条路径都需要真实硬件才能走到最后一步；没有硬件的读者可以用本章 `code/01-` 的自检
-脚本先确认「引用的源码位置是对的」，再用 `code/02-`、`code/03-` 的模型确认「规则是
-自洽的」。这两步不能替代硬件验证，但能把「我读错了源码」这一类错误先排掉。
+脚本先确认“引用的源码位置是对的”，再用 `code/02-`、`code/03-` 的模型确认“规则是
+自洽的”。这两步不能替代硬件验证，但能把“我读错了源码”这一类错误先排掉。
 
 ### 5.4 一个仍需确认的地方
 
 本章把 `T.copy` 的 SIMT 越界语义、TMA 的 OOB fill、昇腾的 32B pad 三件事分开讲，
 依据是三条不同的代码路径；`T.gemm` 的指令选择、reduce 的通信层级同理。
-这些结论在本机只能靠读源码得到，因此**本章的所有机制描述都是"静态推断"，不是观测**。
+这些结论在本机只能靠读源码得到，因此**本章的所有机制描述都是“静态推断”，不是观测**。
 真正需要的补齐动作只有一个：在有卡机器上跑上面 5.3 的第 1、2 条路径，把生成代码与本
 章的表逐条对照。没有这一步，本章的内容适合当阅读源码的地图，不适合当性能结论。
 
@@ -704,8 +704,8 @@ GM ──T.copy(GM→L1)──▶ L1 ──T.copy(L1→L0A/L0B)──▶ L0A/L0B
   `clear_accum` 会改变 C 在 IR 里的读写标记；`policy` 决定 warp 划分与 fragment
   layout；**`accum_dtype` 不是参数**，累加类型由 C 的 dtype 决定。
 * `T.reduce_*` 分两级：线程内串行归约 + `tl::AllReduce` 的 XOR-butterfly；
-  宽度 > 32 走 shared + barrier，< 32 走 `shfl_xor_sync`；`clear` 决定是「先清零」
-  还是「与已有 out 合并」。
+  宽度 > 32 走 shared + barrier，< 32 走 `shfl_xor_sync`；`clear` 决定是“先清零”
+  还是“与已有 out 合并”。
 * 原子操作分标量路径与 tile-region 路径，能力不同；昇腾用有状态的
   `set_atomic` 或适配器的 `T.tile.atomic_add`。
 * `T.fill`/`T.clear` 就是并行循环，没有魔法。

@@ -19,10 +19,10 @@
       "values": ["落 S×S 分数矩阵，共约 6.58 GB", "只读 Q/K/V、写 O，共 134.2 MB（49×）"]
     }
   ],
-  "caption": "融合不是「少写几行代码」，而是把中间张量的读写从显存里省掉。",
+  "caption": "融合不是“少写几行代码”，而是把中间张量的读写从显存里省掉。",
   "notes": [
     "eager 的结构：read x → cos 写 a → read a → sin 写 b；融合的结构：read x → cos→sin（中间值只在寄存器）→ write b。",
-    "第三行是量级上的差别，也是 FlashAttention 把「读写 HBM 的次数」当一等公民来优化的核心论证。",
-    "同样的动机写在昇腾 CANN 的算子文档里（如 aclnnAddRmsNormDynamicQuant「减少搬入搬出操作」）；表格中访存量由 code/01-op-traffic-model/op_traffic.py 输出。"
+    "第三行是量级上的差别，也是 FlashAttention 把“读写 HBM 的次数”当一等公民来优化的核心论证。",
+    "同样的动机写在昇腾 CANN 的算子文档里（如 aclnnAddRmsNormDynamicQuant“减少搬入搬出操作”）；表格中访存量由 code/01-op-traffic-model/op_traffic.py 输出。"
   ]
 }

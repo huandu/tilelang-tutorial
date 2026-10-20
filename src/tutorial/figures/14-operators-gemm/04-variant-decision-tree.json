@@ -7,26 +7,87 @@
   "nodeMaxEm": 22,
   "caption": "输出块数与核数是第一判据；块数够但尾波不满就要考虑 stream-K。",
   "nodes": [
-    { "id": "a", "label": "要做一个 GEMM", "tone": "default" },
-    { "id": "c", "label": "输出块数 ≥ 核数？", "shape": "diamond", "tone": "default" },
-    { "id": "d", "label": "最后一波是否明显不满？", "shape": "diamond", "tone": "default" },
-    { "id": "e", "label": "普通 GEMM", "sub": "阶梯 ③ / ④", "tone": "accent" },
-    { "id": "f", "label": "stream-K", "sub": "解决尾波量化", "tone": "compute" },
-    { "id": "g", "label": "形状小且 K 大？", "shape": "diamond", "tone": "default" },
-    { "id": "h", "label": "split-K", "sub": "用带宽换并行度", "tone": "compute" }
+    {
+      "id": "a",
+      "label": "要做一个 GEMM",
+      "tone": "default"
+    },
+    {
+      "id": "c",
+      "label": "输出块数 ≥ 核数？",
+      "shape": "diamond",
+      "tone": "default"
+    },
+    {
+      "id": "d",
+      "label": "最后一波是否明显不满？",
+      "shape": "diamond",
+      "tone": "default"
+    },
+    {
+      "id": "e",
+      "label": "普通 GEMM",
+      "sub": "阶梯 ③ / ④",
+      "tone": "accent"
+    },
+    {
+      "id": "f",
+      "label": "stream-K",
+      "sub": "解决尾波量化",
+      "tone": "compute"
+    },
+    {
+      "id": "g",
+      "label": "形状小且 K 大？",
+      "shape": "diamond",
+      "tone": "default"
+    },
+    {
+      "id": "h",
+      "label": "split-K",
+      "sub": "用带宽换并行度",
+      "tone": "compute"
+    }
   ],
   "edges": [
-    { "from": "a", "to": "c" },
-    { "from": "c", "to": "d", "label": "是" },
-    { "from": "c", "to": "g", "label": "否" },
-    { "from": "d", "to": "e", "label": "否" },
-    { "from": "d", "to": "f", "label": "是" },
-    { "from": "g", "to": "h", "label": "是" },
-    { "from": "g", "to": "e", "label": "否" }
+    {
+      "from": "a",
+      "to": "c"
+    },
+    {
+      "from": "c",
+      "to": "d",
+      "label": "是"
+    },
+    {
+      "from": "c",
+      "to": "g",
+      "label": "否"
+    },
+    {
+      "from": "d",
+      "to": "e",
+      "label": "否"
+    },
+    {
+      "from": "d",
+      "to": "f",
+      "label": "是"
+    },
+    {
+      "from": "g",
+      "to": "h",
+      "label": "是"
+    },
+    {
+      "from": "g",
+      "to": "e",
+      "label": "否"
+    }
   ],
   "notes": [
     "输出块数 = ceildiv(M, block_M) × ceildiv(N, block_N)；小于可并行核数就是 split-K 的场景",
-    "split-K 读入量不变，但写出量变成 split_k 倍还要原子合并——块数已远大于核数时纯亏",
-    "stream-K 解决「块数够多、最后一波不满」，只有被切开的块才需要原子合并"
+    "split-K 读入量不变，但写出量变成 split_k 倍还要原子合并，块数已远大于核数时纯亏",
+    "stream-K 解决“块数够多、最后一波不满”，只有被切开的块才需要原子合并"
   ]
 }

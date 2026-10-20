@@ -5,12 +5,31 @@
   "direction": "TB",
   "nodeMaxEm": 22,
   "inlineQuote": "flowchart LR\n  subgraph Iter0[\"迭代 0\"]\n    A0[\"loadA<br/>MTE2\"] --> B0[\"L1→L0<br/>MTE1\"] --> C0[\"Cube\"] --> D0[\"L0C→GM<br/>Fixpipe\"]",
-  "caption": "相邻两个迭代之间错开一个 II，各自按同一串流水级推进；虚线标出跨迭代的 WAR 约束——下一轮 loadA 会覆盖上一轮还没读走的 L1。",
+  "caption": "相邻两个迭代之间错开一个 II，各自按同一串流水级推进；虚线标出跨迭代的 WAR 约束，下一轮 loadA 会覆盖上一轮还没读走的 L1。",
   "nodes": [
-    { "id": "a0", "label": "迭代 0：loadA", "sub": "MTE2", "tone": "default" },
-    { "id": "b0", "label": "迭代 0：L1→L0", "sub": "MTE1", "tone": "default" },
-    { "id": "c0", "label": "迭代 0：Cube", "tone": "compute" },
-    { "id": "d0", "label": "迭代 0：L0C→GM", "sub": "Fixpipe", "tone": "compute" },
+    {
+      "id": "a0",
+      "label": "迭代 0：loadA",
+      "sub": "MTE2",
+      "tone": "default"
+    },
+    {
+      "id": "b0",
+      "label": "迭代 0：L1→L0",
+      "sub": "MTE1",
+      "tone": "default"
+    },
+    {
+      "id": "c0",
+      "label": "迭代 0：Cube",
+      "tone": "compute"
+    },
+    {
+      "id": "d0",
+      "label": "迭代 0：L0C→GM",
+      "sub": "Fixpipe",
+      "tone": "compute"
+    },
     {
       "id": "a1",
       "label": "迭代 1：loadA",
@@ -18,15 +37,39 @@
       "badge": "offset = II",
       "tone": "default"
     },
-    { "id": "b1", "label": "迭代 1：L1→L0", "sub": "MTE1", "tone": "default" },
-    { "id": "c1", "label": "迭代 1：Cube", "tone": "compute" }
+    {
+      "id": "b1",
+      "label": "迭代 1：L1→L0",
+      "sub": "MTE1",
+      "tone": "default"
+    },
+    {
+      "id": "c1",
+      "label": "迭代 1：Cube",
+      "tone": "compute"
+    }
   ],
   "edges": [
-    { "from": "a0", "to": "b0" },
-    { "from": "b0", "to": "c0" },
-    { "from": "c0", "to": "d0" },
-    { "from": "a1", "to": "b1" },
-    { "from": "b1", "to": "c1" },
+    {
+      "from": "a0",
+      "to": "b0"
+    },
+    {
+      "from": "b0",
+      "to": "c0"
+    },
+    {
+      "from": "c0",
+      "to": "d0"
+    },
+    {
+      "from": "a1",
+      "to": "b1"
+    },
+    {
+      "from": "b1",
+      "to": "c1"
+    },
     {
       "from": "a0",
       "to": "b0",

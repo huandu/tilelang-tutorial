@@ -4,16 +4,52 @@
   "kind": "flow",
   "direction": "TB",
   "section": "4",
-  "caption": "三条路线，一个共同点：把「读完整 KV」换成「读索引 + 读少量 KV」。",
+  "caption": "三条路线，一个共同点：把“读完整 KV”换成“读索引 + 读少量 KV”。",
   "nodes": [
-    { "id": "q", "label": "query", "tone": "default" },
-    { "id": "idx", "label": "indexer", "sub": "全序列打分（MQA 形状）", "tone": "compute" },
-    { "id": "logits", "label": "logits：S × S_kv", "tone": "default" },
-    { "id": "topk", "label": "top-k selector", "sub": "输出位置，不输出值", "tone": "default" },
-    { "id": "ids", "label": "indices：S × topk", "tone": "default" },
-    { "id": "gather", "label": "按索引 gather KV 行", "tone": "accent" },
-    { "id": "sma", "label": "sparse MLA", "sub": "只算被选中的位置", "tone": "accent" },
-    { "id": "nsa", "label": "NSA", "sub": "缓存压缩块 + 选中块 + 滑窗", "tone": "muted" },
+    {
+      "id": "q",
+      "label": "query",
+      "tone": "default"
+    },
+    {
+      "id": "idx",
+      "label": "indexer",
+      "sub": "全序列打分（MQA 形状）",
+      "tone": "compute"
+    },
+    {
+      "id": "logits",
+      "label": "logits：S × S_kv",
+      "tone": "default"
+    },
+    {
+      "id": "topk",
+      "label": "top-k selector",
+      "sub": "输出位置，不输出值",
+      "tone": "default"
+    },
+    {
+      "id": "ids",
+      "label": "indices：S × topk",
+      "tone": "default"
+    },
+    {
+      "id": "gather",
+      "label": "按索引 gather KV 行",
+      "tone": "accent"
+    },
+    {
+      "id": "sma",
+      "label": "sparse MLA",
+      "sub": "只算被选中的位置",
+      "tone": "accent"
+    },
+    {
+      "id": "nsa",
+      "label": "NSA",
+      "sub": "缓存压缩块 + 选中块 + 滑窗",
+      "tone": "muted"
+    },
     {
       "id": "hisa",
       "label": "HISA",
@@ -22,19 +58,46 @@
     }
   ],
   "edges": [
-    { "from": "q", "to": "idx" },
-    { "from": "idx", "to": "logits" },
-    { "from": "logits", "to": "topk" },
-    { "from": "topk", "to": "ids" },
-    { "from": "ids", "to": "gather" },
-    { "from": "gather", "to": "sma" },
-    { "from": "q", "to": "nsa" },
-    { "from": "q", "to": "hisa" },
-    { "from": "idx", "to": "hisa" }
+    {
+      "from": "q",
+      "to": "idx"
+    },
+    {
+      "from": "idx",
+      "to": "logits"
+    },
+    {
+      "from": "logits",
+      "to": "topk"
+    },
+    {
+      "from": "topk",
+      "to": "ids"
+    },
+    {
+      "from": "ids",
+      "to": "gather"
+    },
+    {
+      "from": "gather",
+      "to": "sma"
+    },
+    {
+      "from": "q",
+      "to": "nsa"
+    },
+    {
+      "from": "q",
+      "to": "hisa"
+    },
+    {
+      "from": "idx",
+      "to": "hisa"
+    }
   ],
   "notes": [
     "NSA 输入是 block 索引（kernel 按块 gather）；DSA = indexer 出 logits → top-k 出位置 → sparse MLA gather；HISA 是两级层级",
-    "indexer 要扫全序列：L=131072 时它的 FLOP 是被它选中的 attention 的 3.76 倍——稀疏省的是访存，不是 FLOP",
+    "indexer 要扫全序列：L=131072 时它的 FLOP 是被它选中的 attention 的 3.76 倍，稀疏省的是访存，不是 FLOP",
     "稀疏 kernel 的正确性问题多是静默错误：topk % block_I != 0 时，索引里混进一个 0 就会读到错误的 KV"
   ]
 }

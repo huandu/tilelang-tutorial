@@ -32,9 +32,9 @@ graph LR
 
 **要点**
 
-* dispatch 走的是「**复制**」：一个 token 的 k 个专家分布在几个 rank，
+* dispatch 走的是“**复制**”：一个 token 的 k 个专家分布在几个 rank，
   它就被复制几份（同一 rank 内去重，只传一次）。
 * 每份 payload 除了 hidden，还带 `topk_idx`、`topk_weights` 与源 token 全局下标
   （来源表），combine 靠它找回原位置。
-* combine 是「**归约**」：k 份专家输出按路由权重加权求和，累加在 FP32 里做。
+* combine 是“**归约**”：k 份专家输出按路由权重加权求和，累加在 FP32 里做。
 * 反向传播时两者互换：dispatch 的反向是 combine，combine 的反向是 dispatch。

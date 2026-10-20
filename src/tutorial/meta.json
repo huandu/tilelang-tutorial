@@ -4,13 +4,13 @@
       "slug": "01-why-tile-dsl",
       "number": "01",
       "title": "为什么需要 Tile DSL",
-      "summary": "从「为什么 PyTorch 里一个算子会慢」讲起：存储层级的不对称、算术强度与机器平衡点，然后沿着 SIMT → 张量核 → 异步搬运三代硬件演进，说明为什么 CUDA、Triton、TileLang 会依次出现。"
+      "summary": "从“为什么 PyTorch 里一个算子会慢”讲起：存储层级的不对称、算术强度与机器平衡点，然后沿着 SIMT → 张量核 → 异步搬运三代硬件演进，说明为什么 CUDA、Triton、TileLang 会依次出现。"
     },
     {
       "slug": "02-from-pytorch-to-kernels",
       "number": "02",
       "title": "从 PyTorch 到 kernel：算子在栈里的位置",
-      "summary": "把「一次训练迭代」和「一次推理请求」拆成算子的清单与账本：每个算子要搬多少字节、算多少次、是 memory-bound 还是 compute-bound，以及 torch.compile 的边界在哪、什么时候必须自己写 kernel。"
+      "summary": "把“一次训练迭代”和“一次推理请求”拆成算子的清单与账本：每个算子要搬多少字节、算多少次、是 memory-bound 还是 compute-bound，以及 torch.compile 的边界在哪、什么时候必须自己写 kernel。"
     },
     {
       "slug": "03-design-philosophy",
@@ -28,13 +28,13 @@
       "slug": "05-comparisons",
       "number": "05",
       "title": "横向对比：CUDA / Triton / CUTLASS-CuTe / TVM / cuTile / Ascend C / PTO-DSL",
-      "summary": "用「用户必须提供的硬件相关决策数量」这把尺子，把 CUDA、Triton、CUTLASS-CuTe、TVM、cuTile、Ascend C、PTO-DSL 放到同一条纵轴上，再用同一个带融合 epilogue 的 GEMM 逐层对照。"
+      "summary": "用“用户必须提供的硬件相关决策数量”这把尺子，把 CUDA、Triton、CUTLASS-CuTe、TVM、cuTile、Ascend C、PTO-DSL 放到同一条纵轴上，再用同一个带融合 epilogue 的 GEMM 逐层对照。"
     },
     {
       "slug": "06-hardware-intro-nv-vs-ascend",
       "number": "06",
       "title": "芯片导论：NV GPU 与昇腾 NPU 的抽象对照",
-      "summary": "用存储层级、执行单元、数据搬运、同步四个维度描述任意加速器，再分别落到 NVIDIA（grid/warp/Tensor Core/TMA/cluster）与昇腾（Cube/Vector/MTE/UB/L1/L0）上，并解释为什么「GPU 是 SIMT、NPU 是 SIMD」已经过时。"
+      "summary": "用存储层级、执行单元、数据搬运、同步四个维度描述任意加速器，再分别落到 NVIDIA（grid/warp/Tensor Core/TMA/cluster）与昇腾（Cube/Vector/MTE/UB/L1/L0）上，并解释为什么“GPU 是 SIMT、NPU 是 SIMD”已经过时。"
     },
     {
       "slug": "07-quickstart",
@@ -58,7 +58,7 @@
       "slug": "10-layout-and-memory-intro",
       "number": "10",
       "title": "布局与存储层级入门",
-      "summary": "解释「同一个张量为什么会有摆法问题」：从 fragment 与线程的对应、bank conflict、swizzle 到昇腾的 fractal 与 ND→NZ，并给出把布局画出来观察的可复现步骤。"
+      "summary": "解释“同一个张量为什么会有摆法问题”：从 fragment 与线程的对应、bank conflict、swizzle 到昇腾的 fractal 与 ND→NZ，并给出把布局画出来观察的可复现步骤。"
     },
     {
       "slug": "11-pipeline-and-autotuning",
@@ -172,13 +172,13 @@
       "slug": "29-compiler-engineering",
       "number": "29",
       "title": "编译器工程：写 pass、测试与回归",
-      "summary": "把「读编译器」变成「改编译器」：C++ 与 Python pass 的双语结构、写一个新 pass 的完整流程、IR diff 与性能回归怎么测，以及评审时会被问什么。"
+      "summary": "把“读编译器”变成“改编译器”：C++ 与 Python pass 的双语结构、写一个新 pass 的完整流程、IR diff 与性能回归怎么测，以及评审时会被问什么。"
     },
     {
       "slug": "30-frontier",
       "number": "30",
       "title": "前沿探索：只有 main / 未合入的方向",
-      "summary": "区分「已发布 / 只在 main / 只在未合入 PR」三种状态，逐条核对 TVM 迁移、CuteDSL 后端、Ascend 950 与 PTO、持久化 kernel、AutoSimtVF 等方向的现状，并给出持续跟踪上游的方法。"
+      "summary": "区分“已发布 / 只在 main / 只在未合入 PR”三种状态，逐条核对 TVM 迁移、CuteDSL 后端、Ascend 950 与 PTO、持久化 kernel、AutoSimtVF 等方向的现状，并给出持续跟踪上游的方法。"
     },
     {
       "slug": "31-contributing",
@@ -202,7 +202,7 @@
       "slug": "34-tilekernels-engram-mhc",
       "number": "34",
       "title": "TileKernels（下）：Engram 与流形超连接",
-      "summary": "另一类算子：不是矩阵乘，而是访存与小算子为主的结构性算子。以 Engram 论文与 mHC 论文（arXiv:2512.24880）为定义、以 TileKernels 的 mhc/ 与 engram/ 源码为实现，讲透门控融合、Sinkhorn 归一化，以及「除 prenorm GEMM 外都用 TileLang」这条边界。"
+      "summary": "另一类算子：不是矩阵乘，而是访存与小算子为主的结构性算子。以 Engram 论文与 mHC 论文（arXiv:2512.24880）为定义、以 TileKernels 的 mhc/ 与 engram/ 源码为实现，讲透门控融合、Sinkhorn 归一化，以及“除 prenorm GEMM 外都用 TileLang”这条边界。"
     },
     {
       "slug": "35-deepgemm-ascend",
@@ -214,13 +214,13 @@
       "slug": "36-flashmla-ascend",
       "number": "36",
       "title": "FlashMLA 昇腾稀疏注意力：算法与流水",
-      "summary": "官方为昇腾稀疏注意力写了一篇技术报告。本章把它讲成一条可跟着走的设计过程：从算存比推出「64 head/AI Core、1C2V、accumulator 放 UB」，再讲 KV 的 ND2NZ 时机、双流水排布、gather2 与 skip-scale，并划清哪些结论能用 TileLang 表达、哪些必须下钻。"
+      "summary": "官方为昇腾稀疏注意力写了一篇技术报告。本章把它讲成一条可跟着走的设计过程：从算存比推出“64 head/AI Core、1C2V、accumulator 放 UB”，再讲 KV 的 ND2NZ 时机、双流水排布、gather2 与 skip-scale，并划清哪些结论能用 TileLang 表达、哪些必须下钻。"
     },
     {
       "slug": "37-deepselect-topk",
       "number": "37",
       "title": "DeepSelect：算法先行的 TopK",
-      "summary": "算法先行，硬件随后。用阈值扫描 + 随机块序 + RadixSelect 把 TopK 的额外计算量压到 O(k log(N/k))，并给出期望复杂度的证明；再看 CUDA 侧怎么用 mask 与 PTX 把常数压到极致。它同时回答了「什么类型的算子该手写而不是用 TileLang」。"
+      "summary": "算法先行，硬件随后。用阈值扫描 + 随机块序 + RadixSelect 把 TopK 的额外计算量压到 O(k log(N/k))，并给出期望复杂度的证明；再看 CUDA 侧怎么用 mask 与 PTX 把常数压到极致。它同时回答了“什么类型的算子该手写而不是用 TileLang”。"
     },
     {
       "slug": "38-deepep-ascend",
@@ -232,7 +232,7 @@
       "slug": "39-deepseek-e2e-supernode",
       "number": "39",
       "title": "端到端：128 卡超节点上的训练与推理",
-      "summary": "收口章：把六个组件拼回一条完整链路，分别走一遍训练的一步与推理的 prefill/decode，给出算力、片内带宽、卡间带宽三类资源的预算账与瓶颈定位清单，并把前面所有「未实现 / 实验性」的结论集中成一份诚实的现状清单。"
+      "summary": "收口章：把六个组件拼回一条完整链路，分别走一遍训练的一步与推理的 prefill/decode，给出算力、片内带宽、卡间带宽三类资源的预算账与瓶颈定位清单，并把前面所有“未实现 / 实验性”的结论集中成一份诚实的现状清单。"
     }
   ]
 }

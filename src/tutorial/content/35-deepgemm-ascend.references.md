@@ -21,7 +21,7 @@
 * 不引用未锁定的开发分支；讨论 `main` 上更新的东西时会显式标注。
 
 写作环境：macOS (Apple Silicon)、Python 3.11；**没有 NVIDIA GPU，也没有昇腾 NPU**。
-因此本章所有 kernel/C++ 结论的最高验证级别是「**仅静态阅读**」
+因此本章所有 kernel/C++ 结论的最高验证级别是“**仅静态阅读**”
 （逐行读过、行号与文件内容一致、语法用 `py_compile` 过），
 **没有任何一条性能数字来自本机实测**。
 
@@ -31,10 +31,10 @@
 
 | id | 引用位置 | 用途 | 核验方式与状态 |
 | --- | --- | --- | --- |
-| D1 | `DeepGEMM-Ascend/README.md:1-11` | 定位：完全兼容 DeepGEMM API、支持 BF16/FP8/FP4/MQA/MegaMoE；「轻量抽象隐藏 fractal 布局、对齐、地址、参数转换」；稀疏加载与协程流水 | 已核验（2026-10-01）：逐段读中英原文 |
+| D1 | `DeepGEMM-Ascend/README.md:1-11` | 定位：完全兼容 DeepGEMM API、支持 BF16/FP8/FP4/MQA/MegaMoE；“轻量抽象隐藏 fractal 布局、对齐、地址、参数转换”；稀疏加载与协程流水 | 已核验（2026-10-01）：逐段读中英原文 |
 | D2 | `DeepGEMM-Ascend/README.md:19-31` | Requirements：Ascend 950 系列、CANN 9.20（`bin/bisheng`、`bin/ld.lld`）、`torch_npu`、Python ≥ 3.10、C++20 `<format>`、`tilelang`（HC prenorm 依赖）、`tree-sitter` | 已核验（2026-10-01）：逐行读 |
 | D3 | `DeepGEMM-Ascend/README.md:48-50` | **唯一被标注的不兼容点**：每两个 UE8M0 打包成 `int16`、MN-major | 已核验（2026-10-01）：原文引用 |
-| D4 | `DeepGEMM-Ascend/README.md:52-53` | 兼容承诺只覆盖 kernel 接口（「refer to DeepGEMM's interfaces」） | 已核验（2026-10-01） |
+| D4 | `DeepGEMM-Ascend/README.md:52-53` | 兼容承诺只覆盖 kernel 接口（“refer to DeepGEMM's interfaces”） | 已核验（2026-10-01） |
 | D5 | `DeepGEMM-Ascend/README.md:54-60` | 工具函数清单（`set_num_sms`、`set_npu_arch`、`set_mk_alignment...`、`transform_sf_...`、`get_paged_mqa_logits_metadata`、`aclnn_*` 参考实现） | 已核验（2026-10-01）：逐条读 |
 | D6 | `DeepGEMM-Ascend/README.md:62-78` | 环境变量清单：`DG_JIT_DEBUG`、`DG_PRINT_CONFIGS`、`DG_JIT_CACHE_DIR`（默认 `$HOME/.dj`）、`DG_JIT_PRINT_COMPILER_COMMAND`、`DG_JIT_PRINT_LOAD_TIME`、`DG_JIT_KERNEL_DEBUG_INFO`、`DG_JIT_LAUNCH_TIMEOUT`、`ASCEND_LAUNCH_BLOCKING`、`ASCEND_HOME_PATH` / `ASCEND_TOOLKIT_HOME` | 已核验（2026-10-01）：逐条读 |
 | D7 | `DeepGEMM-Ascend/README.md:84-87` | 性能表口径：Ascend 950DT、CANN 9.20、`bench_msprof`、**冷 L2**、形状取自 DeepGEMM test suite | 已核验（2026-10-01） |
@@ -103,7 +103,7 @@
 
 | id | 引用位置 | 用途 | 核验状态 |
 | --- | --- | --- | --- |
-| T1 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:125-155`（对照表在 `:141-153`） | 与 Ascend C 的分工对照表；「自动调度不保证把任意 `T.Parallel` 张量化」 | 已核验（2026-10-01）：逐段读（第 19 章 S4 用 130-155 的宽范围核验过同一份文档） |
+| T1 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:125-155`（对照表在 `:141-153`） | 与 Ascend C 的分工对照表；“自动调度不保证把任意 `T.Parallel` 张量化” | 已核验（2026-10-01）：逐段读（第 19 章 S4 用 130-155 的宽范围核验过同一份文档） |
 | T2 | `.../tilelang/ascend/language/kernel.py:176` | `T.MixedKernel` | 已核验（2026-10-01）：`grep -n "def MixedKernel"` |
 | T3 | `.../tilelang/ascend/language/frame.py:107,179` | `T.SimtVF(threads, latency)` / `T.SimdVF(latency)` | 已核验（2026-10-01） |
 | T4 | `.../tilelang/ascend/language/copy_op.py:53` | `T.dual_copy` | 已核验（2026-10-01） |
@@ -115,7 +115,7 @@
 | T10 | `.../tilelang/ascend/language/sync.py:74,93` | `T.ascend_sync_inter_arrive` / `ascend_sync_inter_wait` | 已核验（2026-10-01） |
 | T11 | `.../tilelang/layout/ascend.py:39` | `make_ascend_compact_nz_layout` | 已核验（2026-10-01） |
 
-「已核验」的含义：在锁定工作树上用 `grep -n` / `sed` 定位到定义并读完签名；
+“已核验”的含义：在锁定工作树上用 `grep -n` / `sed` 定位到定义并读完签名；
 行号与文件内容一致。**这不是运行验证。**
 
 ---
@@ -139,11 +139,11 @@
 | 数字 | 来源 | 条件 / 口径 |
 | --- | --- | --- |
 | Dense / FP8 推理 / M-Grouped / MQA / MegaMoE / HC Prenorm 的全部 latency、TFLOPS、GB/s | D8 | Ascend 950DT、CANN 9.20、`bench_msprof`、冷 L2（D7、D37）；MegaMoE 另有 EP8 + top-k=6 + 1 个 shared expert、8 rank 平均 |
-| bf16 432 / fp8 865 / fp4 1730 TFLOPS（「Hardware limit」） | D8；**本书复算** | 由 `get_mad_flops_per_cycle × 1650 MHz × 32` 复算（D26），误差 < 0.2%；见 C2 |
+| bf16 432 / fp8 865 / fp4 1730 TFLOPS（“Hardware limit”） | D8；**本书复算** | 由 `get_mad_flops_per_cycle × 1650 MHz × 32` 复算（D26），误差 < 0.2%；见 C2 |
 | 3.5 TB/s、4.5 TB/s、1650 MHz、8192 FLOP/cycle/核、128 MB L2、128 B 扇区、SF pair = 64 | D26（`get_hw_desc`） | **源码里的硬件模型**，不是厂商规格页；corpus 里没有 Ascend 950 的规格文档可供对照 |
-| 「MQA 饱和 FIX pipe 到 99%」 | D8 | 官方定性描述；`aic_fixpipe` 字段的定义见 D37（`L0C -> out`），但本章**没有**任何一份真实 profile 输出可以核对这 99% |
-| 「HC Prenorm nearly saturates the HBM write bandwidth」 | D8 | 官方措辞；本书按 `count_bytes(a,b,d,sqr_sum)` 复算得到 0.994–1.002 的比值，**但复算出来的是「总流量/时间」，其中 99% 是 A 的读**——与「写带宽」的措辞不一致，见「待核」第 3 条 |
-| FP8 推理表带宽列与复算的比值 1.089–1.095 | **本书复算** | C2；口径差异，见「待核」第 2 条 |
+| “MQA 饱和 FIX pipe 到 99%” | D8 | 官方定性描述；`aic_fixpipe` 字段的定义见 D37（`L0C -> out`），但本章**没有**任何一份真实 profile 输出可以核对这 99% |
+| “HC Prenorm nearly saturates the HBM write bandwidth” | D8 | 官方措辞；本书按 `count_bytes(a,b,d,sqr_sum)` 复算得到 0.994–1.002 的比值，**但复算出来的是“总流量/时间”，其中 99% 是 A 的读**，与“写带宽”的措辞不一致，见“待核”第 3 条 |
+| FP8 推理表带宽列与复算的比值 1.089–1.095 | **本书复算** | C2；口径差异，见“待核”第 2 条 |
 | L0C 256 KB / UB 256 KB / L1 512 KB / L0A·L0B 64 KB | D19 | **Ascend 950 口径**（源码常数）；与第 19 章引用的 Atlas A2 规格（L0C 128 KB / UB 192 KB）不同，不是矛盾 |
 
 **没有来源的、或只有宣传口径的数字一律未采用。**
@@ -155,40 +155,40 @@
 1. **`DG_NPU_ARCH` 不存在。** 本章任务描述里提到的这个环境变量，在锁定快照里
    grep 不到任何命中；架构只有两个来源：设备上报（`ACL_DEV_ATTR_NPU_ARCH`，N9）
    或 `deep_gemm.set_npu_arch(int)`（D24、D44）。正文 §3.2 已显式更正，
-   并说明「若官方后续加了同名变量，请以源码为准」。
-2. **FP8 推理表的带宽列口径未给出。** 14 行「表格 / 复算」比值稳定在
+   并说明“若官方后续加了同名变量，请以源码为准”。
+2. **FP8 推理表的带宽列口径未给出。** 14 行“表格 / 复算”比值稳定在
    1.089–1.095（同一张表内高度一致），但 corpus 快照里没有该列的计算公式。
-   我**没有**把它解释成「profiler 实测 GM 流量」之类的猜测，只在正文 §5.3 与
+   我**没有**把它解释成“profiler 实测 GM 流量”之类的猜测，只在正文 §5.3 与
    `code/02-perf-ledger/README.md` 里登记了事实。建议后续版本补一条官方口径说明，
    或采一次同形状的 `count_bytes` 实测值。
-3. **「HC Prenorm nearly saturates the HBM write bandwidth」这句措辞与示例代码
+3. **“HC Prenorm nearly saturates the HBM write bandwidth”这句措辞与示例代码
    的计数口径不一致。** 按 `tests/test_hyperconnection.py:103-107` 的
    `count_bytes(a, b, d, sqr_sum)`，`M=8192` 那一行的 473 MB 里 99.4% 是 A 的读、
-   写不到 1 MB。建议后续版本确认官方这句是「读+写总带宽」的简写，
+   写不到 1 MB。建议后续版本确认官方这句是“读+写总带宽”的简写，
    还是另有写路径（例如 mHC 后续步骤的写）。
 4. **corpus 里没有 Ascend 950（DT）的硬件规格页。** 因此
    `HWDesc` 的 3500/4500 GB/s、1650 MHz、8192 FLOP/cycle/核这些数字
-   **无法与厂商文档交叉验证**；正文只能标注它们是「源码里的模型值」。
+   **无法与厂商文档交叉验证**；正文只能标注它们是“源码里的模型值”。
    建议补抓 Ascend 950 的产品规格与 CANN 的 per-core 带宽文档。
 5. **没有任何真实的 msProf / `KernelProfile` 输出样本。** 正文 §5 的瓶颈判断依赖
    README 的定性描述（FIX 99%）与源码里字段的定义（D37），
-   但没有一份真实 profile 可以核对「prefill 真的是 FIX 主导」。
+   但没有一份真实 profile 可以核对“prefill 真的是 FIX 主导”。
    建议在有设备的机器上采一份 `bench_msprof(..., return_all_kernels=True)`
    的完整输出。
 6. **`third-party/tilelang_ops/` 的来源与使用范围需要确认。** 它不在
    `DeepGEMM-Ascend/.gitmodules` 里，仓库源码里除了
    `tests/test_mega_moe.py:74-94` 之外没有别的引用点；
-   它的 `swiglu_apply_weight_to_fp8.py:25` 自称「Adapted from TileKernels (MIT)」。
-   本章据此把它描述为「MegaMoE 的 TileLang 基线实现」，没有把它说成量产路径。
+   它的 `swiglu_apply_weight_to_fp8.py:25` 自称“Adapted from TileKernels (MIT)”。
+   本章据此把它描述为“MegaMoE 的 TileLang 基线实现”，没有把它说成量产路径。
 7. **`deep_gemm/include/deep_gemm/transform_sf.hpp` 与 `mega_moe.hpp` 未逐行读完。**
    D18（641 行）只读了校验、打包与 kernel 骨架；D32（1221 行）只读了 1-130 行
    与若干节选。凡引用处都给了行号，未读部分不作结论。
 8. **mHC 的算法背景不在本章范围。** `tests/test_hyperconnection.py:14` 注释说
    `n = hc_mult * (hc_mult + 2)`、`k = hc_mult * hidden`，与第 34 章讲的
-   流形超连接相关；本章只按「瘦长 GEMM + 行平方和」处理，不展开算法。
+   流形超连接相关；本章只按“瘦长 GEMM + 行平方和”处理，不展开算法。
 9. **本章的 kernel 名硬编码。** `code/02-perf-ledger/` 里 `aic_clock_mhz=1650`
    等常数是照抄 D26 的；如果上游改了硬件模型，脚本的复算值会失效，
-   但 README 的表格不会——两者要对上，仍需人工核对（`code/03` 的结论同理）。
+   但 README 的表格不会，两者要对上，仍需人工核对（`code/03` 的结论同理）。
 
 ---
 
@@ -203,4 +203,4 @@ node scripts/tutorial/check-content.mjs 35-deepgemm-ascend
 
 该工具校验的是**结构与可渲染性**：图表 JSON 的合法性与 `id` 一致性、
 每张源图是否有对应规格、自测题的题数与选项结构。
-它**不检查**内容正确性、引用可达性或行号准确性——那部分由上面几张表逐条人工核验。
+它**不检查**内容正确性、引用可达性或行号准确性。那部分由上面几张表逐条人工核验。

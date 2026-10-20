@@ -3,8 +3,8 @@
 说明：
 
 * 难度：`★` 基础 / `★★` 需要综合本章内容 / `★★★` 动手或推理链较长。
-* 「需要硬件」：`否` 表示一台能跑 Python 的机器即可；`是（GPU）` 表示需要真实的
-  NVIDIA GPU。**本章没有任何一题强制要求硬件**——需要 GPU 的题都标了「可选」。
+* “需要硬件”：`否` 表示一台能跑 Python 的机器即可；`是（GPU）` 表示需要真实的
+  NVIDIA GPU。**本章没有任何一题强制要求硬件**，需要 GPU 的题都标了“可选”。
 * 所有题目只依赖第 24 章及更早章节的知识；引用源码时一律指向
   `_vendor/tilelang-v0.1.15/`。
 
@@ -25,7 +25,7 @@
 `tilelang/cuda/execution_backend.py:24-31` 注册了三种 execution backend。请回答：
 
 1. 三种分别是什么？各自的默认可用性与依赖是什么？
-2. 为什么说「读 `get_kernel_source()` 得到的结论对三种 backend 都成立」？
+2. 为什么说“读 `get_kernel_source()` 得到的结论对三种 backend 都成立”？
 3. 如果你的机器上只装了 GPU 驱动、没有完整 CUDA toolkit，哪一种 backend 仍然可用？
    依据是什么？
 
@@ -36,7 +36,7 @@
 阅读 `_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:336-375`，回答：
 
 1. 为什么 `op.isWgmma_` 这一支在约束不满足时是 `LOG(FATAL)` 而不是返回 `kCudaMMA`？
-2. `Use2CtaRequested(op)` 为什么不设「回退到单 CTA」的分支？请在源码注释里找到理由。
+2. `Use2CtaRequested(op)` 为什么不设“回退到单 CTA”的分支？请在源码注释里找到理由。
 3. `TargetIsVolta(target) && !AllowVoltaMma(op)` 这一支返回 `kCudaFMA`；那
    `TargetIsVolta(target) && AllowVoltaMma(op)` 会走到哪里？返回值是什么？
 
@@ -44,7 +44,7 @@
 
 ## E4 概念题 ★★ 不需要硬件
 
-「默认的 `T.copy` 只有 store 会自动降成 TMA」这句话：
+“默认的 `T.copy` 只有 store 会自动降成 TMA”这句话：
 
 1. 在 `SelectCopyInstForLowering` 的哪一行代码里体现出来？请写出那一行。
 2. 一个 `T.copy(A_global, A_shared)` 想走 TMA，有哪三种写法/场景？分别对应哪一段代码？
@@ -154,7 +154,7 @@
 2. 生成代码里，带 cluster 的启动为什么要额外调用
    `cudaFuncSetAttribute(..., cudaFuncAttributeNonPortableClusterSizeAllowed, 1)`？
    厂商文档对可移植 cluster 上限怎么说？
-3. `T.copy_cluster` 的「TMA 快路径 / Multi-TMA / SIMT 回退」分别在什么条件下触发？
+3. `T.copy_cluster` 的“TMA 快路径 / Multi-TMA / SIMT 回退”分别在什么条件下触发？
    各自的 mbarrier arrive 数是多少？
 
 ---
@@ -166,7 +166,7 @@
 1. TileLang 的 CuTe DSL 后端复用了哪一条 pass pipeline？在哪一行可以看出来？
 2. 它生成的 device 代码是什么形态？由谁最终编译成 cubin？
 3. 它与 NVIDIA 官方的 cuTile Python 是同一件事吗？如果不是，请说出两者在
-   「编译目标」上的区别，并给出 corpus 里的依据位置。
+   “编译目标”上的区别，并给出 corpus 里的依据位置。
 
 ---
 
@@ -179,4 +179,4 @@
 2. 至少举出三条具体变化，并给出对应的源码位置；
 3. 核对 `T.tcgen05_gemm` 是否在 `tilelang.language` 的导出名单里（读
    `tilelang/cuda/language/__init__.py` 与 `tilelang/language/__init__.py`），
-   并解释为什么「官方示例里能写」与「facade 的 `__all__` 里没有」会同时成立。
+   并解释为什么“官方示例里能写”与“facade 的 `__all__` 里没有”会同时成立。

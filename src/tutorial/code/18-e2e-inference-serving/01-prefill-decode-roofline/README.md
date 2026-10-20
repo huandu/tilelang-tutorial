@@ -2,13 +2,13 @@
 
 ## 目的
 
-把「prefill 是 compute-bound、decode 是 memory-bound」从一句口号变成可以
+把“prefill 是 compute-bound、decode 是 memory-bound”从一句口号变成可以
 复算的东西：
 
 1. 用模型卡的两个参数量反推并互校 Qwen2.5-7B 的形状字段；
 2. 看同一个 GEMM 形状在 M 从 1 涨到 prompt 长度时，算术强度怎么翻过平衡点；
 3. 算 decode attention 的算术强度（只由 GQA 复用率决定）；
-4. 算「读一遍权重」的时间下界，以及 batch 把它摊薄的效果。
+4. 算“读一遍权重”的时间下界，以及 batch 把它摊薄的效果。
 
 ## 运行前提
 
@@ -76,7 +76,7 @@ decode attention：算术强度与序列长度无关（第 16 章的结论）
 
 * 模型是**下界**：不含 cache 命中、kernel 启动、同步、通信、尾部效应；
   真实 kernel 一定更慢。
-* 「权重读一遍」假设没有 TP / EP 切分。切成 N 份后每份只读自己的权重，
+* “权重读一遍”假设没有 TP / EP 切分。切成 N 份后每份只读自己的权重，
   但要多付一次通信。
-* 算术强度用「A、B 各读一次、C 写一次」的上界口径；epilogue 与中间结果
+* 算术强度用“A、B 各读一次、C 写一次”的上界口径；epilogue 与中间结果
   落地都会让真实值更低。

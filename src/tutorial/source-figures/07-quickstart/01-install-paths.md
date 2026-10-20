@@ -33,7 +33,7 @@ flowchart TB
                      tilelang;print(tilelang.__version__)"
 ```
 
-## 1.3 「昇腾」为什么有两条不同的路
+## 1.3 “昇腾”为什么有两条不同的路
 
 ```text
   tilelang v0.1.15（主干）                     tile-ai/tilelang-ascend（独立仓库）

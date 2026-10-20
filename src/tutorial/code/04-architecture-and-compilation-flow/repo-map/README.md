@@ -2,9 +2,9 @@
 
 ## 目的
 
-正文第 2 节的「每个顶层模块负责什么」表，以及图 1 里的数字（24 个顶层子目录、
+正文第 2 节的“每个顶层模块负责什么”表，以及图 1 里的数字（24 个顶层子目录、
 390 个 `.py`、42 个 `src/transform/*.cc`、54 个 examples 子目录、37 篇 docs），
-都由这个脚本生成。它把「我数过」变成一条能重跑的命令。
+都由这个脚本生成。它把“我数过”变成一条能重跑的命令。
 
 ## 运行前提
 
@@ -39,7 +39,7 @@ totals:
 ```
 
 **正确性判据**：`examples_subdirs + examples_top_level_files = 57`，与
-`VERSIONS.md` 里「`examples/` 有 57 个目录」的说法项数一致，但拆分口径不同
+`VERSIONS.md` 里“`examples/` 有 57 个目录”的说法项数一致，但拆分口径不同
 （54 个目录 + 3 个文件）。正文与 `references.md` 都记了这个差异。
 
 ## 常见误用
@@ -48,7 +48,7 @@ totals:
   **v0.1.15**（`VERSION` = `0.1.15`）；`main` 上 `examples/`、`tilelang/jit/adapter/`
   的数量都会变。
 * 用 `git ls-files` 统计。仓库里有 `.gitignore` 掉的产物目录，`rglob` 与 `git ls-files`
-  结果会略有差异。本章统一用 `rglob`（等价于「在你 clone 出来的工作树上数」）。
+  结果会略有差异。本章统一用 `rglob`（等价于“在你 clone 出来的工作树上数”）。
 
 ## 验证级别
 

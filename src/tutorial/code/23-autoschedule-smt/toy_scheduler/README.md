@@ -4,7 +4,7 @@
 
 把 `_vendor/tilelang-v0.1.15/tilelang/ascend/transform/z3_scheduler.py` 里
 `z3_schedule_loop_python`（第 268–783 行）的模型缩到 4 个任务、2 个 buffer 变量，
-用来手推「为什么多开一份 buffer 能把 II 压下来」。
+用来手推“为什么多开一份 buffer 能把 II 压下来”。
 
 模型要素与源码一一对应：
 
@@ -57,8 +57,8 @@ python3 toy_schedule.py sensitivity
 ```
 
 预期：真值模型给出 `II=28`；把 MTE2 的 latency 从 40 低报成 16 后，调度器给出
-`II=16`，并在真值模型下报出「l1->l0(MTE1) 比 loadA(MTE2 GM->L1) 早了 24 cycles」。
-这就是正文第 5.1 节说的「模型不准会导致错误」的可复现证据（在小模型上）。
+`II=16`，并在真值模型下报出“l1->l0(MTE1) 比 loadA(MTE2 GM->L1) 早了 24 cycles”。
+这就是正文第 5.1 节说的“模型不准会导致错误”的可复现证据（在小模型上）。
 
 ## 验证级别
 

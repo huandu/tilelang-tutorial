@@ -3,8 +3,8 @@
 **用途**：正文 §8。
 
 **事实来源**：`DeepEP-Ascend/README.md:60-84`（Features 表、Ongoing 清单、
-「Hybrid communication, CPU-backed Engram storage and graph capture remain
-unsupported」），以及源码里的断言（`csrc/buffers/ep.hpp:79,85,116`、
+“Hybrid communication, CPU-backed Engram storage and graph capture remain
+unsupported”），以及源码里的断言（`csrc/buffers/ep.hpp:79,85,116`、
 `csrc/kernels/comm/hccl.hpp:85`）。
 
 | 能力 | 状态 | 依据 |
@@ -26,7 +26,7 @@ unsupported」），以及源码里的断言（`csrc/buffers/ep.hpp:79,85,116`�
 
 **要点**
 
-* 只有 EP 主线（dispatch/combine + 三个可选特性）是「可用」。
+* 只有 EP 主线（dispatch/combine + 三个可选特性）是“可用”。
 * Bucket 只做到 all-gather；reduce-scatter / all-reduce 仍在开发。
 * 动态冗余专家（EPLB）目前只有规划，没有搬运。
 * hybrid、CPU Engram、graph capture 三条在 NVIDIA 侧有、昇腾侧没有。

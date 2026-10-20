@@ -5,7 +5,7 @@
 读完本章，你应当能够：
 
 1. 拿起任意一个 TileLang pass，**说出它在哪一侧**（C++ 还是 Python）、依据是什么，
-   并复述「定义 → 实现 → 注册 → 挂载 → 测试」这条完整链路。
+   并复述“定义 → 实现 → 注册 → 挂载 → 测试”这条完整链路。
 2. 解释 `tilelang/transform/_ffi_api.py` 与 C++ 侧 `TVM_FFI_STATIC_INIT_BLOCK()` /
    `refl::GlobalDef().def(...)` 的对应关系，说清**改名时哪三处必须同时改**，
    以及为什么改错的情形只在运行时暴露。
@@ -20,19 +20,19 @@
 
 ## 前置知识
 
-* 第 20 章「IR 与编译期管线精读」：本章是它的续集。第 20 章教你**读出**每个 pass
+* 第 20 章“IR 与编译期管线精读”：本章是它的续集。第 20 章教你**读出**每个 pass
   对 IR 做了什么，本章教你**改出来**。如果还分不清 `IRModule` / `PrimFunc` /
   `SBlock` / `ForKind`，先回去读第 20 章第 2 节。
-* 第 4 章「架构总览与一次编译的全流程」：知道五个阶段与 `context.lower(mod)` 这个
+* 第 4 章“架构总览与一次编译的全流程”：知道五个阶段与 `context.lower(mod)` 这个
   唯一分岔点。
-* 第 12 章「调试与性能分析」：`lower_trace` / `pass_diff` / `compile_only` 在那里
+* 第 12 章“调试与性能分析”：`lower_trace` / `pass_diff` / `compile_only` 在那里
   首次出现；本章只讲**怎么用它们调试你自己写的 pass**。
-* 第 21–23 章：布局推导、流水与同步、昇腾自动调度。那三章的 pass 是「读懂一个
-  pass 再改它」的最佳练习对象，但读本章不需要先读完它们。
-* 会读 Python 与 **C++17**；知道「pass 就是一个 `IRModule → IRModule` 的函数」。
+* 第 21–23 章：布局推导、流水与同步、昇腾自动调度。那三章的 pass 是“读懂一个
+  pass 再改它”的最佳练习对象，但读本章不需要先读完它们。
+* 会读 Python 与 **C++17**；知道“pass 就是一个 `IRModule → IRModule` 的函数”。
   不需要写过 CUDA，也不需要读过 TVM 源码。
 
-本章回答一个问题：**从「我能读懂这个 pass」到「我改了它，并且知道它没坏」，
+本章回答一个问题：**从“我能读懂这个 pass”到“我改了它，并且知道它没坏”，
 中间缺的是哪几步。**
 
 ---
@@ -47,25 +47,25 @@
 * 我要加的这条检查，**该写在 C++ 还是 Python**？
 * 我写好了，**怎么让它被 Python 看到**？为什么 `tilelang.transform.X()` 找不到
   我的函数？
-* 我把它挂进 pipeline 了，编译还是过的——**怎么知道它到底跑了、跑对了**？
+* 我把它挂进 pipeline 了，编译还是过的，**怎么知道它到底跑了、跑对了**？
 * 我把性能跑慢了 4%，**是我这个 pass 干的吗**？
 * 昇腾那边有一棵**另外的仓库**，我要改哪一个？
 
-这五个问题都不是「API 怎么用」，而是**工程流程**问题。它们各自的答案都很短，
+这五个问题都不是“API 怎么用”，而是**工程流程**问题。它们各自的答案都很短，
 但缺一条就卡住。
 
-### 1.2 一个真实的痛点：新检查有三种「静默失效」
+### 1.2 一个真实的痛点：新检查有三种“静默失效”
 
-考虑一个具体场景。你想加一条检查：**「local 作用域的数组不能太大」**。照着现有
+考虑一个具体场景。你想加一条检查：**“local 作用域的数组不能太大”**。照着现有
 verify pass 抄完之后，有三种失败方式是编译期完全不报错的：
 
 1. `VisitStmt_(const BufferStoreNode *op)` 少写一个下划线，成了
-   `VisitStmt(const BufferStoreNode *op)`——编译通过、pass 也跑，只是永远不会被
+   `VisitStmt(const BufferStoreNode *op)`，编译通过、pass 也跑，只是永远不会被
    调用（C++ 的重载规则，见 3.3 小节）。
 2. C++ 注册名写成 `"tl.transform.VerifyLocalAlloc"`，Python 侧调的是
-   `_ffi_api.VerifyLocalAllocLimit()`——`AttributeError`，但只在首次调用时炸。
+   `_ffi_api.VerifyLocalAllocLimit()`，`AttributeError`，但只在首次调用时炸。
 3. 检查逻辑全对，但它被挂在 `LowerOpaqueBlock` 之后，此时 `alloc_buffers` 已经
-   被改写、`SBlock` 也没了——它每次都「没发现问题」。
+   被改写、`SBlock` 也没了。它每次都“没发现问题”。
 
 本章的每一小节，本质上都是在拆掉这三种静默失效中的一种。
 
@@ -78,8 +78,8 @@ verify pass 抄完之后，有三种失败方式是编译期完全不报错的�
    [../../VERSIONS.md](../../VERSIONS.md) 为准。
 2. **不写没有跑过的运行结果。** 本机是 macOS（Apple Silicon），**没有 NVIDIA
    GPU，没有昇腾 NPU，也没有安装 tilelang/tvm**（`import tilelang` 直接
-   `ModuleNotFoundError`，`command -v nvcc` 无输出）。因此凡是「跑起来是什么样」
-   的结论，一律写成「应当是什么样」并给出验证命令；**「能编译」这类结论一律标为
+   `ModuleNotFoundError`，`command -v nvcc` 无输出）。因此凡是“跑起来是什么样”
+   的结论，一律写成“应当是什么样”并给出验证命令；**“能编译”这类结论一律标为
    待验证**。
 3. **测试不是附属品。** 一个 pass 没有 IR 基线就不算完成：`它没坏` 与
    `它没改坏别的` 是两件事。
@@ -128,7 +128,7 @@ verify pass 抄完之后，有三种失败方式是编译期完全不报错的�
 * 另有一类**不是 pass** 的 Python 函数：`tilelang/ascend/transform/z3_scheduler.py`
   用 `@tvm_ffi.register_global_func("tl.transform.z3_schedule_python")`（`:228`）与
   `"tl.transform.z3_schedule_loop_python"`（`:784`）注册了两个函数，由 C++ 侧
-  `AutoSchedule` 回调。**它们不是 pass，是把 Python 当算法库用**——这是昇腾路线
+  `AutoSchedule` 回调。**它们不是 pass，是把 Python 当算法库用**。这是昇腾路线
   的一个特点，第 23 章详细讲。
 
 **怎么选？** 按顺序问自己：
@@ -140,10 +140,10 @@ verify pass 抄完之后，有三种失败方式是编译期完全不报错的�
 4. 会被多个后端复用、且对编译器自身耗时敏感？→ **写 C++**。
 
 一个可检验的经验法则：`verify_buffer_init` 这类检查如果现在重写，很可能写成
-Python——它只需要 `BufferStore` / `BufferLoad` 与 tile op 的读写集合；而
+Python。它只需要 `BufferStore` / `BufferLoad` 与 tile op 的读写集合；而
 `LayoutInference` 必须留在 C++，因为它要访问 layout 对象与 op 的 `InferLayout`
 接口。事实上 `verify_parallel_loop.cc:3` 就 `#include "common/constr_visitor.h"`，
-复用了 C++ 侧的约束集合基础设施（见第 23 章），这正是「留在 C++」的理由。
+复用了 C++ 侧的约束集合基础设施（见第 23 章），这正是“留在 C++”的理由。
 
 ### 2.3 FFI：注册名怎样变成 Python 属性
 
@@ -177,17 +177,17 @@ TVM_FFI_STATIC_INIT_BLOCK() {
 **改名时要同时改三处**（code review 最常抓的一类错）：
 
 1. C++ 里的注册字符串 `"tl.transform.X"`；
-2. C++ 里 `CreatePrimFuncPass(pass_func, 0, "tl.X", {})` 的第三个参数——它出现在
+2. C++ 里 `CreatePrimFuncPass(pass_func, 0, "tl.X", {})` 的第三个参数。它出现在
    `TL_LOWER_TRACE` / `TL_PASS_PROFILE` 报告里，**可以和注册名不同**；
 3. Python 里的薄包装 `def X(): return _ffi_api.X()`。
 
 第 1、3 处改错 → `AttributeError`；第 2 处改错 → 不报错，只是报告里出现一个你
-认不出来的名字。**三种错误的暴露时机不同**，这就是 3.2 节说「必须有一条会命中
-的测试」是唯一可靠防线的原因。
+认不出来的名字。**三种错误的暴露时机不同**，这就是 3.2 节说“必须有一条会命中
+的测试”是唯一可靠防线的原因。
 
 ### 2.4 挂载：命令式 pipeline，没有注册表
 
-熟悉 LLVM 或 TVM 官方 `PassManager` 的人会本能地去找「注册到某个 pass manager」。
+熟悉 LLVM 或 TVM 官方 `PassManager` 的人会本能地去找“注册到某个 pass manager”。
 TileLang 不是这样。挂载**就是一行函数调用**：
 
 ```python
@@ -206,13 +206,13 @@ ascend_pipeline = PassPipeline("ascend", AscendPassPipelineBody)   # ascend/pipe
 
 这个设计有两个直接后果，写 pass 时都要记住：
 
-* **顺序是硬编码的**，没有「优先级」可以声明。你的 pass 放在哪一行，就在哪个阶段
+* **顺序是硬编码的**，没有“优先级”可以声明。你的 pass 放在哪一行，就在哪个阶段
   的 IR 形态上工作。
 * **想被所有后端复用，就得在每个后端各加一行。** 一个通用 pass
   （如 `VerifyBufferInit`）在 v0.1.15 里被 **6 条** pipeline 各自调用一次：
   `cuda/pipeline.py:98`、`ascend/pipeline.py:76`、`cpu/pipeline.py:35`、
   `metal/pipeline.py:40`、`rocm/pipeline.py:39`、`webgpu/pipeline.py:41`。
-  `DecoupleTypeCast` 同样是 6 处。**「只挂了一个后端」是 PR 评审里最常见的遗漏。**
+  `DecoupleTypeCast` 同样是 6 处。**“只挂了一个后端”是 PR 评审里最常见的遗漏。**
 
 ### 2.5 pass 之间的顺序约束
 
@@ -220,16 +220,16 @@ ascend_pipeline = PassPipeline("ascend", AscendPassPipelineBody)   # ascend/pipe
 锁定版本里现成的例子：
 
 * `VerifyBufferInit` 必须在 `PipelinePlanning` **之前**。CUDA 侧的注释写得很直白
-  （`tilelang/cuda/pipeline.py:93-98`）：「Runs after the reducer passes above …
+  （`tilelang/cuda/pipeline.py:93-98`）：“Runs after the reducer passes above …
   and before PipelinePlanning and LowerTileOp, while loop bodies are still in
-  source order and tile ops still declare their access regions.」——它依赖
-  「源码顺序」和「tile op 的 `GetAccessRegions()` 还在」两个前提。
+  source order and tile ops still declare their access regions.”。它依赖
+  “源码顺序”和“tile op 的 `GetAccessRegions()` 还在”两个前提。
 * `DecoupleTypeCast` 必须在 `VectorizeLoop` **之前**，理由写在
-  `tilelang/transform/decouple_type_cast.py:650-652`：「must be applied before
+  `tilelang/transform/decouple_type_cast.py:650-652`：“must be applied before
   VectorizeLoop and StorageRewrite passes, while the IR still uses
-  BufferLoad/BufferStore (not `tvm_access_ptr`)」。
+  BufferLoad/BufferStore (not `tvm_access_ptr`)”。
 * `AddWrapperForSingleBufStore` 挂在几乎所有 pipeline 的**最前面**
-  （`cuda/pipeline.py:79`、`ascend/pipeline.py:58`），因为它要把「裸 store」包成
+  （`cuda/pipeline.py:79`、`ascend/pipeline.py:58`），因为它要把“裸 store”包成
   `For(PARALLEL)`，而之后所有 pass 都假设 store 已经在并行循环里。
 
 一张可复用的判断表：
@@ -311,7 +311,7 @@ def HoistConstantBroadcast():
 
 * **`PyStmtExprMutator` + `@tirx.functor.mutator`**：装饰器把 Python 方法
   `visit_broadcast_` 接到 C++ visitor 的 `VisitExpr_(const BroadcastNode*)` 上，
-  命名规则是「`visit_` + 小写节点名 + `_`」。写错名字不报错，只是不会被调用。
+  命名规则是“`visit_` + 小写节点名 + `_`”。写错名字不报错，只是不会被调用。
 * **`pending` 的清空—恢复**：这是 mutator 的局部状态管理。少了这三行，第二条
   store 会引用第一条 store 定义的变量，生成的 IR 直接非法。
 * **`stamp_stmt_spans`**：重建节点会丢 span，而 span 是编译报错指回 Python 行的
@@ -320,7 +320,7 @@ def HoistConstantBroadcast():
 * **`prim_func_pass(pass_fn, opt_level=0, name=...)`**：`name` 决定
   `TL_LOWER_TRACE` / `TL_PASS_PROFILE` 报告里的名字。不传 name 的 Python pass
   （如上游 `HoistBroadcastValues`，`hoist_broadcast_values.py:99`）在报告里会退化
-  成自动推断的名字——能跑，但不好认。
+  成自动推断的名字，能跑，但不好认。
 
 挂载只有两处改动：
 
@@ -340,7 +340,7 @@ mod = tilelang.transform.HoistConstantBroadcast()(mod)
 
 完整代码在 `code/02-cpp-pass-template/`：`count_parallel_loops.cc` 是 pass 本体，
 `python_wrapper_snippet.py` 是三处改动的粘贴片段，
-`test_count_parallel_loops.py` 是 pytest 骨架。它同样「只报不改」，数出所有
+`test_count_parallel_loops.py` 是 pytest 骨架。它同样“只报不改”，数出所有
 `For(kind=kParallel)` 并打成一条警告。骨架逐块对照上游：
 
 | 模板里的部分 | 对照的上游代码（`_vendor/tilelang-v0.1.15/`） |
@@ -393,10 +393,10 @@ TVM_FFI_STATIC_INIT_BLOCK() {
 **必须知道的三个 C++ 陷阱**（都写进了文件注释）：
 
 * 重载名不能写错。`VisitStmt_(const ForNode *op) final` 写成 `VisitStmt(op)` 会
-  编译通过、静默不生效。这是 C++ pass 最常见的一类「什么都没发生」。
+  编译通过、静默不生效。这是 C++ pass 最常见的一类“什么都没发生”。
 * `pass_func` 里**先记录还是先递归**必须和你的语义一致：对报告型 pass 只是排序
   问题，对改 IR 的 pass 就是语义错误。
-* **`CreatePrimFuncPass(pass_func, 0, ...)` 的 `opt_level=0` 意味着「必须执行」**，
+* **`CreatePrimFuncPass(pass_func, 0, ...)` 的 `opt_level=0` 意味着“必须执行”**，
   不会因优化开关被跳过。语义 pass（含检查）都应该用 0。
 
 **构建与验证步骤**（本机没有编译环境，以下命令是**待验证项**，完整版见
@@ -429,8 +429,8 @@ bash format.sh --files src/transform/count_parallel_loops.cc
 
 为什么第 6 步要**重新 configure**：CMake 用 `file(GLOB ...)` 收集源文件
 （`CMakeLists.txt:374-389`），glob 在 **configure 期**求值。新加 `.cc` 后不重新
-configure，文件不会进构建，于是冒烟那一步报的仍然是 `AttributeError`——很容易
-误判成「注册名写错了」。
+configure，文件不会进构建，于是冒烟那一步报的仍然是 `AttributeError`，很容易
+误判成“注册名写错了”。
 
 ### 3.4 给 pass 加开关
 
@@ -459,8 +459,8 @@ Python 侧的枚举在 `tilelang/transform/pass_config.py:52-58`
 
 **加一个 config key 要改四处**：`src/op/builtin.h` 的常量、`src/op/builtin.cc` 的
 `TVM_REGISTER_PASS_CONFIG_OPTION`、C++ 里的 `ctx->GetConfig(...)`、
-`tilelang/transform/pass_config.py` 的枚举。少一处，用户就会拿到「配置不生效但
-也不报错」。
+`tilelang/transform/pass_config.py` 的枚举。少一处，用户就会拿到“配置不生效但
+也不报错”。
 
 ---
 
@@ -485,14 +485,14 @@ pass（`from .hoist_broadcast_values import HoistBroadcastValues`，`:10`）。
 不同消费者，机制在 `tilelang/instrumentation/`：
 
 * `tilelang/instrumentation/session.py:163` 的 `compile_pass_instrumentation(...)`
-  开一个「一次编译」的作用域；
+  开一个“一次编译”的作用域；
 * `:213` 的 `instrument_current_pass_context()` 把已注册的工具装进 TVM 的
   `PassContext`；
 * 工具通过 `:130` 的 `register_pass_instrumentation_tool(...)` 注册自己；
 * `PassPipeline.lower()` 用 `pass_pipeline(self.name)` 给每个 pass 事件打阶段标签
   （`pipeline.py:22-31`）。
 
-于是两个工具都只是「注册一个工具」：
+于是两个工具都只是“注册一个工具”：
 
 * `tilelang/tools/pass_timing.py:334` 的 `create_pass_timing_tool(pass_configs)`，
   由 `tilelang/jit/kernel.py:243` 在每次 JIT 编译时装配；
@@ -502,7 +502,7 @@ pass（`from .hoist_broadcast_values import HoistBroadcastValues`，`:10`）。
 **对你写 pass 的直接意义**：只要给 `CreatePrimFuncPass` / `prim_func_pass` 传一个
 可读的 `name`，你的 pass 就会带着这个名字出现在这三份报告里。
 
-### 4.3 instrumentation 与「pass 有没有跑」的关系
+### 4.3 instrumentation 与“pass 有没有跑”的关系
 
 新手最容易困惑的一点：**`TL_LOWER_TRACE=1` 看不到你的 pass，不代表它没跑。**
 `lower_trace` 挂在完整编译入口（`tilelang/engine/lower.py:117,162,234` 三处
@@ -521,7 +521,7 @@ lower_trace(func, [("Before", tilelang.transform.Simplify()),
 
 ### 4.4 新增 C++ 文件要动的构建点
 
-结论已经说过一次，这里给出完整清单，因为它是「编译通过但不生效」的最常见根因：
+结论已经说过一次，这里给出完整清单，因为它是“编译通过但不生效”的最常见根因：
 
 | 新文件类型 | 需要动的地方 | 为什么 |
 | --- | --- | --- |
@@ -530,7 +530,7 @@ lower_trace(func, [("Before", tilelang.transform.Simplify()),
 | 新的 Python 模块 | `tilelang/transform/__init__.py` 加 import | Python 侧没有自动发现机制 |
 
 昇腾这一点尤其容易踩：`src/ascend/CMakeLists.txt:1-20` 的注释解释了为什么
-`src/ascend/ir.cc`、`src/ascend/layout/ascend_layouts.cc` 等**必须无条件编译**——
+`src/ascend/ir.cc`、`src/ascend/layout/ascend_layouts.cc` 等**必须无条件编译**，
 `tilelang/__init__.py` 会无条件 import `tilelang.ascend`，缺了对象类型注册就会
 `Cannot find object type index`，直接 `import tilelang` 失败。而 `transform/` 下的
 pass 只在 `USE_ASCEND=ON` 时进构建。
@@ -561,7 +561,7 @@ def _check(before, after) -> None:
 三个细节：
 
 * **`BindTarget` 不能省。** 没 bind target 的 IR 与 bind 过的 IR 结构不等，
-  不 bind 会让「本来一样」的两次比较挂掉。
+  不 bind 会让“本来一样”的两次比较挂掉。
 * **`map_free_vars=True`。** 用例里的 `Var` 是自由变量，允许按位置映射比较。
 * **基线要能一键生成。** 手写 `after` 只在用例极小时可行；一旦超过 30 行，
   就该用脚本把当前输出写成快照并在 CI 里 diff。
@@ -581,8 +581,8 @@ testing/ascend/_ir.py                                               # 昇腾侧�
 
 昇腾侧特别注意 `testing/ascend/_ir.py`：它提供 `seq()` / `region()` / `copy()` /
 `kernel()` / `calls()` / `nodes()` 这组助手（`:15-58`），让你能手搓一个带
-`tl.tileop.ascend_copy` 的 IR，而不用起一个前端 kernel——因为昇腾 pass 的输入常常
-是「已经排过序的 IR」。用法见
+`tl.tileop.ascend_copy` 的 IR，而不用起一个前端 kernel。因为昇腾 pass 的输入常常
+是“已经排过序的 IR”。用法见
 `testing/ascend/transform/test_ascend_insert_nd2nz.py:11-46`。
 
 通用 pass 侧更朴素：**手搓 `IRModule` → 调 pass → 断言**。两个范式：
@@ -617,7 +617,7 @@ def test_pipeline_warns_by_default(capfd, no_kernel_cache):
 两个来自上游的细节值得照抄：
 
 * **`no_kernel_cache` fixture**（`test_tilelang_transform_verify_buffer_init.py:377-388`）：
-  命中 kernel cache 时根本不跑 pass，警告会「第二次编译时消失」，用这个 fixture
+  命中 kernel cache 时根本不跑 pass，警告会“第二次编译时消失”，用这个 fixture
   强制每次重编。
 * **数值对拍要和 `torch.allclose` 一起写**：编译过只是活着，算对才是正确。
   昇腾侧对应的是 `torch_npu` 张量与 `T.dump_tensor`（见第 19 章）。
@@ -630,7 +630,7 @@ verify pass 的价值几乎全在边界上。以 `verify_buffer_init.cc` 的用�
 | 边界 | 为什么必须有 | 上游用例 |
 | --- | --- | --- |
 | 恰好不在管辖范围（global scope） | 防止过度报告 | `test_tilelang_transform_verify_buffer_init.py:111-120` |
-| 由外部手段建立（`call_extern` 填的 buffer） | 保守策略「当作已写」 | 同文件 `:106-108` |
+| 由外部手段建立（`call_extern` 填的 buffer） | 保守策略“当作已写” | 同文件 `:106-108` |
 | 读自己的目的地址（`x[i] = x[i] + 1`） | store 先求值再写入 | 同文件 `:183-201` |
 | 跨线程作用域的顺序无关性（warp specialization） | shared 靠 barrier 而不是源码顺序 | 同文件 `:218-237` |
 | 参数 buffer（由调用方填） | 不该报 | 同文件 `:123-141` |
@@ -647,9 +647,9 @@ verify pass 的价值几乎全在边界上。以 `verify_buffer_init.cc` 的用�
 
 | 层次 | 入口 | 说明 |
 | --- | --- | --- |
-| 单个算子的端到端对比 | `_vendor/tilelang-v0.1.15/benchmark/`（`matmul/`、`matmul_fp8/`、`mamba2/`、`blocksparse_attention/`、`compile_speed/`、`matmul_metal/`） | 回答「这个 kernel 快不快」 |
-| 公共算子集 | corpus `12-operator-libraries/raw/tilelang-benchmark/`：`README.md` 给出 GEMM / FlashAttention / Linear Attention 三张形状表，`hopper_benchmark/`、`ampere_benchmark/`、`ada_benchmark/`、`cdna_benchmark/` 分区存放各代硬件的结果 | 回答「同一批形状跨硬件横向对比」；注意该仓库标题已写明 Archived、作者指向 TileOPs |
-| 改动前后的回归判定 | `maint/scripts/run_perf_regression.sh` | 回答「我的 PR 有没有把谁改慢」——**这才是改 pass 时要跑的** |
+| 单个算子的端到端对比 | `_vendor/tilelang-v0.1.15/benchmark/`（`matmul/`、`matmul_fp8/`、`mamba2/`、`blocksparse_attention/`、`compile_speed/`、`matmul_metal/`） | 回答“这个 kernel 快不快” |
+| 公共算子集 | corpus `12-operator-libraries/raw/tilelang-benchmark/`：`README.md` 给出 GEMM / FlashAttention / Linear Attention 三张形状表，`hopper_benchmark/`、`ampere_benchmark/`、`ada_benchmark/`、`cdna_benchmark/` 分区存放各代硬件的结果 | 回答“同一批形状跨硬件横向对比”；注意该仓库标题已写明 Archived、作者指向 TileOPs |
+| 改动前后的回归判定 | `maint/scripts/run_perf_regression.sh` | 回答“我的 PR 有没有把谁改慢”。**这才是改 pass 时要跑的** |
 
 `run_perf_regression.sh` 的做法值得记住：它**不在你的工作树里切分支**，而是
 `git worktree add --detach` 出一份基线 checkout（`:150-168`），两边分别建 venv、
@@ -665,7 +665,7 @@ verify pass 的价值几乎全在边界上。以 `verify_buffer_init.cc` 的用�
 FAIL_ON_REGRESSION=1 REGRESSION_THRESHOLD=0.95 ./maint/scripts/run_perf_regression.sh
 ```
 
-### 6.2 怎么判断「是不是回归」
+### 6.2 怎么判断“是不是回归”
 
 **不要看单条数字。** 仓库里的判定规则在
 `maint/scripts/test_perf_regression.py:24-32,243-257`：
@@ -677,7 +677,7 @@ regressed ⟺ 至少有 MIN_COUNT 条（默认 2）speedup < THRESHOLD（默认 
 
 那段注释给出了标定依据：到 PR #3176 为止的 33 份机器人报告、1901 个样本中，
 真回归都表现为 14–23 条同时塌陷；而 7 份假警报恰好只有一条落在极端值
-（最低 0.044x）上，其余全是 1.000。于是「至少两条同时掉」这个门槛正好把两类分开。
+（最低 0.044x）上，其余全是 1.000。于是“至少两条同时掉”这个门槛正好把两类分开。
 
 `code/04-regression-judge/` 把这条规则抽成可离线运行的判定器，`--self-test` 输出
 （本机真实运行过）：
@@ -690,20 +690,20 @@ regressed ⟺ 至少有 MIN_COUNT 条（默认 2）speedup < THRESHOLD（默认 
 **回归：2/40 条低于 0.9x**
 ```
 
-也就是说：**「有一条变慢了」和「发生了回归」是两句不同的话**，后者需要样本量。
-同一个脚本还演示了第三种情况——只在一边出现的 case 不参与比较，
-「少了结果」与「结果变差」在 `compare_perf_regression.py` 里对应
+也就是说：**“有一条变慢了”和“发生了回归”是两句不同的话**，后者需要样本量。
+同一个脚本还演示了第三种情况，只在一边出现的 case 不参与比较，
+“少了结果”与“结果变差”在 `compare_perf_regression.py` 里对应
 `--fail-on-missing` 与 `--fail-on-regression` 两个不同开关。
 
-**注意两个不同的默认值，别把它们混成一个。** 上面这套「0.90 + 至少 2 条」是
+**注意两个不同的默认值，别把它们混成一个。** 上面这套“0.90 + 至少 2 条”是
 PR 机器人报告的判定口径（`maint/scripts/test_perf_regression.py:31-32`）。而
 `run_perf_regression.sh:28` 给 `FAIL_ON_REGRESSION` 用的 `REGRESSION_THRESHOLD`
-默认是 **1.0**，也就是「只要有一条比基线慢就退出码非零」——这是 CI 门禁的保守
+默认是 **1.0**，也就是“只要有一条比基线慢就退出码非零”。这是 CI 门禁的保守
 选择，不是回归判定本身。要做批量判定，用前者；要做门禁，用后者并显式设定阈值。
 
 ### 6.3 定位回归来源
 
-判定为回归之后，第一步是分清**编译变慢**还是**产物变慢**——两件独立的事，
+判定为回归之后，第一步是分清**编译变慢**还是**产物变慢**，两件独立的事，
 两套工具：
 
 ```bash
@@ -718,11 +718,11 @@ TL_LOWER_TRACE=terminal python3 my_case.py
 
 读 `pass_timing` 的关键是分清两列：**self** 是这个 pass 自己花的时间，**inclusive**
 包含它调用的子 pass（`tilelang/tools/pass_timing.py:64-73` 的
-`PassTimingRecord.self_duration_s` / `duration_s`）。看到「外层 pass 很慢」先看
+`PassTimingRecord.self_duration_s` / `duration_s`）。看到“外层 pass 很慢”先看
 self，否则会把子 pass 的成本算到外层头上。
 
 读 `lower_trace` 的关键是**只盯你自己那个 pass 的 diff**：报告按阶段与顺序编号，
-你要确认三件事——它确实被调用了、它的 before/after 差异是你预期的那几行、
+你要确认三件事。它确实被调用了、它的 before/after 差异是你预期的那几行、
 它之后的下游 pass 没有因此产生额外变化。
 
 图 4（`figures/fig-04-regression-triage.md`）把这一步画成了流程。
@@ -755,43 +755,43 @@ self，否则会把子 pass 的成本算到外层头上。
    pass** 最省事的方式。
 3. **`TL_ENABLE_DUMP_IR` / `TL_DUMP_IR_PATH`**：常量定义在
    `src/op/builtin.h:129-130`，适合在 CI 或崩溃现场留档。
-4. **设备侧打印（`T.printf` / `T.dump_tensor`）**：只能回答「运行时值对不对」，
-   回答不了「IR 变成什么样」。第 12 章讲过。
+4. **设备侧打印（`T.printf` / `T.dump_tensor`）**：只能回答“运行时值对不对”，
+   回答不了“IR 变成什么样”。第 12 章讲过。
 
 ### 7.2 `pass_diff` 与 `lower_trace`
 
-两者都是「逐 pass diff」，差别在工程成熟度：
+两者都是“逐 pass diff”，差别在工程成熟度：
 
 * `tilelang/utils/pass_diff.py:1030` 的 `pass_diff(func, passes, mode=...)` 是**程序
-  API**：给定 pass 链，输出终端彩色 diff 或 HTML。适合「我就想看我这一小段」。
+  API**：给定 pass 链，输出终端彩色 diff 或 HTML。适合“我就想看我这一小段”。
 * `TL_LOWER_TRACE` / `tilelang/tools/lower_trace/` 是**整条 pipeline 的观察器**：
   带阶段标签、codegen 捕获、可编辑重编、崩溃安全的增量 HTML。
 
 官方文档已经把 `pass_diff` 标成被取代：`docs/tools/pass_diff.md` 顶部有一条
-admonition「Superseded — use IR Lower Trace」，
+admonition“Superseded — use IR Lower Trace”，
 `TILELANG_PASS_DIFF` 仅为向后兼容保留。**新写 pass 时用 `lower_trace`。**
 
 ### 7.3 断言：三种强度
 
 | 手段 | 什么时候用 | 崩溃形态 |
 | --- | --- | --- |
-| `ICHECK(cond) << msg` | 内部不变量（「这里必须有 `tilelang_root`」） | 编译期立即失败，带上下文 |
+| `ICHECK(cond) << msg` | 内部不变量（“这里必须有 `tilelang_root`”） | 编译期立即失败，带上下文 |
 | `LOG(FATAL) << msg` | 用户代码导致的不可能状态（如管线规划冲突） | 编译期立即失败 |
 | `LOG(WARNING) << msg` | 可绕过的问题（未初始化 buffer、数据竞争） | 编译继续，警告进 stderr |
 
 经验法则：**用户能修的问题用 WARNING，编译器自己的 bug 用 ICHECK**。
-把「用户写错了」做成 FATAL，会让 `tilelang.compile` 直接抛异常；反过来把内部
+把“用户写错了”做成 FATAL，会让 `tilelang.compile` 直接抛异常；反过来把内部
 不变量做成 WARNING，会让 bug 潜伏到很后面才以别的方式爆出来。
 
 顺便注意 WARNING 的可见性：`tilelang/transform/pass_config.py:60-68` 说明
 `tl.disable_data_race_check` 默认是**关**的（因为易误报），需要
 `TILELANG_ENABLE_DATA_RACE_CHECK` 环境变量或 pass config 打开。写新检查时，
-「默认开还是默认关」本身就是一个要写进 docstring 的决定。
+“默认开还是默认关”本身就是一个要写进 docstring 的决定。
 
 ### 7.4 用 verify pass 当模板
 
 `verify_buffer_init` 与 `verify_parallel_loop` 是最好的入门模板，因为它们
-**不改 IR**，把「写 pass」的风险压到只剩遍历一种。
+**不改 IR**，把“写 pass”的风险压到只剩遍历一种。
 `code/03-verify-pass-template/extract_verify_skeleton.py` 可以把这两份骨架连行号
 打印出来（本机已运行）。它的输出长这样：
 
@@ -813,8 +813,8 @@ admonition「Superseded — use IR Lower Trace」，
     registered name    : tl.transform.VerifyBufferInit
 ```
 
-（看到两个同名的 `VisitStmt_(BufferStoreNode*)` 不要去重：文件里有两个 visitor——
-`PotentialWriteCollector` 与 `BufferInitVerifier`，一个收集「谁可能写」，
+（看到两个同名的 `VisitStmt_(BufferStoreNode*)` 不要去重：文件里有两个 visitor，
+`PotentialWriteCollector` 与 `BufferInitVerifier`，一个收集“谁可能写”，
 一个做判定。这是这类 pass 的标准分工。）
 
 抄这三块就够了：
@@ -849,14 +849,14 @@ verify pass，附四条边界用例。**验证级别：仅静态核对，未编�
 三条容易违反、且**会被评审直接打回**的：
 
 * **handle 类型跨函数边界用 `Stmt` / `Buffer` / `Var`，`*Node` 指针只在 visitor
-  回调和局部检查里出现。** 别把 `const ForNode *` 存进成员变量——节点会被
+  回调和局部检查里出现。** 别把 `const ForNode *` 存进成员变量，节点会被
   `CopyOnWrite()` 替换，存下来的指针会失效。
 * **比较身份用 `.same_as(other)`，不要用 `.get() ==`。**
 * **不要用 `T` 当参数名。** 在 C++ 侧 `T` 通常指 tile op 的模板参数，在 Python 侧
   `T` 是 DSL 命名空间；同名会让读者错乱。
 
 另外注意一条与 FFI 有关的兼容性提醒：**被反射的字段名是 Python/调试接口的一部分**
-（cpp_style 的「ObjectNode Fields」一节）。改 `def_ro("src", ...)` 里的名字属于
+（cpp_style 的“ObjectNode Fields”一节）。改 `def_ro("src", ...)` 里的名字属于
 破坏性改动，即使编译能过。
 
 ### 8.2 Python 与格式化
@@ -867,12 +867,12 @@ verify pass，附四条边界用例。**验证级别：仅静态核对，未编�
 * 提交前跑 `pre-commit run --all-files`（`CONTRIBUTING.md:111-117`）。
 * 有条件时跑一次建议性的 C++ API 审计：
   `python3 maint/scripts/audit_cpp_api_style.py`（`CONTRIBUTING.md:53-62`）。
-  它不是批量改名工具，而是评审辅助——每条命中都要先判断 FFI 可见性、生成代码、
+  它不是批量改名工具，而是评审辅助，每条命中都要先判断 FFI 可见性、生成代码、
   后端 shim 与外部 API 约束，再决定改不改。
 
 ### 8.3 `maint/` 里与 pass 相关的自检
 
-`maint/` 不是「杂物间」，它装着几套**金标准（golden）测试**，改 pass 时非常有用：
+`maint/` 不是“杂物间”，它装着几套**金标准（golden）测试**，改 pass 时非常有用：
 
 | 目录 | 作用 |
 | --- | --- |
@@ -910,8 +910,8 @@ verify pass，附四条边界用例。**验证级别：仅静态核对，未编�
 | TileLang-Ascend 适配器仓库 | `_vendor/tilelang-ascend-v0.1.2.000/` | 一棵**自带 `src/transform/` 与 `tilelang/transform/`** 的分支树（`ascend_sync_insert.cc`、`ascend_storage_rewrite.cc`、`ascend_memory_planning.cc`、`cross_core_pipeline.cc` …），接口仍是旧的 `tvm._ffi._init_api` |
 
 版本按 [../../VERSIONS.md](../../VERSIONS.md)：适配器仓库的 tag 是
-`TileLang-ascend-v0.1.2.000-release`，但仓库内 `VERSION` 文件写的是 `0.1.4`——
-**以 tag 为准**。第 20 章已经用差集说明了「两棵树的 pass 词汇不同」。
+`TileLang-ascend-v0.1.2.000-release`，但仓库内 `VERSION` 文件写的是 `0.1.4`，
+**以 tag 为准**。第 20 章已经用差集说明了“两棵树的 pass 词汇不同”。
 
 ### 9.2 改哪一棵？
 
@@ -942,13 +942,13 @@ grep -rn "SyncInsert\|sync_insert" _vendor/tilelang-ascend-v0.1.2.000/src/transf
 `_vendor/tilelang-ascend-v0.1.2.000/AGENTS.md:59-75` 的四条通用原则，字面上就是给
 AI 协作者写的，但同样约束人：
 
-1. **如实报告，禁止伪完成**——未验证的结果不得表述为「已完成」或「已通过」。
+1. **如实报告，禁止伪完成**，未验证的结果不得表述为“已完成”或“已通过”。
    这与本章 1.3 节的第二条纪律是同一条。
-2. **先验证，再下结论**——能通过代码/文件/日志/测试确认的优先基于证据判断。
-3. **区分事实、推断与建议**——禁止编造文件、输出、报错、性能收益。
-4. **遵循最小必要改动**——优先复用既有实现与模式，不无依据地重写或扩面。
+2. **先验证，再下结论**，能通过代码/文件/日志/测试确认的优先基于证据判断。
+3. **区分事实、推断与建议**，禁止编造文件、输出、报错、性能收益。
+4. **遵循最小必要改动**，优先复用既有实现与模式，不无依据地重写或扩面。
 
-以及 `:79-113` 的核心算子开发原则里与「改编译器」直接相关的三条：**不要凭记忆猜
+以及 `:79-113` 的核心算子开发原则里与“改编译器”直接相关的三条：**不要凭记忆猜
 API**（先查 API 速查、再查 `examples/`、最后查源码，且 `tilelang/language/pto.py`
 已废弃禁止使用）；**遇到错误先分析原因、不绕过门禁**；**代码仓探索必须使用
 subagent**（这条约束的是多代理工作流，不是人的工作方式）。
@@ -963,8 +963,8 @@ Google Style + clang-format、行宽 100；文件名 `snake_case.py` /
 `tilelang-pass-workflow-analyzer`（工作流、执行顺序、依赖关系、**新 Pass 定位**）、
 `tilelang-pass-design`（设计方案与实现模式）。对应实现在
 `.agents/skills/` 下（另有 `tilelang-pass-generate`）。
-也就是说，适配器仓库把「我要加一个 pass，它该放哪一段」这件事**显式写进了它的
-工作约定**——这与本章 2.5 节的顺序判断表是同一个问题，只是它给了工具化入口。
+也就是说，适配器仓库把“我要加一个 pass，它该放哪一段”这件事**显式写进了它的
+工作约定**。这与本章 2.5 节的顺序判断表是同一个问题，只是它给了工具化入口。
 
 ### 9.4 昇腾侧的测试与基准入口
 
@@ -997,16 +997,16 @@ bash maint/scripts/run_local_ci_test_ascend.sh
 | --- | --- | --- | --- |
 | 新增 Python pass（改 IR） | IR 基线（`assert_structural_equal`）+ 单元测试 + 至少一条端到端对拍 | 至少一个受影响算子的 benchmark；若影响所有 kernel，跑 `run_perf_regression.sh` | 挂在哪几个后端？顺序对不对（2.5 表）？`name` 传了吗？span 保住了吗？ |
 | 新增 C++ pass（改 IR） | 同上，另加：重载名拼写（必须有一条会命中的用例）、`CreatePrimFuncPass` 的 opt_level | 同上，另加 `TILELANG_PASS_PROFILE=1` 看编译器自身耗时 | 注册名三处一致；`src/op/builtin.h` 是否需要新 config；handle/Node 用法；是否该用 `ICHECK` |
-| 新增 verify / check pass | IR 层验证：必须命中 + 至少 5 条边界反向用例（5.5 表）+ 一条「不打断真实编译」的端到端用例 | 通常不需要（它不改 IR）；但要在 CI 里跑一次全量编译确认不引入噪声 | 默认开还是关？误报怎么办（开关）？报告是否聚合？有没有给补救建议？折不动时是否保持沉默？ |
-| 修改现有 pass 的算法 | 该 pass 已有的全部测试 + 新增一条覆盖本次行为变化的用例 | 该 pass 影响的所有算子；用 `lower_trace` 确认下游 diff 可控 | 改的是「判定」还是「重写」？旧行为有没有被依赖（金标准）？`maint/layout_inference/` 这类 golden 是否翻转？ |
+| 新增 verify / check pass | IR 层验证：必须命中 + 至少 5 条边界反向用例（5.5 表）+ 一条“不打断真实编译”的端到端用例 | 通常不需要（它不改 IR）；但要在 CI 里跑一次全量编译确认不引入噪声 | 默认开还是关？误报怎么办（开关）？报告是否聚合？有没有给补救建议？折不动时是否保持沉默？ |
+| 修改现有 pass 的算法 | 该 pass 已有的全部测试 + 新增一条覆盖本次行为变化的用例 | 该 pass 影响的所有算子；用 `lower_trace` 确认下游 diff 可控 | 改的是“判定”还是“重写”？旧行为有没有被依赖（金标准）？`maint/layout_inference/` 这类 golden 是否翻转？ |
 | 新增 pass config key | 开关打开/关闭两条用例（对照 `test_..._verify_buffer_init.py:458-483`） | 不需要 | 四处是否都改了（3.4 节）？默认值是否写进 docstring？`PassConfigKey` 枚举名与 C++ 常量字符串是否一致？ |
 | 调整 pass 在 pipeline 中的顺序 | 全量 `testing/python/transform/` + 端到端对拍 | **必跑** `run_perf_regression.sh`（顺序变化最容易既改性能又改正确性） | 有没有违反 2.5 表里的前置依赖？是否为某个后端单独调序（会导致后端行为分叉）？ |
 | 新增昇腾专属 pass | `testing/ascend/transform/test_ascend_<名字>.py`；可用 `testing/ascend/_ir.py` 手搓 IR，不依赖前端 | 昇腾 benchmark；必要时 `run_perf_regression_ascend.sh` | 放在 `src/ascend/transform/` 而不是通用目录；`USE_ASCEND=ON` 才能编译；自动调度段之前还是之后（第 23 章）？ |
 | 改适配器仓库的 pass | 适配器自己的 `testing/` + 主干侧确认没有同名漂移 | 适配器的 benchmark 脚本 | 用的是旧 FFI（`tvm._ffi._init_api`）；是否需要同步回主干；两棵树的版本号会继续分叉 |
-| 只改注释 / 文档 | 不需要 | 不需要 | 注释是否与代码一致；有没有引入「最新版」这类模糊说法 |
+| 只改注释 / 文档 | 不需要 | 不需要 | 注释是否与代码一致；有没有引入“最新版”这类模糊说法 |
 | 只加测试 | 新测试必须先在**没有改动**的树上跑一遍并确认它是绿的 | 不需要 | 测试是否真的在测行为，而不是在测实现细节（例如断言了会变的日志前缀） |
 
-一个必须重复的判断：**这张表的每一行都要求「先在没有改动的树上跑一遍」**。
+一个必须重复的判断：**这张表的每一行都要求“先在没有改动的树上跑一遍”**。
 一个从来没绿过的测试，比没有测试更危险。
 
 ---
@@ -1021,7 +1021,7 @@ bash maint/scripts/run_local_ci_test_ascend.sh
    Python 侧真正的 pass 是 `tilelang/transform/` 下 3 个加
    `tilelang/analysis/`、`tilelang/ascend/analysis/`、`tilelang/metal/transform/`
    下的一批检查器。
-3. **FFI 的通路是「注册名 = 前缀 + 属性名」**：C++ 的
+3. **FFI 的通路是“注册名 = 前缀 + 属性名”**：C++ 的
    `refl::GlobalDef().def("tl.transform.X", X)` ↔ Python 的
    `tvm_ffi.init_ffi_api("tl.transform", __name__)` ↔ `_ffi_api.X` ↔
    薄包装 `tilelang.transform.X`。改名要同时改三处，其中一处改错不报错。
@@ -1030,7 +1030,7 @@ bash maint/scripts/run_local_ci_test_ascend.sh
 5. **测试有四层**：IR diff 基线（最严格）、单元测试（行为）、边界条件（防误报与
    漏报）、端到端对拍（防打断真实编译）。每一层能证明的东西不同，缺一层就漏一类错。
 6. **性能回归有明确的判定规则**：不是看单条数字，而是
-   「≥ `MIN_COUNT`(2) 条 speedup < `THRESHOLD`(0.90)」。定位顺序是
+   “≥ `MIN_COUNT`(2) 条 speedup < `THRESHOLD`(0.90)”。定位顺序是
    benchmark → 重跑排除噪声 → `pass_timing` 分编译期/产物 → `lower_trace` 找 diff。
 7. **昇腾要额外处理两棵树**：主干 `src/ascend/transform/` 是主线，适配器仓库是
    另一套词汇 + 旧 FFI；`AGENTS.md` 的四条通用原则（如实报告、先验证、区分事实与
@@ -1039,10 +1039,10 @@ bash maint/scripts/run_local_ci_test_ascend.sh
 ## 延伸阅读
 
 * 本章代码与图：`code/README.md`、`figures/fig-01-*` ~ `fig-04-*`。
-* 上游一手材料与逐条核验状态：见 `references.md`——源码引用 S1–S50、昇腾双树 A1–A5、
-  corpus 资料 R1–R6、本章自产材料 C1–C5、上游链接 U1–U9，以及第十二节的「待补资料」。
+* 上游一手材料与逐条核验状态：见 `references.md`，源码引用 S1–S50、昇腾双树 A1–A5、
+  corpus 资料 R1–R6、本章自产材料 C1–C5、上游链接 U1–U9，以及第十二节的“待补资料”。
 * 想继续往下读：第 30 章讲只有 `main` 上才有的方向（多后端解耦、CuteDSL 后端、
-  `T.PersistentKernel` 等），第 31 章把「从 issue 到 PR」的完整流程与三种贡献
+  `T.PersistentKernel` 等），第 31 章把“从 issue 到 PR”的完整流程与三种贡献
   （改编译器 / 加后端 / 加算子）的检查清单串起来。
 * 相邻章节回顾：第 20 章（读 pass 与 IR）、第 12 章（调试与性能分析）、
   第 21–23 章（layout / 流水同步 / 昇腾自动调度）、第 25 章（昇腾后端）。

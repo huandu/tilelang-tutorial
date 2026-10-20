@@ -32,4 +32,4 @@ flowchart TD
 ```
 
 配置键：`tl.layout_cost_model`（`tilelang/transform/pass_config.py:122`）。
-切换模型会改变同一次编译的推导结果——可作为「转换代价被忽略」的实验。
+切换模型会改变同一次编译的推导结果，可作为“转换代价被忽略”的实验。

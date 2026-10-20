@@ -32,7 +32,7 @@
   ],
   "notes": [
     "带宽 = 4800 GB/s × 0.9380 = 4502.4 GB/s；平衡点 = effective 峰值算力 / 带宽。",
-    "案例算子（QK-Norm + RoPE + fp8 量化）AI = 2.79 FLOP/Byte，远低于任何一条平衡点——它是极端的 memory-bound。",
-    "roof 必须由设计者声明：它说的是「最优实现会用哪个单元」，永远不从运行中的 kernel 推断。"
+    "案例算子（QK-Norm + RoPE + fp8 量化）AI = 2.79 FLOP/Byte，远低于任何一条平衡点。它是极端的 memory-bound。",
+    "roof 必须由设计者声明：它说的是“最优实现会用哪个单元”，永远不从运行中的 kernel 推断。"
   ]
 }

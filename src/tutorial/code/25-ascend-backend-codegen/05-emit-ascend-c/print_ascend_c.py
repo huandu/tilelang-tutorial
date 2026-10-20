@@ -125,12 +125,19 @@ API_ANCHORS = {
 
 
 def find_book_root(start: Path) -> Path:
-    cur = start.resolve()
+    configured = os.environ.get("TILELANG_TUTORIAL_BOOK_ROOT")
+    cur = Path(configured).resolve() if configured else start.resolve()
     for _ in range(8):
         if (cur / "_vendor" / "tilelang-v0.1.15").is_dir():
             return cur
         cur = cur.parent
-    raise SystemExit("cannot locate book root")
+    raise SystemExit(
+        "cannot locate the TileLang source checkouts. Pass "
+        "`--book-root /path/to/checkout` or set "
+        "`TILELANG_TUTORIAL_BOOK_ROOT` to a directory containing "
+        "`_vendor/tilelang-v0.1.15/` and "
+        "`_vendor/tilelang-ascend-v0.1.2.000/`. See VERSIONS.md."
+    )
 
 
 def audit(book: Path) -> int:

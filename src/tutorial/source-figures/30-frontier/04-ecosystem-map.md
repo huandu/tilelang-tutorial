@@ -31,16 +31,16 @@
    tile-ai/tilelang-benchmark —— 已归档，README 指向 TileOPs
 ```
 
-## 每个仓库解决什么问题、算不算「代码」
+## 每个仓库解决什么问题、算不算“代码”
 
 | 仓库 | 定位 | 读者什么时候需要它 |
 | --- | --- | --- |
 | `tile-ai/tilelang` | 编译器本体：语言、pass、后端、JIT | 写算子、改编译器 |
 | `tile-ai/tilelang-ascend` | A2/A3 的社区适配器（主干之外） | 在 A2/A3 上开发 |
 | `tile-ai/tilelang-mlir-ascend` | 昇腾的 AscendNPU IR（MLIR）路线 | 研究第二条昇腾 codegen |
-| `tile-ai/TileOPs` | 生产算子的参照实现（spec 驱动） | 想知道「工业界怎么写」 |
+| `tile-ai/TileOPs` | 生产算子的参照实现（spec 驱动） | 想知道“工业界怎么写” |
 | `tile-ai/TileRT` | 推理 runtime，约束回到编译期 | 关心部署与启动开销 |
-| `tile-ai/TileFoundry` | agent 驱动的内核生成流水线 | 关心「AI 写算子」的现状 |
+| `tile-ai/TileFoundry` | agent 驱动的内核生成流水线 | 关心“AI 写算子”的现状 |
 | `tile-ai/TileSight` | 解析性能模型 | 想不靠暴力调参选 tile |
 | `tile-ai/tilelang-benchmark` | 已归档，被 TileOPs 取代 | 只作历史参考 |
 

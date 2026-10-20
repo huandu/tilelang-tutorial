@@ -15,14 +15,14 @@
 
 ## 前置知识
 
-* 第 4 章「架构总览与一次编译的全流程」：Python 前端 → TIR → pass pipeline → codegen 的总图。
-* 第 20 章「IR 与编译期管线精读」：TIR 的结构、pass 的挂载方式、如何 dump IR。
-* 第 22 章「流水线、多缓冲与同步插入」：`T.Pipelined`、多缓冲、`ThreadSync` 的插入规则。
-* 第 6 章「芯片导论：NV GPU 与昇腾 NPU 的抽象对照」：SM / warp / shared memory 的基本概念。
-* 第 14 章「算子实战 II：GEMM 全家族」：你需要先知道 `T.gemm` 在算子层面是干什么的。
+* 第 4 章“架构总览与一次编译的全流程”：Python 前端 → TIR → pass pipeline → codegen 的总图。
+* 第 20 章“IR 与编译期管线精读”：TIR 的结构、pass 的挂载方式、如何 dump IR。
+* 第 22 章“流水线、多缓冲与同步插入”：`T.Pipelined`、多缓冲、`ThreadSync` 的插入规则。
+* 第 6 章“芯片导论：NV GPU 与昇腾 NPU 的抽象对照”：SM / warp / shared memory 的基本概念。
+* 第 14 章“算子实战 II：GEMM 全家族”：你需要先知道 `T.gemm` 在算子层面是干什么的。
 * 术语前提：**PTX** 是 NVIDIA 的虚拟指令集，**cubin / fatbin** 是针对具体架构的机器码容器，**nvcc** 是离线编译器，**NVRTC** 是运行期编译器。本章会解释它们各自出现在哪。
 
-本章不要求你有 NVIDIA GPU：所有结论都能用锁定版本的源码和 corpus 里的厂商文档核对。需要真卡的实验都标了「需要 GPU」。
+本章不要求你有 NVIDIA GPU：所有结论都能用锁定版本的源码和 corpus 里的厂商文档核对。需要真卡的实验都标了“需要 GPU”。
 
 ---
 
@@ -43,13 +43,13 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=threads) as 
 
 这段代码里没有任何一行是 CUDA。它没有写 `threadIdx`，没有写 `__syncthreads()`，没有写 `cp.async.bulk.tensor`，也没有指定用 `mma.sync` 还是 `wgmma`。但最终执行的必须是三个具体的硬件事实的组合：
 
-1. **数据怎么搬**——是用 SIMT 的 `ld.global`/`st.shared`，还是 `cp.async`，还是 TMA 的 `cp.async.bulk.tensor`；
-2. **算力怎么用**——是用第 3/4 代 Tensor Core（`mma.sync` / `wgmma`），还是第 5 代（`tcgen05`），还是干脆退化成 FMA；
-3. **谁去做**——是一个 block 里 256 个线程一起干，还是把其中一些 warp 专门分出来当 producer（只发拷贝）、另一些当 consumer（只算）。
+1. **数据怎么搬**，是用 SIMT 的 `ld.global`/`st.shared`，还是 `cp.async`，还是 TMA 的 `cp.async.bulk.tensor`；
+2. **算力怎么用**，是用第 3/4 代 Tensor Core（`mma.sync` / `wgmma`），还是第 5 代（`tcgen05`），还是干脆退化成 FMA；
+3. **谁去做**，是一个 block 里 256 个线程一起干，还是把其中一些 warp 专门分出来当 producer（只发拷贝）、另一些当 consumer（只算）。
 
 NVIDIA 后端的职责，就是把上面这段 tile 级程序，**在这三个维度上做决策，并把决策翻译成合法的 CUDA C 与 PTX**。这一章讲的就是这三个决策在哪里发生、依据是什么、产物长什么样。
 
-先给出一张全局图（`figures/01-codegen-path.md`）：TileLang 的 NVIDIA 路径不是「TIR → 一个后端」，而是「TIR → 若干个 pass → 一次 host/device 切分 → 两条并行的 codegen（device 走 CUDA C，host 走 C wrapper 或 TVM-FFI）→ 若干种运行期装载方式」。
+先给出一张全局图（`figures/01-codegen-path.md`）：TileLang 的 NVIDIA 路径不是“TIR → 一个后端”，而是“TIR → 若干个 pass → 一次 host/device 切分 → 两条并行的 codegen（device 走 CUDA C，host 走 C wrapper 或 TVM-FFI）→ 若干种运行期装载方式”。
 
 ```
                    Python frontend (tilelang/language)
@@ -103,9 +103,9 @@ if enable_host_codegen:
     host_mod = host_codegen(host_mod, context)
 ```
 
-注意两个默认值（`_vendor/tilelang-v0.1.15/tilelang/engine/lower.py:144-170` 的 docstring 说得很直白）：`enable_host_codegen` 和 `enable_device_compile` **默认都是 False**。原因是——JIT adapter 会自己接管这两件事。
+注意两个默认值（`_vendor/tilelang-v0.1.15/tilelang/engine/lower.py:144-170` 的 docstring 说得很直白）：`enable_host_codegen` 和 `enable_device_compile` **默认都是 False**。原因是，JIT adapter 会自己接管这两件事。
 
-* device 默认走「只生成 CUDA C 源码、不调用 nvcc」的路径（`device_codegen_without_compile`），源码保存在 module 的 `source_map["cuda"]` 里（见 `_vendor/tilelang-v0.1.15/src/cuda/codegen/rt_mod_cuda.cc:151-176`）。
+* device 默认走“只生成 CUDA C 源码、不调用 nvcc”的路径（`device_codegen_without_compile`），源码保存在 module 的 `source_map["cuda"]` 里（见 `_vendor/tilelang-v0.1.15/src/cuda/codegen/rt_mod_cuda.cc:151-176`）。
 * host 默认由 adapter（cython / tvm_ffi / nvrtc）自己生成 wrapper，而不是走 TVM 的 `codegen_c_host`。
 
 host/device 的切分点在 `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:239-240`：
@@ -117,11 +117,11 @@ mod = tilelang.transform.SplitHostDevice()(mod)
 
 切完之后，`lower_to_host_device_ir` 用两个 `Filter` 把模块一分为二（`_vendor/tilelang-v0.1.15/tilelang/engine/lower.py:138-139`）：带 `calling_conv = kDeviceKernelLaunch` 的函数进 `device_mod`，其余进 `host_mod`。这个判据在 `_vendor/tilelang-v0.1.15/tilelang/engine/lower.py:26-51` 的 `has_device_kernel_launch` / `is_device_call_c_device` 里。
 
-于是「设备核函数」这一段是纯粹的 `__global__`，而「怎么启动它、怎么把 `cudaStream_t` 传进来、怎么设置 dynamic shared memory 大小」全部落在 host 侧的 wrapper 上。
+于是“设备核函数”这一段是纯粹的 `__global__`，而“怎么启动它、怎么把 `cudaStream_t` 传进来、怎么设置 dynamic shared memory 大小”全部落在 host 侧的 wrapper 上。
 
 ### 2.2 三层指令选择
 
-「T.gemm 会变成什么指令」这个问题，其实要穿过三层：
+“T.gemm 会变成什么指令”这个问题，其实要穿过三层：
 
 | 层 | 位置 | 它决定什么 |
 | --- | --- | --- |
@@ -131,20 +131,20 @@ mod = tilelang.transform.SplitHostDevice()(mod)
 
 三层里，**图选择层是最值得先读的**，因为它是一个几十行、可以完整读完的谓词链。
 
-### 2.3 四代「搬运」
+### 2.3 四代“搬运”
 
 同一个 `T.copy`，可能落到四代不同的搬运机制上：
 
 1. **SIMT 同步搬运**（`ld.global` + `st.shared`）：所有架构都有，`CopyInst::kNormal`。
-2. **`cp.async`**（Ampere / sm_80+）：异步但仍是「每个线程负责一段」的老式异步拷贝，对应 `CopyInst::kCPAsync`。
+2. **`cp.async`**（Ampere / sm_80+）：异步但仍是“每个线程负责一段”的老式异步拷贝，对应 `CopyInst::kCPAsync`。
 3. **TMA**（Hopper / sm_90+）：`cp.async.bulk.tensor`，由一个线程发射、硬件按描述符做地址生成，对应 `CopyInst::kBulkLoad` / `kBulkStore` / `...1D`。
 4. **DSM 集群内搬运**（Hopper+）：`cp.async.bulk.shared::cluster` 或 `map_shared_rank`，把数据直接推进**另一个 CTA 的 shared memory**。
 
-「TMA 到底什么时候被选中」在 4.5 节；这里先记住结论：**默认的 `T.copy` 只有 global←shared 的 store 会自动走 TMA，global→shared 的 load 不会。**
+“TMA 到底什么时候被选中”在 4.5 节；这里先记住结论：**默认的 `T.copy` 只有 global←shared 的 store 会自动走 TMA，global→shared 的 load 不会。**
 
 ### 2.4 角色划分（warp specialization）
 
-Hopper 之后，「谁来发拷贝」这件事本身成了一个可编程的维度。CUDA 编程指南里对这件事的解释来自 Hopper 的架构文档（`../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md:295`）：
+Hopper 之后，“谁来发拷贝”这件事本身成了一个可编程的维度。CUDA 编程指南里对这件事的解释来自 Hopper 的架构文档（`../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md:295`）：
 
 > The TMA operation is asynchronous and leverages the shared memory-based asynchronous barriers introduced in A100. Also, the TMA programming model is single-threaded, where a single thread in a warp is elected to issue an asynchronous TMA operation ... To further improve performance, the H100 SM adds hardware to accelerate these asynchronous-barrier wait operations.
 
@@ -152,13 +152,13 @@ FlashAttention-3 的论文把这件事讲成了方法论（`../tilelang-corpus/0
 
 > Hardware support for asynchrony allows for warp-specialized kernels, where the warps of a CTA are divided into producer or consumer roles that only ever issue either data movement or computation.
 
-TileLang 把这件事暴露成了 `T.ws(role)`（2.4 节的「语言层」），并提供了一条「用户自己写角色划分」和一条「编译期自动划分」的路。细节在 4.6 节。
+TileLang 把这件事暴露成了 `T.ws(role)`（2.4 节的“语言层”），并提供了一条“用户自己写角色划分”和一条“编译期自动划分”的路。细节在 4.6 节。
 
 ---
 
 ## 3. 用法
 
-本节只讲「你写什么、会看到什么」。所有需要 GPU 的示例都在 `code/` 里给了静态核对版本。
+本节只讲“你写什么、会看到什么”。所有需要 GPU 的示例都在 `code/` 里给了静态核对版本。
 
 ### 3.1 打印生成的 CUDA
 
@@ -256,7 +256,7 @@ T.copy(C_tmem, C_local)                          # TMEM → fragment
 
 如果你不想要手写的 `mbarrier_wait_parity`，用 `T.gemm(..., mbar=mbar)`，编译器会在发射之后**隐式插入**一次 `mbarrier_wait_parity`（`_vendor/tilelang-v0.1.15/tilelang/cuda/language/gemm_op.py` 的 `gemm` docstring，第 41-76 行）。
 
-Block-scaled MMA（MXFP8/MXFP4 这类「每 32 个元素共享一个指数」的低精度格式）在 CUDA 方言里是：
+Block-scaled MMA（MXFP8/MXFP4 这类“每 32 个元素共享一个指数”的低精度格式）在 CUDA 方言里是：
 
 ```python
 T.gemm_blockscaled(A, B, C, SFA, SFB,
@@ -349,9 +349,9 @@ refl::GlobalDef()
 
 `AddFunction` 里几个值得记住的细节：
 
-* `PrintFuncPrefix` 固定打印 `extern "C" __global__ `（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:563-565`）——所以生成核函数的名字就是 `global_symbol`，没有 C++ mangling。
+* `PrintFuncPrefix` 固定打印 `extern "C" __global__ `（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:563-565`）。所以生成核函数的名字就是 `global_symbol`，没有 C++ mangling。
 * `PrintExtraAttrs` 从 `thread_extent` 推 `__launch_bounds__(threads, min_blocks)`（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:629-646`）；`min_blocks` 来自 `T.annotate_min_blocks_per_sm(n)`。
-* 参数里凡是 `storage_scope == "grid_constant"` 的，会打印成 `__grid_constant__ const <type>` ——这是 TMA 描述符参数（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:6562-6580`）。
+* 参数里凡是 `storage_scope == "grid_constant"` 的，会打印成 `__grid_constant__ const <type>` 。这是 TMA 描述符参数（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:6562-6580`）。
 * PDL（Programmatic Dependent Launch）模式下会**抑制** `__restrict__`，因为 nvcc 在带 PDL 同步时对 kernel 参数上的 `__restrict__` 有问题（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:6542-6548`）。
 * 向量类型：`double4` 之外，`uint64_t/int64_t` 的 64-lane 向量在 CUDA 里没有原生类型，会退化成 `longlong4`（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:986-994`）。
 
@@ -368,13 +368,13 @@ refl::GlobalDef()
 
 #### 4.2.1 为什么必须切
 
-`MakePackedAPI`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:273`）把 host 侧的 `PrimFunc` 变成带 `tvm_access_ptr` 参数、带 launch 参数的 packed 函数；`LowerDeviceKernelLaunch`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:275`）把「启动」这一步变成对设备核函数的调用记录。之后 `_vendor/tilelang-v0.1.15/tilelang/engine/lower.py:138-139` 才用 `Filter` 把它们分开。
+`MakePackedAPI`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:273`）把 host 侧的 `PrimFunc` 变成带 `tvm_access_ptr` 参数、带 launch 参数的 packed 函数；`LowerDeviceKernelLaunch`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:275`）把“启动”这一步变成对设备核函数的调用记录。之后 `_vendor/tilelang-v0.1.15/tilelang/engine/lower.py:138-139` 才用 `Filter` 把它们分开。
 
-切分之后，device 模块里只剩下 `calling_conv = kDeviceKernelLaunch` 的函数。这就是为什么 `TLCUDASourceWrapper.parse_source_information` 可以断言「device module 至少一个函数、host module 恰好一个函数」——`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/wrapper.py:466-470`。
+切分之后，device 模块里只剩下 `calling_conv = kDeviceKernelLaunch` 的函数。这就是为什么 `TLCUDASourceWrapper.parse_source_information` 可以断言“device module 至少一个函数、host module 恰好一个函数”，`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/wrapper.py:466-470`。
 
 #### 4.2.2 wrapper 干的事
 
-`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/wrapper.py` 里的 `TLCUDASourceWrapper`（第 222 行起）负责把「一块 `__global__` 源码」包装成一个可以被 Python 调用的 `call()`。它的 `update_lib_code`（第 585-632 行）把三段拼起来：
+`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/wrapper.py` 里的 `TLCUDASourceWrapper`（第 222 行起）负责把“一块 `__global__` 源码”包装成一个可以被 Python 调用的 `call()`。它的 `update_lib_code`（第 585-632 行）把三段拼起来：
 
 ```python
 lib_code = self.source + self.get_cuda_host_adapter_include() + init_func + host_func
@@ -401,7 +401,7 @@ cudaLaunchKernelEx(&config, kernel, args...);
 
 选择哪一个由 `get_kernel_launch_code`（第 567-571 行）根据 `self.cluster_dims[function_name]` 是否为 `None` 决定；`cluster_dims` 又是从 device 函数的 `cluster_dims` 属性读出来的（第 494-497 行）。
 
-grid/block 的数值来自 device 函数的 `thread_extent` 属性（第 487-493 行）——这正是 `MaterializeKernelLaunch` 在 `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:70` 写进去的那份信息。注意 v0.1.15 这里传了 `lower_thread_binding=True, default_threads=128`，v0.1.14 是裸调用（见 4.10 节）。
+grid/block 的数值来自 device 函数的 `thread_extent` 属性（第 487-493 行）。这正是 `MaterializeKernelLaunch` 在 `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:70` 写进去的那份信息。注意 v0.1.15 这里传了 `lower_thread_binding=True, default_threads=128`，v0.1.14 是裸调用（见 4.10 节）。
 
 #### 4.2.3 三种 execution backend
 
@@ -428,7 +428,7 @@ RegisterGemmImpl(GemmImpl{"cuda.Gemm", MatchCudaGemmTarget,
                           cuda::Gemm::ReuseExistingSharedLayout});
 ```
 
-`GemmImpl` 把「选指令」「算 warp 划分」「是否复用已有 shared layout」三件事拆成三个函数指针，这是这段代码好读的原因。
+`GemmImpl` 把“选指令”“算 warp 划分”“是否复用已有 shared layout”三件事拆成三个函数指针，这是这段代码好读的原因。
 
 #### 4.3.2 谓词链
 
@@ -448,7 +448,7 @@ return kCudaMMA;
 翻译成人话：
 
 1. 用户显式点名（`T.wgmma_gemm` / `T.tcgen05_gemm`）的，就必须走对应指令；约束不满足就**编译期报错**，不静默降级（`FatalWgmmaUnavailable` / `FatalTcgen5Unavailable`，`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:157-181`）。
-2. 标了 `use_2cta` 的，必须是 TCGEN05，且同样没有回退——注释写明了原因（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:347-353`）：「公开的 2CTA 形状约定每个 CTA 只提供 B 的一半 N 范围，回退到单 CTA 指令会变成静默越界，而不是合法降级」。
+2. 标了 `use_2cta` 的，必须是 TCGEN05，且同样没有回退，注释写明了原因（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:347-353`）：“公开的 2CTA 形状约定每个 CTA 只提供 B 的一半 N 范围，回退到单 CTA 指令会变成静默越界，而不是合法降级”。
 3. 否则先试 TCGEN05（`AllowTcgen5Mma`），再试 WGMMA（`AllowWgmma`）。
 4. sm_70 / sm_75 上，如果连 Volta/Turing 的 MMA 形状都不满足，就退到 `cuda.fma`（纯 FMA）。
 5. 其余（Ampere）走 `cuda.mma`。
@@ -465,9 +465,9 @@ DataType ab_dtype = IsTmemBuffer(op.a_) ? op.b_->dtype : op.a_->dtype;
 return GetTCGEN5MMAMeta(op.m_, op.n_, op.k_, ab_dtype, op.c_->dtype).first;
 ```
 
-三件事同时成立才会选 TCGEN05：目标是 sm_100；A 在 shared 或 TMEM、B 在 shared、**C 在 TMEM**；并且 `(M,N,K,dtype)` 组合在 `GetTCGEN5MMAMeta` 的白名单里。所以「我的 `T.gemm` 为什么没用 tcgen05」的第一诊断点就是 **`C` 是不是 `T.alloc_tmem` 出来的**。
+三件事同时成立才会选 TCGEN05：目标是 sm_100；A 在 shared 或 TMEM、B 在 shared、**C 在 TMEM**；并且 `(M,N,K,dtype)` 组合在 `GetTCGEN5MMAMeta` 的白名单里。所以“我的 `T.gemm` 为什么没用 tcgen05”的第一诊断点就是 **`C` 是不是 `T.alloc_tmem` 出来的**。
 
-`GetTCGEN5MMAMeta`（`_vendor/tilelang-v0.1.15/src/op/tcgen5_meta.h:22-177`）里，f16/bf16 → f32 的合法形状是 `atom_k=16`，`atom_n` 按 8 或 16 的步长下降，`atom_m ∈ {32,64,128,256}`；`enable_ws` 只在 `M % 64 == 0` 或 `M % 32 == 0`（且没禁用 ws）时才置位，`enable_2cta` 只在 `M % 128 == 0` 或 `M % 64 == 0` 且没禁用 2cta 时才置位——这与 PTX ISA 文档里的 shape 表完全对应（`../tilelang-corpus/05-nvidia-backend/raw/nvidia-ptx-isa.md:29795-29810`：`.ws` 形态 `32xNxK/64xNxK/128xNxK`，`N = {64,128,256}`，`K=16`）。
+`GetTCGEN5MMAMeta`（`_vendor/tilelang-v0.1.15/src/op/tcgen5_meta.h:22-177`）里，f16/bf16 → f32 的合法形状是 `atom_k=16`，`atom_n` 按 8 或 16 的步长下降，`atom_m ∈ {32,64,128,256}`；`enable_ws` 只在 `M % 64 == 0` 或 `M % 32 == 0`（且没禁用 ws）时才置位，`enable_2cta` 只在 `M % 128 == 0` 或 `M % 64 == 0` 且没禁用 2cta 时才置位。这与 PTX ISA 文档里的 shape 表完全对应（`../tilelang-corpus/05-nvidia-backend/raw/nvidia-ptx-isa.md:29795-29810`：`.ws` 形态 `32xNxK/64xNxK/128xNxK`，`N = {64,128,256}`，`K=16`）。
 
 `AllowWgmma`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:89-97`）：
 
@@ -483,22 +483,22 @@ return !pass_ctx->GetConfig(kDisableWGMMA, false) && TargetIsHopper(target) &&
 * tf32：要求 `!transA_ && transB_` 且 `K % 8 == 0`；
 * int8：要求 `(!transA_) && transB_` 且 `K % 32 == 0`。
 
-**这就是「transpose 如何影响指令」的第一处答案**：fp16/bf16 对转置不敏感，但低精度格式（fp8/tf32/int8）在 WGMMA 上只支持特定的 MN-major/K-major 组合——这与 FlashAttention-3 论文 §2.2 的表述一致（`../tilelang-corpus/03-tilelang-papers/raw/arxiv-2407-08608-fulltext.md:186-190`：FP16 WGMMA 两种主序都接受，FP8 WGMMA 只支持 k-major）。
+**这就是“transpose 如何影响指令”的第一处答案**：fp16/bf16 对转置不敏感，但低精度格式（fp8/tf32/int8）在 WGMMA 上只支持特定的 MN-major/K-major 组合。这与 FlashAttention-3 论文 §2.2 的表述一致（`../tilelang-corpus/03-tilelang-papers/raw/arxiv-2407-08608-fulltext.md:186-190`：FP16 WGMMA 两种主序都接受，FP8 WGMMA 只支持 k-major）。
 
 #### 4.3.4 warp 划分
 
 选完指令之后，`ComputeWarpPartition`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:377-397`）决定 `m_warp × n_warp`：
 
-* TCGEN05：`m_warp = 1, n_warp = num_warps`——因为 TCGEN05 是单线程发射的，不存在按 warp 切 M 的概念；
+* TCGEN05：`m_warp = 1, n_warp = num_warps`。因为 TCGEN05 是单线程发射的，不存在按 warp 切 M 的概念；
 * WGMMA：走 `ComputeWgmmaWarpPartition`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:218-300`），硬约束 `m_warp % 4 == 0`、每 warp 至少 16 行 × 8 列；
 * FMA：`1 × num_warps`；
 * 其他 MMA：`ComputeDefaultWarpPartition`（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:180-216`），每 warp 至少 16 行（Volta 是 16 列，其余是 8 列）。
 
-`policy` 参数（`GemmWarpPolicy.FullRow / FullCol / Square`）就作用在这里：`FullRow` 尽量把 num_warps 全分给 M 方向，`FullCol` 全给 N 方向，`Square` 取「每 warp 的 M/N 比最接近 M/N」的那一档。找不到合法划分时 `LOG(FATAL)` 并给出具体形状与建议（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:195-212`）。
+`policy` 参数（`GemmWarpPolicy.FullRow / FullCol / Square`）就作用在这里：`FullRow` 尽量把 num_warps 全分给 M 方向，`FullCol` 全给 N 方向，`Square` 取“每 warp 的 M/N 比最接近 M/N”的那一档。找不到合法划分时 `LOG(FATAL)` 并给出具体形状与建议（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:195-212`）。
 
 #### 4.3.5 python 侧的宏生成
 
-选中的指令字符串决定用哪个 python 实现——`_vendor/tilelang-v0.1.15/tilelang/cuda/op/gemm/__init__.py:54-63` 的注册表：
+选中的指令字符串决定用哪个 python 实现，`_vendor/tilelang-v0.1.15/tilelang/cuda/op/gemm/__init__.py:54-63` 的注册表：
 
 | 指令 | python 实现 | 关键行为 |
 | --- | --- | --- |
@@ -509,7 +509,7 @@ return !pass_ctx->GetConfig(kDisableWGMMA, false) && TargetIsHopper(target) &&
 | `cuda.mma.blockscaled` | `gemm_mma_sm120.py` | SM120 的 warp 级 block-scaled |
 | `cuda.fma` | `gemm_fma.py` | 无 Tensor Core 的标量路径 |
 
-`GemmWGMMA.infer_shared_layout`（`_vendor/tilelang-v0.1.15/tilelang/cuda/op/gemm/gemm_wgmma.py:22-40`）是「layout 由指令决定」的典型例子：它按连续维长度选 128B/64B/32B swizzle 或线性布局——
+`GemmWGMMA.infer_shared_layout`（`_vendor/tilelang-v0.1.15/tilelang/cuda/op/gemm/gemm_wgmma.py:22-40`）是“layout 由指令决定”的典型例子：它按连续维长度选 128B/64B/32B swizzle 或线性布局，
 
 ```python
 vectorized_size = 128 // self.a_dtype.bits
@@ -519,13 +519,13 @@ elif continuity % (vectorized_size * 2) == 0: return make_quarter_bank_swizzled_
 else: return make_linear_layout
 ```
 
-**这是「transpose/layout 如何影响指令」的第二处答案**：因为 WGMMA 直接以 shared memory 为源，它的 swizzle 布局必须匹配 tensor core 的读取模式；而 MMA 路径可以复用已有的 shared layout（`ReuseExistingSharedLayout` 只对 `cuda.mma` / `cuda.mma.blockscaled` 返回 true，`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:398-400`），因为它先经过寄存器。
+**这是“transpose/layout 如何影响指令”的第二处答案**：因为 WGMMA 直接以 shared memory 为源，它的 swizzle 布局必须匹配 tensor core 的读取模式；而 MMA 路径可以复用已有的 shared layout（`ReuseExistingSharedLayout` 只对 `cuda.mma` / `cuda.mma.blockscaled` 返回 true，`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:398-400`），因为它先经过寄存器。
 
-更底层的展开在 `_vendor/tilelang-v0.1.15/tilelang/cuda/intrinsics/macro/`：`wgmma_macro_generator.py` 生成 WGMMA 的 descriptor 与 atom 偏移，`tcgen05_macro_generator.py` 生成 TCGEN05 的 descriptor（含 `leading_byte_offset` / `stride_byte_offset` / `swizzle_atom_elems` 等参数，见该文件第 35-60 行的 `TCGEN05DescriptorParams`），`mma_macro_generator.py` 生成 `ldmatrix` + `mma.sync` 序列。这些文件是「宏生成层」，量很大但结构单一，读的时候抓住「descriptor 参数 → 偏移公式」这条线即可。
+更底层的展开在 `_vendor/tilelang-v0.1.15/tilelang/cuda/intrinsics/macro/`：`wgmma_macro_generator.py` 生成 WGMMA 的 descriptor 与 atom 偏移，`tcgen05_macro_generator.py` 生成 TCGEN05 的 descriptor（含 `leading_byte_offset` / `stride_byte_offset` / `swizzle_atom_elems` 等参数，见该文件第 35-60 行的 `TCGEN05DescriptorParams`），`mma_macro_generator.py` 生成 `ldmatrix` + `mma.sync` 序列。这些文件是“宏生成层”，量很大但结构单一，读的时候抓住“descriptor 参数 → 偏移公式”这条线即可。
 
 #### 4.3.6 一个源码层面的不一致：显式 GEMM 变体没有导出
 
-读源码时你会注意到一件事：`_vendor/tilelang-v0.1.15/tilelang/cuda/language/gemm_op.py:20-30` 的 `__all__` 里列了四个显式变体——
+读源码时你会注意到一件事：`_vendor/tilelang-v0.1.15/tilelang/cuda/language/gemm_op.py:20-30` 的 `__all__` 里列了四个显式变体，
 
 ```python
 __all__ = ["gemm", "gemm_blockscaled", "gemm_sp", "make_blockscaled_gemm_layout",
@@ -569,7 +569,7 @@ return Supported(SelectSyncLikeInst(facts));
 
 注意 `allow_load=false`：**默认路径只把 shared → global 的 store 自动降成 TMA，global → shared 的 load 不会**。这是本章最容易被误解的一点。load 只有在三种情况下走 TMA：显式 `T.tma_copy`、`prefer_instruction="tma"`、或者处于 warp-specialized 的 producer 分支里（见 4.4.4）。
 
-还有一处同样容易被误解：走到最后的兜底是 `SelectSyncLikeInst`，它的结果是 **SIMT 同步拷贝（`Normal`）**，而**不是** `cp.async`。`cp.async` 是第 4 步选出来的，前提是人给这个 copy 打了 `no_implicit_async_commit_wait` 或 `is_async_copy` 标注——而给流水里的 copy 打这个标注的是 `InjectSoftwarePipeline`（`_vendor/tilelang-v0.1.15/src/transform/inject_pipeline.cc:288-299`）。所以：**不在 `T.Pipelined` 里的一句裸 `T.copy(A_g, A_s)` 在 sm_90 上会降成同步 SIMT 拷贝**；只有在流水里、或者你显式写 `T.async_copy` 时才会变成 `cp.async`。
+还有一处同样容易被误解：走到最后的兜底是 `SelectSyncLikeInst`，它的结果是 **SIMT 同步拷贝（`Normal`）**，而**不是** `cp.async`。`cp.async` 是第 4 步选出来的，前提是人给这个 copy 打了 `no_implicit_async_commit_wait` 或 `is_async_copy` 标注。而给流水里的 copy 打这个标注的是 `InjectSoftwarePipeline`（`_vendor/tilelang-v0.1.15/src/transform/inject_pipeline.cc:288-299`）。所以：**不在 `T.Pipelined` 里的一句裸 `T.copy(A_g, A_s)` 在 sm_90 上会降成同步 SIMT 拷贝**；只有在流水里、或者你显式写 `T.async_copy` 时才会变成 `cp.async`。
 
 #### 4.4.2 约束
 
@@ -581,7 +581,7 @@ return Supported(SelectSyncLikeInst(facts));
 * dtype 对合法（例如 packed FP4 global → unpacked FP4 shared 只允许 load，反向 store 不支持，见 `MakeTmaUnavailableReason`，`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:531-570`）；
 * `CheckGlobalStrides`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:143-193`）：最内层 stride 必须是 1，其余 stride 的字节数必须能被 16 整除，且不能超过 2^40。
 
-1D 路径（`CheckBulkCopy1D`，`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:326-365`）额外要求：global 区域连续、shared 已有 layout 是「语义线性」的、两侧元素数相等、总位数 16 字节对齐。1D 路径不要求最后一维 16B 对齐（它用字节地址而不是描述符坐标），只要求总大小对齐。
+1D 路径（`CheckBulkCopy1D`，`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:326-365`）额外要求：global 区域连续、shared 已有 layout 是“语义线性”的、两侧元素数相等、总位数 16 字节对齐。1D 路径不要求最后一维 16B 对齐（它用字节地址而不是描述符坐标），只要求总大小对齐。
 
 #### 4.4.3 描述符在哪儿构建
 
@@ -629,7 +629,7 @@ device 侧的 PTX 在模板里：`_vendor/tilelang-v0.1.15/src/tl_templates/cuda
 load 必须有一个 mbarrier。`LowerBulk`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:2131-2155`）的处理顺序是：
 
 1. 如果用户给了 `barrier=` 注解（`T.tma_copy(..., barrier=mbar)`）→ 用它；若它是 `shared.cluster_barrier`，标记 `is_cluster_barrier`。
-2. 否则，如果 `T.tma_copy` 没给 barrier → `LOG(FATAL)`，提示「Use T.tma_copy(src, dst, barrier=mbar[idx])」。
+2. 否则，如果 `T.tma_copy` 没给 barrier → `LOG(FATAL)`，提示“Use T.tma_copy(src, dst, barrier=mbar[idx])”。
 3. 否则（普通 `T.copy` 走了 TMA load）→ 由 `lower_args.alloc_mbarrier(1, ...)` 自动分配一个 barrier，命名规则见 `MakeCopyMBarrierName`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:135-138`）。
 
 device 侧的 mbarrier 原语在 `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/barrier.h`：`mbarrier_init`（第 11 行）、`mbarrier_arrive_expect_tx`（第 112、120 行）、`mbarrier_wait`（第 34 行）、`tma_store_arrive`（第 184 行）、`tma_store_wait`（第 194 行）。还有一个专门的融合 pass：`FuseMBarrierArriveExpectTx`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:199-202`，只在模块里真的出现了 TMA 时运行，判据是 `module_has_tma`，`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:39-46`），把 `expect_tx → tma issue → arrive` 合成一条 `arrive_and_expect_tx`。
@@ -642,14 +642,14 @@ store 不需要 barrier：它用 `tma_store_arrive` / `tma_store_wait` 这些 bu
 
 两个入口：
 
-* `T.ws(*warp_group_idx)`（`_vendor/tilelang-v0.1.15/tilelang/cuda/language/warpgroup.py:19-59`）：把 warp group 序号翻译成 `tx` 的范围。`warp_group_size = 128` 是硬编码的（第 47 行），注释里写着「only available for nvidia gpus」。
+* `T.ws(*warp_group_idx)`（`_vendor/tilelang-v0.1.15/tilelang/cuda/language/warpgroup.py:19-59`）：把 warp group 序号翻译成 `tx` 的范围。`warp_group_size = 128` 是硬编码的（第 47 行），注释里写着“only available for nvidia gpus”。
 * `T.annotate_ws_schedule(WSSchedule(...))`（`_vendor/tilelang-v0.1.15/tilelang/language/annotations.py:151-165`）：挂一份**类型化**的调度，由 `WSSchedule` / `WSRole` / `WSPipeline` / `WSSync` / `WSScope` 组成（`_vendor/tilelang-v0.1.15/tilelang/language/warp_specialize.py`）。
 
 `WSPipeline` 的 docstring（`_vendor/tilelang-v0.1.15/tilelang/language/warp_specialize.py:69-80`）说清了它的语义：
 
 > A full/empty mbarrier pair protecting multi-versioned buffers. The producer waits for the empty barrier and signals the full barrier; the consumer waits for the full barrier and signals the empty barrier. ... Multiple buffers can share one pipeline; conversely, a buffer may be bound to several pipelines whose scopes are strictly nested — its version count is then the product of their depths (outer-major slots).
 
-`WSRole` 还带一个 `max_nreg` 字段（`_vendor/tilelang-v0.1.15/tilelang/language/warp_specialize.py:49-66`），对应 Hopper 的 `setmaxnreg`——即 FlashAttention-3 里提到的「做 MMA 的 warp 拿更多寄存器、只发 TMA 的 warp 让出寄存器」（`../tilelang-corpus/03-tilelang-papers/raw/arxiv-2407-08608-fulltext.md:176-178`）。
+`WSRole` 还带一个 `max_nreg` 字段（`_vendor/tilelang-v0.1.15/tilelang/language/warp_specialize.py:49-66`），对应 Hopper 的 `setmaxnreg`，即 FlashAttention-3 里提到的“做 MMA 的 warp 拿更多寄存器、只发 TMA 的 warp 让出寄存器”（`../tilelang-corpus/03-tilelang-papers/raw/arxiv-2407-08608-fulltext.md:176-178`）。
 
 #### 4.5.2 编译期
 
@@ -667,10 +667,10 @@ def allow_warp_specialized(pass_ctx=None, target=None) -> bool:
 三个 pass 的分工：
 
 * `AutoWarpSpecialization`（v0.1.15 新增）：按 `tl.enable_auto_warp_specialization` 指定的调度器（目前是 `"role_based"`）**自动推导**一份 `WSSchedule`；没设这个 config 时是 no-op（`_vendor/tilelang-v0.1.15/tilelang/cuda/transform/__init__.py:6-22`，`_vendor/tilelang-v0.1.15/src/cuda/transform/auto_schedule.cc:1-24`）。
-* `MaterializeWSSchedule`：把用户或自动生成的 `WSSchedule` 物化成「角色分支 + 多版本 buffer + mbarrier + TMA + 异步 tcgen05」的显式形式（`_vendor/tilelang-v0.1.15/tilelang/cuda/transform/__init__.py:158-172`）。它比 v0.1.14 大了很多（diff 3312 行），是 v0.1.15 在 NV 侧最大的单点变化。
+* `MaterializeWSSchedule`：把用户或自动生成的 `WSSchedule` 物化成“角色分支 + 多版本 buffer + mbarrier + TMA + 异步 tcgen05”的显式形式（`_vendor/tilelang-v0.1.15/tilelang/cuda/transform/__init__.py:158-172`）。它比 v0.1.14 大了很多（diff 3312 行），是 v0.1.15 在 NV 侧最大的单点变化。
 * `ProducerConsumerWarpSpecialized`：在 tile-op 层面（`LayoutInference` / `LowerTileOp` 之前）把可分的 pipelined loop 改写成 producer/consumer 两半（`_vendor/tilelang-v0.1.15/tilelang/cuda/transform/__init__.py:35-48`）。
 
-分类逻辑被抽到了 `_vendor/tilelang-v0.1.15/src/cuda/transform/ws_analysis.h`（v0.1.15 新增），它把语句分成 `kTmaProducer` / `kCpAsyncProducer` / `kCpAsyncRaw` / `kSimtProducer` / `kTmaStore` / `kTcgen05Mma` / `kConsumer`（`_vendor/tilelang-v0.1.15/src/cuda/transform/ws_analysis.h:33-41`）。这个枚举就是 4.4.1 里那个「warp-specialized producer 分支」判据的来源：`ClassifyWarpSpecializedCopy`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:810-891`）对 producer 侧的 load 传 `allow_load=True`，所以**只有在这一分支里，`T.copy` 的 global→shared load 才会自动变成 TMA**。
+分类逻辑被抽到了 `_vendor/tilelang-v0.1.15/src/cuda/transform/ws_analysis.h`（v0.1.15 新增），它把语句分成 `kTmaProducer` / `kCpAsyncProducer` / `kCpAsyncRaw` / `kSimtProducer` / `kTmaStore` / `kTcgen05Mma` / `kConsumer`（`_vendor/tilelang-v0.1.15/src/cuda/transform/ws_analysis.h:33-41`）。这个枚举就是 4.4.1 里那个“warp-specialized producer 分支”判据的来源：`ClassifyWarpSpecializedCopy`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:810-891`）对 producer 侧的 load 传 `allow_load=True`，所以**只有在这一分支里，`T.copy` 的 global→shared load 才会自动变成 TMA**。
 
 最后还有 `AnnotateWarpGroupRegAlloc`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:268-271`），把 `set_max_nreg` 注入到 producer/consumer 两侧（`_vendor/tilelang-v0.1.15/tilelang/cuda/transform/__init__.py:143-156`）。
 
@@ -691,7 +691,7 @@ TileLang 的 `T.alloc_tmem` docstring（`_vendor/tilelang-v0.1.15/tilelang/langu
 编译期配套：
 
 * `LowerSharedTmem`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:175`）把 `shared.tmem` 缓冲落实成具体的分配槽位。
-* `InjectTcgen05Fence`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:266`）在**保守**的位置插入 `tcgen05.fence::before_thread_sync` / `after_thread_sync`——包住 CTA 级 shared 同步、`mbarrier_wait_parity → tcgen05/TMEM 用`、以及 `tcgen05/TMEM 用 → mbarrier_arrive` 这些线性握手点（`_vendor/tilelang-v0.1.15/tilelang/cuda/transform/__init__.py:125-139`）。它是保守的，**不消除你自己写 mbarrier 协议的责任**——`_vendor/tilelang-v0.1.15/examples/gemm_tcgen05/README.md` 里明确写了这一点。
+* `InjectTcgen05Fence`（`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:266`）在**保守**的位置插入 `tcgen05.fence::before_thread_sync` / `after_thread_sync`，包住 CTA 级 shared 同步、`mbarrier_wait_parity → tcgen05/TMEM 用`、以及 `tcgen05/TMEM 用 → mbarrier_arrive` 这些线性握手点（`_vendor/tilelang-v0.1.15/tilelang/cuda/transform/__init__.py:125-139`）。它是保守的，**不消除你自己写 mbarrier 协议的责任**，`_vendor/tilelang-v0.1.15/examples/gemm_tcgen05/README.md` 里明确写了这一点。
 * 进/出 TMEM 的拷贝走独立的两条 `CopyInst`：`kTMemLoad` / `kTMemStore`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:401-414`），v0.1.15 用 `IsTmemBuffer()` 替代了字面量 scope 判断。
 
 #### 4.6.2 2SM（`use_2cta`）
@@ -705,7 +705,7 @@ TileLang 的 `T.alloc_tmem` docstring（`_vendor/tilelang-v0.1.15/tilelang/langu
 * **SM100**：`C` 在 TMEM → TCGEN05 `kind::mxf8f6f4.block_scale`，A/B 是 shared 里的 FP8/FP6/FP4，SFA/SFB 是已在 TMEM 里的 E8M0 scale factor；`mbar` 必填，编译器隐式插入 `mbarrier_wait_parity`。
 * **SM120**：`C` 是 fragment → 同步的 `mma.sync.m16n8k64.kind::mxf4nvf4.block_scale`，操作数是 E2M1，scale 是 UE4M3，FP32 累加；A/B 与打包的 scale word 都在 shared；`sf_layout` 描述 scale 的排布；这条路径**忽略** `mbar`。
 
-「不支持的组合直接编译失败，而不是丢 scale」——docstring 里明确写了。这一点值得记住：低精度量化最容易出的错是「scale 被悄悄忽略」，TileLang 在这里选择了显式失败。
+“不支持的组合直接编译失败，而不是丢 scale”，docstring 里明确写了。这一点值得记住：低精度量化最容易出的错是“scale 被悄悄忽略”，TileLang 在这里选择了显式失败。
 
 ### 4.7 cluster 与 DSM
 
@@ -731,11 +731,11 @@ DSM 侧的硬件事实来自 Hopper 架构文档（`../tilelang-corpus/05-nvidia
 | Multi-TMA | 给了 `remote_barrier` 且 ND 区域不连续 | 每行一条 `tl::tma_store_cluster` | 行数 |
 | SIMT 回退 | 没给 `remote_barrier`，或区域无法分解 | `map_shared_rank` 逐元素存 | 若给了 `remote_barrier` 则自动注入 arrive |
 
-这里的「连续」判据是「最内维是否覆盖整个 buffer 宽度」。实现上，`Copy::LowerCluster`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:913-1040`）先看 bulk 能不能整块搬（`tma_store_cluster`，第 968 行），不能就调 `MakeTMARows`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:270-380`）逐行分解，再不能就落到 SIMT（`ClusterCopyReplacer`，`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:1050-1120`）。
+这里的“连续”判据是“最内维是否覆盖整个 buffer 宽度”。实现上，`Copy::LowerCluster`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:913-1040`）先看 bulk 能不能整块搬（`tma_store_cluster`，第 968 行），不能就调 `MakeTMARows`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:270-380`）逐行分解，再不能就落到 SIMT（`ClusterCopyReplacer`，`_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:1050-1120`）。
 
 #### 4.7.3 限制
 
-* `cluster_mask` 必须是**编译期常量**，不支持动态 mask（`cluster_tma.md`「Notes」节）。
+* `cluster_mask` 必须是**编译期常量**，不支持动态 mask（`cluster_tma.md`“Notes”节）。
 * `cluster_mask` 与 `dst_block` 在同一次 `copy_cluster` 里互斥。
 * 可移植 cluster 上限是 8；B200 可通过 `cudaFuncAttributeNonPortableClusterSizeAllowed` 开到 16（`../tilelang-corpus/05-nvidia-backend/raw/nvidia-blackwell-tuning-guide.md:73`）。
 * 集群场景下建议用 `cudaOccupancyMaxActiveClusters` 算占用率，而不是普通 occupancy calculator（同文件第 52 行）。
@@ -746,8 +746,8 @@ DSM 侧的硬件事实来自 Hopper 架构文档（`../tilelang-corpus/05-nvidia
 #### 4.8.1 它在 TileLang 里怎么接
 
 * target 判定：`_vendor/tilelang-v0.1.15/tilelang/cuda/codegen.py:8-14`，`is_cutedsl_target` 要求 `target.kind.name == "cuda"` 且 `"cutedsl" in target.keys`；`is_plain_cuda_target` 是它的补集。
-* 后端注册：`_vendor/tilelang-v0.1.15/tilelang/cuda/cutedsl_backend.py:9-23` 是**另一个** `BackendModule`（`name="cutedsl"`），但它**复用同一个 `pipeline.CUDA_PIPELINE`**——也就是说，从 TIR 到 `LowerTileOp` 的整条 pass 链与普通 CUDA 完全一样，只有 device codegen 和 execution backend 不同。
-* device codegen：`target.build.tilelang_cutedsl` / `..._without_compile`，注册在 `_vendor/tilelang-v0.1.15/src/cuda/codegen/rt_mod_cutedsl.cc:86`，打印器是 `CodeGenTileLangCuTeDSL`（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cutedsl.cc:210` 起，3740 行）——它输出的是 **Python**（CuTe DSL），不是 C++。
+* 后端注册：`_vendor/tilelang-v0.1.15/tilelang/cuda/cutedsl_backend.py:9-23` 是**另一个** `BackendModule`（`name="cutedsl"`），但它**复用同一个 `pipeline.CUDA_PIPELINE`**，也就是说，从 TIR 到 `LowerTileOp` 的整条 pass 链与普通 CUDA 完全一样，只有 device codegen 和 execution backend 不同。
+* device codegen：`target.build.tilelang_cutedsl` / `..._without_compile`，注册在 `_vendor/tilelang-v0.1.15/src/cuda/codegen/rt_mod_cutedsl.cc:86`，打印器是 `CodeGenTileLangCuTeDSL`（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cutedsl.cc:210` 起，3740 行）。它输出的是 **Python**（CuTe DSL），不是 C++。
 * execution backend：`_vendor/tilelang-v0.1.15/tilelang/cuda/execution_backend.py:35-36` 只注册了 `"cutedsl"` 一个。
 * adapter：`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/cutedsl/`，入口 `CuTeDSLKernelAdapter`（`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/cutedsl/adapter.py:24`），编译器是 `CuTeDSLLibraryGenerator`（`libgen.py`），它把生成的 Python 模块写进临时目录再 import（`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/cutedsl/libgen.py:37-60`）。
 * 依赖门禁：`_vendor/tilelang-v0.1.15/tilelang/jit/adapter/cutedsl/checks.py:1-88`，要求 `nvidia-cutlass-dsl >= 4.7.0`（`4.3.4` 被显式列入黑名单），并且 `cutlass` 包下真的能找到 `cute`。
@@ -756,7 +756,7 @@ DSM 侧的硬件事实来自 Hopper 架构文档（`../tilelang-corpus/05-nvidia
 
 `_vendor/tilelang-v0.1.15/tilelang/contrib/cutedsl/__init__.py` 的第一件事就是 `import cutlass` / `import cutlass.cute`，然后重导出 `cutlass.cute.arch` 的 `sync_threads`、`alloc_smem`、`warpgroup_reg_alloc`、`wgmma_wait_group` 等等。也就是说：
 
-> **TileLang 的 CuTe DSL 后端 = 「TileLang 的 TIR pass 链」+「生成 CuTe DSL Python 源码」+「交给 NVIDIA 的 CUTLASS/CuTe 去编译」。**
+> **TileLang 的 CuTe DSL 后端 = “TileLang 的 TIR pass 链”+“生成 CuTe DSL Python 源码”+“交给 NVIDIA 的 CUTLASS/CuTe 去编译”。**
 
 它不是 TileLang 自己重写了一遍 CuTe，而是把 CuTe DSL 当成 **codegen target**。`_vendor/tilelang-v0.1.15/tilelang/contrib/cutedsl/` 下自己实现的 `gemm_v1.py` / `gemm_v2.py` / `gemm_tcgen05.py` / `cpasync.py` / `ldsm.py` / `ptx_mma.py` / `cluster.py` 等，是把 CUTLASS 里零散的 atom 与 helper 组织成 TileLang 需要的那几个入口。
 
@@ -772,11 +772,11 @@ DSM 侧的硬件事实来自 Hopper 架构文档（`../tilelang-corpus/05-nvidia
 | TileLang CuTe DSL 后端 | 同上（同一套 pass） | CuTe DSL Python → CUTLASS | TileLang 把 CUTLASS 当 codegen target |
 | cuTile Python | `ct.load` / `ct.store` / tile 运算 | Tile IR → `tileiras` | 同一抽象层次的竞争路线，编译器与运行时完全独立 |
 
-一个诚实的限制：corpus 里 `nvidia-cutedsl-docs.md` 只有 22 行，是文档站的导航壳，没有正文。所以本章关于 CuTe DSL「官方怎么描述自己」的部分只做了定位性引用，正文判断全部来自 TileLang 侧的 `checks.py` 与 `contrib/cutedsl/`。这一点记在 `references.md` 的「待补资料」里。
+一个诚实的限制：corpus 里 `nvidia-cutedsl-docs.md` 只有 22 行，是文档站的导航壳，没有正文。所以本章关于 CuTe DSL“官方怎么描述自己”的部分只做了定位性引用，正文判断全部来自 TileLang 侧的 `checks.py` 与 `contrib/cutedsl/`。这一点记在 `references.md` 的“待补资料”里。
 
-### 4.9 一张「用户写法 → 架构 → 生成指令」对照表
+### 4.9 一张“用户写法 → 架构 → 生成指令”对照表
 
-下面这张表是本章的核心速查。所有「生成指令」列的内容都能在上面的源码位置核对到；「架构限制」列来自 `_vendor/tilelang-v0.1.15/src/cuda/target_utils.cc` 的 arch 阈值与 `_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc` 的谓词。
+下面这张表是本章的核心速查。所有“生成指令”列的内容都能在上面的源码位置核对到；“架构限制”列来自 `_vendor/tilelang-v0.1.15/src/cuda/target_utils.cc` 的 arch 阈值与 `_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc` 的谓词。
 
 | 用户写法 | 目标架构 | 选中的指令 | 依据（v0.1.15） |
 | --- | --- | --- | --- |
@@ -803,7 +803,7 @@ DSM 侧的硬件事实来自 Hopper 架构文档（`../tilelang-corpus/05-nvidia
 | `T.copy_cluster(A_g, A_s, cluster_mask=0b11)` | sm_90+ | `cp.async.bulk.tensor...multicast::cluster` | `_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:718-736`、`_vendor/tilelang-v0.1.15/src/tl_templates/cuda/copy_sm90.h:88-210` |
 | `T.copy_cluster(A_s, B_s, dst_block=1, remote_barrier=b)` | sm_90+ | `cp.async.bulk.shared::cluster` | `_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:913-1040`、`_vendor/tilelang-v0.1.15/src/tl_templates/cuda/copy_sm90.h:51-86` |
 
-表里 `T.tcgen05_gemm(...)` 与 `T.wgmma_gemm(...)` 两行的「用户写法」指的是**这类语义**：
+表里 `T.tcgen05_gemm(...)` 与 `T.wgmma_gemm(...)` 两行的“用户写法”指的是**这类语义**：
 如 4.3.6 节所述，这两个名字在 v0.1.15 的 `tilelang.language` facade 上取不到，要写显式变体
 请先在目标环境里确认名字存在；否则用 `T.gemm(..., mbar=mbar)` 等价的同步形式。
 
@@ -819,14 +819,14 @@ diff -rq _vendor/tilelang-v0.1.14/src/cuda      _vendor/tilelang-v0.1.15/src/cud
 1. **block-scaled 从 `gemm.cc` 独立出去。** 新增 `_vendor/tilelang-v0.1.15/src/cuda/op/gemm_blockscaled.cc`（128 行），`_vendor/tilelang-v0.1.15/tilelang/cuda/op/gemm/gemm_tcgen05_blockscaled.py`，以及整个新包 `_vendor/tilelang-v0.1.15/tilelang/tileop/gemm_blockscaled/`。对照 diff 可见 v0.1.14 的 `gemm.cc` 里有一段内联的 blockscaled 分派（`if (op.sfaRegion_.defined() || ...) return kCudaMMABlockScaled;`）与 `tl.get_tcgen5_blockscaled_instr_desc` 的注册，在 v0.1.15 里都从 `gemm.cc` 删掉，移到新文件。`_vendor/tilelang-v0.1.15/tilelang/cuda/op/gemm/__init__.py` 也多注册了 `cuda.tcgen05_blockscaled`。
 2. **TMEM 判断从字面量 scope 改成谓词。** `AllowTcgen5Mma` 里 `op.c_.scope() == "shared.tmem"` 变成 `IsTmemBuffer(op.c_)`；`CheckTMemLoad/Store` 同样（`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc` diff）。
 3. **TMA 判定函数改名/拆分。** `CopyInstIsTMA(inst)` 拆成 `CopyInstIsTMALoad` 与 `CopyInstIsTMAStore`（`copy_analysis.cc` diff）；
-4. **warp-specialized copy 分类泛化。** `ClassifyWarpSpecializedProducerCopy` → `ClassifyWarpSpecializedCopy`，并新增一条「`src` 在 shared、`dst` 在 global 时直接走 `SelectCopyInstForLowering`」的旁路——也就是说 store 现在也走通用判定，而不是原来的 producer-only 路径。
+4. **warp-specialized copy 分类泛化。** `ClassifyWarpSpecializedProducerCopy` → `ClassifyWarpSpecializedCopy`，并新增一条“`src` 在 shared、`dst` 在 global 时直接走 `SelectCopyInstForLowering`”的旁路，也就是说 store 现在也走通用判定，而不是原来的 producer-only 路径。
 5. **新增自动 warp specialization。** `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py` 在 `MaterializeWSSchedule()` 之前插入 `AutoWarpSpecialization()`；新增 pass config `tl.enable_auto_warp_specialization`（`_vendor/tilelang-v0.1.15/tilelang/transform/pass_config.py` diff）；新增 `_vendor/tilelang-v0.1.15/src/cuda/transform/auto_schedule.cc`、`_vendor/tilelang-v0.1.15/src/cuda/transform/auto_schedule/`（含 `role_based_scheduler.cc`、`preprocess_ir.cc`、`memory_detector.h`）。
-6. **WS 分析抽成公共头文件。** 新增 `_vendor/tilelang-v0.1.15/src/cuda/transform/ws_analysis.{h,cc}`，`TileStmtKind` 枚举（`kTmaProducer` 到 `kConsumer`）被抽出来供自动调度器复用——注释原文是「Extracted from producer_consumer_ws.cc so automatic schedulers reuse the same classification the legacy producer/consumer rewriter has been validated with」。
+6. **WS 分析抽成公共头文件。** 新增 `_vendor/tilelang-v0.1.15/src/cuda/transform/ws_analysis.{h,cc}`，`TileStmtKind` 枚举（`kTmaProducer` 到 `kConsumer`）被抽出来供自动调度器复用，注释原文是“Extracted from producer_consumer_ws.cc so automatic schedulers reuse the same classification the legacy producer/consumer rewriter has been validated with”。
 7. **`MaterializeWSSchedule` 大幅扩容**（`_vendor/tilelang-v0.1.15/src/cuda/transform/materialize_ws_schedule.cc` 的 diff 有 3312 行），这是 v0.1.15 NV 侧最大的单点变化。
 8. **`MaterializeKernelLaunch` 参数化。** `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:70` 从 `MaterializeKernelLaunch()` 变成 `MaterializeKernelLaunch(lower_thread_binding=True, default_threads=128)`。
 9. **`CodeGenTileLangCUDA` 的向量展开。** 新增 `EmitPackedX2Call` / `EmitPerLaneScalarCall`（声明见 `_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.h` diff），新增 `VisitStmt_(const AssertStmtNode *)`；`t` lanes=64 的整型向量不再打印 `int8`（不存在的类型）而是 `longlong4`；fp4/fp8 的多 lane 向量改用 `tl::make_fp4_vec<>` / `tl::make_vec<>` 的逐 lane 打包构造（`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc:986-994`、`1132+`）。
 10. **可向量化 cast 增加 fp4→fp8。** `_vendor/tilelang-v0.1.15/src/cuda/target_utils.cc` 的 `IsCudaVectorizableCast` 新增 `float4_e2m1fn → float8(e4m3)` 一条。
-11. **deprecation 文案更新。** `tl.disable_tma_lower` 的提示从「will be removed in v0.1.10」改成不带版本号；docstring 同步（`_vendor/tilelang-v0.1.15/tilelang/transform/pass_config.py` diff）。语义没变，但说明这个兼容开关至今没被删。
+11. **deprecation 文案更新。** `tl.disable_tma_lower` 的提示从“will be removed in v0.1.10”改成不带版本号；docstring 同步（`_vendor/tilelang-v0.1.15/tilelang/transform/pass_config.py` diff）。语义没变，但说明这个兼容开关至今没被删。
 12. **examples**：新增 `_vendor/tilelang-v0.1.15/examples/ascend/` 与 `_vendor/tilelang-v0.1.15/examples/kpool/`（例目录数 55 → 57）；`_vendor/tilelang-v0.1.15/examples/gemm_tcgen05/README.md`、`_vendor/tilelang-v0.1.15/examples/blockscaled_gemm_sm100/mxfp8_illustrated.md`、`_vendor/tilelang-v0.1.15/examples/deepseek_v32/sparse_mla_fwd.py` 等有改动。
 13. **纯 NV 的 `wrapper.py` 变化很少。** `_vendor/tilelang-v0.1.15/tilelang/jit/adapter/wrapper.py` 的 diff 主要是新增 `TLAscendSourceWrapper`（昇腾），NV 部分只有 `_TYPE_MAP` 加了 `uint64 → uint64_t`、`get_stream_type` 的返回类型放宽成 `dict[str, str] | None`。这说明 v0.1.15 的 host wrapper 形态对 NV 而言基本冻结。
 
@@ -836,38 +836,38 @@ diff -rq _vendor/tilelang-v0.1.14/src/cuda      _vendor/tilelang-v0.1.15/src/cud
 
 ## 5. 进阶与陷阱
 
-1. **「我明明写了 `T.copy`，为什么没有 TMA」** ——先看方向：默认只有 store 自动走 TMA。load 要 TMA，请用 `T.tma_copy` 或 `prefer_instruction="tma"`，并确认最后一维是 16 字节的整数倍、global stride 是 16 字节对齐且最内层 stride 为 1。
-2. **「`T.gemm` 没有用 5 代 Tensor Core」** ——先看 `C` 的作用域：TCGEN05 要求 `C` 是 `T.alloc_tmem`。`C` 在 fragment 里时，即使目标是 sm_100 也不会选 TCGEN05。
-3. **显式变体不降级。** `T.wgmma_gemm` / `T.tcgen05_gemm` 在上约束不满足时是 `LOG(FATAL)`，不是回退。它们的定位是「我确知要什么，帮我到底」，而不是「尽量给我这个」。反过来，`T.copy` 的 `prefer_instruction="tma"` 也是「要么 TMA，要么报错」。
+1. **“我明明写了 `T.copy`，为什么没有 TMA”** ，先看方向：默认只有 store 自动走 TMA。load 要 TMA，请用 `T.tma_copy` 或 `prefer_instruction="tma"`，并确认最后一维是 16 字节的整数倍、global stride 是 16 字节对齐且最内层 stride 为 1。
+2. **“`T.gemm` 没有用 5 代 Tensor Core”** ，先看 `C` 的作用域：TCGEN05 要求 `C` 是 `T.alloc_tmem`。`C` 在 fragment 里时，即使目标是 sm_100 也不会选 TCGEN05。
+3. **显式变体不降级。** `T.wgmma_gemm` / `T.tcgen05_gemm` 在上约束不满足时是 `LOG(FATAL)`，不是回退。它们的定位是“我确知要什么，帮我到底”，而不是“尽量给我这个”。反过来，`T.copy` 的 `prefer_instruction="tma"` 也是“要么 TMA，要么报错”。
 3b. **但先确认这些名字在你的环境里能从 `T` 上取到。** 4.3.6 节给出的源码事实是：在 v0.1.15 里 `T.wgmma_gemm` / `T.tcgen05_gemm` 等显式变体不在 facade 的导出名单上，而官方示例仍在调用它们。别照着示例直接抄。
-4. **`use_2cta` 没有单 CTA 回退。** 因为形状约定本身就建立在「B 的 N 一半在邻居 CTA」这个前提上（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:347-353`）。
-5. **TMA 描述符在 host 上编码，所以 global base 必须是 host 能看到的地址。** 如果 global buffer 的基址是在 device 函数体里算出来的（device-bound），描述符 TMA 路径不可用——`GetTmaDescriptorBaseIsDeviceBound` 与 `MakeTmaUnavailableReason`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:81-84`、`522-535`）。此时 1D bulk 路径（直接用 device 算出的地址）仍然可用，因为它不建 TensorMap。
-6. **mbarrier 的 arrive 计数必须和实际到达者一致。** `T.alloc_barrier(arrive_count=...)` 里 0 是非法值（`_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:194-222` 会 raise）。Multi-TMA 路径会把 `arrive_count` 自动改成行数——这是编译器替你做的事，你要知道它发生了，否则手工调 `arrive_count` 会和它打架。
-7. **TMEM 必须显式释放，且必须在同一个 warp 上分配/释放。** 不写 `T.deallocate_tmem` 时 TileLang 会在分配块结束时自动释放（`_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:260-282`），但如果你手工提前释放，就要自己保证「同一 warp」这条约束。
+4. **`use_2cta` 没有单 CTA 回退。** 因为形状约定本身就建立在“B 的 N 一半在邻居 CTA”这个前提上（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:347-353`）。
+5. **TMA 描述符在 host 上编码，所以 global base 必须是 host 能看到的地址。** 如果 global buffer 的基址是在 device 函数体里算出来的（device-bound），描述符 TMA 路径不可用，`GetTmaDescriptorBaseIsDeviceBound` 与 `MakeTmaUnavailableReason`（`_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc:81-84`、`522-535`）。此时 1D bulk 路径（直接用 device 算出的地址）仍然可用，因为它不建 TensorMap。
+6. **mbarrier 的 arrive 计数必须和实际到达者一致。** `T.alloc_barrier(arrive_count=...)` 里 0 是非法值（`_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:194-222` 会 raise）。Multi-TMA 路径会把 `arrive_count` 自动改成行数。这是编译器替你做的事，你要知道它发生了，否则手工调 `arrive_count` 会和它打架。
+7. **TMEM 必须显式释放，且必须在同一个 warp 上分配/释放。** 不写 `T.deallocate_tmem` 时 TileLang 会在分配块结束时自动释放（`_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:260-282`），但如果你手工提前释放，就要自己保证“同一 warp”这条约束。
 8. **warp specialization 只在 Hopper 及以后存在。** `allow_warp_specialized` 会先检查 `have_tma(target)`（`arch >= 9`），不满足直接跳过整个 WS 分支。
 9. **`cluster_mask` 是编译期常量。** 想按运行期数据决定 multicast 形状，必须写多个 kernel 或者用 `dst_block`（它可以是运行期表达式）。
 10. **cluster 大小不是随便开的。** 可移植上限 8，B200 可开到 16（需设 `NonPortableClusterSizeAllowed`，wrapper 已经替你设了），但更大的 cluster 会降低可并行 block 数（`blackwell-tuning-guide.md:73`）。
-11. **架构条件特性会破坏前向兼容。** 用 `sm_100a` / `compute_100a` 编译出的 PTX 既不前向也不后向兼容（`blackwell-compatibility-guide.md:28`）。这意味着给 B200 编的 cubin 不能直接丢到 H100 上跑——反过来也不行。跨代部署要靠 PTX JIT 或多 `-gencode`，这也是为什么 target 的 `code` 列表支持多个条目。
-12. **本章所有结论都是源码级的，不是实测的。** 本章写作环境没有 NVIDIA GPU，因此没有任何一条「这样写更快」的性能断言；凡是能看到的性能口径，都来自 corpus 里的厂商文档，且在本章里只作架构描述使用。
+11. **架构条件特性会破坏前向兼容。** 用 `sm_100a` / `compute_100a` 编译出的 PTX 既不前向也不后向兼容（`blackwell-compatibility-guide.md:28`）。这意味着给 B200 编的 cubin 不能直接丢到 H100 上跑，反过来也不行。跨代部署要靠 PTX JIT 或多 `-gencode`，这也是为什么 target 的 `code` 列表支持多个条目。
+12. **本章所有结论都是源码级的，不是实测的。** 本章写作环境没有 NVIDIA GPU，因此没有任何一条“这样写更快”的性能断言；凡是能看到的性能口径，都来自 corpus 里的厂商文档，且在本章里只作架构描述使用。
 
 ---
 
 ## 6. 本章小结
 
-* TileLang 的 NV 路径是「一条 TIR pass 链 + 一次 host/device 切分 + 两条独立的 codegen」。device 出 CUDA C（或 CuTe DSL Python），host 出 wrapper 的 `call()`（或 TVM-FFI packed 模块）。
+* TileLang 的 NV 路径是“一条 TIR pass 链 + 一次 host/device 切分 + 两条独立的 codegen”。device 出 CUDA C（或 CuTe DSL Python），host 出 wrapper 的 `call()`（或 TVM-FFI packed 模块）。
 * 后端的全部可选项写在一张注册表里：`_vendor/tilelang-v0.1.15/tilelang/cuda/backend.py:123-143`。三种 execution backend（`tvm_ffi` / `cython` / `nvrtc`）共用同一个 `TLCUDASourceWrapper`，所以生成的 kernel 源码相同。
 * `T.gemm` 的指令选择是一个可完整读完的谓词链（`_vendor/tilelang-v0.1.15/src/cuda/op/gemm.cc:336-375`）：显式变体 → `use_2cta` → TCGEN05 → WGMMA → Volta/Turing 检查 → `cuda.mma`。决定 TCGEN05 的关键是 **`C` 在不在 TMEM**；决定 WGMMA 的关键是 **sm_90 + M≥64 + warp 数是 4 的倍数 + dtype/转置约束**。
 * `transpose` 与 `policy` 通过两条路影响结果：低精度 dtype 在 WGMMA 上对主序有硬约束（`CheckWgmma`），而 `policy` 决定 `m_warp × n_warp` 的划分（`ComputeWarpPartition`）。layout 则由指令反推（`GemmWGMMA.infer_shared_layout` 的 swizzle 档位）。
 * `T.copy` 默认**只把 store 降成 TMA**；load 想走 TMA 需要显式提示或处在 warp-specialized producer 分支。TMA 的成功条件集中在 `CheckBulkLoad/Store` 与 `CheckGlobalStrides`：架构 ≥ sm_90、global↔shared、16 字节对齐、最内层 stride 为 1。
-* TMA 是「host 编描述符 + device 单线程发射 + mbarrier 完成通知」。描述符由 `LowerHopperIntrin` 提升到 host 函数属性 `tma_descriptor_args`，再由 wrapper 生成 `cuTensorMapEncodeTiled(...)`。
+* TMA 是“host 编描述符 + device 单线程发射 + mbarrier 完成通知”。描述符由 `LowerHopperIntrin` 提升到 host 函数属性 `tma_descriptor_args`，再由 wrapper 生成 `cuTensorMapEncodeTiled(...)`。
 * warp specialization 在语言层是 `T.ws(i)` / `T.annotate_ws_schedule`，在编译期是 `AutoWarpSpecialization → MaterializeWSSchedule → ProducerConsumerWarpSpecialized`（外加 `AnnotateWarpGroupRegAlloc`），并且**只在 Hopper 及以后开启**。
 * Blackwell 的新东西是 TMEM 与 tcgen05：累加器不再在寄存器里，只有 TCGEN05 与 TMEM load/store 能碰它；block-scaled MMA 在 SM100 走 TCGEN05、在 SM120 走 `mma.sync`。
-* cluster 与 DSM 通过 `T.ClusterKernel(cluster_dims=...)` + `T.copy_cluster(cluster_mask=... | dst_block=...)` 使用，硬限制是「mask 编译期常量」「可移植 cluster ≤ 8」「DSM 访问要合并对齐」。
+* cluster 与 DSM 通过 `T.ClusterKernel(cluster_dims=...)` + `T.copy_cluster(cluster_mask=... | dst_block=...)` 使用，硬限制是“mask 编译期常量”“可移植 cluster ≤ 8”“DSM 访问要合并对齐”。
 * CuTe DSL 后端与 CUDA 后端共用同一条 TIR pass 链，只是把 codegen target 换成了 CuTe DSL Python；它与 NVIDIA 官方的 cuTile（走 Tile IR + `tileiras`）是完全独立的两条路。
 
 ## 延伸阅读
 
-* 想看 codegen 的全部细节：`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc`（6631 行）——建议从 `AddFunction`（第 6509 行）和 `PrintType`（第 797 行）两头往里读。
+* 想看 codegen 的全部细节：`_vendor/tilelang-v0.1.15/src/cuda/codegen/codegen_cuda.cc`（6631 行），建议从 `AddFunction`（第 6509 行）和 `PrintType`（第 797 行）两头往里读。
 * 想看 TMA/cluster 的用户文档：`_vendor/tilelang-v0.1.15/docs/programming_guides/cluster_tma.md` 与 `_vendor/tilelang-v0.1.15/docs/programming_guides/instructions.md`。
 * 想看 Blackwell 的 shape 白名单：`_vendor/tilelang-v0.1.15/src/op/tcgen5_meta.h` 与 `../tilelang-corpus/05-nvidia-backend/raw/nvidia-ptx-isa.md` 的 9.7.18 节。
 * 想看 pipeline、多缓冲与同步插入的通用机制：见第 22 章。

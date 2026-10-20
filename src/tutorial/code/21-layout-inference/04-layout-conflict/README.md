@@ -27,7 +27,7 @@ python3 annotate_layout_conflict.py --mode plain       # 不 annotation：作对
   指向 `A_shared`。
 * `--mode plain`：正常编译（与 `02`/`03` 的 GEMM 相同结构）。
 
-**把这些当假设，不要当结论。** 实际是「通过 / 合并 / 失败」三者之一，取决于
+**把这些当假设，不要当结论。** 实际是“通过 / 合并 / 失败”三者之一，取决于
 v0.1.15 在该指令下的 `reuse_existing_shared_layout` 判定
 （`_vendor/tilelang-v0.1.15/src/op/gemm.cc:254-266`）。
 
@@ -35,4 +35,4 @@ v0.1.15 在该指令下的 `reuse_existing_shared_layout` 判定
 
 **仅静态核对**：`python3 -m py_compile` 通过；`T.annotate_layout`
 （`tilelang/language/annotations.py:45-62`）与 `T.Layout` 的签名已核对。
-**本机没有 GPU，脚本未运行，「预期输出」未经证实。**
+**本机没有 GPU，脚本未运行，“预期输出”未经证实。**

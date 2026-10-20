@@ -5,13 +5,13 @@
       "id": "q1",
       "stem": "本章把逐元素算子的性能归结为几乎只由两件事决定。是哪两件？",
       "options": [
-        "线程数与每线程的寄存器个数",
         "每个字节被读/写几次、每次访存有多宽",
+        "线程数与每线程的寄存器个数",
         "tile 大小与 warp 划分方式",
         "是否使用 T.gemm 做矩阵乘"
       ],
-      "answer": 1,
-      "explain": "见 §1.1：逐元素算子几乎全是 memory-bound，运行时间约等于「搬了多少字节 ÷ 带宽」，能动的只有「少搬」与「搬宽」两条线；线程数、tile、warp 划分是手段而不是决定因素。"
+      "answer": 0,
+      "explain": "见 §1.1：逐元素算子几乎全是 memory-bound，运行时间约等于“搬了多少字节 ÷ 带宽”，能动的只有“少搬”与“搬宽”两条线；线程数、tile、warp 划分是手段而不是决定因素。"
     },
     {
       "id": "q2",
@@ -31,11 +31,11 @@
       "options": [
         "因为 shared memory 容量不够",
         "因为要保留 dst 的数据类型",
-        "因为要支持 fp64 累加",
-        "因为跨线程 butterfly 会把同一个值重复计入，需要先把 dst 拷进临时 fragment，归约完再合并一次"
+        "因为跨线程 butterfly 会把同一个值重复计入，需要先把 dst 拷进临时 fragment，归约完再合并一次",
+        "因为要支持 fp64 累加"
       ],
-      "answer": 3,
-      "explain": "见 §3.2.5：clear=True 是覆盖写；clear=False 是把这次结果与 dst 旧值「合并一次」，所以 sum/abssum 需要临时 buffer，而 max/min 的合并是幂等的，没有这个问题。"
+      "answer": 2,
+      "explain": "见 §3.2.5：clear=True 是覆盖写；clear=False 是把这次结果与 dst 旧值“合并一次”，所以 sum/abssum 需要临时 buffer，而 max/min 的合并是幂等的，没有这个问题。"
     },
     {
       "id": "q4",
@@ -43,46 +43,46 @@
       "options": [
         "编译期直接报错",
         "运行时崩溃",
-        "能跑完、不报错，但数值全错",
-        "结果仍然正确，只是慢一点"
+        "结果仍然正确，只是慢一点",
+        "能跑完、不报错，但数值全错"
       ],
-      "answer": 2,
+      "answer": 3,
       "explain": "见 §3.3.1 与 §5.3：配对约定是训练时就定下来的，写错既不会崩也不会报错，只会让模型变傻；所以本章的验证顺序永远是先对齐 PyTorch 参考。"
     },
     {
       "id": "q5",
       "stem": "官方 elementwise 对照里 N=2047、threads=256、每线程 8 个元素时没有生成 uint4，最主要的原因是什么？",
       "options": [
-        "threads 太小",
         "越界谓词依赖 lane，在向量组内部不恒定",
+        "threads 太小",
         "dtype 是 fp32",
         "没有先用 T.copy 搬到 fragment"
       ],
-      "answer": 1,
+      "answer": 0,
       "explain": "见 §4.1 与 §5.1：idx < 2047 这样的谓词在向量组内部不恒定，向量化被关掉；把 N 换成 2048（整除）之后，同一段代码就生成了 128-bit 访存。"
     },
     {
       "id": "q6",
-      "stem": "关于「融合不是免费的」，下面哪一条说法正确？",
+      "stem": "关于“融合不是免费的”，下面哪一条说法正确？",
       "options": [
-        "融合后寄存器压力与片上存储压力都可能上升，layout 约束还会互相打架",
         "融合不需要额外的片上存储",
+        "融合后寄存器压力与片上存储压力都可能上升，layout 约束还会互相打架",
         "融合一定让 kernel 更快，只看账本收益即可",
         "融合的代价只出现在昇腾侧"
       ],
-      "answer": 0,
+      "answer": 1,
       "explain": "见 §5.5：融合的收益写在账本上，代价藏在寄存器压力、片上存储与 layout 约束三处；判断标准是先看账本能省多少，再看片上放不放得下。"
     },
     {
       "id": "q7",
-      "stem": "「主干 v0.1.15 里 UB 就是 T.alloc_shared」这句话意味着什么？",
+      "stem": "“主干 v0.1.15 里 UB 就是 T.alloc_shared”这句话意味着什么？",
       "options": [
         "T.alloc_ub 才是主干唯一正确的写法",
-        "主干里没有 T.alloc_ub，把适配器代码照搬过来第一步就会 AttributeError",
         "UB 与 shared memory 是两块互不相干的存储",
+        "主干里没有 T.alloc_ub，把适配器代码照搬过来第一步就会 AttributeError",
         "昇腾侧不需要处理搬运与同步"
       ],
-      "answer": 1,
+      "answer": 2,
       "explain": "见 §3.4.3 与 §5.6：主干用 T.alloc_shared 分配 UB，T.alloc_ub 与 T.tile.* 只存在于适配器仓库；照搬适配器代码会先在 Python 层报 AttributeError。"
     },
     {
@@ -91,11 +91,11 @@
       "options": [
         "N_padded",
         "N_padded / 2",
-        "N：padding 列填 0、对平方和无贡献；用 N_padded 会让结果整体偏小",
-        "视 dtype 而定"
+        "视 dtype 而定",
+        "N：padding 列填 0、对平方和无贡献；用 N_padded 会让结果整体偏小"
       ],
-      "answer": 2,
-      "explain": "见 §5.4：官方代码专门注释了要用 N 而不是 N_padded；用 N_padded 的典型症状是「单元测试用 1024 通过、用 1000 就失败」。"
+      "answer": 3,
+      "explain": "见 §5.4：官方代码专门注释了要用 N 而不是 N_padded；用 N_padded 的典型症状是“单元测试用 1024 通过、用 1000 就失败”。"
     }
   ]
 }

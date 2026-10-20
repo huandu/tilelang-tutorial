@@ -18,9 +18,9 @@
 | TileKernels 语料快照 | `T…` | **已核验（2026-10-01）**：corpus 完整快照，逐文件阅读 |
 | 官方发布说明与 corpus 元数据 | `R…` | **已核验（2026-10-01）**：本地全文 |
 
-「已核验」**不是**运行验证。任何「跑起来对不对 / 快不快」的结论本章都没有做。
+“已核验”**不是**运行验证。任何“跑起来对不对 / 快不快”的结论本章都没有做。
 `code/03-map-and-diff/` 的第 3 步对 21 个 API 名做了机械存在性核对
-（输出 `21/21 命中；缺：无`），但它只证明「名字存在」。
+（输出 `21/21 命中；缺：无`），但它只证明“名字存在”。
 
 ---
 
@@ -113,7 +113,7 @@ HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），见
 | --- | --- | --- | --- |
 | S1 | `tilelang/language/__init__.py:1-32` | §3.1：`tilelang.language` 是 CUDA 方言的再导出（`:11`），所以 PDL 只在默认命名空间里 | 已核验（2026-10-01）：逐行读 |
 | S2 | `tilelang/language/allocate.py:49,67,81,96-103` | §2、§4：`alloc_shared` / `alloc_local` / `alloc_fragment` / `alloc_var` 的 scope | 已核验（2026-10-01）：逐行读 |
-| S3 | `tilelang/language/allocate.py:292-330` | §4.2：`alloc_reducer` 的语义与限制（「物理存储与跨线程通信方案由编译器选择」） | 已核验（2026-10-01）：逐行读 docstring |
+| S3 | `tilelang/language/allocate.py:292-330` | §4.2：`alloc_reducer` 的语义与限制（“物理存储与跨线程通信方案由编译器选择”） | 已核验（2026-10-01）：逐行读 docstring |
 | S4 | `tilelang/language/reduce_op.py:358,398,434` | §4.2：`reducer_init` / `reducer_update` / `finalize_reducer` 三步 | 已核验（2026-10-01） |
 | S5 | `tilelang/language/reduce_op.py:479,495,511` | §4.4：`warp_reduce_sum/max/min` | 已核验（2026-10-01） |
 | S6 | `tilelang/language/customize.py:101-140` | §4.7：`T.view` 的契约（总位数不变、`elem_offset == 0`、紧凑或显式 strides） | 已核验（2026-10-01）：逐行读 |
@@ -127,7 +127,7 @@ HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），见
 | S14 | `tilelang/ascend/language/__init__.py:5,8-18,49-56,69-75` | §3.3、§4.3：昇腾方言建立在 `language.common` 之上；`alloc_shared` 故意遮蔽为 UB；`Kernel`/`MixedKernel`/`get_thread_binding` 来自 `ascend/language/kernel.py`；`device_assert` 与 `rng_*` 的导出 | 已核验（2026-10-01）：逐行读 |
 | S15 | `tilelang/ascend/language/kernel.py:139-172`（`Kernel`）、`:176-...`（`MixedKernel`） | §4.5：昇腾 `T.Kernel(N)` 只接受一维网格、**没有** `threads=`；线程要用 `T.SimtVF` | 已核验（2026-10-01）：逐行读 docstring |
 | S16 | `tilelang/ascend/language/frame.py:107,179` | §4.3、§6.2：`T.SimtVF(threads=128)` 与 `T.SimdVF(latency=0)` 的签名 | 已核验（2026-10-01） |
-| S17 | `tilelang/ascend/language/annotations.py:19-65`（`annotate_buffer_versions`）、`:107-162`（`annotate_manual_multi_buffer`）、`:165-188`（`annotate_unlimit_memory`） | §4.6：版本数语义（`1` 退出多缓冲 / 固定份数 / 只给模式），以及「Z3 在 `T.Persistent` + `num_stages > 1` 时会自己算」 | 已核验（2026-10-01）：逐行读 docstring |
+| S17 | `tilelang/ascend/language/annotations.py:19-65`（`annotate_buffer_versions`）、`:107-162`（`annotate_manual_multi_buffer`）、`:165-188`（`annotate_unlimit_memory`） | §4.6：版本数语义（`1` 退出多缓冲 / 固定份数 / 只给模式），以及“Z3 在 `T.Persistent` + `num_stages > 1` 时会自己算” | 已核验（2026-10-01）：逐行读 docstring |
 | S18 | `tilelang/ascend/language/simd.py:457`（`vsts`）、`:922`（`vdup`）、`:933`（`vdupv`）、`:969`（`vcmax`）、`:976`（`vcmin`）、`:1019`（`vci`）、`:1052`（`vintlv`）、`:1067`（`vdintlv`）、`:1247-1249`（`vcvt` 的 `part=PART_EVEN/PART_ODD`）、`:1429`（`vsel`）、`:1486`（`mem_bar`） | §4.3、§6.1、习题 E14：本章用到的全部 SIMD 原语 | 已核验（2026-10-01）：逐个 `rg -n` 定位并读签名/docstring |
 | S19 | `tilelang/transform/pass_config.py:73,83,189,239,335` | §4.2、§5.3：`TL_DISABLE_WARP_SPECIALIZED`（`:73`）、`TL_ENABLE_FAST_MATH`（`:83`）、`TL_ENABLE_LOWER_LDGSTG_PREDICATED`（`:189`）、`TL_DISABLE_THREAD_STORAGE_SYNC`（`:239`）、`TL_DISABLE_OUT_OF_BOUND_WARNING`（`:335`） | 已核验（2026-10-01）：逐个定位 |
 | S20 | `tilelang/transform/pass_config.py:76`（`TL_ENABLE_AUTO_SCHEDULE`） | §3.3：昇腾自动调度默认开启（与第 19 章 S15 同一条） | 已核验（2026-10-01） |
@@ -138,44 +138,44 @@ HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），见
 
 | id | 本地路径 | 上游链接 | 用途 | 核验状态 |
 | --- | --- | --- | --- | --- |
-| R1 | `../tilelang-corpus/14-deepseek-ascend-stack/raw/deepseek-article-20260930.md:12` | 见该文件头部转录说明 | §1.1：官方对 TileKernels 的定位（「数据处理所需的常规向量计算和访存算子」）与「性能接近硬件上限」的自述 | 已核验（2026-10-01）：本地全文（29 行） |
+| R1 | `../tilelang-corpus/14-deepseek-ascend-stack/raw/deepseek-article-20260930.md:12` | 见该文件头部转录说明 | §1.1：官方对 TileKernels 的定位（“数据处理所需的常规向量计算和访存算子”）与“性能接近硬件上限”的自述 | 已核验（2026-10-01）：本地全文（29 行） |
 | R2 | `../tilelang-corpus/14-deepseek-ascend-stack/raw/PROVENANCE.md` | — | 本章快照的 commit 与日期（TileKernels `66258df6175d`，2026-09-30） | 已核验（2026-10-01） |
-| R3 | `../tilelang-corpus/sources/sources.yaml`（条目 `github-deepseek-tilekernels`，约 `:1495-1505`） | https://github.com/deepseek-ai/TileKernels | 语料的 `trust: primary` 标注与用途说明（「本教程第 33、34 章的主线」） | 已核验（2026-10-01） |
+| R3 | `../tilelang-corpus/sources/sources.yaml`（条目 `github-deepseek-tilekernels`，约 `:1495-1505`） | https://github.com/deepseek-ai/TileKernels | 语料的 `trust: primary` 标注与用途说明（“本教程第 33、34 章的主线”） | 已核验（2026-10-01） |
 | R4 | `../tilelang-corpus/14-deepseek-ascend-stack/raw/TileKernels/README.md`（GitHub 渲染版） | https://github.com/deepseek-ai/TileKernels | T0/T1 的上游出处 | **未核验**：本机未访问网络核对 GitHub 页面与快照是否一致 |
 
 ---
 
 ## 关于性能数字的说明
 
-**本章不提供任何实测数字。** 原因见开头的验证边界。正文里出现的「数量级」只有三类：
+**本章不提供任何实测数字。** 原因见开头的验证边界。正文里出现的“数量级”只有三类：
 
 | 数字 | 来源 | 条件 |
 | --- | --- | --- |
 | `num_stages = 6`、`vector_length = 64`、`max_vregs_per_group = 6`、`SIMD_LANES = 64`、`num_threads = 32`、`num_topk ≤ 32` | T6 / T7 / T21 等源码常量 | **源码里的常量**，不是调优结果、不是实测最优 |
-| 每核 UB 预算 216 KB（`use_simt=True`）/ 248 KB（`use_simt=False`） | T3（`config.py:81-83`） | **库自述的预算口径**；我们没有在官方文档里找到逐字对应的条目（见「待补资料」第 5 条） |
-| 「方案 A 4.5H vs 方案 B 2.5H」（以及习题里 fp4 的 5H : 3H） | **本书推导** | 纯整数记账，忽略 sf、缓存与 TMA 一次搬多块；**不是任何机器上的测量** |
+| 每核 UB 预算 216 KB（`use_simt=True`）/ 248 KB（`use_simt=False`） | T3（`config.py:81-83`） | **库自述的预算口径**；我们没有在官方文档里找到逐字对应的条目（见“待补资料”第 5 条） |
+| “方案 A 4.5H vs 方案 B 2.5H”（以及习题里 fp4 的 5H : 3H） | **本书推导** | 纯整数记账，忽略 sf、缓存与 TMA 一次搬多块；**不是任何机器上的测量** |
 | `rot_dim ∈ {64,128}`、`num_per_channels ∈ {16,32,64,128}`、`num_per_tokens ∈ {32,128}`、`(32,32)`、`hidden % 64 == 0`、`num_tokens % 128 == 0` | T13–T17 的断言 | **实现里写死的常量**，不是性能建议 |
 
-「性能接近硬件上限」「已用于内部训练与推理」（T0）是**厂商自述**。
-本章引用它只是为了说明「这不是玩具库」，**不作为可复现的结论**。
+“性能接近硬件上限”“已用于内部训练与推理”（T0）是**厂商自述**。
+本章引用它只是为了说明“这不是玩具库”，**不作为可复现的结论**。
 
 ---
 
 ## 待补资料
 
-1. **Ascend 950 的硬件规格页缺失。** 本章多处提到「Vector 核」「SIMD 宽度 64」
-   「UB 容量」，但 corpus 里没有 Ascend 950 的官方规格页（容量、算力、带宽、
+1. **Ascend 950 的硬件规格页缺失。** 本章多处提到“Vector 核”“SIMD 宽度 64”
+   “UB 容量”，但 corpus 里没有 Ascend 950 的官方规格页（容量、算力、带宽、
    每核 lane 宽度）。`SIMD_LANES = 64` 是从 `rope_asc.py:9` 的常量与
    `simd.py` 里 `T.float32x64` / `T.int32x64` 的类型宽度**推出来的**，
-   没有官方文档逐字确认「dav-3510 的向量宽度就是 64 条 fp32 lane」。
+   没有官方文档逐字确认“dav-3510 的向量宽度就是 64 条 fp32 lane”。
    建议补抓昇腾 950 的产品规格与 CANN 的 Ascend C API 文档。
-2. **两后端的实测等价性完全未验证。** 本章多次断言「两个后端实现同一个算法」，
+2. **两后端的实测等价性完全未验证。** 本章多次断言“两个后端实现同一个算法”，
    依据是源码逐行对照与共用的参考实现（T25/T26）。
    真正的验证需要一台 CUDA 机器 + 一台昇腾机器，跑同一组
    `tests/**` 用例并与 `tile_kernels/torch/**` 对拍。本章**没有**这个条件。
 3. **`T.view` 在昇腾上的实际行为只核对了契约。** §4.7 的结论来自
    `customize.py:101-140` 的 docstring 与调用方式；没有在设备上验证
-   「int64 → int32 视图 + 单 lane 写高位」这条路真的成立。
+   “int64 → int32 视图 + 单 lane 写高位”这条路真的成立。
 4. **corpus 快照不是 tag。** TileKernels 快照是 commit `66258df6175d`
    （HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），
    而 `pip install tile-kernels` 装到的是发布版本，两者可能不同。
@@ -186,8 +186,8 @@ HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），见
    与这里的 216/248 KB 不是一回事。需要一份 Ascend 950 的 UB 规格
    或 CANN 里对应的查询接口文档，才能判断这两个数是怎么来的。
 6. **`T.annotate_buffer_versions` 缺省时的实际行为未验证。**
-   习题 E4 第 5 问的答案（「大概率仍能编译，但可能丢掉累积器语义」）
-   来自 `annotations.py:19-45` 的文档，没有做过「删掉这一行再编译」的实验。
+   习题 E4 第 5 问的答案（“大概率仍能编译，但可能丢掉累积器语义”）
+   来自 `annotations.py:19-45` 的文档，没有做过“删掉这一行再编译”的实验。
    建议在有设备的机器上做一次对照实验（编译 + 数值对拍），把结论补成实测。
 7. **`tilelang/ascend/language/simd.py` 只读了本章用到的原语。**
    该文件 2000+ 行，本章逐个核对了 `vld/vsts/vdup/vdupv/vcmax/vcmin/vci/
@@ -203,7 +203,7 @@ HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），见
 `source-figures/<slug>/` 里的每个原图都有对应 spec、自测题的数量（5–8）
 与字段完整性（每题恰好 4 个选项、`answer` 在 0–3、`explain` 非空）。
 它**不检查**内容正确性、引用可达性或行号准确性。
-本章的行号准确性由上面各表逐条人工核验，其中「API 名字是否存在」
+本章的行号准确性由上面各表逐条人工核验，其中“API 名字是否存在”
 由 `code/03-map-and-diff/map_and_diff.py` 第 3 步做了机械复核（21/21 命中）。
 
 ---
@@ -211,15 +211,15 @@ HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），见
 ## 附：一条被外部校验工具误报的引用，以及它带来的额外结论
 
 并行写作的另一章在跑 `tools/check_book.py` 时，把本章的一处引用报成
-「`_vendor/tilelang-v0.1.15/tilelang/ascend/language/simd.py` 不存在」。
+“`_vendor/tilelang-v0.1.15/tilelang/ascend/language/simd.py` 不存在”。
 **这是一次误报，但排查过程本身给本章补了一条有价值的结论**，所以记在这里。
 
 ### 误报的真实原因：行号后缀写错，不是文件不存在
 
 `tools/check_book.py` 用 `LINE_SUFFIX_RE = re.compile(r":\d+(?:[-,]\d+)*$")`
 剥掉行号后缀再去查文件。本章 `solutions.md` 的习题 E14 里写的是
-`` `...simd.py:1052,1067+` ``——末尾多了一个 `+`，正则匹配不到，
-于是整串（含 `:1052,1067+`）被当成路径去查，自然「不存在」。
+`` `...simd.py:1052,1067+` ``，末尾多了一个 `+`，正则匹配不到，
+于是整串（含 `:1052,1067+`）被当成路径去查，自然“不存在”。
 **这是行号写法的错误，不是引用目标的问题。** 该处已改为分别标注 `:1052` 与 `:1067`。
 修复后 `python3 tools/check_book.py` 的输出是
 `checked 2858 citations, 0 broken`。
@@ -243,7 +243,7 @@ a35f8ddf45eba16c21211ec8822d56ce5363036f [Release] Bump version into 0.1.15 (#33
 
 也就是说，TileKernels 的 Ascend kernel 里那句
 `from tilelang.ascend.language import simd as S`（例如 `topk_gate_asc.py:3`）
-**在锁定的 v0.1.15 主干里是有对应的**——它正是本章 §3.3 所说「TileKernels 选了 M 树」
+**在锁定的 v0.1.15 主干里是有对应的**。它正是本章 §3.3 所说“TileKernels 选了 M 树”
 的直接证据：**如果只有 A 树可用，这些 `S.*` 原语根本无从谈起**。
 
 ### 这条对照值得单独记下来：`S.*` 是 M 树专属
@@ -273,10 +273,10 @@ $ rg -c "vcmax|vintlv" tilelang/     # A 树：跨 lane 归约/重排原语一�
 
 **这条对照对读者的实际意义**：如果你想照抄 TileKernels 的 Ascend kernel，
 你需要的不是 A 树，而是**主干 ≥ v0.1.15 的昇腾方言**（`tilelang.ascend.language`）。
-这也是为什么本章 §1.1 特意指出「TileKernels 要求的 TileLang ≥ 0.1.15」
+这也是为什么本章 §1.1 特意指出“TileKernels 要求的 TileLang ≥ 0.1.15”
 与本书锁定的主干版本**恰好一致**。
 
-### 关于「本地快照 vs 上游发布」的一句话提醒
+### 关于“本地快照 vs 上游发布”的一句话提醒
 
 另一条容易被误判的情况是：**TileKernels 的语料快照是一个 commit**
 （`66258df6175d`，HEAD 摘要 `Merge pull request #34 from deepseek-ai/v2.0.0`），

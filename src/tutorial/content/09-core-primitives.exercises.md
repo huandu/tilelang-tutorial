@@ -3,8 +3,8 @@
 说明：
 
 * 难度：`★`（基础，只需读懂本章）/ `★★`（需要综合本章多节）/ `★★★`（需要动手或读源码）。
-* 「需要硬件」一栏里，`否` 表示只需要一台能跑 Python 的机器。本章**没有**强制要求硬件的
-  题目；所有必须在加速器上完成的实验都标为「可选」。
+* “需要硬件”一栏里，`否` 表示只需要一台能跑 Python 的机器。本章**没有**强制要求硬件的
+  题目；所有必须在加速器上完成的实验都标为“可选”。
 * 所有题目只依赖第 1–9 章的知识；涉及第 10 章及以后的 layout 细节时会显式提示。
 
 ---
@@ -13,7 +13,7 @@
 
 请用一句话分别回答：
 
-1. 「原语是接口而不是实现」这句话里的「接口」指什么？
+1. “原语是接口而不是实现”这句话里的“接口”指什么？
 2. 前端函数 `T.copy` 在绝大多数情况下真正做的最后一件事是什么（给出函数调用形态）？
 3. 有哪一类 `T.copy` 会**根本不产生 tile op**，而是直接变成一条赋值语句？判据是什么？
 
@@ -39,12 +39,12 @@
 
 ## E3 概念题 ★ 不需要硬件
 
-关于「越界与 padding」：
+关于“越界与 padding”：
 
 1. SIMT 路径下，源越界时读到的是什么值？默认值从哪来，怎么改？
 2. 目标越界时行为是什么？和源越界有什么不同？
 3. TMA 路径的 OOB 处理与 SIMT 路径有何本质不同？
-4. 昇腾 `T.copy(..., pad_value=v)` 的 `pad_value` 是「越界填充」还是别的东西？
+4. 昇腾 `T.copy(..., pad_value=v)` 的 `pad_value` 是“越界填充”还是别的东西？
    请说清它的触发条件和单位（多少字节）。
 
 ---
@@ -65,11 +65,11 @@ T.gemm(A, B, C, accum_dtype="float32")
 
 ## E5 概念题 ★★ 不需要硬件
 
-1. `T.gemm(..., clear_accum=True)` 除了「语义上先清零」之外，还会在 IR 层面改变什么？
+1. `T.gemm(..., clear_accum=True)` 除了“语义上先清零”之外，还会在 IR 层面改变什么？
    指出具体字段与源码行。
 2. `GemmWarpPolicy` 的三个取值是什么？在 CUDA 后端，`tcgen05`、`wgmma`、`fma`
    三条路径分别怎么使用它？
-3. 为什么说「`T.gemm` 从 mma 换成 wgmma 会连带改变 shared layout」？
+3. 为什么说“`T.gemm` 从 mma 换成 wgmma 会连带改变 shared layout”？
    用源码里的哪条规则解释？
 
 ---
@@ -91,7 +91,7 @@ T.gemm(A, B, C, accum_dtype="float32")
 1. `T.atomic_add` 的标量路径与 tile-region 路径各自的判据是什么？
 2. 哪条路径支持 `return_prev=True`？另一条会怎样？
 3. CUDA 上 `use_tma=True` 走的是什么指令？它对 dtype 有什么限制？
-4. 昇腾侧的 `T.set_atomic("add", "float32")` 为什么被称为「有状态」？
+4. 昇腾侧的 `T.set_atomic("add", "float32")` 为什么被称为“有状态”？
    忘记配对调用会出现什么后果？
 
 ---
@@ -170,7 +170,7 @@ T.tile.gather(dst, src, src_offset, src_base_addr)
 
 1. 把 `--threads 256 --scale 1` 与 `--threads 32 --scale 1` 分别跑一遍，
    记录输出里 `shared-memory rounds` 与 `shuffle rounds` 的数量。
-2. 用 `tl::AllReduce` 的实现解释这两个数字（`src/tl_templates/cuda/reduce.h:270-296`）。
+2. 用 `tl::AllReduce` 的实现解释这两个数字（`src/tl_templates/cuda/reduce.h:270-295`）。
 3. 把 `--threads 48` 跑一遍，脚本应该报错。请说明这个约束在源码里的哪一条
    `static_assert` 上，并解释为什么必须是 2 的幂。
 4. 用 `--clear true` 与 `--clear false` 各跑一次，说明 `clear` 如何改变结果，
@@ -180,7 +180,7 @@ T.tile.gather(dst, src, src_offset, src_base_addr)
 
 ## E12 动手题 ★★★ 不需要硬件，但需要读源码
 
-用 `T.copy` 的映射表（本章 §2.2）为下面四个调用各写一行「预测」，
+用 `T.copy` 的映射表（本章 §2.2）为下面四个调用各写一行“预测”，
 然后用 `_vendor/tilelang-v0.1.15/src/cuda/op/copy_analysis.cc` 的
 `SelectCopyInstForLowering` 逐条核对（只读源码，不编译）：
 
@@ -195,7 +195,7 @@ T.async_copy(A_g, A_s)
 
 * 每一行最可能选到的 `CopyInst`（`kNormal`/`kCPAsync`/`kBulkLoad`/`kBulkStore`/…）；
 * 判定链上的第几步决定了它（用 §4.1 的编号）；
-* 哪两个调用在 `analyze` 层会因「约束不满足」而**直接编译失败**而不是回退。
+* 哪两个调用在 `analyze` 层会因“约束不满足”而**直接编译失败**而不是回退。
 
 （可选硬件题：在有 NVIDIA GPU 的机器上编译这四个 kernel，打印生成的 CUDA 源码，
 与你预测的结果对照。请在答案里写明是哪一个硬件/驱动/CUDA 版本。）

@@ -130,7 +130,7 @@ def verify_column_spread(bits: int) -> bool:
 
 
 # --------------------------------------------------------------------------- #
-# 3. MakeGemmFragment8x8 (src/layout/gemm_layouts.cc:47-53)
+# 3. MakeGemmFragment8x8 (src/layout/gemm_layouts.cc:47-52)
 # --------------------------------------------------------------------------- #
 def gemm_fragment_8x8():
     """Yield (i, j, thread, local_index) for the canonical 8x8 GEMM fragment."""

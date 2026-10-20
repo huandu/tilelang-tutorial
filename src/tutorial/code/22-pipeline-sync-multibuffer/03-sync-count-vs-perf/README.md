@@ -2,7 +2,7 @@
 
 ## 目的
 
-把「漏一个同步会偶发出错，多一个同步会掉性能」的**一半**（性能那一半）变成算术：
+把“漏一个同步会偶发出错，多一个同步会掉性能”的**一半**（性能那一半）变成算术：
 在一个 `copy -> compute` 的 `depth` 槽环里，加不同数量的 barrier，看稳态每轮步长
 怎么变。
 
@@ -48,7 +48,7 @@ Steady-state interval per iteration (last half of the loop):
 ## 要读出什么
 
 1. **必需的同步可以在深度足够时免费。** `war` 在 `depth ≥ 3` 时与 `none` 的
-   makespan 完全一样：那 8 个周期的屏障被「已经在路上的那一份拷贝」盖住了。
+   makespan 完全一样：那 8 个周期的屏障被“已经在路上的那一份拷贝”盖住了。
    条件是 `latency ≳ compute + barrier`。
 2. **多余的同步不会免费。** `+cb` 把屏障放进了消费者链，稳态步长从 20 涨到 28，
    正好是一个 `barrier`：这在 `depth` 加到 6 时也不会好转。
@@ -56,8 +56,8 @@ Steady-state interval per iteration (last half of the loop):
    `latency + compute + barrier = 58`——这就是第 11 章那条
    `depth ≥ 1 + latency/compute` 判据在同步模型里的样子。
 4. **彻底失去异步最贵。** `sync-copy` 在 `latency=30` 时稳态 38，在
-   `--latency 120` 时稳态 128：这正是「把 `T.copy` 退化成同步拷贝 + 每语句一道
-   barrier」的代价。
+   `--latency 120` 时稳态 128：这正是“把 `T.copy` 退化成同步拷贝 + 每语句一道
+   barrier”的代价。
 
 ## 作者实际做到的验证级别
 
@@ -66,8 +66,8 @@ Steady-state interval per iteration (last half of the loop):
 
 ## 这个模型不做什么
 
-* 一个 `barrier` 在所有线程上只是「等到大家都到」，真实硬件上它还会随参与线程数、
+* 一个 `barrier` 在所有线程上只是“等到大家都到”，真实硬件上它还会随参与线程数、
   warp 分歧、以及 barrier 与访存的交互而变；这里只用一个常数 `barrier`；
 * 它不区分 `__syncthreads()`、mbarrier 的 parity wait、昇腾的 SetFlag/WaitFlag：
-  三种在模型里都是「一个固定成本的屏障」；
-* 它不建模「漏一个同步」的**错误**行为（那需要在真实硬件上跑竞态，见正文 §5.1）。
+  三种在模型里都是“一个固定成本的屏障”；
+* 它不建模“漏一个同步”的**错误**行为（那需要在真实硬件上跑竞态，见正文 §5.1）。

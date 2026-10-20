@@ -8,13 +8,13 @@
   "nodeMaxEm": 24,
   "nodes": [
     { "id": "q", "label": "我想表达什么？", "tone": "accent" },
-    { "id": "a", "label": "「满足条件才执行」", "sub": "if / elif / else → IfThenElse 语句" },
+    { "id": "a", "label": "“满足条件才执行”", "sub": "if / elif / else → IfThenElse 语句" },
     {
       "id": "b",
-      "label": "「取一个值，只碰其中一边」",
+      "label": "“取一个值，只碰其中一边”",
       "sub": "T.if_then_else：只求值被选中的分支"
     },
-    { "id": "c", "label": "「取一个值，两边都安全」", "sub": "T.Select：两边都会求值" },
+    { "id": "c", "label": "“取一个值，两边都安全”", "sub": "T.Select：两边都会求值" },
     { "id": "a1", "label": "可放在 T.Parallel 体内", "sub": "也可能被流水划分看见" },
     { "id": "b1", "label": "越界访存的正确写法", "sub": "用短路求值保护这一边" },
     { "id": "c1", "label": "纯数值选择", "sub": "不要用它做越界保护", "tone": "warn" }

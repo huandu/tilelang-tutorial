@@ -2,7 +2,7 @@
 
 引用格式遵循 本书的引用格式约定（§3.3）：源码引用写成
 `_vendor/<版本>/<相对路径>:行号`，资料引用写成 corpus 路径。每条都标注了核验
-状态；「已核验」的源码引用由 `code/04-moe-kernel-map/kernel_map.py`、
+状态；“已核验”的源码引用由 `code/04-moe-kernel-map/kernel_map.py`、
 `code/05-sparse-index-map/sparse_index_map.py`、`code/06-ascend-map/ascend_map.py`
 实际打开文件逐行核对过（合计 56 处，全部命中）。
 
@@ -30,7 +30,7 @@
 | S11 | `_vendor/tilelang-v0.1.15/examples/deepseek_mla/example_mla_decode.py:178-180,218-226` | `num_split > 1` 选择 `main_split`/`main_no_split`；`main()` 默认 `heads=128, kv_ctx=8192, dim=512, pe_dim=64` | 已核验 |
 | S12 | `_vendor/tilelang-v0.1.15/examples/deepseek_mla/{example_mla_decode_paged.py,example_mla_decode_persistent.py,example_mla_decode_ws.py,experimental/example_mla_decode_kv_fp8.py}` | paged KV / persistent / warp-specialized / fp8 KV cache 四个变体 | 已核验（文件存在） |
 | S13 | `_vendor/tilelang-v0.1.15/examples/deepseek_mla/README.md` | 官方 MLA 教程（与 corpus R1 同源）：576/512 的 head 维、`wgmma` M≥64、按 `dim` 切 `acc_o`、layout inference、`T.use_swizzle`、warp specialization、split-KV | 已核验（文件存在） |
-| S14 | `_vendor/tilelang-v0.1.15/examples/deepseek_v32/README.md:134,181-213` | 第 134 行 Sparse MLA pipelined “close to 600 TFlops on H800 SXM”；第 189 行 fp8 退回 `mma.sync` 慢 1.81×；第 212-213 行 25.79 / 14.24 / 13.77 ms 与「fp8 不比 bf16 快」的结论 | 已核验 |
+| S14 | `_vendor/tilelang-v0.1.15/examples/deepseek_v32/README.md:134,181-213` | 第 134 行 Sparse MLA pipelined “close to 600 TFlops on H800 SXM”；第 189 行 fp8 退回 `mma.sync` 慢 1.81×；第 212-213 行 25.79 / 14.24 / 13.77 ms 与“fp8 不比 bf16 快”的结论 | 已核验 |
 | S15 | `_vendor/tilelang-v0.1.15/examples/deepseek_v32/fp8_lighting_indexer.py:90-167` | lightning indexer：第 155 行相似度 GEMM、第 165-167 行 ReLU + 按头加权 + `reduce_sum` | 已核验 |
 | S16 | `_vendor/tilelang-v0.1.15/examples/deepseek_v32/topk_selector.py:11-120` | `convert_to_uint16`（保序映射）、直方图 + 两遍 8-bit 基数排序、输出位置而非值 | 已核验 |
 | S17 | `_vendor/tilelang-v0.1.15/examples/deepseek_v32/sparse_mla_fwd.py:30-34,118-122` | 断言 `is_causal` 与 `topk % block_I == 0`（第 33-34 行）；按 `Indices` gather KV（第 120 行） | 已核验 |
@@ -60,15 +60,15 @@
 
 | id | 引用 | 说明 | 核验 |
 | --- | --- | --- | --- |
-| R1 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/deepseek_mla.md` | 官方 MLA 教程全文：576 = 512 + 64、`acc_o` 过大导致寄存器溢出、按 `dim` 切 `acc_o`、warpgroup 交换 `acc_s`、layout inference、`T.use_swizzle`、split-KV、以及 "around 80 lines of Python code" | 已核验（2026-10-01，全文 195 行整篇读过） |
+| R1 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/deepseek_mla.md` | 官方 MLA 教程全文：576 = 512 + 64、`acc_o` 过大导致寄存器溢出、按 `dim` 切 `acc_o`、warpgroup 交换 `acc_s`、layout inference、`T.use_swizzle`、split-KV、以及 “around 80 lines of Python code” | 已核验（2026-10-01，全文 195 行整篇读过） |
 | R2 | 同上，AMD MI300X 一节 | MI300X 64KB shared、把 Q 改放寄存器 fragment、降低流水级数；bank conflict 策略随硬件变化 | 已核验 |
 | R3 | `../tilelang-corpus/12-operator-libraries/raw/arxiv-2412-19437.md` | DeepSeek-V3 技术报告（**corpus 内只有摘要**）：671B 总参数 / 37B 激活、MLA + DeepSeekMoE、auxiliary-loss-free 负载均衡 | 已核验（文件仅 12 行，摘要 + 元数据） |
-| R4 | `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2502-11089.md` | NSA 论文摘要：三支（压缩/选择/滑窗）+ "arithmetic intensity-balanced algorithm design" + natively trainable | 已核验（corpus 内仅摘要） |
+| R4 | `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2502-11089.md` | NSA 论文摘要：三支（压缩/选择/滑窗）+ “arithmetic intensity-balanced algorithm design” + natively trainable | 已核验（corpus 内仅摘要） |
 | R5 | `../tilelang-corpus/sources/sources.yaml`（`arxiv-2412-19437`、`arxiv-2502-11089`） | 资料库对这两篇的定位与 tags（`deepseek, mla, moe` / `deepseek, sparse-attention`） | 已核验 |
 | R6 | `../tilelang-corpus/sources/sources.yaml`（`arxiv-2605-02568`、`arxiv-2605-07363`、`arxiv-2506-08889`） | 稀疏注意力/索引器的同族后续工作（StreamIndex、MISA、SeerAttention-R） | 已核验（条目存在） |
 | R7 | `../tilelang-corpus/sources/sources.yaml`（`arxiv-2505-04519`） | Pangu Ultra MoE：华为侧大 MoE 在昇腾上训练的公开叙述（MoE 与通信/软件栈约束） | 已核验（条目存在，正文未读） |
-| R8 | `../tilelang-corpus/12-operator-libraries/raw/TileOPs/src/tileops/ops/sequence_modeling/mhc.py:1-30` | mHC 的定义："The pre-layer half of Manifold-Constrained Hyper-Connections (mHC)" | 已核验 |
-| R9 | `../tilelang-corpus/09-zhihu-da-zhi-ruo-yu/raw/answers/2031020927979406721.md` | 关于 DeepSeek V4 的**知乎分析（二手，非官方）**：V4-Pro 384 个 routed experts + 1 shared、每 token 激活 6 个、与昇腾 384 超节点的耦合猜测、CSA/HCA "近处看原文，远处看索引" | 已核验（相应段落读过）；**引用时已显式标注为非官方** |
+| R8 | `../tilelang-corpus/12-operator-libraries/raw/TileOPs/src/tileops/ops/sequence_modeling/mhc.py:1-30` | mHC 的定义：“The pre-layer half of Manifold-Constrained Hyper-Connections (mHC)” | 已核验 |
+| R9 | `../tilelang-corpus/09-zhihu-da-zhi-ruo-yu/raw/answers/2031020927979406721.md` | 关于 DeepSeek V4 的**知乎分析（二手，非官方）**：V4-Pro 384 个 routed experts + 1 shared、每 token 激活 6 个、与昇腾 384 超节点的耦合猜测、CSA/HCA “近处看原文，远处看索引” | 已核验（相应段落读过）；**引用时已显式标注为非官方** |
 | R10 | `../tilelang-corpus/90-synthesis/01-knowledge-system.md:104,409-410,467-476` | 资料库自身的章节映射：MoE 关注 dispatch/combine、grouped GEMM、token permute；MLA/DeepSeek 系列对应 `deepseek_mla/`、`deepseek_v32/`、`deepseek_v4/`、`deepseek_mhc/` | 已核验 |
 
 ---
@@ -87,17 +87,17 @@
 ## 待补资料
 
 1. **DeepSeek-V2 技术报告全文**（arXiv 2405.04434）。MLA 的原始定义与
-   「KV cache 减少多少」的官方数字都在这篇里，但 corpus 里**没有**这份全文。
+   “KV cache 减少多少”的官方数字都在这篇里，但 corpus 里**没有**这份全文。
    本章因此没有引用任何 V2 的数字，只用第一方配置与官方文档做推导。建议补来源。
 2. **DeepSeek-V3 / V3.2 / V4 技术报告全文**。corpus 里的 `arxiv-2412-19437`
    只有摘要；V4 的专家数、激活数目前只有二手知乎分析（R9）。本章的结构参数
-   改用锁定版本里的第一方配置（S18）替代，但「V4 有多少个专家」这类事实仍缺
+   改用锁定版本里的第一方配置（S18）替代，但“V4 有多少个专家”这类事实仍缺
    权威来源。
 3. **NSA 全文**。corpus 内只有摘要，本章对 NSA 三支结构的描述主要来自
    TileLang 的 `deepseek_nsa` example 与其中的 Triton 参考实现。建议补全文。
 4. **昇腾 dispatch/combine 的性能口径**。`dispatch_combine/README.md` 只给
    运行前提，没有 benchmark 数字；本章的通信账是纯模型输出（`code/06`）。
-   若要写「通信 vs GEMM 谁更长」，需要一份带互联带宽的真机数据。
+   若要写“通信 vs GEMM 谁更长”，需要一份带互联带宽的真机数据。
 
 ## 与本章的引用一致性自查
 

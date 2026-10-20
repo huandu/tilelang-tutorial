@@ -12,7 +12,7 @@ v0.1.15 同时提供两条自动调优入口，本示例各演示一条：
 `matmul_tuned` 是写成显式调用形式的同一件事：
 `matmul_tuned = tilelang.autotune(configs=...)(matmul)`。`tilelang.autotune(...)` 返回的
 decorator 会断言目标是一个 `JITImpl`
-（`tilelang/autotuner/tuner.py:1397-1398`），所以「叠装饰器」与「显式调用」等价；
+（`tilelang/autotuner/tuner.py:1397-1398`），所以“叠装饰器”与“显式调用”等价；
 这样写的好处是同一个 `@tilelang.jit` 工厂可以同时服务两条入口——
 `AutoTuner.from_kernel` 要的是**工厂本身**，不是已经叠了自动调优的那个 wrapper。
 
@@ -65,11 +65,11 @@ reference latency: <float>
 ## 读结果时要注意的三件事
 
 1. **`artifact.config` 才是可复现的产物**，`artifact.latency` 依赖机器与当前负载。
-   把 config 抄回函数默认值，才是「固定最优配置」。
+   把 config 抄回函数默认值，才是“固定最优配置”。
 2. **`artifact.ref_latency` 是可选项**。没有提供 `ref_prog` 或参考实现时它会是
    `None`，不要把它当成基线。
 3. **调优只在给定的候选集合里选最优**。候选集合定义得不好（见
-   `../03-autotune-config-space/`），调优结果再好也只说明「在这几个里最好」。
+   `../03-autotune-config-space/`），调优结果再好也只说明“在这几个里最好”。
 
 ## 作者实际做到的验证级别
 

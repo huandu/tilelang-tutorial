@@ -58,11 +58,11 @@
     { "label": "eager（默认）", "nodes": ["a1", "a2", "a3", "a4"], "tone": "default" },
     { "label": "torch.compile", "nodes": ["b1", "b2", "b3", "b4"], "tone": "default" }
   ],
-  "caption": "两条路径最终都落到 kernel 上，差别只在「谁来决定有几个 kernel、每个 kernel 里放多少算子」。",
+  "caption": "两条路径最终都落到 kernel 上，差别只在“谁来决定有几个 kernel、每个 kernel 里放多少算子”。",
   "notes": [
     "eager 的代价：每个 Tensor 运算都要经过 dispatcher、选中一个 aten 算子，再展开成一到多个 kernel launch，中间结果写回显存。",
     "eager：读 x、写 a、读 a、写 b = 2 读 + 2 写；Inductor 融合后：读 x、写 b = 1 读 + 1 写（PyTorch 官方文档）。",
     "Inductor 生成的 kernel 名字形如 triton_poi_fused_<aten算子>_<序号>：poi 表示 pointwise，fused 表示多个算子被融进同一个 kernel。",
-    "图中「谁来决定 kernel 边界」这一层就是第 26 章要讲的集成点：是让 Inductor 生成 kernel，还是把一个 TileLang 算子挂在同一个位置。"
+    "图中“谁来决定 kernel 边界”这一层就是第 26 章要讲的集成点：是让 Inductor 生成 kernel，还是把一个 TileLang 算子挂在同一个位置。"
   ]
 }

@@ -28,7 +28,7 @@
       "id": "part-4",
       "label": "第四部分 · 前沿与参与",
       "title": "未合入的方向与如何贡献",
-      "blurb": "区分「已发布 / 只在 main / 只在 PR」三种状态，然后给出从 issue 到 PR 的完整贡献路径。",
+      "blurb": "区分“已发布 / 只在 main / 只在 PR”三种状态，然后给出从 issue 到 PR 的完整贡献路径。",
       "from": "30",
       "to": "31"
     },
@@ -46,7 +46,7 @@
       "slug": "01-why-tile-dsl",
       "number": "01",
       "title": "为什么需要 Tile DSL",
-      "summary": "从「为什么 PyTorch 里一个算子会慢」讲起：存储层级的不对称、算术强度与机器平衡点，然后沿着 SIMT → 张量核 → 异步搬运三代硬件演进，说明为什么 CUDA、Triton、TileLang 会依次出现。",
+      "summary": "从“为什么 PyTorch 里一个算子会慢”讲起：存储层级的不对称、算术强度与机器平衡点，然后沿着 SIMT → 张量核 → 异步搬运三代硬件演进，说明为什么 CUDA、Triton、TileLang 会依次出现。",
       "readingMinutes": 25,
       "exerciseCount": 14,
       "quizCount": 7,
@@ -95,7 +95,7 @@
       "slug": "02-from-pytorch-to-kernels",
       "number": "02",
       "title": "从 PyTorch 到 kernel：算子在栈里的位置",
-      "summary": "把「一次训练迭代」和「一次推理请求」拆成算子的清单与账本：每个算子要搬多少字节、算多少次、是 memory-bound 还是 compute-bound，以及 torch.compile 的边界在哪、什么时候必须自己写 kernel。",
+      "summary": "把“一次训练迭代”和“一次推理请求”拆成算子的清单与账本：每个算子要搬多少字节、算多少次、是 memory-bound 还是 compute-bound，以及 torch.compile 的边界在哪、什么时候必须自己写 kernel。",
       "readingMinutes": 25,
       "exerciseCount": 13,
       "quizCount": 8,
@@ -242,7 +242,7 @@
       "slug": "05-comparisons",
       "number": "05",
       "title": "横向对比：CUDA / Triton / CUTLASS-CuTe / TVM / cuTile / Ascend C / PTO-DSL",
-      "summary": "用「用户必须提供的硬件相关决策数量」这把尺子，把 CUDA、Triton、CUTLASS-CuTe、TVM、cuTile、Ascend C、PTO-DSL 放到同一条纵轴上，再用同一个带融合 epilogue 的 GEMM 逐层对照。",
+      "summary": "用“用户必须提供的硬件相关决策数量”这把尺子，把 CUDA、Triton、CUTLASS-CuTe、TVM、cuTile、Ascend C、PTO-DSL 放到同一条纵轴上，再用同一个带融合 epilogue 的 GEMM 逐层对照。",
       "readingMinutes": 23,
       "exerciseCount": 15,
       "quizCount": 7,
@@ -295,7 +295,7 @@
       "slug": "06-hardware-intro-nv-vs-ascend",
       "number": "06",
       "title": "芯片导论：NV GPU 与昇腾 NPU 的抽象对照",
-      "summary": "用存储层级、执行单元、数据搬运、同步四个维度描述任意加速器，再分别落到 NVIDIA（grid/warp/Tensor Core/TMA/cluster）与昇腾（Cube/Vector/MTE/UB/L1/L0）上，并解释为什么「GPU 是 SIMT、NPU 是 SIMD」已经过时。",
+      "summary": "用存储层级、执行单元、数据搬运、同步四个维度描述任意加速器，再分别落到 NVIDIA（grid/warp/Tensor Core/TMA/cluster）与昇腾（Cube/Vector/MTE/UB/L1/L0）上，并解释为什么“GPU 是 SIMT、NPU 是 SIMD”已经过时。",
       "readingMinutes": 38,
       "exerciseCount": 14,
       "quizCount": 8,
@@ -312,7 +312,7 @@
         },
         {
           "id": "1-问题的由来-为什么必须有-片上存储-和-分块搬运",
-          "text": "1. 问题的由来：为什么必须有「片上存储」和「分块搬运」"
+          "text": "1. 问题的由来：为什么必须有“片上存储”和“分块搬运”"
         },
         {
           "id": "2-概念与模型-描述任何加速器的四个维度",
@@ -414,7 +414,7 @@
       "number": "08",
       "title": "语言基础",
       "summary": "把第 7 章的生成源码往回拆：内核定义与网格、dtype 与内存作用域、T.Parallel/循环/控制流各自对应 IR 里什么、代价是什么，以及 Python 兼容性的边界在哪。",
-      "readingMinutes": 30,
+      "readingMinutes": 31,
       "exerciseCount": 15,
       "quizCount": 8,
       "figureCount": 8,
@@ -430,7 +430,7 @@
         },
         {
           "id": "1-问题的由来-kernel-里到底要-表达-什么",
-          "text": "1. 问题的由来：kernel 里到底要\"表达\"什么"
+          "text": "1. 问题的由来：kernel 里到底要“表达”什么"
         },
         {
           "id": "2-概念与模型-六个构件",
@@ -503,7 +503,7 @@
         },
         {
           "id": "1-问题的由来-原语是-接口-不是-实现",
-          "text": "1. 问题的由来：原语是「接口」，不是「实现」"
+          "text": "1. 问题的由来：原语是“接口”，不是“实现”"
         },
         {
           "id": "2-概念与模型",
@@ -535,8 +535,8 @@
       "slug": "10-layout-and-memory-intro",
       "number": "10",
       "title": "布局与存储层级入门",
-      "summary": "解释「同一个张量为什么会有摆法问题」：从 fragment 与线程的对应、bank conflict、swizzle 到昇腾的 fractal 与 ND→NZ，并给出把布局画出来观察的可复现步骤。",
-      "readingMinutes": 19,
+      "summary": "解释“同一个张量为什么会有摆法问题”：从 fragment 与线程的对应、bank conflict、swizzle 到昇腾的 fractal 与 ND→NZ，并给出把布局画出来观察的可复现步骤。",
+      "readingMinutes": 20,
       "exerciseCount": 12,
       "quizCount": 8,
       "figureCount": 5,
@@ -552,7 +552,7 @@
         },
         {
           "id": "1-问题的由来-同一个张量-为什么会有-摆法-问题",
-          "text": "1. 问题的由来：同一个张量，为什么会有「摆法」问题"
+          "text": "1. 问题的由来：同一个张量，为什么会有“摆法”问题"
         },
         {
           "id": "2-概念与模型",
@@ -585,7 +585,7 @@
       "number": "11",
       "title": "流水线与自动调优",
       "summary": "把搬运与计算重叠起来：T.Pipelined 的 stage/order 语义、多缓冲的容量代价、如何判断一份配置还放不放得下，以及 autotuner 的搜索空间怎么定义、结果怎么读。",
-      "readingMinutes": 39,
+      "readingMinutes": 40,
       "exerciseCount": 12,
       "quizCount": 8,
       "figureCount": 3,
@@ -699,7 +699,7 @@
         },
         {
           "id": "1-问题的由来-最-简单-的算子也值得认真写",
-          "text": "1. 问题的由来：最\"简单\"的算子也值得认真写"
+          "text": "1. 问题的由来：最“简单”的算子也值得认真写"
         },
         {
           "id": "2-概念与模型",
@@ -919,7 +919,7 @@
         },
         {
           "id": "1-问题的由来-从零训练一个-7b-模型-这句话哪里是真的",
-          "text": "1. 问题的由来：「从零训练一个 7B 模型」这句话哪里是真的"
+          "text": "1. 问题的由来：“从零训练一个 7B 模型”这句话哪里是真的"
         },
         {
           "id": "2-可行性核算-显存与算力两本账",
@@ -972,7 +972,7 @@
       "number": "18",
       "title": "端到端 II：推理与部署",
       "summary": "训练完的模型怎么变成服务：prefill 与 decode 的差异、KV cache 的显存账本、paged KV 与 continuous batching，以及 decode attention、量化 GEMM 如何接进 vLLM / TileRT 这类框架。",
-      "readingMinutes": 34,
+      "readingMinutes": 35,
       "exerciseCount": 12,
       "quizCount": 7,
       "figureCount": 5,
@@ -1053,7 +1053,7 @@
         },
         {
           "id": "1-问题的由来-在昇腾上写算子-难-在哪",
-          "text": "1. 问题的由来：在昇腾上写算子，「难」在哪"
+          "text": "1. 问题的由来：在昇腾上写算子，“难”在哪"
         },
         {
           "id": "2-概念与模型-昇腾的机器长什么样",
@@ -1065,7 +1065,7 @@
         },
         {
           "id": "4-用法-二-第一个昇腾-kernel-逐元素-add",
-          "text": "4. 用法（二）：第一个昇腾 kernel —— 逐元素 add"
+          "text": "4. 用法（二）：第一个昇腾 kernel ，逐元素 add"
         },
         {
           "id": "5-用法-三-第一个-gemm-kernel",
@@ -1077,7 +1077,7 @@
         },
         {
           "id": "7-昇腾专属原语与-用哪棵树",
-          "text": "7. 昇腾专属原语与「用哪棵树」"
+          "text": "7. 昇腾专属原语与“用哪棵树”"
         },
         {
           "id": "8-调优-msprof-与瓶颈判读",
@@ -1175,7 +1175,7 @@
         },
         {
           "id": "1-问题的由来-为什么-layout-必须被-推导",
-          "text": "1. 问题的由来：为什么 layout 必须被「推导」"
+          "text": "1. 问题的由来：为什么 layout 必须被“推导”"
         },
         {
           "id": "2-形式化-layout-代数",
@@ -1236,7 +1236,7 @@
         },
         {
           "id": "1-问题的由来-把-重叠-变成可判定的事",
-          "text": "1. 问题的由来：把「重叠」变成可判定的事"
+          "text": "1. 问题的由来：把“重叠”变成可判定的事"
         },
         {
           "id": "2-软件流水的形式化",
@@ -1566,7 +1566,7 @@
         },
         {
           "id": "1-问题的由来-为什么必须-先算再写",
-          "text": "1. 问题的由来：为什么必须「先算再写」"
+          "text": "1. 问题的由来：为什么必须“先算再写”"
         },
         {
           "id": "2-第一步-把一个算子变成-flops-bytes",
@@ -1606,7 +1606,7 @@
       "slug": "29-compiler-engineering",
       "number": "29",
       "title": "编译器工程：写 pass、测试与回归",
-      "summary": "把「读编译器」变成「改编译器」：C++ 与 Python pass 的双语结构、写一个新 pass 的完整流程、IR diff 与性能回归怎么测，以及评审时会被问什么。",
+      "summary": "把“读编译器”变成“改编译器”：C++ 与 Python pass 的双语结构、写一个新 pass 的完整流程、IR diff 与性能回归怎么测，以及评审时会被问什么。",
       "readingMinutes": 33,
       "exerciseCount": 11,
       "quizCount": 7,
@@ -1675,7 +1675,7 @@
       "slug": "30-frontier",
       "number": "30",
       "title": "前沿探索：只有 main / 未合入的方向",
-      "summary": "区分「已发布 / 只在 main / 只在未合入 PR」三种状态，逐条核对 TVM 迁移、CuteDSL 后端、Ascend 950 与 PTO、持久化 kernel、AutoSimtVF 等方向的现状，并给出持续跟踪上游的方法。",
+      "summary": "区分“已发布 / 只在 main / 只在未合入 PR”三种状态，逐条核对 TVM 迁移、CuteDSL 后端、Ascend 950 与 PTO、持久化 kernel、AutoSimtVF 等方向的现状，并给出持续跟踪上游的方法。",
       "readingMinutes": 34,
       "exerciseCount": 12,
       "quizCount": 7,
@@ -1951,7 +1951,7 @@
       "slug": "34-tilekernels-engram-mhc",
       "number": "34",
       "title": "TileKernels（下）：Engram 与流形超连接",
-      "summary": "另一类算子：不是矩阵乘，而是访存与小算子为主的结构性算子。以 Engram 论文与 mHC 论文（arXiv:2512.24880）为定义、以 TileKernels 的 mhc/ 与 engram/ 源码为实现，讲透门控融合、Sinkhorn 归一化，以及「除 prenorm GEMM 外都用 TileLang」这条边界。",
+      "summary": "另一类算子：不是矩阵乘，而是访存与小算子为主的结构性算子。以 Engram 论文与 mHC 论文（arXiv:2512.24880）为定义、以 TileKernels 的 mhc/ 与 engram/ 源码为实现，讲透门控融合、Sinkhorn 归一化，以及“除 prenorm GEMM 外都用 TileLang”这条边界。",
       "readingMinutes": 51,
       "exerciseCount": 14,
       "quizCount": 8,
@@ -1972,7 +1972,7 @@
         },
         {
           "id": "1-问题的由来-为什么需要-不是矩阵乘-的算子",
-          "text": "1. 问题的由来：为什么需要「不是矩阵乘」的算子"
+          "text": "1. 问题的由来：为什么需要“不是矩阵乘”的算子"
         },
         {
           "id": "2-engram-的数据流与算子清单",
@@ -2081,7 +2081,7 @@
       "slug": "36-flashmla-ascend",
       "number": "36",
       "title": "FlashMLA 昇腾稀疏注意力：算法与流水",
-      "summary": "官方为昇腾稀疏注意力写了一篇技术报告。本章把它讲成一条可跟着走的设计过程：从算存比推出「64 head/AI Core、1C2V、accumulator 放 UB」，再讲 KV 的 ND2NZ 时机、双流水排布、gather2 与 skip-scale，并划清哪些结论能用 TileLang 表达、哪些必须下钻。",
+      "summary": "官方为昇腾稀疏注意力写了一篇技术报告。本章把它讲成一条可跟着走的设计过程：从算存比推出“64 head/AI Core、1C2V、accumulator 放 UB”，再讲 KV 的 ND2NZ 时机、双流水排布、gather2 与 skip-scale，并划清哪些结论能用 TileLang 表达、哪些必须下钻。",
       "readingMinutes": 46,
       "exerciseCount": 14,
       "quizCount": 7,
@@ -2142,7 +2142,7 @@
       "slug": "37-deepselect-topk",
       "number": "37",
       "title": "DeepSelect：算法先行的 TopK",
-      "summary": "算法先行，硬件随后。用阈值扫描 + 随机块序 + RadixSelect 把 TopK 的额外计算量压到 O(k log(N/k))，并给出期望复杂度的证明；再看 CUDA 侧怎么用 mask 与 PTX 把常数压到极致。它同时回答了「什么类型的算子该手写而不是用 TileLang」。",
+      "summary": "算法先行，硬件随后。用阈值扫描 + 随机块序 + RadixSelect 把 TopK 的额外计算量压到 O(k log(N/k))，并给出期望复杂度的证明；再看 CUDA 侧怎么用 mask 与 PTX 把常数压到极致。它同时回答了“什么类型的算子该手写而不是用 TileLang”。",
       "readingMinutes": 50,
       "exerciseCount": 13,
       "quizCount": 8,
@@ -2167,7 +2167,7 @@
         },
         {
           "id": "2-概念与模型-把-topk-变成-读一遍-有界选择",
-          "text": "2. 概念与模型：把 TopK 变成「读一遍 + 有界选择」"
+          "text": "2. 概念与模型：把 TopK 变成“读一遍 + 有界选择”"
         },
         {
           "id": "3-期望复杂度证明-讲成人话",
@@ -2268,7 +2268,7 @@
       "slug": "39-deepseek-e2e-supernode",
       "number": "39",
       "title": "端到端：128 卡超节点上的训练与推理",
-      "summary": "收口章：把六个组件拼回一条完整链路，分别走一遍训练的一步与推理的 prefill/decode，给出算力、片内带宽、卡间带宽三类资源的预算账与瓶颈定位清单，并把前面所有「未实现 / 实验性」的结论集中成一份诚实的现状清单。",
+      "summary": "收口章：把六个组件拼回一条完整链路，分别走一遍训练的一步与推理的 prefill/decode，给出算力、片内带宽、卡间带宽三类资源的预算账与瓶颈定位清单，并把前面所有“未实现 / 实验性”的结论集中成一份诚实的现状清单。",
       "readingMinutes": 53,
       "exerciseCount": 14,
       "quizCount": 7,
@@ -2309,7 +2309,7 @@
         },
         {
           "id": "6-从-能跑-到-跑满-的路线图",
-          "text": "6. 从「能跑」到「跑满」的路线图"
+          "text": "6. 从“能跑”到“跑满”的路线图"
         },
         {
           "id": "7-这套生态还缺什么",

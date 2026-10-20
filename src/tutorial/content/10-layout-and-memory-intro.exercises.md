@@ -3,20 +3,20 @@
 说明：
 
 * 难度：`★`（基础）/ `★★`（要综合本章内容）/ `★★★`（推理链较长或要动手）。
-* 「需要硬件」一栏：`否` = 一台能跑 Python 的机器即可；`是（GPU）` = 需要 NVIDIA GPU
+* “需要硬件”一栏：`否` = 一台能跑 Python 的机器即可；`是（GPU）` = 需要 NVIDIA GPU
   才能完成实验。
 * 所有题目只依赖第 10 章及更早的知识；涉及后续章节的地方会显式提示。
-* 本章写作机没有 GPU / NPU，因此所有「需要硬件」的题都只要求你设计实验并写出**判据**，
+* 本章写作机没有 GPU / NPU，因此所有“需要硬件”的题都只要求你设计实验并写出**判据**，
   不要求你现在就报告某个数字。
 
 ---
 
 ## E1 概念题 ★ 不需要硬件
 
-1. 「逻辑形状」和「物理布局」分别是什么？各自由谁决定？
-2. 本章说布局是「接口」而不是「实现细节」，给出三条理由，每条用一句话。
-3. 下面这句话为什么是错的：「`T.alloc_fragment((128, 128), "float32")` 表示每个线程
-   持有 128×128 个 float。」
+1. “逻辑形状”和“物理布局”分别是什么？各自由谁决定？
+2. 本章说布局是“接口”而不是“实现细节”，给出三条理由，每条用一句话。
+3. 下面这句话为什么是错的：“`T.alloc_fragment((128, 128), "float32")` 表示每个线程
+   持有 128×128 个 float。”
 
 ---
 
@@ -45,9 +45,9 @@
 
 1. 列出 TileLang 语言层 `T.alloc_*` 对应的四个内存层级（global / shared / fragment /
    local），并各说一句它们的典型用途。
-2. 在 NVIDIA GPU 上，shared memory 的容量上限是「每 SM」和「每 block」两个不同口径。
+2. 在 NVIDIA GPU 上，shared memory 的容量上限是“每 SM”和“每 block”两个不同口径。
    本章给出的 H100 数字分别是多少？静态 shared 的默认上限又是多少？
-3. 为什么说「padding 会占容量」？把 32×32 fp32 tile 的 padding 从 0 改成 1（行长
+3. 为什么说“padding 会占容量”？把 32×32 fp32 tile 的 padding 从 0 改成 1（行长
    32→33），多占多少字节？
 
 ---
@@ -60,7 +60,7 @@
    * **模式 A**：线程 `t` 读 `[0][t]`（第 0 行、第 `t` 列，即沿行扫）；
    * **模式 B**：线程 `t` 读 `[t][0]`（第 `t` 行、第 0 列，即沿列扫）。
 2. 把行长从 32 改成 33，为什么冲突就消失了？用 `mod 32` 说明。
-3. XOR swizzle 在不改行长、不加容量的前提下是怎么做到的？请写出「第 s 行第 c 个单元」
+3. XOR swizzle 在不改行长、不加容量的前提下是怎么做到的？请写出“第 s 行第 c 个单元”
    被搬到哪里的公式。
 
 ---
@@ -94,7 +94,7 @@ static Layout MakeFullBankSwizzleLayout2D(int stride, int continuous, int elemen
 ```
 
 1. `xor8x8(c, s)` 在数学上等价于什么运算？（提示：看它怎么拆位）
-2. 对 fp16，`vector_size` 等于多少？为什么是「16B 单元」？
+2. 对 fp16，`vector_size` 等于多少？为什么是“16B 单元”？
 3. `stride == 4` 这个特例是给谁用的？（提示：注释里提到 gather4/scatter4）
 4. 假设 `continuous = 8`（fp16），这个函数能构造成功吗？请解释 `ICHECK` 会不会触发。
 
@@ -144,11 +144,11 @@ def use_swizzle(panel_size: int, order: str = "row", enable: bool = True):
 
 1. 报告第 1 节里 stride=32 与 stride=33 两种情况的 `distinct banks` 与
    `worst per-bank`。
-2. 把第 1 节的模型改成「warp 读第 0 行的一整行，线程 `t` 读第 `t` 列」，重新计算
+2. 把第 1 节的模型改成“warp 读第 0 行的一整行，线程 `t` 读第 `t` 列”，重新计算
    `distinct banks`，并解释结果。
-3. 修改脚本里的 `SWIZZLE_BITS`，加入一个假的「256B，4-bit XOR」粒度，观察
+3. 修改脚本里的 `SWIZZLE_BITS`，加入一个假的“256B，4-bit XOR”粒度，观察
    `verify_swizzle_bijection` 是否仍然成立。（提示：`xor2x2/xor4x4/xor8x8` 是从
-   C++ 抄来的；自己写 `xor16x16` 时要保持「按位异或」的语义。）
+   C++ 抄来的；自己写 `xor16x16` 时要保持“按位异或”的语义。）
 
 ---
 
@@ -168,7 +168,7 @@ def use_swizzle(panel_size: int, order: str = "row", enable: bool = True):
 
 ## E11 动手题 ★★★ 需要硬件（GPU）
 
-设计一个实验，验证「同一个 kernel，只改一个布局注解，正确性不变而耗时变化」。
+设计一个实验，验证“同一个 kernel，只改一个布局注解，正确性不变而耗时变化”。
 
 要求：
 
@@ -190,4 +190,4 @@ def use_swizzle(panel_size: int, order: str = "row", enable: bool = True):
 1. 昇腾的 fractal 存储把逻辑 `[rows, cols]` 映射到物理的哪四个维度？`C0` 由什么决定？
 2. ND 和 NZ 分别指什么？为什么需要 ND→NZ 这一步？
 3. 为什么需要 OOB padding？补零区会不会影响正确结果？
-4. 用一句话说明「NVIDIA 侧的布局」和「昇腾侧的布局」在**由谁决定**这件事上的根本区别。
+4. 用一句话说明“NVIDIA 侧的布局”和“昇腾侧的布局”在**由谁决定**这件事上的根本区别。

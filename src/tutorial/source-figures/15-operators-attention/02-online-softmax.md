@@ -65,7 +65,7 @@ flowchart LR
 
 ## 读图要点
 
-1. **只有加法与乘法。** 没有任何一步需要回头重算前面，这就是「一趟」的全部含义。
+1. **只有加法与乘法。** 没有任何一步需要回头重算前面，这就是“一趟”的全部含义。
 2. **`m` 是数值装置，不是数学对象。** 图里 `c = 0` 与 `c = 1` 都是合法取值；
    把 `m` 固定成常量（例如 0）结果在数学上仍然相同，只是中间量会溢出。
    正文 2.4 节的归纳证明说的就是这件事。
@@ -77,6 +77,6 @@ flowchart LR
 * 轨迹与全部数字：本章 `code/02-online-softmax/online_softmax.py` 的输出（CPU、fp64）。
 * `check_inf` 的写法：
   `_vendor/tilelang-v0.1.15/examples/attention_sink/example_mha_sink_fwd_bhsd.py:103-109`。
-* 「空行」守卫：
+* “空行”守卫：
   `_vendor/tilelang-v0.1.15/examples/flash_attention/example_gqa_fwd_varlen.py:117-119`。
 * 本图不含任何硬件实测数据。

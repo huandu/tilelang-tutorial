@@ -1,6 +1,6 @@
 # 图 5：融合的账本
 
-对应正文第 4.1、4.2 节。融合不是「少写几行代码」，而是**把中间张量的读写从显存里省掉**。
+对应正文第 4.1、4.2 节。融合不是“少写几行代码”，而是**把中间张量的读写从显存里省掉**。
 下面三个例子都是本章正文里手算过的。
 
 ```mermaid
@@ -23,17 +23,17 @@ flowchart LR
 
 第三行是量级上的差别：S×S 中间量（32×4096×4096×2 字节 ≈ 1.07 GB）在标准实现里要被写一次、
 被 softmax 读一次写一次、再被 PV 读一次。这就是 FlashAttention 那篇论文的核心论证：
-把「读写 HBM 的次数」当成一等公民来优化，而不是只看 FLOPs。
+把“读写 HBM 的次数”当成一等公民来优化，而不是只看 FLOPs。
 
 生产栈里到处都能看到同一条结论。昇腾 CANN 的算子文档把融合的动机直接写在功能说明里：
 
-> 「AddRmsNormDynamicQuant算子将RmsNorm前的Add算子和RmsNorm归一化输出给到的1个或2个
-> DynamicQuant算子融合起来，减少搬入搬出操作。」
-> —— `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/document/detail/canncommercial/canncommercial_900_API_aolapi_context_ops-nn_aclnnAddRmsNormDynamicQuant_md.md:25`
+> “AddRmsNormDynamicQuant算子将RmsNorm前的Add算子和RmsNorm归一化输出给到的1个或2个
+> DynamicQuant算子融合起来，减少搬入搬出操作。”
+> 来源：`../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/document/detail/canncommercial/canncommercial_900_API_aolapi_context_ops-nn_aclnnAddRmsNormDynamicQuant_md.md:25`
 
-同一份文档体系里，`aclnnKvRmsNormRopeCache` 把「切分 + RMSNorm + RoPE + 写入两块 KV cache」
+同一份文档体系里，`aclnnKvRmsNormRopeCache` 把“切分 + RMSNorm + RoPE + 写入两块 KV cache”
 做成一个算子，`aclnnApplyAdamW` 把整个优化器更新做成一个算子。**融合的粒度就是硬件厂商
-对「一次该搬多少数据」的答案。**
+对“一次该搬多少数据”的答案。**
 
 ## 来源
 

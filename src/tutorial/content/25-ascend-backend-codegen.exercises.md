@@ -1,7 +1,7 @@
 # 第 25 章 习题
 
 难度：`★` 入门 / `★★` 需要读一点源码 / `★★★` 需要动手或综合。
-「需要硬件」一栏标明是否必须在有昇腾 NPU 的机器上做；本章绝大多数习题可以在
+“需要硬件”一栏标明是否必须在有昇腾 NPU 的机器上做；本章绝大多数习题可以在
 任意机器上完成。所有动手题都只读 `_vendor/` 与 corpus。
 
 ---
@@ -25,7 +25,7 @@
 
 1. 三种前缀分别对应什么 `kernel_mode_`？它们各自意味着这个 kernel 里有
    Cube 还是 Vector 的工作？
-2. `__mix__(1, 2)` 为什么是「1, 2」而不是「1, 1」或「2, 2」？请给出两处依据：
+2. `__mix__(1, 2)` 为什么是“1, 2”而不是“1, 1”或“2, 2”？请给出两处依据：
    一处源码注释，一处 corpus 里的硬件规格。
 3. 什么决定一个函数用哪种前缀？
 
@@ -91,7 +91,7 @@ T.copy(C_ub, C[m:m+block_M, n:n+block_N])  # (d)
 1. `SelectInst` 永远返回什么？这个常量的字面值是什么？
 2. `ComputeWarpPartition` 把 `policy.m_warp` / `policy.n_warp` 设成多少？
    为什么昇腾侧不需要 warp 划分？
-3. 那么 `T.gemm` 在昇腾上「不一样」的地方体现在哪些参数上？至少写出三个
+3. 那么 `T.gemm` 在昇腾上“不一样”的地方体现在哪些参数上？至少写出三个
    （提示：累加、精度模式、块缩放）。
 
 *需要硬件：否*
@@ -137,7 +137,7 @@ python3 chapters/25-ascend-backend-codegen/code/02-scope-dma-pipes/scope_dma_pip
 
 然后：
 
-1. 贴出它打印的「DMAPath → owning pipe」表；
+1. 贴出它打印的“DMAPath → owning pipe”表；
 2. 在脚本里新增一条检查：`kL0CToUB` 与 `kL0CToGM` 都必须映射到 `kFixpipe`，
    否则报错；
 3. 说明为什么 `kGMToUB` 与 `kGMToL1` 可以共用 MTE2，而
@@ -194,7 +194,7 @@ bishengir-compile kernel.npuir --enable-hivm-compile=true --enable-triton-kernel
 
 * 他们的现有算子库全部是手写 Ascend C，跑在 A2；
 * 他们想先在**没有 NPU 的开发机**上把新算子写出来、验证功能，再上板；
-* 他们不接受「生成物不可读」的方案。
+* 他们不接受“生成物不可读”的方案。
 
 请基于本章的四条路线，给出你的推荐与理由，并明确指出：
 

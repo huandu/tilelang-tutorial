@@ -1,8 +1,8 @@
 # 第 21 章 习题答案
 
-与 `exercises.md` 一一对应（E1–E13）。每题给「思路 → 参考答案 → 常见错误」。
-凡引用源码处都给出 `_vendor/` 路径与行号；凡下结论处都标明它是「源码事实」还是
-「本书推导」。
+与 `exercises.md` 一一对应（E1–E13）。每题给“思路 → 参考答案 → 常见错误”。
+凡引用源码处都给出 `_vendor/` 路径与行号；凡下结论处都标明它是“源码事实”还是
+“本书推导”。
 
 ---
 
@@ -16,7 +16,7 @@
 * **约束**：
   * `T.copy(A[...], A_shared)`：写出侧希望自然的行优先/向量化顺序（本书推导：
     见 §3.1 对 `Copy`/`Parallel` 的说明）；
-  * `T.gemm(A_shared, B_shared, C_local)`：**硬约束**——$L_{A\_shared}$ 必须是
+  * `T.gemm(A_shared, B_shared, C_local)`：**硬约束**，$L_{A\_shared}$ 必须是
     swizzle 布局，$L_{C\_local}$ 必须是该 MMA 指令的 store fragment 布局
     （源码事实：`gemm_mma.py:42-50`）；
   * `T.copy(C_local, C[...])`：$L_{C\_local}$ 决定回写 global 的寻址方式
@@ -45,7 +45,7 @@
 4. **对。** `Fragment.__init__` 有 `replicate` 参数，`>1` 时引入 rep IterVar
    （源码事实：`tilelang/layout/fragment.py:24-70`，`replicate()` 方法 `:148-160`）。
 
-**常见错误**：第 3 问误以为「静态就一定可逆」；非满射/非单射的映射即使静态也
+**常见错误**：第 3 问误以为“静态就一定可逆”；非满射/非单射的映射即使静态也
 不可逆。
 
 ---
@@ -61,13 +61,13 @@
    常见模式）；`kFree` 最自由（没来源也要造布局）。
 2. 用户 annotation 在推导开始前读入 `annotated_layout_map_`
    （`layout_inference.cc:986-1059`），并镜像进 `strict_layout_map`
-   （`:597-599`），此后每一步都把它当不可否决的下界——因为**用户显式声明的意图
+   （`:597-599`），此后每一步都把它当不可否决的下界。因为**用户显式声明的意图
    必须压过编译器猜测**。
-3. 因为需要分级让步：先让「必须满足」的硬约束落地，再传播「常见」模式，最后才
+3. 因为需要分级让步：先让“必须满足”的硬约束落地，再传播“常见”模式，最后才
    在剩下的自由空间里优化性能。只跑 `kFree` 会让用户的 annotation 被性能选择
    覆盖掉。
 
-**常见错误**：把 `kStrict` 说成「报错最严格」——它的重点是**不发明布局**。
+**常见错误**：把 `kStrict` 说成“报错最严格”。它的重点是**不发明布局**。
 
 ---
 
@@ -80,14 +80,14 @@
 1. 两个 op 只要有**共享的 buffer**（`use_list_`），或共享同一个底层 storage Var
    （alias），就被并进同一分量（`:1414-1445`）。
 2. 因为不同起点会导向不同的整解。以某个 op 的布局为根重推，可能得到一份全局代价
-   更小的方案；逐个根试等价于在「用哪个 op 定调」的离散空间里做穷举（次数有界）。
-3. 先尝试「wide fallback dst 预置」（`:1507-1530`，为 reducer 目的地预留机制
+   更小的方案；逐个根试等价于在“用哪个 op 定调”的离散空间里做穷举（次数有界）。
+3. 先尝试“wide fallback dst 预置”（`:1507-1530`，为 reducer 目的地预留机制
    `ReducerDstSteering` 提供的种子）；若某分量连这个都失败，则
-   `ICHECK(has_best) << "no available layout found"`（`:1532`）——这是编译期硬
+   `ICHECK(has_best) << "no available layout found"`（`:1532`）。这是编译期硬
    失败。此外，非自由模式下的硬冲突会走 `LOG(FATAL) << "Get different layout for"`
-   （`:463`）。两者对用户都意味着「改 annotation 或改写法」。
+   （`:463`）。两者对用户都意味着“改 annotation 或改写法”。
 
-**常见错误**：以为冲突总有自动解——实际上「都不行」是一个明确的编译失败路径。
+**常见错误**：以为冲突总有自动解，实际上“都不行”是一个明确的编译失败路径。
 
 ---
 
@@ -107,7 +107,7 @@
    的 global 字节被计入 `mem`，B 可能反超。**是否真的会改变结果需要实机验证**
    （本机无 GPU，本章不断言）。
 
-**常见错误**：以为 `io-aware` 会惩罚 swizzle——它是**可选**模型，且默认仍是
+**常见错误**：以为 `io-aware` 会惩罚 swizzle。它是**可选**模型，且默认仍是
 `register-count`（`config.h:36-40`）。
 
 ---
@@ -120,7 +120,7 @@
 
 1. shared 里的数据要喂给 `ldmatrix`，消 bank conflict 靠 swizzle，所以用
    `make_swizzled_layout`；而 fragment 里的数据**已经在线程寄存器里**，必须符合
-   mma 指令对「哪个 lane 拿哪几个元素」的要求，所以用
+   mma 指令对“哪个 lane 拿哪几个元素”的要求，所以用
    `make_mma_load_layout`（`mma_macro_generator.py:684-810`）。
 2. 描述 A、B 各自落在哪种内存：`s` = shared，`r` = 寄存器（fragment）；所以
    `ss/sr/rs/rr` 是 A/B 的两个 scope 组合（`gemm_base.py:53-72`）。
@@ -129,7 +129,7 @@
    `reuse_existing_shared_layout` 让位（`gemm.cc:254-266`），也可能触发合并或
    失败。
 
-**常见错误**：把返回值当成「直接写进 IR」——它只是写进待解的 `layout_map`。
+**常见错误**：把返回值当成“直接写进 IR”。它只是写进待解的 `layout_map`。
 
 ---
 
@@ -139,16 +139,16 @@
 
 **参考答案**：
 
-1. 三条出路：**(a) 包含升级**——用 `ProveFragmentContains` 证明旧布局是新布局的
-   子集（`:440-446`）；**(b) swizzle 合并**——两者都是 swizzle 时取粒度更小者
+1. 三条出路：**(a) 包含升级**，用 `ProveFragmentContains` 证明旧布局是新布局的
+   子集（`:440-446`）；**(b) swizzle 合并**，两者都是 swizzle 时取粒度更小者
    （`:451-461`，实现在 `src/layout/gemm_layouts.cc:999-1023`）；**(c) 硬失败**。
-   （自由模式下的「换根重推」是引擎级处理，发生在 step 3。）
+   （自由模式下的“换根重推”是引擎级处理，发生在 step 3。）
 2. 捷径：全复制的 fragment 直接被判为兼容（`src/layout/utils.cc:468-471`）。
    安全，因为每个线程都持有全部元素，任何访问模式都能满足。
 3. `LOG(FATAL) << "Get different layout for " << buffer ...`。对用户意味着
    **必须**改代码或 annotation；编译器不会静默降级。
 
-**常见错误**：把「包含」理解成「维度更多」——它是**元素集合的包含**，不是形状的
+**常见错误**：把“包含”理解成“维度更多”。它是**元素集合的包含**，不是形状的
 包含。
 
 ---
@@ -180,7 +180,7 @@
 
 1. 因为该 pass 只做**形状/别名的规范化**，不写数据（源码注释
    `normalize_fractal_storage.cc:2-6`）。下游因此必须**按有效区域读写**，不能
-   假设 padding 是零——否则是正确性 bug。
+   假设 padding 是零。否则是正确性 bug。
 2. 因为它会新产生 scatter 与 post_copy 两类 op，需要被 `AutoSchedule` 拿去排
    流水与屏障（注释 `insert_nd2nz.cc:1-3`，pipeline `ascend/pipeline.py:88-93`）。
 3. 好处是让 padding fill 成为一个**独立可调度的 MTE2 任务**，能被流水/屏障分析
@@ -224,7 +224,7 @@ def broken(i, j):        # 故意丢掉低位：非单射
 `inverse()` 在静态形状下会因 round-trip 检查失败抛 `NormalizeIterException`
 （`src/layout/layout.cc:1150-1160`）。
 
-**常见错误**：只检查「没有碰撞」就下结论是双射——还要检查**值域覆盖完整**
+**常见错误**：只检查“没有碰撞”就下结论是双射，还要检查**值域覆盖完整**
 （满射）。
 
 ---
@@ -261,7 +261,7 @@ def broken(i, j):        # 故意丢掉低位：非单射
    你给的更小档位而编译通过。
 3. 报错文本必须来自实机；本章不提供杜撰的报错。
 
-**常见错误**：把「推测可能合并」写成「一定合并」。
+**常见错误**：把“推测可能合并”写成“一定合并”。
 
 ---
 
@@ -277,6 +277,6 @@ def broken(i, j):        # 故意丢掉低位：非单射
 2. `trans_B=True → MajorK`，`trans_B=False → MajorMN`
    （`gemm_mad.py:119-140`）。
 3. 因为把 reduce-K 轴放在 C0 轴上，使 K 方向的连续数据满足 Cube 的
-   「K 按 C0 对齐」约束。
+   “K 按 C0 对齐”约束。
 
-**常见错误**：把 L0C 也当成可选的 major 布局——它是**固定**的 16×16 累加器。
+**常见错误**：把 L0C 也当成可选的 major 布局。它是**固定**的 16×16 累加器。

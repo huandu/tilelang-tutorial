@@ -17,7 +17,7 @@
 ```
 
 `TL_PTO_DEBUG=1` **只对 `target="pto"` 生效**，不会给 AscendC 后端打开调试 flag
-（见 `../references.md` 的「待补资料」第 3 条：A 树 `examples/print/` 里的老写法与
+（见 `../references.md` 的“待补资料”第 3 条：A 树 `examples/print/` 里的老写法与
 文档不一致）。
 
 ## 运行前提

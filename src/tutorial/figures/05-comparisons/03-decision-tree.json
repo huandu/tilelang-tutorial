@@ -1,48 +1,144 @@
 {
   "id": "03-decision-tree",
   "title": "什么时候该选谁：从硬件到控制权的判定树",
-  "caption": "判定顺序是「硬件 → 目标是算子还是编译器 → 愿意让出多少控制权」，不要从语法长短开始比。",
+  "caption": "判定顺序是“硬件 → 目标是算子还是编译器 → 愿意让出多少控制权”，不要从语法长短开始比。",
   "kind": "flow",
   "section": "5",
   "direction": "TB",
   "nodeMaxEm": 24,
   "nodes": [
-    { "id": "start", "label": "要写一段 kernel", "tone": "accent" },
-    { "id": "hw", "label": "目标硬件？", "shape": "diamond", "tone": "muted" },
-    { "id": "n1", "label": "NVIDIA：改编译器还是写算子？", "shape": "diamond", "tone": "muted" },
-    { "id": "a1", "label": "昇腾：改编译器还是写算子？", "shape": "diamond", "tone": "muted" },
-    { "id": "x1", "label": "其他 / 跨厂商", "sub": "TileLang：一个前端，多后端 lowering" },
+    {
+      "id": "start",
+      "label": "要写一段 kernel",
+      "tone": "accent"
+    },
+    {
+      "id": "hw",
+      "label": "目标硬件？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "n1",
+      "label": "NVIDIA：改编译器还是写算子？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "a1",
+      "label": "昇腾：改编译器还是写算子？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "x1",
+      "label": "其他 / 跨厂商",
+      "sub": "TileLang：一个前端，多后端 lowering"
+    },
     {
       "id": "c1",
       "label": "改编译器 → TVM 底盘 + 写 pass",
       "sub": "R10/R11/R12、S10/S11",
       "tone": "store"
     },
-    { "id": "n2", "label": "让出多少控制权？", "shape": "diamond", "tone": "muted" },
-    { "id": "n3", "label": "CUTLASS-CuTe", "sub": "完全控制 epilogue / 对齐库" },
-    { "id": "n4", "label": "Triton 或 TileLang", "sub": "自动调度、tile 级" },
-    { "id": "a2", "label": "让出多少控制权？", "shape": "diamond", "tone": "muted" },
-    { "id": "a3", "label": "Ascend C 或 PTO-DSL", "sub": "贴硬件、显式 L1/L0/UB" },
-    { "id": "a4", "label": "TileLang@Ascend", "sub": "自动 layout / schedule / sync" }
+    {
+      "id": "n2",
+      "label": "让出多少控制权？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "n3",
+      "label": "CUTLASS-CuTe",
+      "sub": "完全控制 epilogue / 对齐库"
+    },
+    {
+      "id": "n4",
+      "label": "Triton 或 TileLang",
+      "sub": "自动调度、tile 级"
+    },
+    {
+      "id": "a2",
+      "label": "让出多少控制权？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "a3",
+      "label": "Ascend C 或 PTO-DSL",
+      "sub": "贴硬件、显式 L1/L0/UB"
+    },
+    {
+      "id": "a4",
+      "label": "TileLang@Ascend",
+      "sub": "自动 layout / schedule / sync"
+    }
   ],
   "edges": [
-    { "from": "start", "to": "hw" },
-    { "from": "hw", "to": "n1", "label": "NVIDIA" },
-    { "from": "hw", "to": "a1", "label": "昇腾" },
-    { "from": "hw", "to": "x1", "label": "其他 / 跨厂商" },
-    { "from": "n1", "to": "c1", "label": "写编译器" },
-    { "from": "n1", "to": "n2", "label": "写算子" },
-    { "from": "n2", "to": "n3", "label": "要完全控制" },
-    { "from": "n2", "to": "n4", "label": "要自动调度" },
-    { "from": "a1", "to": "c1", "label": "写编译器" },
-    { "from": "a1", "to": "a2", "label": "写算子" },
-    { "from": "a2", "to": "a3", "label": "贴硬件" },
-    { "from": "a2", "to": "a4", "label": "要自动调度" }
+    {
+      "from": "start",
+      "to": "hw"
+    },
+    {
+      "from": "hw",
+      "to": "n1",
+      "label": "NVIDIA"
+    },
+    {
+      "from": "hw",
+      "to": "a1",
+      "label": "昇腾"
+    },
+    {
+      "from": "hw",
+      "to": "x1",
+      "label": "其他 / 跨厂商"
+    },
+    {
+      "from": "n1",
+      "to": "c1",
+      "label": "写编译器"
+    },
+    {
+      "from": "n1",
+      "to": "n2",
+      "label": "写算子"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "label": "要完全控制"
+    },
+    {
+      "from": "n2",
+      "to": "n4",
+      "label": "要自动调度"
+    },
+    {
+      "from": "a1",
+      "to": "c1",
+      "label": "写编译器"
+    },
+    {
+      "from": "a1",
+      "to": "a2",
+      "label": "写算子"
+    },
+    {
+      "from": "a2",
+      "to": "a3",
+      "label": "贴硬件"
+    },
+    {
+      "from": "a2",
+      "to": "a4",
+      "label": "要自动调度"
+    }
   ],
   "notes": [
     "判定要点一：先选硬件，决定可选项集合。",
     "判定要点二：改编译器走 TVM 底盘（§4），写算子走 tile 层或低层。",
-    "判定要点三：不要用代码行数决定——社区文章说的「差几倍」没有公开基线（R22）。",
+    "判定要点三：不要用代码行数决定，社区文章说的“差几倍”没有公开基线（R22）。",
     "注意：NVIDIA 的 cuTile 与 CuTe DSL 是两个不同的东西，CuTe DSL 在低层（R5/R27）。"
   ]
 }

@@ -79,7 +79,7 @@ tile 配置 block_M=128 block_N=128 block_K=32 stages=3 threads=128
   `../../../../../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
   （H100 SXM5，厂商公开 preliminary specs，未实测）；
 * 机器平衡点是这两个数相除，不是厂商给出的数字；
-* 所有算子成本按「理论最小访存量」计算，真实 kernel 一定高于这个下界；
+* 所有算子成本按“理论最小访存量”计算，真实 kernel 一定高于这个下界；
 * tile 占用只统计 A/B tile 与 C 累加器，不含 epilogue、barrier 与 padding，
   因此也是乐观下界。
 
@@ -91,7 +91,7 @@ tile 配置 block_M=128 block_N=128 block_K=32 stages=3 threads=128
 
 ## 已知局限
 
-* 只统计「读入 + 写出」一行，不考虑中间量回写显存。
+* 只统计“读入 + 写出”一行，不考虑中间量回写显存。
 * 不考虑 cache 命中、kernel 启动开销、尾部效应（wave quantization）。
 * 寄存器估算只算累加器，不含地址、索引、流水所需的其它寄存器；真实占用
   一定更高。CUDA 的寄存器上限 255 与 cc7.0 的 occupancy 结论见

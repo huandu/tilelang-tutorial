@@ -2,7 +2,7 @@
 
 ## 目的
 
-对应正文第 3.3 节「用户如何干预」。在一个普通 tiled GEMM 上，显式做两件事：
+对应正文第 3.3 节“用户如何干预”。在一个普通 tiled GEMM 上，显式做两件事：
 
 ```python
 T.annotate_layout({
@@ -13,7 +13,7 @@ T.use_swizzle(panel_size=10, enable=True)
 ```
 
 并同时打开编译器的 layout visualization（`pass_configs` 里的两个键），这样能把
-「你钉住的」和「编译器推导出来的」放在一起比。
+“你钉住的”和“编译器推导出来的”放在一起比。
 
 累计子 `C_local` 故意**不**钉：它是 `T.Fragment`（每个 (thread, register slot) 一个
 元素），只有在必须跟某个特定消费者对齐时才值得手写。
@@ -61,7 +61,7 @@ python3 annotate_swizzle_gemm.py
 
 * `python3 -m py_compile annotate_swizzle_gemm.py` 通过；
 * 所用 API 逐个在 `_vendor/tilelang-v0.1.15/` 中核对存在性与签名，见下表；
-* **未运行**（本机无 GPU、无 TileLang）。因此 `README` 里的「期望输出」是**待验证的
+* **未运行**（本机无 GPU、无 TileLang）。因此 `README` 里的“期望输出”是**待验证的
   预期**，不是已观测结果。
 
 ## API 对照表（已在 v0.1.15 中核对）
@@ -75,8 +75,8 @@ python3 annotate_swizzle_gemm.py
 | `@tilelang.jit(pass_configs=...)`、`T.const`、`T.empty` | `_vendor/tilelang-v0.1.15/examples/gemm/example_gemm.py:1-26` | 本示例的骨架直接取自官方 GEMM 示例 |
 | `kernel.get_kernel_source()`、`kernel.compile(...)` | `_vendor/tilelang-v0.1.15/tilelang/jit/kernel.py:532`、`tilelang/jit/__init__.py:507` | 打印生成源码 |
 
-## 与本章「常见坑」的对照
+## 与本章“常见坑”的对照
 
 把上面两行注解删掉再编译一次，对比 `C_local inferred layout` 与生成的 CUDA，就能亲眼
-看到「编译器自己也会选一个 swizzle」。这也是正文第 5 节反复强调的一点：**注解是覆盖，
+看到“编译器自己也会选一个 swizzle”。这也是正文第 5 节反复强调的一点：**注解是覆盖，
 不是必需**；大多数情况下先让编译器推，出问题再覆盖。

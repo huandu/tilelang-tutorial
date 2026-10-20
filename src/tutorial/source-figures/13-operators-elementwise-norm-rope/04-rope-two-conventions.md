@@ -38,5 +38,5 @@ interleaved: 一次循环读 x[i, 2p] 与 x[i, 2p+1]
 `../tilelang-corpus/12-operator-libraries/raw/TileOPs/src/tileops/kernels/rope.py:1-20`
 （两种约定的命名与适用模型）。
 
-**边界**：错误只体现在数值上——两种约定都能跑完，不会报错，也不会崩。
-这也是本章把「先对齐 PyTorch 参考实现」放在第一位的原因。
+**边界**：错误只体现在数值上，两种约定都能跑完，不会报错，也不会崩。
+这也是本章把“先对齐 PyTorch 参考实现”放在第一位的原因。

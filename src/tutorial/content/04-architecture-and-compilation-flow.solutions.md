@@ -4,13 +4,13 @@
 凡涉及源码的答案都给了文件:行号；凡涉及本章脚本输出的数字，都注明可以用
 `code/pass-order/dump_pass_order.py` 或 `code/repo-map/inventory.py` 复现。
 
-本章没有任何需要在本机实测才能得出的结论；涉及真实硬件的地方一律标注为「未验证」。
+本章没有任何需要在本机实测才能得出的结论；涉及真实硬件的地方一律标注为“未验证”。
 
 ---
 
 ## E1 概念题 ★
 
-**解题思路**：先背下 2.1 节的竖线，再回到源码确认每个入口的行号，最后回答「哪些是共享的」。
+**解题思路**：先背下 2.1 节的竖线，再回到源码确认每个入口的行号，最后回答“哪些是共享的”。
 
 **参考答案**：
 
@@ -32,14 +32,14 @@
    （fractal / NZ 语义）。两者都源自同一个 `PrimFunc`，但进到 layout 之后的抽象不同
    （见本章 5.2 节第 5 条）。
 
-**常见错误**：把「前端共享」理解成「整条编译链共享」；或者把 `context.lower(mod)` 的位置
-写成 `PassPipeline.lower` 所在的文件——请注意 `tilelang/engine/lower.py:136` 才是**调用点**。
+**常见错误**：把“前端共享”理解成“整条编译链共享”；或者把 `context.lower(mod)` 的位置
+写成 `PassPipeline.lower` 所在的文件，请注意 `tilelang/engine/lower.py:136` 才是**调用点**。
 
 ---
 
 ## E2 概念题 ★
 
-**解题思路**：抓住「生成什么」与「怎么编译启动」这条分界。
+**解题思路**：抓住“生成什么”与“怎么编译启动”这条分界。
 
 **参考答案**：
 
@@ -53,7 +53,7 @@
    `cython`（`tilelang/ascend/execution_backend.py:20`）。
 3. 第一句**错**。`nvrtc` 只是一种执行路径；pipeline 由 target backend 决定，换执行后端
    不会换 pipeline。`tilelang/backend/README.md:76-78` 原话：
-   「selecting `nvrtc` does not select a different target architecture or pass pipeline」。
+   “selecting `nvrtc` does not select a different target architecture or pass pipeline”。
    第二句**部分错**。CuTeDSL 与 CUDA 确实是两个 manifest，但 CuTeDSL **显式复用**
    `pipeline.CUDA_PIPELINE`（`tilelang/cuda/cutedsl_backend.py:13`），
    它们的 IR lowering 是**相同**的，区别在 device codegen 与 execution backend。
@@ -66,45 +66,45 @@
 
 ## E3 概念题 ★★
 
-**解题思路**：把 `__post_init__` 当成「manifest 的 schema 校验」来读。
+**解题思路**：把 `__post_init__` 当成“manifest 的 schema 校验”来读。
 
 **参考答案**：
 
 1. 至少四条：
    * `pipelines` 的 key 集合必须等于 `target_kinds` 集合，且每个 pipeline 的 `name`
-     必须等于 target kind（`tilelang/backend/module.py:52-57`）。防「声明了 target 却没有 pipeline」
-     或「pipeline 挂错 target」。
-   * `device_codegens` 的 key 集合必须等于 `target_kinds`（`:59-61`）。防「target 没有
-     codegen，编译到一半才发现」。
+     必须等于 target kind（`tilelang/backend/module.py:52-57`）。防“声明了 target 却没有 pipeline”
+     或“pipeline 挂错 target”。
+   * `device_codegens` 的 key 集合必须等于 `target_kinds`（`:59-61`）。防“target 没有
+     codegen，编译到一半才发现”。
    * `execution_backends` 不能为空、名字不能重复；若有 `enable_host_codegen` 就必须有
-     `host_codegens`（`:73-80`）。防「执行策略要求 host 代码，但后端不会生成」。
+     `host_codegens`（`:73-80`）。防“执行策略要求 host 代码，但后端不会生成”。
    * `host_codegen_hooks` 的 key 必须是本后端拥有的 target kind（`:63-71`）。
      防 hook 挂到别人的 target 上。
-2. 因为 `_resolve_backend_module`（`:300-307`）在「多个候选都能匹配」时会直接抛
+2. 因为 `_resolve_backend_module`（`:300-307`）在“多个候选都能匹配”时会直接抛
    `ValueError(f"Multiple backends match target {target}: ...")`。若允许两个 manifest
    同时占一个 kind 且都没有谓词，那么每次编译都会失败；要求提供谓词等于强制后端作者
-   把「我到底管哪一个变体」写清楚。
+   把“我到底管哪一个变体”写清楚。
 3. `register_backend` 会先写入 `_BACKENDS` 与 `_TARGET_KIND_INDEX`，再注册 FFI callback。
-   若 callback 注册失败却不回滚，注册表里就会出现一个「看起来已注册、实际不完整」的后端：
+   若 callback 注册失败却不回滚，注册表里就会出现一个“看起来已注册、实际不完整”的后端：
    后续 `create_backend_context` 可能选中它，然后在 codegen 阶段抛出难以定位的错误。
-   回滚保证「注册成功」是一个原子事实。
+   回滚保证“注册成功”是一个原子事实。
 
-**常见错误**：以为这些校验只是「防御式编程」。它们其实定义了后端作者必须回答的问题清单，
-是第 31 章「加后端检查清单」的雏形。
+**常见错误**：以为这些校验只是“防御式编程”。它们其实定义了后端作者必须回答的问题清单，
+是第 31 章“加后端检查清单”的雏形。
 
 ---
 
 ## E4 代码阅读题 ★★
 
-**解题思路**：盯住源码里的注释，它们直接写了「为什么这么排」。
+**解题思路**：盯住源码里的注释，它们直接写了“为什么这么排”。
 
 **参考答案**：
 
 1. 源码在 `tilelang/cuda/pipeline.py:127-128` 写了：
-   「Run pipeline planning and software-pipeline rewriting before layout inference so inferred
-   layouts see the final pipelined structure directly.」
+   “Run pipeline planning and software-pipeline rewriting before layout inference so inferred
+   layouts see the final pipelined structure directly.”
    即：流水改写会引入 buffer 版本（多缓冲），layout 推导必须看到**最终的**缓冲版本，
-   否则会为「旧的、单一版本」的 buffer 推出 layout，之后又得改。
+   否则会为“旧的、单一版本”的 buffer 推出 layout，之后又得改。
    若交换顺序，`LayoutInference` 看到的是尚未注入软件流水、也没有多缓冲的 IR，
    推出来的 fragment/shared layout 与最终代码不匹配（或在后续被强制改写）。
 2. 因为 `LayoutVisual` 只做可视化：它在 `tilelang/backend/pass_pipeline/pipeline_utils.py:105-109` 里判断开关
@@ -115,14 +115,14 @@
    所以调试 tile 语义时，**这一步前后对比 IR 最有效**：之前能看到 `T.gemm` / `T.copy`，
    之后只剩语句。
 
-**常见错误**：把 `LayoutVisual` 当成 pass 写在表格里——它确实在 pipeline 里出现，
-但它不是 pass，是调试插桩点，因此本章的表格没有把它计入「73 步」。
+**常见错误**：把 `LayoutVisual` 当成 pass 写在表格里。它确实在 pipeline 里出现，
+但它不是 pass，是调试插桩点，因此本章的表格没有把它计入“73 步”。
 
 ---
 
 ## E5 代码阅读题 ★★
 
-**解题思路**：把 13 步按「准备 → 建模 → 求解 → 落地」切段。
+**解题思路**：把 13 步按“准备 → 建模 → 求解 → 落地”切段。
 
 **参考答案**：
 
@@ -137,20 +137,20 @@
      （把解变成真实的同步指令与 buffer 版本）、
      `LowerScheduledTIR` → `RestoreWhileLoops`（把带调度标记的 TIR 还原成可继续 lower 的形式）。
 2. `EstimateLatency` 提供**代价模型**，`AnnotateMultiBufferEligible` 提供**可行域**
-   （哪些 buffer 允许多份）。没有这两个输入，求解器既不知道「快不快」，
-   也不知道「能选哪些」，只能瞎猜。这是约束求解类调度器的通用结构。
+   （哪些 buffer 允许多份）。没有这两个输入，求解器既不知道“快不快”，
+   也不知道“能选哪些”，只能瞎猜。这是约束求解类调度器的通用结构。
 3. 因为自动调度器在求解过程中**自己**会推导 buffer 别名；关掉调度器之后，
-   这一步就没有人做了，必须由这个 pass 补上。它说明「关掉自动调度」不是「少做一点优化」，
-   而是「你要自己承担调度器原本承担的那部分建模工作」。
+   这一步就没有人做了，必须由这个 pass 补上。它说明“关掉自动调度”不是“少做一点优化”，
+   而是“你要自己承担调度器原本承担的那部分建模工作”。
 
 **常见错误**：把 `AutoSchedule` 当成唯一重要的 pass。真正的工程价值分布在
-「建模是否准确」（前 4 步）与「落地是否正确」（后 7 步）两端；求解器本身只是中间一步。
+“建模是否准确”（前 4 步）与“落地是否正确”（后 7 步）两端；求解器本身只是中间一步。
 
 ---
 
 ## E6 代码阅读题 ★★
 
-**解题思路**：从「命名空间组成」与「静态分析」两个角度理解。
+**解题思路**：从“命名空间组成”与“静态分析”两个角度理解。
 
 **参考答案**：
 
@@ -166,16 +166,16 @@
    `cthread` / `T.SimtVF` 语义。正确写法是
    `from tilelang.ascend import language as T`（或同时导入公共表面
    `tilelang.language.common` 再叠加昇腾扩展）。
-3. 关系是「**公共 launch 语义 + 后端注解**」：
+3. 关系是“**公共 launch 语义 + 后端注解**”：
    `tilelang/language/kernel.py:431` 的 `Kernel` 是 target-neutral 的
-   「a grid of tile programs」，docstring 明确说它「is the target-neutral launch:
-   the part every backend shares」；`tilelang/cuda/language/kernel.py:13` 的 `Kernel`
+   “a grid of tile programs”，docstring 明确说它“is the target-neutral launch:
+   the part every backend shares”；`tilelang/cuda/language/kernel.py:13` 的 `Kernel`
    在这个基础上加了 `threads` / `prelude` / `cluster_dims`。
    `ClusterKernel` 依赖 `cluster_dims`，而 `cluster_dims` 是 SM90+ 的 CUDA 概念，
-   所以它只能放在 CUDA 一侧——这也解释了昇腾 pipeline 为什么要把
+   所以它只能放在 CUDA 一侧。这也解释了昇腾 pipeline 为什么要把
    `cluster_dims` 列进 `unsupported_annotations`。
 
-**常见错误**：以为 `tilelang.language` 是「中立的公共层」。它在 v0.1.15 里是
+**常见错误**：以为 `tilelang.language` 是“中立的公共层”。它在 v0.1.15 里是
 **CUDA 方言 + 公共表面**，中立的部分在 `tilelang/language/common.py`。
 
 ---
@@ -211,7 +211,7 @@
 | 271 | `tilelang.cuda.transform.AnnotateWarpGroupRegAlloc` | `allow_warp_specialized(pass_ctx=pass_ctx, target=target)` |
 
 **常见错误**：把 73 步数成 74。多出来的那一步是
-`mod = CUDAPassPipelineBodyPrologue(mod, target)` 本身——脚本刻意把它展开成
+`mod = CUDAPassPipelineBodyPrologue(mod, target)` 本身，脚本刻意把它展开成
 Prologue 的 33 步而不重复计数。
 
 ---
@@ -226,9 +226,9 @@ Prologue 的 33 步而不重复计数。
    `src_transform_cc_files = 42`、`examples_subdirs = 54`、
    `examples_top_level_files = 3`、`docs_markdown_files = 37`。
 2. `VERSIONS.md` 数的是 `examples/` 下的**条目总数**（54 个目录 + 3 个文件 = 57），
-   本章脚本把它拆成「目录数」与「顶层文件数」两项。本章采用脚本口径，理由是：
+   本章脚本把它拆成“目录数”与“顶层文件数”两项。本章采用脚本口径，理由是：
    `quickstart.py`、`conftest.py`、`pytest.ini` 不是示例目录，
-   把它们计入「示例数量」会误导读者去找 `examples/quickstart` 这个不存在的目录。
+   把它们计入“示例数量”会误导读者去找 `examples/quickstart` 这个不存在的目录。
 3. 正常情况下输出 `compile-path hops: 30/30 verified`，退出码 0。
    若某跳失败，先用 `sed -n '<行号>p' <文件>` 核对；常见原因是 `--vendor` 指向了
    main 而不是 v0.1.15。改一行让脚本打印数量：
@@ -239,14 +239,14 @@ Prologue 的 33 步而不重复计数。
 
    加在 `check()` 调用之前即可。
 
-**常见错误**：把「脚本通过」当成「章节结论被验证」。脚本只验证**位置与符号存在**，
+**常见错误**：把“脚本通过”当成“章节结论被验证”。脚本只验证**位置与符号存在**，
 不验证语义；语义要靠第 20–22 章的逐 pass 精读与真实运行。
 
 ---
 
 ## E9 动手题 ★★（GPU，可选）
 
-**解题思路**：这一题的核心不是「跑通」，而是**把生成物与 pass 表格对上**。
+**解题思路**：这一题的核心不是“跑通”，而是**把生成物与 pass 表格对上**。
 
 **参考答案**（在真实 GPU 机器上应当看到的现象）：
 
@@ -258,26 +258,26 @@ Prologue 的 33 步而不重复计数。
    `cp.async` / TMA 相关代码对应 `LowerTileOp`（第 25 步）+ `InjectFenceProxy`（第 64 步）
    + `FuseMBarrierArriveExpectTx`（第 37 步，仅在 `has_tma` 时）。
 3. `tilelang_jit_program_*.py` 是 `prim_func.script()`，也就是**前端产物的文本形式**，
-   所以 `T.gemm` / `T.copy` / `T.Pipelined` **仍然在**。这说明「tile op 被展开」
+   所以 `T.gemm` / `T.copy` / `T.Pipelined` **仍然在**。这说明“tile op 被展开”
    发生在 pipeline 中，而不是发生在前端；要观察展开后的形态，必须看 pipeline 中途的 IR
    （用 `lower_trace` / `TL_ENABLE_DUMP_IR`），源码文件本身看不到。
 4. `block_K` 从 32 到 64：`B_shared`/`A_shared` 的字节数翻倍，`MergeSharedMemoryAllocations`
    的可用空间相应紧张，`num_stages=3` 下总 shared 需求也随之翻倍；
    如果超出设备上限，编译期就会报 shared memory 相关错误，或触发寄存器/占用率变化。
 
-**没有 GPU 时的答案**：静态部分可以完成——用
+**没有 GPU 时的答案**：静态部分可以完成，用
 `grep -rn "tile_op\|TileOp" src/op/` 观察 `src/op/` 里 `copy.cc`、`gemm.cc` 等
 确实以 tile op 为单位实现；`LowerTileOp`（`src/transform/lower_tile_op.cc`）负责把它们展开。
 **必须显式声明**：`__shared__` 大小、TMA 代码形态、正确性结果都**未验证**。
 
-**常见错误**：在没有 GPU 的机器上把「脚本能 py_compile」写成「运行通过」。
+**常见错误**：在没有 GPU 的机器上把“脚本能 py_compile”写成“运行通过”。
 本章 `code/README.md` 与此处都要求写明验证级别。
 
 ---
 
 ## E10 概念题 ★★
 
-**解题思路**：从 IR 结构倒推「用户能写什么」。
+**解题思路**：从 IR 结构倒推“用户能写什么”。
 
 **参考答案**：
 
@@ -285,19 +285,19 @@ Prologue 的 33 步而不重复计数。
    存在 `blockIdx`（网格）与 `threadIdx`（线程），`default_threads=128` 提供默认线程数。
    昇腾：`lower_grid_binding=True` 把网格循环变成 `thread_extent` 形式的 AttrStmt，
    `launch_dim_tags=["cthread"]` 引入 `cthread`（sub-block-id 维），
-   但**kernel 作用域没有 `threadIdx`**——线程域只在 `T.SimtVF` 里出现，
+   但**kernel 作用域没有 `threadIdx`**，线程域只在 `T.SimtVF` 里出现，
    由 `T.SimtVF` 自己发出线程作用域（见 `tilelang/ascend/pipeline.py:38-44` 的注释）。
 2. 直接影响：CUDA 里可以用 `T.get_thread_binding()` 写 thread 级代码
    （expert 层）；昇腾里在 kernel 作用域写线程级代码没有意义，
    必须先用 `T.SimtVF`（或 `T.SimdVF`）声明一个向量计算区域，线程域才存在。
-   这就是「线程域只存在于向量区域内」的含义。
+   这就是“线程域只存在于向量区域内”的含义。
 3. `unsupported_annotations=["cluster_dims"]` 表示昇腾的 launch 物化不认识
    `cluster_dims`（那是 SM90+ 的 CUDA 概念）。用户若对昇腾目标写
    `T.Kernel(..., cluster_dims=2)`，该注解不会被物化，
    应当被视为不支持（具体报错形式需要真实环境验证，本章不作断言）。
 
-**常见错误**：以为 `lower_thread_binding=False` 意味着「昇腾没有并行」。
-恰恰相反：并行从「每线程」上移到「每核 + 向量区域」，粒度更粗，但并行度仍在。
+**常见错误**：以为 `lower_thread_binding=False` 意味着“昇腾没有并行”。
+恰恰相反：并行从“每线程”上移到“每核 + 向量区域”，粒度更粗，但并行度仍在。
 
 ---
 
@@ -313,20 +313,20 @@ Prologue 的 33 步而不重复计数。
    ls _vendor/tilelang-v0.1.15/tilelang/jit/adapter/
    grep -rn "PersistentKernel" _vendor/tilelang-v0.1.15/tilelang _vendor/tilelang-v0.1.15/src
    grep -rn "AutoSimtVF" _vendor/tilelang-v0.1.15/tilelang _vendor/tilelang-v0.1.15/src
-   ls ../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/tilelang/jit/adapter/
-   grep -rn "PersistentKernel" ../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/tilelang
+   ls ../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/jit/adapter/
+   grep -rn "PersistentKernel" ../tilelang-corpus/02-tilelang-core-repo/raw/tilelang
    ```
 
 2. 结论：
    * `T.PersistentKernel` / `AutoPersistent`：在 v0.1.15 **没有**，在 corpus 的 main 快照
-     （`994b44e`）里 grep 也**没有**——属于未合入（PR #3325）。
+     （`994b44e`）里 grep 也**没有**，属于未合入（PR #3325）。
    * PTO 执行路径：v0.1.15 **没有** `tilelang/jit/adapter/pto/`；
-     corpus 的 main 快照**有**（它的 HEAD 正是 PR #3310「Add PTO backend for Ascend950」）。
+     corpus 的 main 快照**有**（它的 HEAD 正是 PR #3310“Add PTO backend for Ascend950”）。
    * 顺带：`AutoSimtVF`（PR #3320）在两个 checkout 里都没有。
-3. 因为 `main` 每天都在动。如果没有版本纪律，「TileLang 支持 X」这句话就无法复核：
+3. 因为 `main` 每天都在动。如果没有版本纪律，“TileLang 支持 X”这句话就无法复核：
    同一个论断在不同日期会得到不同答案。把前沿内容集中到第 30 章，可以让全书其余 30 章
-   的结论保持「对 v0.1.15 恒真」，读者也能一眼分清「现在能用」与「将来会有」。
-4. 这两条都属于 5.3 节表格里「仅 main / 未合入」的行。核验路径就是第 1 问的命令，
+   的结论保持“对 v0.1.15 恒真”，读者也能一眼分清“现在能用”与“将来会有”。
+4. 这两条都属于 5.3 节表格里“仅 main / 未合入”的行。核验路径就是第 1 问的命令，
    加上记录 checkout 的 `git log -1 --oneline` 作为时间戳。
 
 **常见错误**：用 PR 编号或发布日期下结论。例如 PR #3308（引入 Ascend 950 后端）
@@ -393,7 +393,7 @@ Prologue 的 33 步而不重复计数。
    ```
 
    注意 `BackendModule` 会在 `__post_init__` 里检查
-   「`pipelines` / `device_codegens` 的 key 集合 == `target_kinds`」，
+   “`pipelines` / `device_codegens` 的 key 集合 == `target_kinds`”，
    所以上面三个 `"foo"` 必须完全一致。
 3. 复用 CUDA pipeline 的写法是直接引用同一个 `PassPipeline` 实例：
    `pipelines={"foo": tilelang.cuda.pipeline.CUDA_PIPELINE}`。
@@ -402,10 +402,10 @@ Prologue 的 33 步而不重复计数。
    因此**只有 target kind 也是 `cuda` 时才可行**。v0.1.15 的先例正是 CuTeDSL：
    `tilelang/cuda/cutedsl_backend.py:11-13`，
    `target_kinds=("cuda",)` + `pipelines={"cuda": pipeline.CUDA_PIPELINE}`。
-   换句话说，「复用别人的 pipeline」在 v0.1.15 里等于「共用同一个 target kind」；
+   换句话说，“复用别人的 pipeline”在 v0.1.15 里等于“共用同一个 target kind”；
    如果你的 kind 是 `foo`，就必须自己维护 `pipeline.py`。
-4. 最容易违规的一条是「**Do not spread execution-mode checks through compiler passes**」
-   与「**Keep host/device codegen dispatch … under target-backend ownership**」
+4. 最容易违规的一条是“**Do not spread execution-mode checks through compiler passes**”
+   与“**Keep host/device codegen dispatch … under target-backend ownership**”
    （`tilelang/backend/README.md:382-389`）。具体表现：为了省事，在
    `tilelang/engine/lower.py` 里加 `if context.module.name == "foo": ...`。
    正确做法是把差异放进 `tilelang/foo/pipeline.py` 与 `tilelang/foo/codegen.py`，

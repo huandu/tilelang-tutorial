@@ -75,5 +75,5 @@ M8 把 >105% 的效率当好性能               那是公式错误，不是性�
 
 * 机器参数（标定后）：R2（`TileOPs/.../h200.yaml:15-50`）；
   datasheet 峰值对照：R10（`nvidia-blog-hopper-architecture-in-depth.md:135-143`）。
-* 「没有抓手」的定义与 80% / 105% 分档：R1（`roofline.md:40-41`、`:156-163`）。
+* “没有抓手”的定义与 80% / 105% 分档：R1（`roofline.md:40-41`、`:156-163`）。
 * 八种误读的数字：`code/02-roofline-misuse/roofline_misuse.py` 的实际输出。

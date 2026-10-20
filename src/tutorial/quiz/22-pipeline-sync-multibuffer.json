@@ -5,13 +5,13 @@
       "id": "q1",
       "stem": "在流水线的形式化里，依赖距离 d（distance）描述的是什么？",
       "options": [
+        "c 的第 k+d 次迭代用到 p 的第 k 次迭代的结果；d=0 是同迭代依赖，d≥1 是循环携带依赖",
         "这条语句在流水体里被重复执行的次数",
         "它等于 num_stages，两者是同一个量",
-        "c 的第 k+d 次迭代用到 p 的第 k 次迭代的结果；d=0 是同迭代依赖，d≥1 是循环携带依赖",
         "buffer 的字节数与元素个数之比"
       ],
-      "answer": 2,
-      "explain": "见 §2.1。d=0 的边在同一迭代内即可满足，d≥1 的边必须靠多一份版本或等一轮来满足；它就是「buffer 至少要几个版本」的依据。"
+      "answer": 0,
+      "explain": "见 §2.1。d=0 的边在同一迭代内即可满足，d≥1 的边必须靠多一份版本或等一轮来满足；它就是“buffer 至少要几个版本”的依据。"
     },
     {
       "id": "q2",
@@ -29,12 +29,12 @@
       "id": "q3",
       "stem": "关于 stage、深度与 num_versions 三者的关系，哪一项正确？",
       "options": [
-        "它们是三个不同的量：num_versions ≤ depth，一个 buffer 在 num_stages=4 时也可能只留 1 份",
         "三者是同一个数，只是叫法不同",
         "num_versions 一定等于 num_stages",
+        "它们是三个不同的量：num_versions ≤ depth，一个 buffer 在 num_stages=4 时也可能只留 1 份",
         "手写 stage 数组不会影响版本数"
       ],
-      "answer": 0,
+      "answer": 2,
       "explain": "见 §8.1：stage 是每条语句的位置，depth 是时间槽数量，num_versions 是某个 buffer 的份数；手写 stage = [0, 1, 2, 3] 就能让某条依赖跨 3 个 stage、得到 4 份版本。"
     },
     {
@@ -53,13 +53,13 @@
       "id": "q5",
       "stem": "关于同步点的代价，下列哪一项正确？",
       "options": [
+        "必需的同步只要深度够成本就能被隐藏；多余的同步落在关键路径上，加深度也救不回来",
         "必需的同步一定很贵，多余的同步几乎不要钱",
         "漏一个同步会稳定报错，多一个同步只是偶发变慢",
-        "必需的同步只要深度够成本就能被隐藏；多余的同步落在关键路径上，加深度也救不回来",
         "同步点越多吞吐越高"
       ],
-      "answer": 2,
-      "explain": "见 §5.1–§5.3：漏一个同步是偶发的正确性错误（不能用「跑对了」当证据），多一个同步是确定的性能损失；模型显示 depth ≥ 3 时必需的 war 屏障与无屏障同速，而多插的 +cb 屏障在 depth=6 也救不回来。"
+      "answer": 0,
+      "explain": "见 §5.1–§5.3：漏一个同步是偶发的正确性错误（不能用“跑对了”当证据），多一个同步是确定的性能损失；模型显示 depth ≥ 3 时必需的 war 屏障与无屏障同速，而多插的 +cb 屏障在 depth=6 也救不回来。"
     },
     {
       "id": "q6",
@@ -77,12 +77,12 @@
       "id": "q7",
       "stem": "关于 CUDA 侧 cp.async 与 __syncthreads 的分工，下列哪一项正确？",
       "options": [
-        "cp.async 的完成靠 wait_group，__syncthreads() 不会等它；mbarrier 用 parity 区分轮次",
         "__syncthreads() 会等待在飞的异步拷贝完成",
         "mbarrier 不需要 parity，一次 arrive 对应一次 wait",
+        "cp.async 的完成靠 wait_group，__syncthreads() 不会等它；mbarrier 用 parity 区分轮次",
         "ThreadPartialSyncRewriter 会把 barrier 扩大到整个 block"
       ],
-      "answer": 0,
+      "answer": 2,
       "explain": "见 §4.3：源码注释明确指出 tvm_storage_sync 可能被插在 wait_group 之前，对 cp.async 是错的，因此有 ThreadSyncAfterWaitGroupInserter 在每个 wait_group 后补同步；ThreadPartialSyncRewriter 做的是收窄而不是扩大。"
     },
     {

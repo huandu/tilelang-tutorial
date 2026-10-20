@@ -48,15 +48,36 @@
     }
   ],
   "edges": [
-    { "from": "l1", "to": "l2" },
-    { "from": "l2", "to": "l3" },
-    { "from": "l3", "to": "l4" },
-    { "from": "m1", "to": "l2", "dashed": true },
-    { "from": "m2", "to": "l2", "dashed": true },
-    { "from": "m3", "to": "l3", "dashed": true }
+    {
+      "from": "l1",
+      "to": "l2"
+    },
+    {
+      "from": "l2",
+      "to": "l3"
+    },
+    {
+      "from": "l3",
+      "to": "l4"
+    },
+    {
+      "from": "m1",
+      "to": "l2",
+      "dashed": true
+    },
+    {
+      "from": "m2",
+      "to": "l2",
+      "dashed": true
+    },
+    {
+      "from": "m3",
+      "to": "l3",
+      "dashed": true
+    }
   ],
   "notes": [
     "vLLM 提供可替换的 attention / GEMM / MoE 后端与 PagedAttention；TileRT 走超低延迟 + PD 分离（两端 KV dtype 必须一致）；vllm-ascend 定义昇腾上的环境与插件形态。",
-    "kernel 写得再好，也只有这三件事都对上之后才会跑出效果——它们都不在 kernel 里，而在框架与部署约束里。"
+    "kernel 写得再好，也只有这三件事都对上之后才会跑出效果。它们都不在 kernel 里，而在框架与部署约束里。"
   ]
 }

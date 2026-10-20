@@ -3,10 +3,10 @@
 ## 目的
 
 同一件事（`y = x + b`，外加一个 scale+cast 版本）的四级写法，用来对照
-「编译产物里的访存宽度」：
+“编译产物里的访存宽度”：
 
 1. `add_flat` —— 一个 block 处理 `threads` 个元素，每线程 1 个元素；
-2. `add_thread_vec` —— 显式写出「每线程 `num_per_thread` 个元素」，相邻元素同线程；
+2. `add_thread_vec` —— 显式写出“每线程 `num_per_thread` 个元素”，相邻元素同线程；
 3. `add_register_vec` —— 先用 `T.copy` 把两块数据搬进 fragment，再算，再写回；
 4. `scale_cast` —— 乘标量 + dtype 转换；
 5. `per_token_cast_to_fp8` —— cast 的进阶形态：分组量化（cast 之前先做一次归约）。
@@ -50,14 +50,14 @@ for name, built in (
 **正确性判据**：三个 add 版本与 `a + b` 在 `rtol=atol=1e-5` 内一致；
 `per_token_cast_to_fp8` 与官方 `ref_program` 在 `rtol=atol=1e-2` 内一致。
 
-**性能口径**：不要用「哪个快」下结论，先看生成代码里有没有 128-bit 访存。
+**性能口径**：不要用“哪个快”下结论，先看生成代码里有没有 128-bit 访存。
 建议用 `tilelang.profiler.do_bench` 记录有效带宽
 （`3 * N * 4 / latency`，两个读一个写），并与该卡的 peak bandwidth 比。**本机没有这些数字。**
 
 **期望看到的生成代码差异**（官方 elementwise 文档给的对照，方向可复用）：
 
 * `add_flat`：`T.Parallel(threads)` 的 extent 只有 `threads`，可用并行度不足以塞满
-  128-bit 向量，编译器会自己重排成「32 个线程各搬 8 个元素」的 `uint4` 形态，
+  128-bit 向量，编译器会自己重排成“32 个线程各搬 8 个元素”的 `uint4` 形态，
   **但 launch config 仍是 256 线程**；
 * `add_thread_vec`：每线程连续的 8 个元素 → 一次 `uint4` 读 + 一次 `uint4` 写；
 * `add_register_vec`：多出两个寄存器数组，但访存仍是 `uint4`。

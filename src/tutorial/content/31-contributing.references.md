@@ -4,13 +4,13 @@
 [../../VERSIONS.md](../../VERSIONS.md) 为准：TileLang `v0.1.15`
 （commit `a35f8ddf45eba16c21211ec8822d56ce5363036f`）、TileLang-Ascend
 `TileLang-ascend-v0.1.2.000-release`（commit `89a9364e47a341fffdd65ed94786b1d4f9b6a78c`）。**
-文中不出现「最新版」这类表述；讨论 `main` 上更新的东西时会显式标注。
+文中不出现“最新版”这类表述；讨论 `main` 上更新的东西时会显式标注。
 
 写作环境：macOS (Apple Silicon)、Python 3.11；**没有 NVIDIA GPU，也没有昇腾 NPU**。
 本章没有需要真实硬件才能得出的结论，因此没有硬件验证项；所有代码示例的最高验证级别
-是「CPU 逻辑验证」。
+是“CPU 逻辑验证”。
 
-「已核验（YYYY-MM-DD）」的含义：在锁定版本的工作树上用 `ls` / `grep -n` / `sed -n`
+“已核验（YYYY-MM-DD）”的含义：在锁定版本的工作树上用 `ls` / `grep -n` / `sed -n`
 定位到对应行并读完内容；行号区间与文件内容一致。**这不是运行验证。**
 
 ---
@@ -23,13 +23,13 @@
 | --- | --- | --- | --- |
 | S1 | `CONTRIBUTING.md:18-25` | 报 bug 的要求：先搜索、要最小复现、要清楚说明 | 已核验（2026-10-01）：`grep -n` 定位小节，逐行读 |
 | S2 | `CONTRIBUTING.md:27-29` | 提问走 issue | 已核验（2026-10-01） |
-| S3 | `CONTRIBUTING.md:31-38` | `♥ help` 标签；「每个 PR 尽量带测试与文档」 | 已核验（2026-10-01） |
+| S3 | `CONTRIBUTING.md:31-38` | `♥ help` 标签；“每个 PR 尽量带测试与文档” | 已核验（2026-10-01） |
 | S4 | `CONTRIBUTING.md:40-62` | 编码风格：`bash format.sh --files <changed-file>...`、Ruff、clang-format、C++ 风格指南、C++ API 审计脚本 | 已核验（2026-10-01） |
 | S5 | `CONTRIBUTING.md:64-93` | 开发环境：fork、`--recurse-submodules`、`git remote add upstream`、`uv venv --seed`、`requirements-dev.txt`、`pre-commit install --install-hooks` | 已核验（2026-10-01） |
 | S6 | `CONTRIBUTING.md:95-109` | editable 安装与卸载 | 已核验（2026-10-01） |
 | S7 | `CONTRIBUTING.md:111-117` | lint：`pre-commit run --all-files` | 已核验（2026-10-01） |
 | S8 | `CONTRIBUTING.md:119-127` | 本地测试：`python3 -m pytest testing` | 已核验（2026-10-01） |
-| S9 | `CONTRIBUTING.md:129-135` | `Build Wheels` 与 `Documentation` 两节内容为 `_TBA_` | 已核验（2026-10-01）：这两节**没有**实质内容，因此本章不描述「wheels/文档贡献流程」 |
+| S9 | `CONTRIBUTING.md:129-135` | `Build Wheels` 与 `Documentation` 两节内容为 `_TBA_` | 已核验（2026-10-01）：这两节**没有**实质内容，因此本章不描述“wheels/文档贡献流程” |
 
 ### A2 · issue / PR 模板
 
@@ -98,10 +98,10 @@
 | S55 | `maint/scripts/ascend_perf_regression.py:1-24` | 昇腾回归需要常驻 worker：基线可能硬崩（LOG(FATAL)/abort/hang） | 已核验（2026-10-01） |
 | S56 | `maint/scripts/run_local_ci_test.sh:1-30` | 本地复现 CUDA/ROCm/Metal 流程；worker 数按 GPU 数计算 | 已核验（2026-10-01） |
 | S57 | `maint/scripts/run_local_ci_test_ascend.sh:1-52` | 本地复现昇腾 CI：4 个 example worker、32 个 unit worker | 已核验（2026-10-01） |
-| S58 | `maint/layout_inference/README.md` | 布局黄金用例工具：`run.py`、`--record`、`--anchor`、`--cute`；「Recording is not approval」 | 已核验（2026-10-01）：读全文 |
+| S58 | `maint/layout_inference/README.md` | 布局黄金用例工具：`run.py`、`--record`、`--anchor`、`--cute`；“Recording is not approval” | 已核验（2026-10-01）：读全文 |
 | S59 | `maint/precision/README.md` | 数学函数精度对照表（TileLang/Triton/PyTorch/CUDA vs double） | 已核验（2026-10-01） |
 | S60 | `maint/host_checks/README.md` | 10 个 host 校验复现脚本 + `run_all.py` | 已核验（2026-10-01） |
-| S61 | `testing/ascend/README.md:1-14` | 「每个回归放在拥有该行为的第一道边界」；共享行为放 `testing/python` | 已核验（2026-10-01） |
+| S61 | `testing/ascend/README.md:1-14` | “每个回归放在拥有该行为的第一道边界”；共享行为放 `testing/python` | 已核验（2026-10-01） |
 | S62 | `testing/ascend/README.md:24-114` | pass/设备边界与调度测试的组织、以及本地运行命令 | 已核验（2026-10-01） |
 | S63 | `benchmark/`（目录树） | `blocksparse_attention`、`compile_speed`、`mamba2`、`matmul`、`matmul_fp8`、`matmul_metal` | 已核验（2026-10-01） |
 
@@ -172,7 +172,7 @@
 | R13 | `../tilelang-corpus/12-operator-libraries/raw/tilelang-benchmark/README.md` | 同上 | GEMM V0–V7 / M0–M7、FlashAttention FA0–FA4、Linear Attention CC/CT 形状表 | 已核验（2026-10-01） |
 | R14 | `../tilelang-corpus/12-operator-libraries/raw/tilelang-benchmark/`（目录） | 同上 | `hopper_benchmark/`、`ampere_benchmark/`、`ada_benchmark/`、`cdna_benchmark/` 按架构分层 | 已核验（2026-10-01）：`find -maxdepth 2 -type d` |
 | R15 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/_index.md` | https://github.com/tile-ai/tilelang-ascend | 适配器仓库、MLIR 昇腾路线、TileFoundry 的来源索引 | 已核验（2026-10-01） |
-| R16 | `../tilelang-corpus/90-synthesis/03-ascend-route.md` | 本书内部综述 | 昇腾两仓库现状：「适配器是主战场，主干已接收 `[Ascend]` 系列 PR」 | 已核验（2026-10-01）：该文件自身注明基于 corpus `main` 快照 `994b44e`，与锁定版本可能有差异 |
+| R16 | `../tilelang-corpus/90-synthesis/03-ascend-route.md` | 本书内部综述 | 昇腾两仓库现状：“适配器是主战场，主干已接收 `[Ascend]` 系列 PR” | 已核验（2026-10-01）：该文件自身注明基于 corpus `main` 快照 `994b44e`，与锁定版本可能有差异 |
 | R17 | `../tilelang-corpus/10-community-and-talks/raw/bilibili-tilelang-ascend-lessons.md` | B 站课程 | 适配器有 5 节视频课程（环境、编程基础、Developer 模式、调优调试、工程实践） | 已核验（2026-10-01） |
 
 ---
@@ -190,12 +190,12 @@
 
 ---
 
-## E. 「无法确认」的条目
+## E. “无法确认”的条目
 
 本章有三处结论**无法在锁定版本里找到成文依据**，正文均已显式标注：
 
-1. **两棵树的协作流程。** 「能力先进 `tilelang-ascend` 适配器验证，再以 `[Ascend]` PR
-   回主干」这条流程，在两个仓库的 `CONTRIBUTING.md`、`AGENTS.md`、`.github/` 里都没有
+1. **两棵树的协作流程。** “能力先进 `tilelang-ascend` 适配器验证，再以 `[Ascend]` PR
+   回主干”这条流程，在两个仓库的 `CONTRIBUTING.md`、`AGENTS.md`、`.github/` 里都没有
    成文规定。核验方式：对两个仓库检索 `上游`、`upstream`、`回主干`、`merge.*main`，
    无命中。能确认的只有：主干已有 `tilelang/ascend/`、`src/ascend/`、`examples/ascend/`、
    `testing/ascend/` 与独立的 `ascend` CI job；corpus 里存在 5 个 `[Ascend]` 前缀的
@@ -204,10 +204,10 @@
    是从 corpus 里真实 RFC 反推的经验，不是上游要求。
 3. **lint 工具的版本漂移。** `.pre-commit-config.yaml` 的 rev 与 `requirements-lint.txt`
    的 pin 不一致（clang-format `v23.1.0` vs `21.1.8`，ruff `v0.16.6` vs `0.14.14`，
-   codespell `v2.4.3` vs `2.4.1`），而三处注释都声称「sync with requirements-lint.txt」。
+   codespell `v2.4.3` vs `2.4.1`），而三处注释都声称“sync with requirements-lint.txt”。
    哪个是有意为之，仓库里没有说明。
 
-另外两条属于「文件存在但没有实质内容」，因此本章不给结论：
+另外两条属于“文件存在但没有实质内容”，因此本章不给结论：
 
 * `CONTRIBUTING.md:129-135` 的 `Build Wheels` 与 `Documentation` 两节内容为 `_TBA_`，
   主干没有描述这两条贡献路径。
@@ -218,16 +218,16 @@
 
 ## F. 待补资料
 
-1. **缺少主干的 PR 模板。** 主干没有 `pull_request_template.md`，因此「一个主干 PR
-   应该填什么」没有官方文本。本章第 10 节 Step 9 给出的四段式是写作建议，不是上游
+1. **缺少主干的 PR 模板。** 主干没有 `pull_request_template.md`，因此“一个主干 PR
+   应该填什么”没有官方文本。本章第 10 节 Step 9 给出的四段式是写作建议，不是上游
    要求。建议后续版本抓取几个已合入的主干 PR（尤其是 `[Ascend]` 与非 `[Ascend]` 各一份）
-   的正文与 review 记录，作为「主干 PR 实际长什么样」的补充证据。
+   的正文与 review 记录，作为“主干 PR 实际长什么样”的补充证据。
 2. **缺少 `[Ascend]` PR 的完整 diff 与评审意见全文。** corpus 里的 5 个 PR 快照是页面
    快照，含标题、摘要与部分检查结果（例如 `github-pr-3325.md` 里能看到 pre-merge
-   checks 的计数），但没有完整 diff。要回答「一次后端 PR 到底动了多少文件」，
+   checks 的计数），但没有完整 diff。要回答“一次后端 PR 到底动了多少文件”，
    还需要 PR 的 files-changed 列表。
 3. **缺少 RFC 的讨论与收敛过程。** 现有快照是 issue 正文，没有后续评论。RFC 怎么从
-   提案走到「可以开工」，需要评论串才能回答。
+   提案走到“可以开工”，需要评论串才能回答。
 4. **缺少 `tilelang-ascend` 的 CI 运行记录。** 适配器仓库有
    `ci/operator_test_manifest.yaml` 与 `main`/`ci_ascend` 两条工作流，但没有运行记录
-   快照，因此「每日全量任务实际跑哪些 marker」只能从 PR 模板的描述推断。
+   快照，因此“每日全量任务实际跑哪些 marker”只能从 PR 模板的描述推断。

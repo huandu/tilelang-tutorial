@@ -22,7 +22,7 @@ kernel，并在注释里逐行标出每一句属于哪一层。
 
 * developer 部分是 `examples/quickstart.py:18-46` 的结构；
 * expert 部分是 `examples/gemv/example_gemv.py:46-76` 里
-  「每个线程按 stride 跨步累加一部分」的写法。
+  “每个线程按 stride 跨步累加一部分”的写法。
 
 没有引入任何本章正文没有提到的 API。
 
@@ -87,7 +87,7 @@ python3 one_kernel_two_levels.py --static-only   # 无 GPU 时
 ## 一个必须说明的正确性前提
 
 expert 段读的是 `C_shared`——它由上一句 tile 级 `T.copy(C_frag, C_shared)` 协作写入。
-「协作写入 → 跨线程读取」之间的 barrier 由编译器的 `ThreadSync("shared")` pass 插入
+“协作写入 → 跨线程读取”之间的 barrier 由编译器的 `ThreadSync("shared")` pass 插入
 （`_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:258-259`），用户不必手写
 `__syncthreads()`。这一点在本章 4.3 节讲过，**但本示例没有在硬件上验证过**；
 如果你把它改复杂了（例如在 expert 段里再写回 `C_shared`），请自己确认同步语义，

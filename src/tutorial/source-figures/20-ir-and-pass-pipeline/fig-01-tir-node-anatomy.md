@@ -1,6 +1,6 @@
 # 图 1：TIR 节点解剖（自绘）
 
-一个 TileLang kernel 在编译期就是一棵 TIR 树。下面这张图把「前端 dump」
+一个 TileLang kernel 在编译期就是一棵 TIR 树。下面这张图把“前端 dump”
 里能直接看到的节点类型与它们的从属关系画出来。节点名与层级来自
 `_vendor/tilelang-v0.1.15/examples/eager_jit/eagerjit.en.ipynb` 里
 `print(prim_func)` 的真实输出（见 `code/02-ir-snippet-extract/`）。

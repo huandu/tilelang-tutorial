@@ -17,12 +17,12 @@
       "id": "q2",
       "stem": "关于 strict → common → free 三级推断，下列哪一项描述正确？",
       "options": [
+        "用户 annotation 以 kStrict 级别进入，成为不可否决的下界",
         "kStrict 允许编译器自己发明布局",
         "kFree 只接受已经定义好的布局",
-        "用户 annotation 以 kStrict 级别进入，成为不可否决的下界",
         "三级里只有 kCommon 会给没有来源的循环造布局"
       ],
-      "answer": 2,
+      "answer": 0,
       "explain": "见 §3.2：kStrict 最保守、只用已定义布局，kCommon 传播常见布局，kFree 才会在没有任何来源时自己造布局；用户 annotation 同时镜像进 strict_layout_map，永远压过编译器猜的布局。"
     },
     {
@@ -35,30 +35,30 @@
         "把该 buffer 复制成多份，让两条语句各用一份"
       ],
       "answer": 3,
-      "explain": "见 §3.3：三条出路是包含升级、swizzle 合并、free-mode 换根重推；三条都走不通就是 LOG(FATAL) 编译期硬失败。D 把「每个 buffer 一份版本」和「同一 buffer 的多个建议」混为一谈。"
+      "explain": "见 §3.3：三条出路是包含升级、swizzle 合并、free-mode 换根重推；三条都走不通就是 LOG(FATAL) 编译期硬失败。D 把“每个 buffer 一份版本”和“同一 buffer 的多个建议”混为一谈。"
     },
     {
       "id": "q4",
       "stem": "默认 register-count 与可选 io-aware 代价模型的主要区别是什么？",
       "options": [
-        "register-count 只数寄存器与溢出；io-aware 额外把触及 global 的访存字节计入 mem",
         "io-aware 只看寄存器，register-count 看访存",
         "两者都把 mem 与 regs 相加当作唯一分数",
+        "register-count 只数寄存器与溢出；io-aware 额外把触及 global 的访存字节计入 mem",
         "换成 io-aware 会改变计算结果的正确性"
       ],
-      "answer": 0,
+      "answer": 2,
       "explain": "见 §3.4：两个模型都用 {mem, regs} 字典序比较，register-count 的 mem 主要是寄存器溢出字节，io-aware 再把 max(带宽字节, 发射等价字节) 计进 mem。它改变的是推导结果与性能，不是语义正确性。"
     },
     {
       "id": "q5",
       "stem": "关于昇腾 Cube 的物理布局约束，下列哪一项正确？",
       "options": [
+        "Cube 输入必须是 16×C0 的分形排布，C0 = 32 字节 / 元素大小",
         "Cube 的输入是寄存器里的 fragment，与 NVIDIA 完全一致",
         "NormalizeAscendFractalStorage 会把补出来的 padding 初始化为零",
-        "NV 侧也有 InsertNd2Nz，只是名字不同",
-        "Cube 输入必须是 16×C0 的分形排布，C0 = 32 字节 / 元素大小"
+        "NV 侧也有 InsertNd2Nz，只是名字不同"
       ],
-      "answer": 3,
+      "answer": 0,
       "explain": "见 §5.1：Cube 读的是 L0A/L0B 里按分形排好的矩阵，C0 由元素位宽决定（fp16/bf16 = 16，fp32 = 8）。§5.3 明确写了 padding 不初始化，消费方不能假设填充元素是零。"
     },
     {
@@ -66,23 +66,23 @@
       "stem": "关于 fragment 的 replicate 因子，下列说法哪一项正确？",
       "options": [
         "replicate 大于 1 只影响性能，不影响片上容量",
-        "推导器只要能编译通过，就说明这个布局跑得动",
         "replicate 大于 1 时同一逻辑元素被多个线程各持一份，存储与搬运都成倍增加",
+        "推导器只要能编译通过，就说明这个布局跑得动",
         "replicate 只会出现在用户显式 annotation 的 buffer 上"
       ],
-      "answer": 2,
-      "explain": "见 §2.2、§7.3：复制因子直接决定累积器与 shared 的容量，寄存器槽位总数会按倍数上涨；「推导器只看溢不溢出」不代表能跑得快。"
+      "answer": 1,
+      "explain": "见 §2.2、§7.3：复制因子直接决定累积器与 shared 的容量，寄存器槽位总数会按倍数上涨；“推导器只看溢不溢出”不代表能跑得快。"
     },
     {
       "id": "q7",
       "stem": "关于 LayoutInference 的输出，下列哪一项正确？",
       "options": [
         "它直接把 IR 改写成显式的线程绑定与索引",
-        "结果以 annotation 形式挂在 Block / For 上，真正改写发生在后面的 LowerTileOp",
         "它只在编译失败时才输出布局，成功后不保留",
+        "结果以 annotation 形式挂在 Block / For 上，真正改写发生在后面的 LowerTileOp",
         "输出只有一张 buffer → layout 的表，不包含循环布局"
       ],
-      "answer": 1,
+      "answer": 2,
       "explain": "见 §4.1、§2.5：LayoutInferenceResult 含 layout_map / for_map / predicate_map，挂在 Block 与 For 的 annotation 上；线程绑定推迟到 LowerTileOp，所以 LayoutVisual 这类旁路工具才能无副作用地读出结果。"
     }
   ]

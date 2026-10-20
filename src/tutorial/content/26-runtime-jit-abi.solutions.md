@@ -7,7 +7,7 @@
 
 ## E1 生命周期排序（★）
 
-**思路**：本章 2.1 节给的就是这条链，难点只在「缓存查询在 lower 之前」。
+**思路**：本章 2.1 节给的就是这条链，难点只在“缓存查询在 lower 之前”。
 
 **参考答案**：`C → E → F → D → A → B`，即
 
@@ -31,7 +31,7 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
 直接重建一个 `JITKernel` 并让 adapter 从 `.so` 反序列化
 （`tilelang/jit/adapter/tvm_ffi.py:424` 的 `runtime.load_module`）。
 
-**常见错误**：把缓存查询放在 lower 之后，理由是「得先编译才知道 key」。
+**常见错误**：把缓存查询放在 lower 之后，理由是“得先编译才知道 key”。
 实际上 key 建立在 `func.script()` 上（`kernel_cache.py:269`），只需要 TIR，
 不需要 lower 的产物。
 
@@ -52,16 +52,16 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
    脚本文件里的函数没有这个问题。
 3. 不能一概而论。REPL 里**从文件导入**的函数通常仍可取到源码；真正会失败的是
    当场交互定义（或经过 `exec`）的函数体。稳妥做法是把 kernel 写在 `.py` 文件里
-   再 import——这也是官方 examples 的形式。
+   再 import。这也是官方 examples 的形式。
 
-**常见错误**：回答成「装饰阶段把它编译了，所以慢」。装饰不编译；第一次调用的开销
-来自 4.2 节说的「试调用判定模式」加上真正的编译。
+**常见错误**：回答成“装饰阶段把它编译了，所以慢”。装饰不编译；第一次调用的开销
+来自 4.2 节说的“试调用判定模式”加上真正的编译。
 
 ---
 
 ## E3 缓存 key 的三问（★★）
 
-**思路**：把 key 的每一项对应到「改动类型」。
+**思路**：把 key 的每一项对应到“改动类型”。
 
 **参考答案**：
 
@@ -74,11 +74,11 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
    而 `cached()` 又只被 `compile()` 调用（`:164-173`）；`*args` 一路为空。
    `KernelCache._generate_key` 里的 `args` 形参因此收不到任何位置参数。
 4. 反例：某个参数**只影响 Python 侧行为、又不出现在 TIR 里**。
-   例如把「是否在调用后额外做一次 `torch.clamp`」写成一个 kernel 形参，
+   例如把“是否在调用后额外做一次 `torch.clamp`”写成一个 kernel 形参，
    但它只用来在 Python 包装层里分支。此时改它既不改 TIR、又不进 `args_repr`，
    key 不变，你会继续拿到旧的 kernel 对象。
 
-**常见错误**：认为「所有函数参数都会进 cache key」。v0.1.15 的实现里，
+**常见错误**：认为“所有函数参数都会进 cache key”。v0.1.15 的实现里，
 编译期参数是**经由 TIR 间接**进入的。
 
 ---
@@ -98,8 +98,8 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
 3. 每次编译都要把这些库文件**整个读一遍并哈希**（按 1 MiB 分块，`:130-132`）。
    对大体积的 `.so` 而言这是实打实的 I/O 开销，因此默认不开。
 4. 正在改 C++ pass、改 codegen、或整体重编 `libtilelang` 的场景必须打开；
-   否则输入 TIR 不变时 key 不变，你会拿到旧产物——这就是正文 4.4 节的
-   「其二」。
+   否则输入 TIR 不变时 key 不变，你会拿到旧产物。这就是正文 4.4 节的
+   “其二”。
 
 **常见错误**：以为它默认开启。默认关闭这一点是文本型检查的重点
 （`env.py:447` 的 `lower() in ("1","true","yes","on")`）。
@@ -119,13 +119,13 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
    （`src/transform/make_packed_api.cc:732-757`）；还要从它身上取出 `device_id`
    绑定给 host 侧（`:756-757`）。
 3. 因为这是 **ABI 决策**：host stub 的参数布局与 adapter 的调用约定必须完全一致，
-   两边各自「按 target 现推」就会推歪。所以由执行后端在编译期声明能力
+   两边各自“按 target 现推”就会推歪。所以由执行后端在编译期声明能力
    （`ExecutionBackendSpec.supports_callee_allocated_outputs`，
    `tilelang/backend/execution_backend.py:29`），编译期把它刻成属性
    （`tilelang/jit/abi.py:16`），lower 与 adapter 都读同一个属性
    （`tilelang/jit/abi.py:10-15` 的注释就是这个意思）。
 
-**常见错误**：把 `-n+1` 记成「输出不算参数了」。输出确实不在 `args` 里，
+**常见错误**：把 `-n+1` 记成“输出不算参数了”。输出确实不在 `args` 里，
 但换来的是一个 anchor，所以个数可能相等。
 
 ---
@@ -136,26 +136,26 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
 
 **参考答案**：
 
-1. 一共五条放宽规则，本章正文把它们归纳成「四类 + 一条特例」：
+1. 一共五条放宽规则，本章正文把它们归纳成“四类 + 一条特例”：
    * FP8 E4M3 家族：`e4m3` / `e4m3fn` / `e4m3fnuz` 互为可接受
-     —— `src/transform/tvm_ffi_binder.cc:489-501`；
+     `src/transform/tvm_ffi_binder.cc:489-501`；
    * FP8 E5M2 家族：`e5m2` / `e5m2fnuz`
-     —— `:502-511`；
+     `:502-511`；
    * `tfloat32` ↔ `float32`（存储相同）
-     —— `:512-520`；
+     `:512-520`；
    * `bool` 接受 int8/uint8、kDLBool(bits=1/8) 以及任何 bits=1 的类型
-     —— `:521-544`；
-  * 以及亚字节 dtype（fp4 等）只比较**总位数** —— `:545-579`。
+     `:521-544`；
+  * 以及亚字节 dtype（fp4 等）只比较**总位数** ，`:545-579`。
 2. 最危险的是 **FP8 E4M3 家族**。`e4m3` 与 `e4m3fn` 的存储宽度相同，
    但**特殊值语义不同**：`e4m3fn` 没有 infinity 编码，NaN 的位模式也与
-   `e4m3` 不同。用 ABI 层「放行」的一颗张量去喂另一种语义的 kernel，
-   不会报错，只会在出现 inf/NaN 时输出不一样的东西——而这类输入在
+   `e4m3` 不同。用 ABI 层“放行”的一颗张量去喂另一种语义的 kernel，
+   不会报错，只会在出现 inf/NaN 时输出不一样的东西。而这类输入在
    随机初始化阶段往往不会出现，于是问题被推迟到训练后期的某一刻。
 3. 工程建议：**在 Python 侧显式断言 dtype 与形状**，不要依赖 ABI 层。
    具体做法：拿 `KernelParam` 的期望值（`tilelang/engine/param.py:13-51`）
    和实际张量比一次，或者干脆在 kernel 包装函数里写
-   `assert a.dtype == torch.float8_e4m3fn`。ABI 检查是「最后一道网」，
-   不是「唯一一道网」。
+   `assert a.dtype == torch.float8_e4m3fn`。ABI 检查是“最后一道网”，
+   不是“唯一一道网”。
 
 **常见错误**：以为 ABI 会拦住一切 dtype 错误。`tvm_ffi_binder.cc` 的注释
 明确写着这些放宽是**有意**的（例如 FP8 家族在 PyTorch 侧的命名不统一）。
@@ -164,12 +164,12 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
 
 ## E7 stream 的两种传法（★★）
 
-**思路**：把「读当前 stream」和「把 stream 作为实参」区分开。
+**思路**：把“读当前 stream”和“把 stream 作为实参”区分开。
 
 **参考答案**：
 
 1. 读当前 stream（不传参）：`tilelang/jit/adapter/base.py:61-101` 提供 thunk，
-   `TVMFFIKernelAdapter` 不出现在实参里——它靠模块开头的注释说明：
+   `TVMFFIKernelAdapter` 不出现在实参里。它靠模块开头的注释说明：
    TVM-FFI 通过 Torch 的 DLPack Exchange API 获取 active work stream
    （`tilelang/jit/adapter/tvm_ffi.py:1-6`）。
    显式传参：`CythonKernelAdapter` 的 `lambda_forward(*args, stream=-1, ...)`
@@ -187,7 +187,7 @@ C 装饰 → E get_tir → F 缓存查询 → D lower → A codegen → B adapte
    Torch 的当前 NPU stream。
 3. 不用改。`tvm_ffi` 的调用体是 `func(*inputs)`（`tvm_ffi.py:258`），
    `cython` 的调用体是 `lambda_forward(*args, stream=-1, ...)`，
-   两者都以 `*args` 收张量——`stream` 有默认值，不传也能工作。
+   两者都以 `*args` 收张量，`stream` 有默认值，不传也能工作。
    但若你**显式**传了 `stream=`，换回 `tvm_ffi` 时会直接
    `TypeError: unexpected keyword argument`，这时要删掉。
 
@@ -197,14 +197,14 @@ NPU 侧的 150 µs 注释在 `base.py:80-84` 与 `torch_exchange.py:43-46`。
 
 ---
 
-## E8 造一个「应该失效却没失效」（★★★）
+## E8 造一个“应该失效却没失效”（★★★）
 
 **思路**：把 E3 第 3、4 问的结论变成一个具体例子。
 
 **参考答案**：
 
 场景：kernel 的 `T.prim_func` 固定 `block_M=64`，但在 Python 包装层有一个开关
-决定「输出要不要先 zero-fill 再交给 kernel」：
+决定“输出要不要先 zero-fill 再交给 kernel”：
 
 ```python
 @tilelang.jit(out_idx=[-1])
@@ -230,23 +230,23 @@ def run(a, zero_init=False):
    （`tilelang/env.py:444`），或代码里 `tilelang.disable_cache()` /
    `tilelang.enable_cache()`（`env.py:438-442`、`:558-559`）。
 2. **改代码法**（正解）：让参数真正参与编译决策。可以
-   （a）把它写成影响 TIR 的形式——例如用 `T.Kernel` 的 extent 或把它当
+   （a）把它写成影响 TIR 的形式。例如用 `T.Kernel` 的 extent 或把它当
    `pass_configs` 传进去；或
    （b）在 `@tilelang.jit` 里通过 `pass_configs` 暴露，
    因为 `pass_configs` 在 key 里（`kernel_cache.py:277`）。
 
-为什么少见但难查：这类参数通常看起来「无害」（像调试开关），
-代码 review 时没人会怀疑它；出问题时症状是「改了开关没反应」，
+为什么少见但难查：这类参数通常看起来“无害”（像调试开关），
+代码 review 时没人会怀疑它；出问题时症状是“改了开关没反应”，
 而你会先去查 kernel 逻辑，不会先查缓存。
 
 **常见错误**：把 `zero_init` 直接加进 `f()` 的签名就以为解决了。
-只要它仍然不出现在 TIR 里，加进签名也没用——这正是关键。
+只要它仍然不出现在 TIR 里，加进签名也没用。这正是关键。
 
 ---
 
 ## E9 加一条锚点（★★★）
 
-**思路**：锚点表就是「声明 + 核对」，加一条只需两行。
+**思路**：锚点表就是“声明 + 核对”，加一条只需两行。
 
 **参考答案**：
 
@@ -268,11 +268,11 @@ def run(a, zero_init=False):
 
 3. 把 `261` 改成 `262` 再跑，脚本会打印
    `expected '...', found 'if len(inputs) != expected_inputs:'` 并返回退出码 1。
-   注意它**不会**替你判断「这句话是不是技术结论正确」，
-   只判断「这一行是不是你声称的那一行」。
-4. 因为 prose 里的行号会随版本漂移，而锚点表把「正文的每一处行号声明」
+   注意它**不会**替你判断“这句话是不是技术结论正确”，
+   只判断“这一行是不是你声称的那一行”。
+4. 因为 prose 里的行号会随版本漂移，而锚点表把“正文的每一处行号声明”
    变成了可执行断言。升级 `_vendor/` 时，跑一次脚本就知道正文哪些地方
-   需要更新——这比人工重读 130 多处引用可靠得多。
+   需要更新。这比人工重读 130 多处引用可靠得多。
 
 **常见错误**：把 `needle` 写得太长（跨行匹配不上）或太短
 （同一行出现多次，但 `sed -n Np` 只看一行，其实不会有歧义）。
@@ -282,7 +282,7 @@ def run(a, zero_init=False):
 
 ## E10 stream 竞态实验（★★★，需 CUDA）
 
-**思路**：这是「用统计暴露非确定性」的经典实验。
+**思路**：这是“用统计暴露非确定性”的经典实验。
 
 **参考答案**：
 
@@ -309,17 +309,17 @@ def run(a, zero_init=False):
    若没有，就读到未初始化或半成品的数据。两次运行的时序不同，
    结果自然不同。
 3. 示例把它写成注释，是因为它是**反例**：可运行的代码只展示正确做法，
-   反例留在注释里说明「为什么会错」。如果把它写成活代码，
+   反例留在注释里说明“为什么会错”。如果把它写成活代码，
    读者可能误以为那是推荐模式，也可能在 CI 上得到随机失败的红色。
 
-**常见错误**：以为「不加同步只是慢一点」。不加同步是**正确性问题**，
+**常见错误**：以为“不加同步只是慢一点”。不加同步是**正确性问题**，
 不是性能问题。
 
 ---
 
 ## E11 ACLGraph 捕获（★★★，需昇腾 NPU）
 
-**思路**：捕获 → 回放 → 校验，三步；重点是「捕获期间不执行」。
+**思路**：捕获 → 回放 → 校验，三步；重点是“捕获期间不执行”。
 
 **参考答案**：
 
@@ -349,7 +349,7 @@ def run(a, zero_init=False):
    依据：`_vendor/tilelang-ascend-v0.1.2.000/examples/aclgraph/README.md:133-139`。
 
 3. 因为捕获阶段只记录**指针与参数**，不记录数据。回放时用的是同一批
-   显存地址，所以捕获后直接换一个 `torch.Tensor` 对象不会生效——
+   显存地址，所以捕获后直接换一个 `torch.Tensor` 对象不会生效，
    图里仍然是旧地址。要换输入，正确做法是准备一块**固定的**输入缓冲，
    每次把新数据拷贝进去（`buf.copy_(new_input)`）再 `replay()`。
 4. ACLGraph 本身的示例**不在** v0.1.15 主干里，只在昇腾适配器仓库：
@@ -362,16 +362,16 @@ def run(a, zero_init=False):
 
    需要澄清一点：ACLGraph 是 **CANN / torch_npu 的能力**，TileLang 要做的是
    把 kernel 提交到正确的 stream 上（见 E7），这本身不需要 TileLang 侧写代码。
-   「主干里没有 ACLGraph 示例」说的是**示例缺失**，不是说不能用。
+   “主干里没有 ACLGraph 示例”说的是**示例缺失**，不是说不能用。
 
 **常见错误**：捕获后直接换输入张量，然后发现输出没更新，误判成
-「ACLGraph 不支持 TileLang kernel」。
+“ACLGraph 不支持 TileLang kernel”。
 
 ---
 
 ## E12 autograd 的边界（★）
 
-**思路**：先证明「没有」，再说明「怎么办」。
+**思路**：先证明“没有”，再说明“怎么办”。
 
 **参考答案**：
 
@@ -403,11 +403,11 @@ def run(a, zero_init=False):
    `_vendor/tilelang-v0.1.15/examples/attention_sink/example_mha_sink_bwd_bhsd.py`、
    `examples/attention_sink/example_gqa_sink_bwd_varlen.py`、
    `examples/ascend/flash_attention/example_gqa_bwd.py`。
-   这些例子展示的是「按反向公式再写一个 kernel」，用
+   这些例子展示的是“按反向公式再写一个 kernel”，用
    `grep -rln backward _vendor/tilelang-v0.1.15/examples` 可以列出全部。
 
-**常见错误**：回答「在 Python 里调一下 `torch.autograd.grad` 就行」。
-那是让 PyTorch 对一个它看不见的 device 计算做微分——
+**常见错误**：回答“在 Python 里调一下 `torch.autograd.grad` 就行”。
+那是让 PyTorch 对一个它看不见的 device 计算做微分，
 TileLang kernel 对 PyTorch 而言是一个不透明调用。
 
 ---
@@ -431,12 +431,12 @@ TileLang kernel 对 PyTorch 而言是一个不透明调用。
    `CUDA_ERROR_INVALID_IMAGE`，代价远高于多算一次哈希。
    源码里的注释把这层意思写得很直白（`:810-814`）。
 3. 校验失败时 `_load_kernel_from_disk` 会 `shutil.rmtree(cache_path)`
-   并返回 `None`，也就是「当作未命中，重新编译」（`:677-687`）。
+   并返回 `None`，也就是“当作未命中，重新编译”（`:677-687`）。
    之所以删而不是修：整个条目的内容互相关联（源码、二进制、参数必须成套），
    就地修复需要知道哪一份是对的；而重编一次的成本是确定的、可控的。
-   此外写入端本来就是「staging + 原子 rename」，正常路径不会产生半成品，
+   此外写入端本来就是“staging + 原子 rename”，正常路径不会产生半成品，
    所以出现损坏通常意味着更底层的问题（崩溃、网络文件系统），
    删掉重来是更安全的默认。
 
-**常见错误**：以为 manifest 是「每个文件都做哈希」。
+**常见错误**：以为 manifest 是“每个文件都做哈希”。
 源码文件只做 size 校验，这是有意的性能取舍。

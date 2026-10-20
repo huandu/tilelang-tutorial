@@ -7,36 +7,114 @@
   "section": "4.2",
   "caption": "朴素写法要扫两遍（先数命中、再写回）；DeepSelect 在第一遍里顺手生成一个 uint32 mask，之后用 __ffs 与 mask&(mask-1) 枚举命中位，一遍完成。mask 的生成用 bf16x2 比较 + prmt + dp4a 打包。",
   "nodes": [
-    { "id": "naive", "label": "朴素：两遍扫描", "sub": "第一遍数命中，第二遍写回", "tone": "warn" },
+    {
+      "id": "naive",
+      "label": "朴素：两遍扫描",
+      "sub": "第一遍数命中，第二遍写回",
+      "tone": "warn"
+    },
     {
       "id": "mask",
       "label": "一遍：计数 + 生成 mask",
       "sub": "每个元素占 1 bit",
       "tone": "accent"
     },
-    { "id": "cmp", "label": "set.gtu.s32.bf16x2", "sub": "一次比较两个 bf16" },
-    { "id": "prmt", "label": "prmt.b32", "sub": "取每个 16bit 的符号位" },
-    { "id": "dp4a", "label": "dp4a.s32.s32", "sub": "4 个命中打包成一个 nibble" },
-    { "id": "popc", "label": "__popc(hit_mask)", "sub": "本线程命中数，用于前缀和" },
-    { "id": "ffs", "label": "__ffs(mask)", "sub": "最低的 1 的下标" },
-    { "id": "clr", "label": "mask &= mask - 1u", "sub": "消掉最低的 1", "tone": "accent" },
-    { "id": "store", "label": "写回 (index, value)", "sub": "只在命中的位置写", "tone": "compute" }
+    {
+      "id": "cmp",
+      "label": "set.gtu.s32.bf16x2",
+      "sub": "一次比较两个 bf16"
+    },
+    {
+      "id": "prmt",
+      "label": "prmt.b32",
+      "sub": "取每个 16bit 的符号位"
+    },
+    {
+      "id": "dp4a",
+      "label": "dp4a.s32.s32",
+      "sub": "4 个命中打包成一个 nibble"
+    },
+    {
+      "id": "popc",
+      "label": "__popc(hit_mask)",
+      "sub": "本线程命中数，用于前缀和"
+    },
+    {
+      "id": "ffs",
+      "label": "__ffs(mask)",
+      "sub": "最低的 1 的下标"
+    },
+    {
+      "id": "clr",
+      "label": "mask &= mask - 1u",
+      "sub": "消掉最低的 1",
+      "tone": "accent"
+    },
+    {
+      "id": "store",
+      "label": "写回 (index, value)",
+      "sub": "只在命中的位置写",
+      "tone": "compute"
+    }
   ],
   "edges": [
-    { "from": "naive", "to": "mask", "label": "合并成一遍" },
-    { "from": "mask", "to": "cmp" },
-    { "from": "cmp", "to": "prmt" },
-    { "from": "prmt", "to": "dp4a" },
-    { "from": "dp4a", "to": "mask", "label": "累积", "dashed": true },
-    { "from": "mask", "to": "popc", "label": "计数" },
-    { "from": "mask", "to": "ffs", "label": "定位" },
-    { "from": "ffs", "to": "clr" },
-    { "from": "clr", "to": "ffs", "label": "mask != 0", "dashed": true },
-    { "from": "clr", "to": "store" }
+    {
+      "from": "naive",
+      "to": "mask",
+      "label": "合并成一遍"
+    },
+    {
+      "from": "mask",
+      "to": "cmp"
+    },
+    {
+      "from": "cmp",
+      "to": "prmt"
+    },
+    {
+      "from": "prmt",
+      "to": "dp4a"
+    },
+    {
+      "from": "dp4a",
+      "to": "mask",
+      "label": "累积",
+      "dashed": true
+    },
+    {
+      "from": "mask",
+      "to": "popc",
+      "label": "计数"
+    },
+    {
+      "from": "mask",
+      "to": "ffs",
+      "label": "定位"
+    },
+    {
+      "from": "ffs",
+      "to": "clr"
+    },
+    {
+      "from": "clr",
+      "to": "ffs",
+      "label": "mask != 0",
+      "dashed": true
+    },
+    {
+      "from": "clr",
+      "to": "store"
+    }
   ],
-  "groups": [{ "label": "生成 mask 的 PTX", "nodes": ["cmp", "prmt", "dp4a"], "tone": "default" }],
+  "groups": [
+    {
+      "label": "生成 mask 的 PTX",
+      "nodes": ["cmp", "prmt", "dp4a"],
+      "tone": "default"
+    }
+  ],
   "notes": [
-    "命中越稀疏（阈值升高后），__ffs 循环体执行次数越少——筛选的收益直接体现在这里。",
+    "命中越稀疏（阈值升高后），__ffs 循环体执行次数越少，筛选的收益直接体现在这里。",
     "dp4a 一次把 4 个元素的比较结果压进 hit_mask 的一个 nibble（common_parts.cuh:1413-1425）。",
     "__popc / __ballot_sync / warp 前缀和负责算写回偏移，与 mask 枚举是同一遍里的两件事。"
   ]

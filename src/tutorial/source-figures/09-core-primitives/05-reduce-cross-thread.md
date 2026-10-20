@@ -30,7 +30,7 @@ clear = False  →  先把 out 拷进 red_frag_out，再以 clear=False 归约�
 ```
 
 **来源**：`_vendor/tilelang-v0.1.15/tilelang/language/reduce_op.py:103-171,141-158`；
-`src/tl_templates/cuda/reduce.h:211-238,240-253,279-296`；
+`src/tl_templates/cuda/reduce.h:211-238,240-253,279-295`；
 `src/op/reduce.cc:185-188`。
 
 **约束**：`(threads/scale)` 必须是 2 的幂，`scale` 也必须是 2 的幂

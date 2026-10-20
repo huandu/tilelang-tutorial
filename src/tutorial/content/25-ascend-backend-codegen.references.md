@@ -8,7 +8,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 写作环境：macOS (Apple Silicon)、Python 3.11；**没有 NVIDIA GPU，没有昇腾 NPU，
 没有安装 CANN / bisheng，也没有安装 tilelang/tvm**。因此本章代码示例的最高验证
-级别是「仅静态核对」；`code/` 下的五个脚本是「CPU 逻辑验证」（见各目录 README）。
+级别是“仅静态核对”；`code/` 下的五个脚本是“CPU 逻辑验证”（见各目录 README）。
 **本章不包含任何自测性能数字。**
 
 核验日期均为 2026-10-01。核验方式：在锁定版本的工作树上用 `rg -n` / `sed -n` 定位、
@@ -25,7 +25,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | V1 | `../../VERSIONS.md` | 版本锁定表：两个 commit、日期、路径 | 已核验（2026-10-01） |
 | V2 | `_vendor/tilelang-v0.1.15/VERSION` | 主干版本 = `0.1.15` | 已核验（2026-10-01） |
 | V3 | `_vendor/tilelang-ascend-v0.1.2.000/VERSION` | 适配器仓库内版本号 = `0.1.4`（以 tag `TileLang-ascend-v0.1.2.000-release` 为准） | 已核验（2026-10-01） |
-| V4 | `_vendor/tilelang-v0.1.14/`（对照） | 只用于回答「某能力是不是 v0.1.15 新增」；本章未做 v0.1.14 对照，正文不含相关结论 | 未使用（本章不需要） |
+| V4 | `_vendor/tilelang-v0.1.14/`（对照） | 只用于回答“某能力是不是 v0.1.15 新增”；本章未做 v0.1.14 对照，正文不含相关结论 | 未使用（本章不需要） |
 
 ---
 
@@ -38,7 +38,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | R3 | `tilelang/ascend/codegen.py:5-9` | FFI 名 `target.build.tilelang_ascend` / `..._without_compile` | 已核验（2026-10-01） |
 | R4 | `tilelang/ascend/pipeline.py:19-190` | 昇腾 pass 管线全文：`MaterializeKernelLaunch` 参数、`RewriteDualCopy`、`AutoSchedule` 九步、`RewriteFlagToBuf`、`MergeUBAllocations(align_bytes=32)` | 已核验（2026-10-01）：全文阅读 |
 | R5 | `tilelang/ascend/pipeline.py:22-33,103-116` | `allow_autoschedule` 与 `TL_ENABLE_AUTO_SCHEDULE`（默认 True） | 已核验（2026-10-01） |
-| R6 | `tilelang/ascend/README.md:29-30,55-154,156-173` | 默认 `dav-3510`；GEMM+ReLU 快速开始；「You write / Ascend C you can skip」分工表 | 已核验（2026-10-01）：全文阅读 |
+| R6 | `tilelang/ascend/README.md:29-30,55-154,156-173` | 默认 `dav-3510`；GEMM+ReLU 快速开始；“You write / Ascend C you can skip”分工表 | 已核验（2026-10-01）：全文阅读 |
 | R7 | `tilelang/ascend/language/__init__.py:8-124` | 方言导出清单；确认**没有** `tile` 别名 | 已核验（2026-10-01）：全文阅读 |
 | R8 | `tilelang/ascend/language/allocate.py:15-70` | `alloc_shared`（UB）/`alloc_l1`/`alloc_l0a`/`alloc_l0b`/`alloc_l0c`（含 L0C 布局） | 已核验（2026-10-01）：逐行读 |
 | R9 | `tilelang/ascend/language/allocate.py:73-128` | MX 尺度因子槽位 `alloc_l0a_sf` / `alloc_l0b_sf` | 已核验（2026-10-01） |
@@ -74,7 +74,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | R39 | `tilelang/contrib/bisheng.py:88-228` | `dav-3510` 默认值、编译选项、`aibin` 两段式（bisheng + `ld.lld`） | 已核验（2026-10-01）：逐行读 |
 | R40 | `src/ascend/runtime/ascend_module.cc:400-430,480-500` | `aclrtBinaryLoadFromData` / `aclrtBinaryGetFunction` / `aclrtLaunchKernelWithHostArgs` | 已核验（2026-10-01）：`rg -n "aclrt"` |
 | R41 | `examples/ascend/example_vecadd.py:14-42` | SIMT / SIMD 两种写法的官方对照（`tile // 64`） | 已核验（2026-10-01）：逐行读 |
-| R42 | `examples/ascend/README.md` | 官方示例清单与「每个 example 一个 correctness test」的约定 | 已核验（2026-10-01） |
+| R42 | `examples/ascend/README.md` | 官方示例清单与“每个 example 一个 correctness test”的约定 | 已核验（2026-10-01） |
 | R43 | `testing/ascend/README.md` | 昇腾测试分层（analysis / transform / auto_schedule / layout / runtime / target / language）与无卡检查命令 | 已核验（2026-10-01）：全文阅读 |
 
 ---
@@ -83,7 +83,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 | id | 引用位置 | 用途 | 核验状态 |
 | --- | --- | --- | --- |
-| A1 | `README.md:12` | 自述里并列的「两条技术路线：Ascend C & PTO / AscendNPU IR」 | 已核验（2026-10-01） |
+| A1 | `README.md:12` | 自述里并列的“两条技术路线：Ascend C & PTO / AscendNPU IR” | 已核验（2026-10-01） |
 | A2 | `VERSION` | 仓库内版本号 `0.1.4`（tag 为准，见 V3） | 已核验（2026-10-01） |
 | A3 | `tilelang/utils/target.py:99-100,111-152` | `target in ["ascendc", "pto"]` → `llvm --keys=ascend`；平台 A2/A3/A5 判定 | 已核验（2026-10-01）：逐行读 |
 | A4 | `tilelang/engine/lower.py:156-170` | `device_codegen` 按 `target.model` 分派 `tilelang_ascend` / `tilelang_ascend_pto` | 已核验（2026-10-01） |
@@ -112,7 +112,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | id | 引用位置 | 用途 | 核验状态 |
 | --- | --- | --- | --- |
 | R44 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/TileLang-Ascend Programming Guide.md:2342-2560` | T.printf/T.dump_tensor、`get_kernel_source()`、msProf、aclgraph | 已核验（2026-10-01）：逐行读该区间 |
-| R45 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-mlir-ascend/README.md:11` | 「两条技术路线」的原文 | 已核验（2026-10-01） |
+| R45 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-mlir-ascend/README.md:11` | “两条技术路线”的原文 | 已核验（2026-10-01） |
 | R46 | `.../tilelang-mlir-ascend/tilelang/engine/lower.py:167-181,269-294` | `target kind == "npuir"` 的分派与 `TILELANG_DUMP_IR` 输出 | 已核验（2026-10-01）：逐行读 |
 | R47 | `.../tilelang-mlir-ascend/tilelang/jit/jit_npu.py:1862-1916` | `bishengir-compile` 调用与 A5/非 A5 两套开关 | 已核验（2026-10-01）：逐行读 |
 | R48 | `.../tilelang-mlir-ascend/tilelang/utils/npu_utils.py:355-380` | `bishengir-compile` / `bishengir-opt` 的查找 | 已核验（2026-10-01） |
@@ -121,12 +121,12 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 | R51 | `../tilelang-corpus/06-huawei-ascend/raw/PTO-Gym/docs/PTO-tile-Instruction-SPEC.md:1-140` | PTO tile 模型（tile buffer、物理形状 vs 有效区、pipeline 归属、`pto.tload`/`tstore`） | 已核验（2026-10-01）：逐行读前 140 行 |
 | R52 | `../tilelang-corpus/06-huawei-ascend/raw/pto-spec/docs/tile/matrix-and-matrix-vector/matrix-matrix/TMATMUL.md:1-40` | `TMATMUL` 的语义与执行引擎（CUBE） | 已核验（2026-10-01） |
 | R53 | `../tilelang-corpus/06-huawei-ascend/raw/pto-spec/README.md:1-40` | PTO ISA 的规模（466 scalar forms、96 bundle/command、118 direct Tile ops、905 ASL units） | 已核验（2026-10-01） |
-| R54 | `../tilelang-corpus/06-huawei-ascend/raw/pto-dsl/README.md:1-52` | PTO-DSL 与 tilelang-ascend 的关系（「tilelang 用 PTO-ISA 作为 codegen 后端」）、与 triton-ascend/CATLASS/PyPTO 的定位对照 | 已核验（2026-10-01）：逐行读 |
+| R54 | `../tilelang-corpus/06-huawei-ascend/raw/pto-dsl/README.md:1-52` | PTO-DSL 与 tilelang-ascend 的关系（“tilelang 用 PTO-ISA 作为 codegen 后端”）、与 triton-ascend/CATLASS/PyPTO 的定位对照 | 已核验（2026-10-01）：逐行读 |
 | R55 | `../tilelang-corpus/06-huawei-ascend/raw/PTO-Gym/README.md:1-40` | `ptoas` 与 PTO 微指令/tile 指令的验证工作流 | 已核验（2026-10-01） |
 | R56 | `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/cann/zh_cann_bisheng.md:1-60` | 毕昇编译器的异构编译、微架构优化、亲和调度描述 | 已核验（2026-10-01） |
 | R57 | `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/cann/zh_cann_ascend-c.md:1-40` | Ascend C 的定位（语言扩展层 + C++ 类库，`.asc` 后缀，异构编译） | 已核验（2026-10-01） |
 | R58 | `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/hardware/zh_hardware_processor.md:57-58` | Ascend 950PR 的 Cube Core 32/28、Vector Core 64/56（1:2 比例的依据） | 已核验（2026-10-01） |
-| R59 | `../tilelang-corpus/08-frontier-unmerged/raw/github-issue-3317.md` | 「两个昇腾 950 后端选哪个」的提问；**无维护者结论** | 已核验（2026-10-01）：全文读；页面 Activity 区无可见评论 |
+| R59 | `../tilelang-corpus/08-frontier-unmerged/raw/github-issue-3317.md` | “两个昇腾 950 后端选哪个”的提问；**无维护者结论** | 已核验（2026-10-01）：全文读；页面 Activity 区无可见评论 |
 | R60 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3308.md` | 主干昇腾后端 PR 的正文：目标硬件 `dav-3510`、A2/A3 走社区仓库、功能清单 | 已核验（2026-10-01）：逐行读 |
 | R61 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3310.md` | PTO 后端 PR：注册 `pto` target、用 `ptoas`/bisheng 编译 PTODSL。**corpus 的 main 源码快照（commit `994b44e`）即其合并提交** | 已核验（2026-10-01）：全文读；PR 页面快照被标为 draft（`marked this pull request as draft`），但 main 源码快照里有 `src/ascend/codegen/codegen_pto.cc` 与 `tilelang/jit/adapter/pto/`，以代码为准 |
 | R62 | `../tilelang-corpus/11-related-compilers/raw/mlir-docs.html` | MLIR 官方文档 | **未核验（内容不足）**：抓取到的是导航页，正文未落盘；正文未引用其具体内容 |
@@ -174,7 +174,7 @@ TileLang-Ascend `TileLang-ascend-v0.1.2.000-release`
 
 | # | 缺什么 | 为什么需要 | 建议来源 |
 | --- | --- | --- | --- |
-| G1 | AscendNPU IR 的方言定义（`.td` 文件、`tilelangir` 的 op/type 定义） | 正文 §4.9 只能引用二手技术文章描述 HFusion/HIVM/HACC；若拿到 `.td`，可把「TIR → npuir」的映射逐条落到 op 级别 | `tilelang-mlir-ascend/3rdparty/AscendNPU-IR` 与 `AscendNPU-IR-Dev` 子模块（corpus 快照中目录为空）；需在上游 clone 后补进 corpus |
+| G1 | AscendNPU IR 的方言定义（`.td` 文件、`tilelangir` 的 op/type 定义） | 正文 §4.9 只能引用二手技术文章描述 HFusion/HIVM/HACC；若拿到 `.td`，可把“TIR → npuir”的映射逐条落到 op 级别 | `tilelang-mlir-ascend/3rdparty/AscendNPU-IR` 与 `AscendNPU-IR-Dev` 子模块（corpus 快照中目录为空）；需在上游 clone 后补进 corpus |
 | G2 | `3rdparty/pto-isa` 的头文件（`pto/pto-inst.hpp` 与 `pto::Tile` 的定义） | 正文 §4.10 与 A18 只能看到别名用法，看不到 `Tile` 模板的完整语义（padding、valid region 如何落成指令） | `gitcode.com/cann/pto-isa`；或 PTO-Gym 的 `PTO-tile-Instruction-SPEC.md` 已覆盖一部分（R51） |
 | G3 | 昇腾 A2/A3 上 `T.dual_copy` 的等价写法 | 正文 §4.5 只覆盖 M 树（950）的 `dual_copy`；A 树没有该原语，读者若在 A2 上需要双 AIV 分裂只能手写 | A 树 `examples/`（如 `gemv`、`flash_attention`）里的 `vid` 手写切分示例；需要一次专门的例子梳理 |
 | G4 | `T.tile.*` 的语义清单 | 正文只指出它存在于 A 树，没有逐个讲清 `sort32`/`brcb`/`row_expand_mul` 等 op 的语义 | A19/A13 已定位文件；需要按 `docs/language_ref/` 逐条整理（本任务范围外） |

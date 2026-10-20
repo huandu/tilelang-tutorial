@@ -2,12 +2,12 @@
 
 ## 目的
 
-实现第 32 章 §8「如何自己核验」里那条流程的第一步：**把一个组件 README 的
-`News` / `Requirements` / `Ongoing` 三节原样抽出来**，让「能不能用、状态如何」的判断
+实现第 32 章 §8“如何自己核验”里那条流程的第一步：**把一个组件 README 的
+`News` / `Requirements` / `Ongoing` 三节原样抽出来**，让“能不能用、状态如何”的判断
 建立在原文而不是转述上。
 
-它**不做判断**：找不到某个小节就打印 `(not found)`，因为「README 没写」与
-「README 说没有」是两回事（见正文 §8.3、§8.7）。
+它**不做判断**：找不到某个小节就打印 `(not found)`，因为“README 没写”与
+“README 说没有”是两回事（见正文 §8.3、§8.7）。
 
 ## 运行前提
 
@@ -61,17 +61,17 @@ The Ascend backend is under active development:
   communication kernels are not implemented yet.
 ```
 
-同一个脚本对 TileKernels 的输出则是「有 `News`、有 `Requirements`、
-`Ongoing: (not found)`」——这正好说明为什么脚本必须把「找不到」当成一条信息打印出来。
+同一个脚本对 TileKernels 的输出则是“有 `News`、有 `Requirements`、
+`Ongoing: (not found)`”——这正好说明为什么脚本必须把“找不到”当成一条信息打印出来。
 
 ## 验证级别
 
 **CPU 逻辑验证**：本脚本在写作环境（macOS Apple Silicon、Python 3.11）上实际运行过，
-输出见 `../README.md` 的「实际输出」。它**没有**在昇腾机器上运行过（也不需要）。
+输出见 `../README.md` 的“实际输出”。它**没有**在昇腾机器上运行过（也不需要）。
 
 ## 常见误用
 
-* 把脚本输出当成结论。它只抽取文本；「这个组件能不能在 CANN 9.2.0 上用」仍然要人来
+* 把脚本输出当成结论。它只抽取文本；“这个组件能不能在 CANN 9.2.0 上用”仍然要人来
   读 `Requirements` 并判断。
 * 只抽一个文件就下结论。同一个能力往往分布在多个仓库（例如 DSA 同时涉及 FlashMLA 与
   DeepSelect），应一起抽。

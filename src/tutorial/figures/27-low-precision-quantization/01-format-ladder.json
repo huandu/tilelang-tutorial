@@ -1,7 +1,7 @@
 {
   "id": "01-format-ladder",
   "title": "低精度格式阶梯",
-  "caption": "动态范围与相对精度是两个独立维度：bf16 的精度约等于 int8，范围约等于 fp32；fp8 与 int4 只是「相对精度同量级」，范围分配方式完全不同。",
+  "caption": "动态范围与相对精度是两个独立维度：bf16 的精度约等于 int8，范围约等于 fp32；fp8 与 int4 只是“相对精度同量级”，范围分配方式完全不同。",
   "kind": "flow",
   "direction": "LR",
   "nodeMaxEm": 22,

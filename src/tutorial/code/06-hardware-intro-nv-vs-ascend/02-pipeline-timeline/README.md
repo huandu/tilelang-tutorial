@@ -49,9 +49,9 @@ versions=2: makespan=128 cycles, compute busy=120, compute utilization= 93.8%
 
 两个对照想说明的事：
 
-1. 多缓冲把 makespan 显著压下来，计算单元的「忙碌占比」上升；
+1. 多缓冲把 makespan 显著压下来，计算单元的“忙碌占比”上升；
 2. 但**利用率的上限由负载本身决定**。当搬运时间远大于计算时间时，即便完美重叠，
-   利用率也只能接近 `compute / (copy_in + copy_out)`——这就是「memory-bound」；
+   利用率也只能接近 `compute / (copy_in + copy_out)`——这就是“memory-bound”；
    反过来，计算受限时，多缓冲能把利用率从约 71% 推到约 94%。
 
 ## 模型的假设与边界
@@ -61,10 +61,10 @@ versions=2: makespan=128 cycles, compute busy=120, compute utilization= 93.8%
 * 三段各自运行在独立单元上，可以真正并行；
 * 每段的耗时是常数，不随 tile 变化；
 * 忽略 Set/Wait 本身的开销、队列深度、DMA 带宽上限、流水填充/排空（tail）效应；
-* 「buffer 归还」被简化为「上一轮 copy-out 结束」。
+* “buffer 归还”被简化为“上一轮 copy-out 结束”。
 
-因此脚本**不能**用来预测真实 kernel 的耗时或吞吐。它的用途是把「多缓冲到底买到了
-什么」写成可被别人质疑和修改的公式。
+因此脚本**不能**用来预测真实 kernel 的耗时或吞吐。它的用途是把“多缓冲到底买到了
+什么”写成可被别人质疑和修改的公式。
 
 ## 作者验证级别
 

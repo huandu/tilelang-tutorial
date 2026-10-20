@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "q1",
-      "stem": "按 §2.1 的五阶段划分，「后端分岔」被压缩在哪一行代码里？",
+      "stem": "按 §2.1 的五阶段划分，“后端分岔”被压缩在哪一行代码里？",
       "options": [
         "tilelang/engine/lower.py 里的 context.lower(mod)",
         "tilelang/jit/__init__.py 里的 get_tir()",
@@ -23,7 +23,7 @@
         "tilelang/language/parser/entry.py"
       ],
       "answer": 1,
-      "explain": "§2.2 与 §4.3 反复强调：pass 的「顺序」写在后端包的 Python 里，pass 的「行为」才写在 C++ 的 src/transform/ 里。选 A 的人正是踩了「在 src/transform/ 里找执行顺序」这个坑。"
+      "explain": "§2.2 与 §4.3 反复强调：pass 的“顺序”写在后端包的 Python 里，pass 的“行为”才写在 C++ 的 src/transform/ 里。选 A 的人正是踩了“在 src/transform/ 里找执行顺序”这个坑。"
     },
     {
       "id": "q3",
@@ -47,7 +47,7 @@
         "同一个 CUDA target backend 可以走 tvm_ffi、nvrtc、cython 三种执行路径"
       ],
       "answer": 3,
-      "explain": "§2.4 引用的官方原话是「selecting nvrtc does not select a different target architecture or pass pipeline」。A 正是最典型的误读；C 也不对——CUDA 与 CuTeDSL 两个 manifest 就共用 cuda 这个 target kind。"
+      "explain": "§2.4 引用的官方原话是“selecting nvrtc does not select a different target architecture or pass pipeline”。A 正是最典型的误读；C 也不对，CUDA 与 CuTeDSL 两个 manifest 就共用 cuda 这个 target kind。"
     },
     {
       "id": "q5",
@@ -59,7 +59,7 @@
         "C++ pass 没有参与编译"
       ],
       "answer": 0,
-      "explain": "§4.9 与 §5.2 第 3 条都写了：kernel_cache 命中时整个 pipeline 都不会跑，这是「改了 pass 但结果没变」最常见的原因，调试时应设 TILELANG_CACHE_DIR 或直接 disable_cache()。"
+      "explain": "§4.9 与 §5.2 第 3 条都写了：kernel_cache 命中时整个 pipeline 都不会跑，这是“改了 pass 但结果没变”最常见的原因，调试时应设 TILELANG_CACHE_DIR 或直接 disable_cache()。"
     },
     {
       "id": "q6",
@@ -78,16 +78,16 @@
       "stem": "下面哪一项在锁定的 v0.1.15 里**不存在**？",
       "options": [
         "tilelang/ascend/ 这个昇腾后端",
-        "tilelang/backend/ 多后端抽象",
         "tilelang/jit/adapter/pto/ 这条 PTO 执行路径",
+        "tilelang/backend/ 多后端抽象",
         "CUDA 与 CuTeDSL 两个 manifest 共用 cuda 这个 target kind"
       ],
-      "answer": 2,
+      "answer": 1,
       "explain": "§5.3 的版本边界表写明：pto adapter 只在 main（≥ 994b44e）里，v0.1.15 的 tilelang/jit/adapter/ 下没有 pto/。判据永远是在哪个 checkout 里 grep 得到什么，而不是 PR 号。"
     },
     {
       "id": "q8",
-      "stem": "关于「在 engine 里按 target 分支」这件事，本章的结论是什么？",
+      "stem": "关于“在 engine 里按 target 分支”这件事，本章的结论是什么？",
       "options": [
         "这是推荐做法，方便集中管理各后端差异",
         "官方规则禁止：engine 必须不含 target.kind.name 的后端分派表",
@@ -95,7 +95,7 @@
         "只要写上注释说明理由就可以"
       ],
       "answer": 1,
-      "explain": "tilelang/backend/README.md 明令禁止在 engine 里出现 target.kind.name 的分派表（见 §4.4 与 §5.2 第 2 条）：分派应落在后端自己的 pipeline.py 或 backend.py 里。A 是最容易误选的选项，它听起来像「集中管理」的好实践。"
+      "explain": "tilelang/backend/README.md 明令禁止在 engine 里出现 target.kind.name 的分派表（见 §4.4 与 §5.2 第 2 条）：分派应落在后端自己的 pipeline.py 或 backend.py 里。A 是最容易误选的选项，它听起来像“集中管理”的好实践。"
     }
   ]
 }

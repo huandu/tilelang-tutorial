@@ -39,14 +39,14 @@ for x in [0, 1, 2] / enumerate(..)  trace 期展开，不产生设备循环
 
 ## 一处容易混淆的地方
 
-`T.serial` 与 `T.Serial` 是同一个东西，只是后者用大写强调「这是 tile 级循环」；
+`T.serial` 与 `T.Serial` 是同一个东西，只是后者用大写强调“这是 tile 级循环”；
 `T.unroll` / `T.Unroll`、`T.vectorized` / `T.Vectorized` 同理
 （`_vendor/tilelang-v0.1.15/tilelang/language/loop.py:297-357`）。
 
 ## 事实来源
 
 * `_vendor/tilelang-v0.1.15/tilelang/language/loop.py:13-357`
-* `_vendor/tilelang-v0.1.15/tilelang/cuda/language/loop.py:16-79`（CUDA 侧额外
+* `_vendor/tilelang-v0.1.15/tilelang/cuda/language/loop.py:18-87`（CUDA 侧额外
   的 `prefer_async` 与 `unroll_factor`）
 * `_vendor/tilelang-v0.1.15/docs/programming_guides/control_flow.md:47-110`
 * `_vendor/tilelang-v0.1.15/docs/programming_guides/language_basics.md:124-135`

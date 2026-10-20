@@ -7,7 +7,7 @@
 
 ## E1
 
-**思路**：回看正文 §1.1 的表格，但不要背表；每条都说出「源码里哪一行决定了这一点」。
+**思路**：回看正文 §1.1 的表格，但不要背表；每条都说出“源码里哪一行决定了这一点”。
 
 **参考答案**：
 
@@ -22,8 +22,8 @@
 `tilelang/contrib/bisheng.py:88-228`、`_vendor/tilelang-ascend-v0.1.2.000/tilelang/engine/lower.py:156-170`、
 `tilelang/jit/adapter/libgen.py:150-230`、corpus `tilelang-mlir-ascend/tilelang/jit/jit_npu.py:1862-1916`。
 
-**常见错误**：把 M1 写成 `target="ascendc"`（那是 A 树）；或者把 L1 说成「也是
-Ascend C」——它的中间表示是 MLIR。
+**常见错误**：把 M1 写成 `target="ascendc"`（那是 A 树）；或者把 L1 说成“也是
+Ascend C”。它的中间表示是 MLIR。
 
 ---
 
@@ -38,15 +38,15 @@ Ascend C」——它的中间表示是 MLIR。
    Vector 工作）；`kVector` → `__vector__`（只有 Vector）；`kCube` → `__cube__`
    （只有 Cube）。
 2. 因为 950 的物理比例是 1 Cube : 2 Vector。源码依据：`codegen_ascend.cc:339-342`
-   的注释「dav-3510's direct AIC-to-AIV data paths require the physical 1:2 group」。
+   的注释“dav-3510's direct AIC-to-AIV data paths require the physical 1:2 group”。
    corpus 依据：硬件页写 Ascend 950PR 是 Cube Core 32/28、Vector Core 64/56
    （`../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/hardware/zh_hardware_processor.md:57-58`）。
 3. `AddFunction` 预扫描函数体，看有没有 Cube 工作、有没有 Vector 工作
    （`codegen_ascend.cc:538-560` 一带的 `has_cube` / `has_vector`），据此置
    `kernel_mode_`。
 
-**常见错误**：以为 `(1, 2)` 是「1 个 AIC + 2 个 AIV 的逻辑编号」而不是物理组；
-或以为用户要手动指定——用户只写 `T.Kernel(N)` / `T.MixedKernel(N, sids=…)`。
+**常见错误**：以为 `(1, 2)` 是“1 个 AIC + 2 个 AIV 的逻辑编号”而不是物理组；
+或以为用户要手动指定，用户只写 `T.Kernel(N)` / `T.MixedKernel(N, sids=…)`。
 
 ---
 
@@ -63,13 +63,13 @@ Ascend C」——它的中间表示是 MLIR。
 2. `alloc_shared` → `shared.dyn`；`alloc_l1` → `shared.l1`；`alloc_l0a` →
    `shared.l0a`；`alloc_l0b` → `shared.l0b`；`alloc_l0c` → `shared.l0c`。
    五个都被覆盖。
-3. 因为「在哪种存储」和「这块存储的元素怎么排」是两件事。`alloc_l0c` 在分配时
+3. 因为“在哪种存储”和“这块存储的元素怎么排”是两件事。`alloc_l0c` 在分配时
    通过 `make_ascend_l0c_layout(buf)` 把 L0C 累加器布局写进 `layout_map`
    （`allocate.py:64-70`）；而 `alloc_l0a`/`alloc_l0b` 故意把布局留给消费它的
    `T.gemm` 按 transpose 推断（`allocate.py:37-52` 的 docstring）。限定符只回答
    第一个问题，所以不需要处理 `local` 系列。
 
-**常见错误**：把 `T.alloc_shared` 当成 CUDA 的 shared memory 并去查 swizzle——
+**常见错误**：把 `T.alloc_shared` 当成 CUDA 的 shared memory 并去查 swizzle，
 在昇腾方言里它是 UB，布局由 fractal/OOB 那套 pass 处理。
 
 ---
@@ -91,14 +91,14 @@ Ascend C」——它的中间表示是 MLIR。
 依据：`src/ascend/op/oob_padding.cc:46-68`、`src/ascend/transform/ascend_pipe.h:52-63`、
 `src/ascend/codegen/codegen_ascend.cc:1383-1609`。
 
-**常见错误**：以为 (c) 走 MTE3——L0C 的搬出由 Fixpipe 负责，这是昇腾特有的
+**常见错误**：以为 (c) 走 MTE3，L0C 的搬出由 Fixpipe 负责，这是昇腾特有的
 收尾单元；把它当普通 GM→UB 会得到错误的同步推理。
 
 ---
 
 ## E5
 
-**思路**：这三个函数是昇腾后端的「去选择化」证据：没有可选项，就没有选择逻辑。
+**思路**：这三个函数是昇腾后端的“去选择化”证据：没有可选项，就没有选择逻辑。
 
 **参考答案**：
 
@@ -113,7 +113,7 @@ Ascend C」——它的中间表示是 MLIR。
    另外 M/N/K 必须是编译期静态值，否则 `T.gemm` 直接抛 `ValueError`
    （`gemm_op.py:55-60`）。
 
-**常见错误**：答「因为昇腾只有一个矩阵指令」但不指出还有 `asc_mmad_mx` 这条
+**常见错误**：答“因为昇腾只有一个矩阵指令”但不指出还有 `asc_mmad_mx` 这条
 块缩放变体。
 
 ---
@@ -132,10 +132,10 @@ Ascend C」——它的中间表示是 MLIR。
    `GM→UB`、`UB→GM`、`UB→L1` 走按 `cthread`（子核 ID）切片的逐 AIV 软件拷贝
    （`RewriteDualCopy` 在布局/OOB/调度之前完成改写）。
 3. 因为 `dav-950` **不支持**在 `cc→ub` 双目的拷贝里做 `quant_pre` 类型转换；
-   源码注释写明「If src and dst dtypes differ, the hardware may silently produce
-   incorrect results」。所以 Python 层主动 raise，宁可编译失败也不静默出错。
+   源码注释写明“If src and dst dtypes differ, the hardware may silently produce
+   incorrect results”。所以 Python 层主动 raise，宁可编译失败也不静默出错。
 
-**常见错误**：以为 `dual_copy` 是「自动把 Vector kernel 变成双 AIV 启动」——
+**常见错误**：以为 `dual_copy` 是“自动把 Vector kernel 变成双 AIV 启动”，
 它必须在混合 kernel 里、且 Cube 侧工作要用户自己写。
 
 ---
@@ -176,18 +176,18 @@ Ascend C」——它的中间表示是 MLIR。
            failures.append(f"{path} must be owned by FIX")
    ```
 
-3. 因为 `kGMToUB` 与 `kGMToL1` 都是「从 GM 读进片上」，同属入向搬运，
+3. 因为 `kGMToUB` 与 `kGMToL1` 都是“从 GM 读进片上”，同属入向搬运，
    共用 MTE2；而 `kL0CToUB` 的源是 Cube 的累加器，它的搬出附带量化/ReLU 等
    后处理，由 Fixpipe（`PIPE_FIX`）承担，不能交给 MTE3（那是 UB 的出向搬运）。
 
-**常见错误**：把 `kFixpipe` 当成「另一个 MTE」——它是矩阵收尾单元，
+**常见错误**：把 `kFixpipe` 当成“另一个 MTE”。它是矩阵收尾单元，
 `ResourcePipe` 里是独立的第 6 位。
 
 ---
 
 ## E9
 
-**思路**：矩阵脚本直接告诉你答案；第三问考的是「两棵树」这条主线。
+**思路**：矩阵脚本直接告诉你答案；第三问考的是“两棵树”这条主线。
 
 **参考答案**：
 
@@ -207,7 +207,7 @@ Ascend C」——它的中间表示是 MLIR。
 
 ## E10
 
-**思路**：把「谁做这件事」按两条路线各列一次；关键是**责任边界在 TIR 内还是在
+**思路**：把“谁做这件事”按两条路线各列一次；关键是**责任边界在 TIR 内还是在
 MLIR 内**。
 
 **参考答案**：
@@ -251,14 +251,14 @@ PlanMemory/HIVM 这套在 MLIR 侧。
 `f"--target={target_arch}"`，`jit_npu.py:1878`）。
 
 **常见错误**：把 `--npu-arch` 与 `--cce-aicore-arch` 当成同一个开关的两种写法
-——它们是两个编译器前端（`-xasc` vs `-xcce`）的参数。
+它们是两个编译器前端（`-xasc` vs `-xcce`）的参数。
 
 ---
 
 ## E12
 
-**思路**：把「硬件是 A2」「现有库是 Ascend C」「要求生成物可读」「想在无 NPU
-机器上先验证」四条约束分别对到四条路线上。
+**思路**：把“硬件是 A2”“现有库是 Ascend C”“要求生成物可读”“想在无 NPU
+机器上先验证”四条约束分别对到四条路线上。
 
 **参考答案**：
 
@@ -275,12 +275,12 @@ PlanMemory/HIVM 这套在 MLIR 侧。
 不推荐的地方与边界：
 
 * **A2（PTO）**虽然也能在 A2/A3 上跑，但它的生成物是 PTO-DSL 模板，团队要额外
-  熟悉一套指令集；如果只是「先把算子写出来」，A1 的学习成本更低。
+  熟悉一套指令集；如果只是“先把算子写出来”，A1 的学习成本更低。
 * **L1（AscendNPU IR）**的中间表示是 MLIR，不是团队现有技能栈；而且它是另一条
-  分支，与「现有 Ascend C 库零拷贝集成」的目标距离更远。
+  分支，与“现有 Ascend C 库零拷贝集成”的目标距离更远。
 * **无 NPU 开发机上的功能验证**：这是最容易被高估的一条。camodel 仿真在锁定
-  版本里**只支持 PTO 后端的 A5 平台**（第 19 章 §3.6），而团队目标是 A2——所以在
-  无卡机器上能做的只是「生成代码 + 人工核对」，**不能替他们把功能跑通**。
+  版本里**只支持 PTO 后端的 A5 平台**（第 19 章 §3.6），而团队目标是 A2。所以在
+  无卡机器上能做的只是“生成代码 + 人工核对”，**不能替他们把功能跑通**。
 
 建议的验证顺序（依次执行下面四条命令）：
 
@@ -296,7 +296,7 @@ python3 code/05-emit-ascend-c/print_ascend_c.py --emit --target ascendc
 
 **必须上板才能确认**的部分：数值正确性、并发/流水下的同步正确性、
 `num_stages`/buffer 版本取值是否合适、以及任何性能结论。本章（以及任何
-「仅静态核对」的材料）都不能替代这些。
+“仅静态核对”的材料）都不能替代这些。
 
-**常见错误**：回答「用 M 树 + camodel」——M 树的路线里没有 camodel 入口，
+**常见错误**：回答“用 M 树 + camodel”，M 树的路线里没有 camodel 入口，
 camodel 在锁定版本里挂在 A 树的 PTO 后端、且只对 A5。

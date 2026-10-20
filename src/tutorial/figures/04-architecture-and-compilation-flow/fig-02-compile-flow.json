@@ -48,7 +48,12 @@
       "sub": "engine/lower.py:109-141",
       "tone": "default"
     },
-    { "id": "i", "label": "9. device codegen", "sub": "engine/lower.py:99-106", "tone": "store" },
+    {
+      "id": "i",
+      "label": "9. device codegen",
+      "sub": "engine/lower.py:99-106",
+      "tone": "store"
+    },
     {
       "id": "j",
       "label": "10. host codegen（可选）",
@@ -61,7 +66,12 @@
       "sub": "engine/param.py:153-166",
       "tone": "default"
     },
-    { "id": "l", "label": "12. adapter 构造", "sub": "jit/kernel.py:324-424", "tone": "default" },
+    {
+      "id": "l",
+      "label": "12. adapter 构造",
+      "sub": "jit/kernel.py:324-424",
+      "tone": "default"
+    },
     {
       "id": "m",
       "label": "13. 可调用对象",
@@ -70,25 +80,65 @@
     }
   ],
   "edges": [
-    { "from": "ab", "to": "c" },
-    { "from": "c", "to": "d" },
-    { "from": "d", "to": "e" },
-    { "from": "e", "to": "f" },
-    { "from": "f", "to": "g" },
-    { "from": "g", "to": "h" },
-    { "from": "h", "to": "i" },
-    { "from": "h", "to": "j" },
-    { "from": "i", "to": "k" },
-    { "from": "j", "to": "k" },
-    { "from": "k", "to": "l" },
-    { "from": "l", "to": "m" },
-    { "from": "d", "to": "m", "dashed": true }
+    {
+      "from": "ab",
+      "to": "c"
+    },
+    {
+      "from": "c",
+      "to": "d"
+    },
+    {
+      "from": "d",
+      "to": "e"
+    },
+    {
+      "from": "e",
+      "to": "f"
+    },
+    {
+      "from": "f",
+      "to": "g"
+    },
+    {
+      "from": "g",
+      "to": "h"
+    },
+    {
+      "from": "h",
+      "to": "i"
+    },
+    {
+      "from": "h",
+      "to": "j"
+    },
+    {
+      "from": "i",
+      "to": "k"
+    },
+    {
+      "from": "j",
+      "to": "k"
+    },
+    {
+      "from": "k",
+      "to": "l"
+    },
+    {
+      "from": "l",
+      "to": "m"
+    },
+    {
+      "from": "d",
+      "to": "m",
+      "dashed": true
+    }
   ],
-  "caption": "每个方框后面标注了实际实现所在的「文件:行号」（核验日期 2026-10-01）；虚线是缓存命中时的短路。",
+  "caption": "每个方框后面标注了实际实现所在的“文件:行号”（核验日期 2026-10-01）；虚线是缓存命中时的短路。",
   "notes": [
-    "关键分界线：Python 侧写「顺序」（tilelang/<backend>/pipeline.py），C++ 侧写「做什么」（src/transform/）。",
+    "关键分界线：Python 侧写“顺序”（tilelang/<backend>/pipeline.py），C++ 侧写“做什么”（src/transform/）。",
     "想改 pass 的顺序、开关、目标相关裁剪 → 改 tilelang/<backend>/pipeline.py；想改某个 pass 的行为 → 改 src/transform/。",
-    "缓存短路：kernel_cache 命中时整个 pipeline 都不会跑，直接返回旧的 JITKernel——这也是「改了 pass 但结果没变」的常见原因。",
+    "缓存短路：kernel_cache 命中时整个 pipeline 都不会跑，直接返回旧的 JITKernel。这也是“改了 pass 但结果没变”的常见原因。",
     "三条容易忽略的支路：adapter 由 BackendContext.execution_backend 决定（不由 target 决定）；host codegen 默认关闭（enable_host_codegen=False 时只产出 device 源码 + IR）；SplitHostDevice 之后 IR 分成 host 与 device 两个模块，调试时要分开看。"
   ]
 }

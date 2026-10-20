@@ -2,7 +2,7 @@
 
 ## 目的
 
-正文第 4.1 节说「AutoSchedule 是 13 个 pass 的链」。这个脚本把这句话变成可执行的检查：
+正文第 4.1 节说“AutoSchedule 是 13 个 pass 的链”。这个脚本把这句话变成可执行的检查：
 从 `_vendor/tilelang-v0.1.15/tilelang/ascend/pipeline.py` 的
 `if auto_schedule_enabled:` 块里按顺序抽出 pass 调用，再去
 `src/ascend/transform/` 找每个 pass 的 FFI 注册点。

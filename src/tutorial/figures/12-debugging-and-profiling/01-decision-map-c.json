@@ -1,7 +1,7 @@
 {
   "id": "01-decision-map-c",
   "title": "偶发问题与性能问题的定位路径",
-  "caption": "偶发问题先怀疑同步、先下并发再加回；性能问题先算 roofline 预期，再用 profiler 回答「差在哪一项」。",
+  "caption": "偶发问题先怀疑同步、先下并发再加回；性能问题先算 roofline 预期，再用 profiler 回答“差在哪一项”。",
   "kind": "flow",
   "direction": "TB",
   "nodeMaxEm": 20,

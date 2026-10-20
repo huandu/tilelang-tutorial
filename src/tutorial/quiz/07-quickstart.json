@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "q1",
-      "stem": "本章说一个 kernel 剥到最里面就是四个部件，其中哪些是「人写的」？",
+      "stem": "本章说一个 kernel 剥到最里面就是四个部件，其中哪些是“人写的”？",
       "options": [
         "网格与 buffer",
         "搬运与并行域",
@@ -11,7 +11,7 @@
         "四个部件全部由编译器补全"
       ],
       "answer": 0,
-      "explain": "见 §2 的表：网格与 buffer 是人写的，搬运与并行域由编译器兑现。关键结论是「前两列是人写的，后两列是编译器补的」。"
+      "explain": "见 §2 的表：网格与 buffer 是人写的，搬运与并行域由编译器兑现。关键结论是“前两列是人写的，后两列是编译器补的”。"
     },
     {
       "id": "q2",
@@ -31,11 +31,11 @@
       "options": [
         "当前线程的编号，等价于 threadIdx.x",
         "这一块里元素的下标",
-        "网格的总块数",
-        "当前 tile 程序的编号（第几块），在 CUDA 上落到 blockIdx.x"
+        "当前 tile 程序的编号（第几块），在 CUDA 上落到 blockIdx.x",
+        "网格的总块数"
       ],
-      "answer": 3,
-      "explain": "见 §4.2：docstring 把 T.Kernel 定义为「a grid of tile programs」，bx 是第几块而不是第几个线程；总块数是 ceildiv(N, block_N)，threads= 只是每块线程数的提示。"
+      "answer": 2,
+      "explain": "见 §4.2：docstring 把 T.Kernel 定义为“a grid of tile programs”，bx 是第几块而不是第几个线程；总块数是 ceildiv(N, block_N)，threads= 只是每块线程数的提示。"
     },
     {
       "id": "q4",
@@ -43,15 +43,15 @@
       "options": [
         "i 是线程号，一个 i 对应一个线程",
         "i 是全局下标，等于 bx * block_N + i 本身",
-        "i 是这块里的元素下标；谁来执行、每线程几个、要不要向量化都由布局推导决定",
-        "T.Parallel 只在昇腾后端可用，CUDA 上要手写 threadIdx"
+        "T.Parallel 只在昇腾后端可用，CUDA 上要手写 threadIdx",
+        "i 是这块里的元素下标；谁来执行、每线程几个、要不要向量化都由布局推导决定"
       ],
-      "answer": 2,
-      "explain": "见 §4.2：i 不是线程号而是块内元素下标，线程映射与向量化在 LayoutInference 里决定，官方原文是「block level, not thread level」。全局下标要自己写成 bx * block_N + i。"
+      "answer": 3,
+      "explain": "见 §4.2：i 不是线程号而是块内元素下标，线程映射与向量化在 LayoutInference 里决定，官方原文是“block level, not thread level”。全局下标要自己写成 bx * block_N + i。"
     },
     {
       "id": "q5",
-      "stem": "想在生成的 CUDA 里确认「这段逐元素代码被向量化了」，看哪里最快？",
+      "stem": "想在生成的 CUDA 里确认“这段逐元素代码被向量化了”，看哪里最快？",
       "options": [
         "看有没有 uint4 / nv_bfloat162 这类类型，以及 stride 是不是等于向量宽度",
         "看有没有 __launch_bounds__",

@@ -7,10 +7,10 @@
   "direction": "TB",
   "steps": [
     { "label": "MTE2 搬入 tile k", "sub": "GM → L1，写 slot k%2（多缓冲）" },
-    { "label": "SetFlag(MTE2 → MTE1)", "sub": "「数据就绪」" },
+    { "label": "SetFlag(MTE2 → MTE1)", "sub": "“数据就绪”" },
     { "label": "MTE1 WaitFlag 后读 L1", "sub": "L1 → L0A/L0B" },
     { "label": "Cube 矩阵累加", "sub": "L0A/L0B → Cube → L0C" },
-    { "label": "SetFlag(MTE1 → MTE2)", "sub": "「缓冲可归还」" },
+    { "label": "SetFlag(MTE1 → MTE2)", "sub": "“缓冲可归还”" },
     { "label": "MTE2 等到归还后才覆盖该槽", "sub": "反向信号与正向独立，不能共用" },
     { "label": "Fixpipe：L0C → UB", "sub": "搬运过程中可做格式 / 类型转换" },
     { "label": "Vector 读 UB 计算", "sub": "AIV 的 SIMD 单元" },

@@ -13,7 +13,7 @@
 | `v3` 手工流水 | `T.Pipelined(..., stage=[0,0,1], order=[0,1,2])` | pipeline | 1 行 |
 
 四个 kernel 的**数据流完全一样**：搬入 A、B 的分块 → 乘加 → ReLU → 搬出。区别只在调度注解。
-这正是论文摘要那句「encapsulated them as a set of customization annotations and primitives」
+这正是论文摘要那句“encapsulated them as a set of customization annotations and primitives”
 的直接体现——调度不是重写代码，是在代码上加注解。
 
 ## 与官方示例的关系
@@ -62,13 +62,13 @@ python3 schedule_as_annotation.py --static-only  # 无 GPU 时
 
 ## 陷阱提醒
 
-* `v3` 故意**不**传 `num_stages`。官方 docstring 明确建议：「Avoid setting `num_stages`
+* `v3` 故意**不**传 `num_stages`。官方 docstring 明确建议：“Avoid setting `num_stages`
   together with manual `order`/`stage` unless you intentionally need an explicit depth
-  override」（`_vendor/tilelang-v0.1.15/tilelang/language/loop.py:168-170`）。
+  override”（`_vendor/tilelang-v0.1.15/tilelang/language/loop.py:168-170`）。
 * `v2` 的 swizzle **是否真正生效**取决于 buffer 最后一维的字节数与对齐。官方示例里有一个
   判据 `shape[-1] * DataType(dtype).bits == 512`（即最后一维 64 字节）才会 swizzle，
   否则退化成恒等映射（`examples/gemm/example_gemm_intrinsics.py:15-17`）。本示例只演示
-  「注解写在哪、怎么写」，**没有**在硬件上核实生成代码里的访存模式；读者若在意效果，
+  “注解写在哪、怎么写”，**没有**在硬件上核实生成代码里的访存模式；读者若在意效果，
   应当用 `T.use_swizzle` / 布局可视化（`docs/tools/layout_visualization.md`）自己确认。
 * 四个变体的**正确性应当一致**，只是调度不同；如果某个变体结果不对，那是调度注解写错了，
   不是数据流写错了——这正是把两者分开之后更容易定位问题的地方。

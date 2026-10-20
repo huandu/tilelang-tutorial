@@ -18,7 +18,7 @@ Ascend 版只留了单组快路径），它们是**阅读材料**。
 | `topk_gate_cuda_min.py` | `TileKernels/tile_kernels/moe/topk_gate_cuda.py` | 一行一 block、`T.alloc_fragment`、`T.alloc_reducer(op='min')`、`T.Parallel`、`disable_tma=True`、`TL_DISABLE_WARP_SPECIALIZED` | 非有限值检查（`:40-46`）、PDL（`:23-24,65-66`） |
 | `topk_gate_asc_min.py` | `TileKernels/tile_kernels/moe/topk_gate_asc.py` | `T.Kernel(num_vec_cores)`、UB 上的 `T.alloc_shared`、`T.annotate_buffer_versions`、`T.Pipelined(..., annotations={'multi_buffer_eligible': ...})`、`T.view`、`T.SimdVF()`、`vector_length = 64`、`S.vcmax`/`S.vcmin`、收尾断言 | 多组慢路径（`:106-151`）、可选 cache 提示 |
 
-改写时把「哪一行在保护什么」写成注释，行号引用见 `../references.md`。
+改写时把“哪一行在保护什么”写成注释，行号引用见 `../references.md`。
 
 ## 运行前提
 

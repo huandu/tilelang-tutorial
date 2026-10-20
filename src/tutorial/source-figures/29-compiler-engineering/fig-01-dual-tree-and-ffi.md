@@ -1,7 +1,7 @@
 # 图 1：双语结构，以及一条 pass 从 C++ 到 Python 的完整通路（自绘）
 
-TileLang 的「写一个 pass」有两个入口：**C++ 入口**和 **Python 入口**。两者最终都
-产出同一个东西——`tvm.transform.Pass`，然后被 backend pipeline 用
+TileLang 的“写一个 pass”有两个入口：**C++ 入口**和 **Python 入口**。两者最终都
+产出同一个东西，`tvm.transform.Pass`，然后被 backend pipeline 用
 `mod = X()(mod)` 串起来。
 
 ```text

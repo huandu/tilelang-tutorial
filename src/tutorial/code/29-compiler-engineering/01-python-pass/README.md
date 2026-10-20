@@ -2,7 +2,7 @@
 
 ## 目的
 
-演示本章 3.2 节「写一个 pass 的六步」中最短的一条路径：**不改 C++、不重编
+演示本章 3.2 节“写一个 pass 的六步”中最短的一条路径：**不改 C++、不重编
 TileLang**，只用 ``prim_func_pass`` 在 Python 里写一个会真正改 IR 的 pass，
 并用 IR 前后对照来测它。
 
@@ -45,7 +45,7 @@ python3 -m pytest test_hoist_constant_broadcast.py -q
 * 第 1 步：`py_compile` 无输出即通过——**这是本机唯一真正验证过的一步**。
 * 第 2 步：打印 5 行 API 清单。在没装 tilelang/tvm 的机器上，这一步会以
   `ModuleNotFoundError: No module named 'tvm'` 失败：本文件顶层就
-  `from tvm import tirx`，这正是「静态检查」与「运行」的分界线。
+  `from tvm import tirx`，这正是“静态检查”与“运行”的分界线。
 * 第 3 步：`3 passed`。若失败，最有价值的两个断点是
   `test_two_stores_do_not_share_hoisted_bindings`（局部状态串味）与
   `test_leaves_a_non_immediate_broadcast_alone`（把变量广播也提了）。
@@ -73,5 +73,5 @@ from .hoist_constant_broadcast import HoistConstantBroadcast  # noqa: F401
 mod = tilelang.transform.HoistConstantBroadcast()(mod)
 ```
 
-顺序原则见本章 4.3 节：这个 pass 依赖「store 还是 store、Broadcast 还没被拆」，
+顺序原则见本章 4.3 节：这个 pass 依赖“store 还是 store、Broadcast 还没被拆”，
 所以必须早于 `VectorizeLoop` / `FlattenBuffer` / `LowerOpaqueBlock`。

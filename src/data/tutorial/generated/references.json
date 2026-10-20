@@ -1050,7 +1050,7 @@
     "trust": "vendor",
     "tags": "cutedsl, python-dsl, nvidia",
     "localPath": "11-related-compilers/raw/nvidia-cutedsl-docs.md",
-    "note": "NVIDIA 官方的 Python tile DSL 文档。它是 TileLang 在 NVIDIA 侧最直接的对照物： 同样用 Python 写 tile 程序，但绑定 CUTLASS/CuTe 的抽象与 NVIDIA 自己的编译路径。 第 5 章对比与第 24 章 NVIDIA 后端都用它来界定「TileLang 自己的边界在哪里」。"
+    "note": "NVIDIA 官方的 Python tile DSL 文档。它是 TileLang 在 NVIDIA 侧最直接的对照物： 同样用 Python 写 tile 程序，但绑定 CUTLASS/CuTe 的抽象与 NVIDIA 自己的编译路径。 第 5 章对比与第 24 章 NVIDIA 后端都用它来界定“TileLang 自己的边界在哪里”。"
   },
   {
     "id": "github-nvidia-cutile-python",
@@ -1063,7 +1063,7 @@
     "trust": "vendor",
     "tags": "cutile, python-dsl, nvidia, blackwell",
     "localPath": "11-related-compilers/raw/github-nvidia-cutile-python.md",
-    "note": "cuTile 的开源实现（Python 包）。NVIDIA 新一代 tile 编程模型，面向 Blackwell 一代的硬件特性；与 TileLang 属于同一抽象层次的竞争路线。第 1、5、24 章引用它 说明「tile DSL」这一波的产业走向。"
+    "note": "cuTile 的开源实现（Python 包）。NVIDIA 新一代 tile 编程模型，面向 Blackwell 一代的硬件特性；与 TileLang 属于同一抽象层次的竞争路线。第 1、5、24 章引用它 说明“tile DSL”这一波的产业走向。"
   },
   {
     "id": "tvm-docs",
@@ -1141,7 +1141,7 @@
     "trust": "vendor",
     "tags": "huggingface, transformers, training",
     "localPath": "13-e2e-training-and-serving/raw/hf-transformers-docs.md",
-    "note": "端到端章节的基础工具文档：模型加载、tokenizer、Trainer/训练参数、混合精度、 checkpoint 保存与恢复。第 17 章「用 HF 资产训练 7B」直接依赖它。 （原地址 https://huggingface.co/docs/transformers/index 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
+    "note": "端到端章节的基础工具文档：模型加载、tokenizer、Trainer/训练参数、混合精度、 checkpoint 保存与恢复。第 17 章“用 HF 资产训练 7B”直接依赖它。 （原地址 https://huggingface.co/docs/transformers/index 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
   },
   {
     "id": "hf-datasets-docs",
@@ -1167,7 +1167,7 @@
     "trust": "vendor",
     "tags": "huggingface, distributed-training",
     "localPath": "13-e2e-training-and-serving/raw/hf-accelerate-docs.md",
-    "note": "单机多卡/多机训练的抽象层，解释 device placement、混合精度与梯度同步在 HF 生态里 怎么表达。写训练章节时需要它来说明「哪些部分不归 TileLang 管」。 （原地址 https://huggingface.co/docs/accelerate/index 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
+    "note": "单机多卡/多机训练的抽象层，解释 device placement、混合精度与梯度同步在 HF 生态里 怎么表达。写训练章节时需要它来说明“哪些部分不归 TileLang 管”。 （原地址 https://huggingface.co/docs/accelerate/index 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
   },
   {
     "id": "hf-peft-docs",
@@ -1180,7 +1180,7 @@
     "trust": "vendor",
     "tags": "lora, finetuning",
     "localPath": "13-e2e-training-and-serving/raw/hf-peft-docs.md",
-    "note": "参数高效微调的官方文档；用于说明「不做全量预训练时，TileLang 该优化哪几个算子」。 （原地址 https://huggingface.co/docs/peft/index 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
+    "note": "参数高效微调的官方文档；用于说明“不做全量预训练时，TileLang 该优化哪几个算子”。 （原地址 https://huggingface.co/docs/peft/index 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
   },
   {
     "id": "hf-qwen2-5-7b-card",
@@ -1219,7 +1219,7 @@
     "trust": "vendor",
     "tags": "dataset, small-scale",
     "localPath": "13-e2e-training-and-serving/raw/hf-tinystories-card.md",
-    "note": "小规模、可在单卡上跑完的语料，用于「先把训练循环跑通再放大」的教学路径。 （原地址 https://huggingface.co/datasets/roneneldan/TinyStories 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
+    "note": "小规模、可在单卡上跑完的语料，用于“先把训练循环跑通再放大”的教学路径。 （原地址 https://huggingface.co/datasets/roneneldan/TinyStories 在本机不可达：huggingface.co 直连与走本地代理均 SSL EOF，改用中国镜像 hf-mirror.com 抓取；镜像内容与官网一致，引用时以原地址为准。）"
   },
   {
     "id": "hf-qwen2-5-7b-config",
@@ -1245,7 +1245,7 @@
     "trust": "primary",
     "tags": "training, distributed, reference",
     "localPath": "13-e2e-training-and-serving/raw/github-pytorch-torchtitan.md",
-    "note": "PyTorch 官方的 LLM 训练参考实现（并行策略、checkpoint、显存优化）。第 17 章用它 说明「哪些部分可以换成 TileLang kernel，哪些部分不要动」。"
+    "note": "PyTorch 官方的 LLM 训练参考实现（并行策略、checkpoint、显存优化）。第 17 章用它 说明“哪些部分可以换成 TileLang kernel，哪些部分不要动”。"
   },
   {
     "id": "github-litgpt",
@@ -1271,7 +1271,7 @@
     "trust": "community",
     "tags": "training, minimal, teaching",
     "localPath": "13-e2e-training-and-serving/raw/github-nanogpt.md",
-    "note": "最小可读的训练循环实现。教学价值在于「整条链路没有魔法」；用它讲清楚训练循环的 结构与可替换点。"
+    "note": "最小可读的训练循环实现。教学价值在于“整条链路没有魔法”；用它讲清楚训练循环的 结构与可替换点。"
   },
   {
     "id": "vllm-docs",
@@ -1297,7 +1297,7 @@
     "trust": "primary",
     "tags": "inference, ascend, serving",
     "localPath": "13-e2e-training-and-serving/raw/github-vllm-ascend.md",
-    "note": "昇腾上的 vLLM 硬件插件。用于说明昇腾推理部署的实际形态，也是「TileLang 算子如何 进入服务框架」的对照物。"
+    "note": "昇腾上的 vLLM 硬件插件。用于说明昇腾推理部署的实际形态，也是“TileLang 算子如何 进入服务框架”的对照物。"
   },
   {
     "id": "github-tile-ai-tilelang",
@@ -1362,7 +1362,7 @@
     "trust": "primary",
     "tags": "tilelang, kernels, ascend, cuda, moe, quant, engram, mhc",
     "localPath": "14-deepseek-ascend-stack/raw/github-deepseek-tilekernels.md",
-    "note": "用 TileLang 写的生产算子库，同一份算法提供 CUDA 与 Ascend 两个后端。 是「一份算法、两个后端」写法的最佳教材，也是本教程第 33、34 章的主线。"
+    "note": "用 TileLang 写的生产算子库，同一份算法提供 CUDA 与 Ascend 两个后端。 是“一份算法、两个后端”写法的最佳教材，也是本教程第 33、34 章的主线。"
   },
   {
     "id": "github-deepseek-deepgemm-ascend",
@@ -1401,7 +1401,7 @@
     "trust": "primary",
     "tags": "gemm, fp8, nvidia, baseline",
     "localPath": "14-deepseek-ascend-stack/raw/github-deepseek-deepgemm.md",
-    "note": "DeepGEMM-Ascend 的对照物。官方明确说 Ascend 版「完全兼容 DeepGEMM 的 API」， 所以两边对照着读才能看清哪些是平台无关的接口、哪些是平台相关的实现。"
+    "note": "DeepGEMM-Ascend 的对照物。官方明确说 Ascend 版“完全兼容 DeepGEMM 的 API”， 所以两边对照着读才能看清哪些是平台无关的接口、哪些是平台相关的实现。"
   },
   {
     "id": "github-deepseek-deepep",
@@ -1453,7 +1453,7 @@
     "trust": "primary",
     "tags": "topk, dsa, sampler, ascend, cuda",
     "localPath": "14-deepseek-ascend-stack/raw/github-deepseek-deepselect.md",
-    "note": "DSA 与采样器用的 TopK 算子，CUDA 与昇腾双平台。算法（阈值筛选 + RadixSelect） 与实现技巧分开讲，是「算法先行」的范例。"
+    "note": "DSA 与采样器用的 TopK 算子，CUDA 与昇腾双平台。算法（阈值筛选 + RadixSelect） 与实现技巧分开讲，是“算法先行”的范例。"
   },
   {
     "id": "doc-deepselect-deep-dive",
@@ -1544,7 +1544,7 @@
     "trust": "primary",
     "tags": "pipeline-parallel, overlap, training",
     "localPath": "14-deepseek-ascend-stack/raw/github-deepseek-dualpipe.md",
-    "note": "双向流水并行算法，用来讲「通信与计算重叠」在训练侧的组织方式。"
+    "note": "双向流水并行算法，用来讲“通信与计算重叠”在训练侧的组织方式。"
   },
   {
     "id": "github-deepseek-eplb",

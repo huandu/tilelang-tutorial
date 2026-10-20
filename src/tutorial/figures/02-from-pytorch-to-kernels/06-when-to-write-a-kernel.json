@@ -69,7 +69,7 @@
     { "from": "write", "to": "verify" },
     { "from": "verify", "to": "bad" }
   ],
-  "caption": "四条判据分别对应四种「试过 torch.compile 与厂商库之后仍然要写」的情况；起点永远是先测量。",
+  "caption": "四条判据分别对应四种“试过 torch.compile 与厂商库之后仍然要写”的情况；起点永远是先测量。",
   "notes": [
     "判据 1 的完整表述：相邻的逐元素 / 归一化算子被拆成很多个小 kernel → memory-bound × 多趟访存。",
     "判据 2：库算子覆盖不到这个融合模式（MLA / NSA / indexer / RoPE + cache 写入）。",

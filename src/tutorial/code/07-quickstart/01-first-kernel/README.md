@@ -2,7 +2,7 @@
 
 ## 目的
 
-本章「第一个 kernel」的完整、可直接复制的版本。一个文件里包含两种写法：
+本章“第一个 kernel”的完整、可直接复制的版本。一个文件里包含两种写法：
 
 * **版本 A（`vector_add_direct`）**：最朴素的写法。只有 `T.Kernel` + `T.Parallel`，
   直接在全局内存上读写。对应官方教程 `docs/deeplearning_operators/elementwise.md`
@@ -11,7 +11,7 @@
   `T.copy` 把 tile 搬进来，算完再搬出去。对应官方
   `examples/elementwise/example_elementwise_add.py` 的结构。
 
-两段代码解决的问题完全相同（`C = A + B`），差别只在「数据先不先落到片上 buffer」。
+两段代码解决的问题完全相同（`C = A + B`），差别只在“数据先不先落到片上 buffer”。
 对照读它们，是理解 `T.copy` 与 `T.Parallel` 分工的最快方式。
 
 ## 运行前提
@@ -51,7 +51,7 @@ extern "C" __global__ void __launch_bounds__(256) main_kernel(...) {
 **仅静态核对。**
 
 作者本机是 macOS（Apple Silicon），既没有 NVIDIA GPU 也没有安装 tilelang，
-**没有运行过这个脚本**。所谓「静态核对」指的是：
+**没有运行过这个脚本**。所谓“静态核对”指的是：
 
 1. 脚本可以 `python3 -m py_compile` 通过（语法层面无误）；
 2. 用到的每个 API 名与签名都在 `_vendor/tilelang-v0.1.15/` 里逐个核对过，

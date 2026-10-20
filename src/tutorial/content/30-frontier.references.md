@@ -2,7 +2,7 @@
 
 本章的每条结论都必须能落到两类证据之一：**锁定版本的源码**（`_vendor/`）
 或 **corpus 里的资料快照**（`../tilelang-corpus/`）。凡是两者都覆盖不到的，
-正文一律写「无法确认」。
+正文一律写“无法确认”。
 
 核对日期：**2026-10-01**（本章全部源码引用与命令输出都在这一天复核）。
 
@@ -10,13 +10,13 @@
 
 | 组件 | 版本 / commit | 用途 |
 | --- | --- | --- |
-| TileLang（基线） | `v0.1.15` / `a35f8ddf45eba16c21211ec8822d56ce5363036f`（2026-09-30） | 一切「已具备 / 未具备」判断的基准 |
-| TileLang（对照） | `v0.1.14` / `7e3bbf3703e769479757eb7ecec2f2626f3cd0a8`（2026-09-02） | 回答「是不是 v0.1.15 新增」 |
-| TileLang main 快照（corpus 只读） | commit `994b44eca1a83a00d19d926e5264a6c608700656`，提交信息 `[Ascend] Add PTO backend for Ascend950 (#3310)` | 回答「仅 main」 |
+| TileLang（基线） | `v0.1.15` / `a35f8ddf45eba16c21211ec8822d56ce5363036f`（2026-09-30） | 一切“已具备 / 未具备”判断的基准 |
+| TileLang（对照） | `v0.1.14` / `7e3bbf3703e769479757eb7ecec2f2626f3cd0a8`（2026-09-02） | 回答“是不是 v0.1.15 新增” |
+| TileLang main 快照（corpus 只读） | commit `994b44eca1a83a00d19d926e5264a6c608700656`，提交信息 `[Ascend] Add PTO backend for Ascend950 (#3310)` | 回答“仅 main” |
 | TileLang-Ascend（适配器） | `TileLang-ascend-v0.1.2.000-release` / `89a9364e47a341fffdd65ed94786b1d4f9b6a78c`（2026-09-08） | A2/A3 路线，对照用 |
 
 基线定义见 [VERSIONS.md](../../VERSIONS.md)。main 快照的路径是
-`../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/`（`git log -1` 输出如上）。
+`../tilelang-corpus/02-tilelang-core-repo/raw/`（`git log -1` 输出如上）。
 
 ---
 
@@ -87,7 +87,7 @@
 | `src/transform/reducer_plan_materialize.cc` | 物理计划物化 |
 | `tilelang/cuda/pipeline.py:91-92` | CUDA pipeline 里的两步挂载 |
 | `examples/gemv/example_gemv.py:239,250` | v0.1.15 自带的 GEMV 例子**仍在使用 legacy 写法** |
-| `_vendor/tilelang-v0.1.14/tilelang/language/reduce_op.py:364,404,440` | 同样的 v2 API 在 v0.1.14 已存在（回答「是不是本次新增」） |
+| `_vendor/tilelang-v0.1.14/tilelang/language/reduce_op.py:364,404,440` | 同样的 v2 API 在 v0.1.14 已存在（回答“是不是本次新增”） |
 
 ### 1.6 atomic 内存序与 cache policy（§5.2–§5.3）
 
@@ -150,16 +150,16 @@
 | `github-issue-2115.md` | §3.1 多后端解耦的动机原文与 PR 清单 |
 | `github-issue-2196.md` | §3.2 TVM 迁移 RFC：仓库考古、Z3 迁移、PR 序列 |
 | `github-issue-1454.md` | §3.3 CuteDSL roadmap 条目 |
-| `github-issue-56.md`、`github-issue-79.md` | §2.4「roadmap 不等于待办」的旁证（非 NV 后端路线、0.2.0 发布计划） |
+| `github-issue-56.md`、`github-issue-79.md` | §2.4“roadmap 不等于待办”的旁证（非 NV 后端路线、0.2.0 发布计划） |
 | `github-issue-2708.md` | §5.2 atomic 内存序 RFC 的问题陈述与验收标准 |
 | `github-issue-2897.md` | §5.1 reducer RFC：动机、最小错码例子、v2 API、四个阶段与迁移计划 |
 | `github-issue-3178.md` | §5.3 cache policy RFC 的提议 API 与非目标 |
 | `github-pr-3308.md` | §4.1.1 950 后端的能力清单、硬件边界、验证条件与改动历史 |
-| `github-pr-3310.md` | §4.1.2 PTO 后端的摘要；同时是「页面状态与代码快照矛盾」的证据 |
+| `github-pr-3310.md` | §4.1.2 PTO 后端的摘要；同时是“页面状态与代码快照矛盾”的证据 |
 | `github-pr-3325.md` | §4.2 `T.PersistentKernel` / `AutoPersistent`：背景、映射公式、性能表 |
 | `github-pr-3320.md` | §4.3 `AutoSimtVF`：Stage 1 的四个模块与边界 |
 | `github-pr-3329.md` | §4.4 算子生成 agent：工作流、8 个 skill、安装方式 |
-| `github-issue-3317.md` | §4.1.3「两条 950 路线怎么选」：提问存在、**维护者回答缺失** |
+| `github-issue-3317.md` | §4.1.3“两条 950 路线怎么选”：提问存在、**维护者回答缺失** |
 
 ### 3.2 合成与索引
 
@@ -167,18 +167,18 @@
 | --- | --- |
 | `90-synthesis/03-ascend-route.md` §7 | §4.5 四条 PR（#3328/#3322/#3324/#3321）的**唯一**线索来源；本章据此做反向验证 |
 | `08-frontier-unmerged/raw/_index.md` | 该目录 14 条资料的清单与收集动机（说明目录名不等于落地状态） |
-| `02-tilelang-core-repo/raw/tilelang/` | main 快照本体（`994b44e`），§4.1.2 与 §9 的「仅 main」判定 |
+| `02-tilelang-core-repo/raw/` | main 快照本体（`994b44e`），§4.1.2 与 §9 的“仅 main”判定 |
 | `12-operator-libraries/raw/_index.md`、`PROVENANCE.md` | §6 各生态仓库快照的抓取日期与 commit |
 
 ### 3.3 生态（§6）
 
 | 文件 | 关键内容（原文口径） |
 | --- | --- |
-| `12-operator-libraries/raw/github-tile-ai-tileops.md` | 「Spec-driven LLM operators across backends — built by agents」；191 stars；最后 push 2026-09-30 |
-| `12-operator-libraries/raw/github-tile-ai-tilert.md` | 「Tile-Based Runtime for Ultra-Low-Latency LLM Inference」；1830 stars；最后 push 2026-09-24 |
+| `12-operator-libraries/raw/github-tile-ai-tileops.md` | “Spec-driven LLM operators across backends — built by agents”；191 stars；最后 push 2026-09-30 |
+| `12-operator-libraries/raw/github-tile-ai-tilert.md` | “Tile-Based Runtime for Ultra-Low-Latency LLM Inference”；1830 stars；最后 push 2026-09-24 |
 | `12-operator-libraries/raw/github-tile-ai-tilesight.md` | 解析性能模型，可在 CPU 上跑；10 stars；2026-08-18 创建 |
-| `12-operator-libraries/raw/github-tile-ai-tilelang-benchmark.md` | README 首行即「Archived, please checkout TileOPs」 |
-| `07-tilelang-ascend-adapter/raw/github-tile-ai-tilefoundry.md` | 「Hand the compiler to the agent」；121 stars；最后 push 2026-09-29；PyPI 0.0.2；News 里的四个 agent 实例与吞吐数字 |
+| `12-operator-libraries/raw/github-tile-ai-tilelang-benchmark.md` | README 首行即“Archived, please checkout TileOPs” |
+| `07-tilelang-ascend-adapter/raw/github-tile-ai-tilefoundry.md` | “Hand the compiler to the agent”；121 stars；最后 push 2026-09-29；PyPI 0.0.2；News 里的四个 agent 实例与吞吐数字 |
 | `07-tilelang-ascend-adapter/raw/github-tile-ai-tilelang-mlir-ascend.md` | §6 地图里的 AscendNPU IR 路线仓库 |
 
 ### 3.4 NVIDIA 侧对照（§7）
@@ -188,9 +188,9 @@
 | `11-related-compilers/raw/github-nvidia-cutile-python.md` | cuTile 的示例 kernel、Tile IR、驱动 r580+、`tileiras` 13.2 只支持 Blackwell 与 Ampere/Ada |
 | `11-related-compilers/raw/nvidia-cutedsl-docs.md` | CuTe DSL 文档（来自 CUTLASS 仓库的 `media/docs/pythonDSL/` 源文件） |
 
-> 注意：`nvidia-cutedsl-docs.md` 是该文档站的**壳**（corpus 说明里写明「本机只能抓到
-> 导航壳（1.3 KB）」这一类情况），本章关于 CuTe DSL 的判断均来自 TileLang 侧代码
-> （§1.3 的表），不来自这份文档正文。该缺口登记在 §5「待补资料」。
+> 注意：`nvidia-cutedsl-docs.md` 是该文档站的**壳**（corpus 说明里写明“本机只能抓到
+> 导航壳（1.3 KB）”这一类情况），本章关于 CuTe DSL 的判断均来自 TileLang 侧代码
+> （§1.3 的表），不来自这份文档正文。该缺口登记在 §5“待补资料”。
 
 ---
 
@@ -283,7 +283,7 @@ diff <(cd _vendor/tilelang-v0.1.15 && find . -path ./3rdparty -prune -o -path ./
 
 1. **PR #3321 / #3322 / #3324 / #3328 的页面快照**。corpus 只有
    `90-synthesis/03-ascend-route.md` 的一句转述。没有快照，本章只能做反向验证，
-   结论只能写到「未在 v0.1.15 / main 快照中找到；PR 细节无法确认」。
+   结论只能写到“未在 v0.1.15 / main 快照中找到；PR 细节无法确认”。
    建议来源：GitHub 上这四个 PR 的页面（标题、状态、改动文件）。
 2. **PR #3310 的状态与时间线**。页面快照显示 draft，main 源码快照里却有合并 commit；
    两者矛盾。若需要精确时间线，应补一份带时间戳的 PR 事件记录（opened / converted
@@ -296,7 +296,7 @@ diff <(cd _vendor/tilelang-v0.1.15 && find . -path ./3rdparty -prune -o -path ./
    因此不评价其实现方式，只引用其自述定位。
 5. **`tile-ai/tilelang-ascend` 与主干的关系时间线**。本章只核对了适配器仓库的 tag
    commit 与 README 定位，没有逐条比对它与主干 `tilelang/ascend/` 的 API 差异
-   （第 25 章 §6.1 已给出「两棵树的 API 不通用」的核对结论）。
+   （第 25 章 §6.1 已给出“两棵树的 API 不通用”的核对结论）。
 
 ---
 
@@ -306,7 +306,7 @@ diff <(cd _vendor/tilelang-v0.1.15 && find . -path ./3rdparty -prune -o -path ./
 
 | 主题 | 第 24 / 25 章的写法 | 本章的写法 | 说明 |
 | --- | --- | --- | --- |
-| PTO 后端 | 第 25 章 §4.10 依据 PR **页面快照**把 #3310 记为「draft（未合入）」 | 本章依据 PR 页面快照 **与 corpus 的 main 源码快照**，判定为「仅 main」 | 本章拆开了两个证据：PR 评审状态无法确认、代码状态可确认。两章结论在「v0.1.15 里没有 `target="pto"`」这一点上完全一致 |
+| PTO 后端 | 第 25 章 §4.10 依据 PR **页面快照**把 #3310 记为“draft（未合入）” | 本章依据 PR 页面快照 **与 corpus 的 main 源码快照**，判定为“仅 main” | 本章拆开了两个证据：PR 评审状态无法确认、代码状态可确认。两章结论在“v0.1.15 里没有 `target="pto"`”这一点上完全一致 |
 | CuTe DSL | 第 24 章 §4.8 讲机制（codegen、adapter、依赖门禁） | 本章只讲状态与走向（属 A 档、仍是实验通道） | 机制不复述，避免两章重复 |
 | 多后端结构 | 第 4 章讲注册表结构本身 | 本章讲它在 issue #2115 里的来龙去脉与当前状态 | 依赖第 4 章的心智模型 |
 

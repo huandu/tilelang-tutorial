@@ -3,7 +3,7 @@
   "title": "prefill 与 decode 的组件链路对照",
   "kind": "compare",
   "labelWidth": 150,
-  "caption": "两段用的是同一批算子，但形状不同：prefill 是大 M，decode 是小 M——瓶颈是形状的函数。",
+  "caption": "两段用的是同一批算子，但形状不同：prefill 是大 M，decode 是小 M，瓶颈是形状的函数。",
   "columns": ["prefill（大 M）", "decode（小 M）"],
   "rows": [
     {

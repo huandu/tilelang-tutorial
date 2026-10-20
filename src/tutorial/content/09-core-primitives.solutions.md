@@ -8,18 +8,18 @@
 
 ## E1 概念题 ★
 
-**思路**：把「用户写什么」和「编译器决定什么」分开。
+**思路**：把“用户写什么”和“编译器决定什么”分开。
 
 **参考答案**
 
 1. 接口 = **一组承诺的语义 + 一组输入约束**（scope、dtype、形状、同步行为）。
-   原语不承诺实现，只承诺「语句结束后 `dst` 可用」这类可观测行为。
-2. 发射一条 tile op：`tirx.call_intrin("handle", tirx.op.Op.get("tl.tileop.copy"),
+   原语不承诺实现，只承诺“语句结束后 `dst` 可用”这类可观测行为。
+2. 发射一条 tile op：`tirx.call_intrin(“handle”, tirx.op.Op.get(“tl.tileop.copy”),
    src, dst, annotations=ann)`（`tilelang/language/copy_op.py:130`）。
 3. 当 `src` 和 `dst` 都是**没有 region extent 的 `BufferLoad`**，且没有任何注解时，
    直接生成 `BufferStore`，即 `dst[...] = src[...]`（同文件 `:121-128`）。
 
-**常见错误**：以为前端会在此刻决定「用 TMA 还是 cp.async」。真正的选择发生在
+**常见错误**：以为前端会在此刻决定“用 TMA 还是 cp.async”。真正的选择发生在
 `SelectCopyInstForLowering`（`src/cuda/op/copy_analysis.cc:716`）。
 
 ---
@@ -53,9 +53,9 @@
    （`src/op/copy.cc:514`）。可用 `T.annotate_safe_value({A: v})` 覆盖
    （`tilelang/language/annotations.py:69-74`），它被挂到
    `CopyNode::src_oob_safe_value`（`src/op/copy.cc:94-116`）。
-2. 目标越界时整条 store 被包进 `IfThenElse(dst_predicate, body)`——**不写**，
+2. 目标越界时整条 store 被包进 `IfThenElse(dst_predicate, body)`，**不写**，
    而不是写一个替代值（`src/op/copy.cc:525`）。
-3. TMA 路径没有可编程的「安全值」：越界由 descriptor 的 `oob_fill` 决定
+3. TMA 路径没有可编程的“安全值”：越界由 descriptor 的 `oob_fill` 决定
    （`src/cuda/op/copy.h:49-60`），语义由指令定义。
 4. 昇腾的 `pad_value` **不是越界填充**，是 DMA 行对齐填充：把行宽向上取整到下一个
    **32 字节**边界，用 `pad_value` 填 pad lane（`ascend/language/copy_op.py:278-287`）。
@@ -82,10 +82,10 @@
 | `T.gemm(A, B, C, transpose_A=True, transpose_B=True)` | `[K, M]` | `[N, K]` |
 
 推导式见 `tilelang/language/gemm_op.py:77-81`；校验在 `:82-88`。
-`T.gemm(A, B, C, accum_dtype="float32")` 会报参数错误——v0.1.15 的 `gemm` 签名里
+`T.gemm(A, B, C, accum_dtype="float32")` 会报参数错误，v0.1.15 的 `gemm` 签名里
 没有 `accum_dtype`（同文件 `:160-169`），累加类型由 C 的 dtype 决定。
 
-**常见错误**：把 `transpose_B=True` 理解成「B 是 `[K, N]` 但会转置」。正确理解是
+**常见错误**：把 `transpose_B=True` 理解成“B 是 `[K, N]` 但会转置”。正确理解是
 **B 在内存里就是 `[N, K]` 排布**，转置是逻辑上的读法。
 
 ---
@@ -109,7 +109,7 @@
    `cuda.mma.blockscaled` 时返回 true（`src/cuda/op/gemm.cc:398-400`）；wgmma/tcgen05
    不复用已有 shared layout，会重新推导。
 
-**常见错误**：以为 `policy` 是性能提示、不影响正确性——它确实不影响数值，
+**常见错误**：以为 `policy` 是性能提示、不影响正确性。它确实不影响数值，
 但会改变 fragment 的形状，所以任何手工写的 `T.Parallel` 访问模式都要跟着变。
 
 ---
@@ -133,14 +133,14 @@
 4. `batch=4` 把 `ceil(N/4)` 次 batched AllReduce 共享**同一对 barrier**，
    省掉的是 shared-memory 往返之间的 barrier 数量（`reduce_op.py:42-46`）。
 
-**常见错误**：把「线程内归约」也算进 butterfly 级数。线程内的串行累加发生在
+**常见错误**：把“线程内归约”也算进 butterfly 级数。线程内的串行累加发生在
 调用 `AllReduce` 之前，不走通信。
 
 ---
 
 ## E7 概念题 ★★
 
-**思路**：判据是 `get_extent()`，不是「dst 有几个元素」。
+**思路**：判据是 `get_extent()`，不是“dst 有几个元素”。
 
 **参考答案**
 
@@ -178,9 +178,9 @@
    （`tilelang/language/copy_op.py:38-46,99-102`）。
 3. 两种：`(blk_m,)`（压缩）或 `(blk_m, 1)`（keepdim）（`reduce_op.py:63-71`）。
 4. 默认 `clear=True`（`reduce_op.py:230-232`）。若改成 `clear=False` 且 `A_powsum`
-   未初始化，就是把结果加到一段未定义的值上——数值不确定。
+   未初始化，就是把结果加到一段未定义的值上，数值不确定。
 
-**常见错误**：以为 `T.copy(A[i, j], A_shared)` 是「从 `A[i,j]` 开始拷一块」的
+**常见错误**：以为 `T.copy(A[i, j], A_shared)` 是“从 `A[i,j]` 开始拷一块”的
 无限语义。它只在能被推断出同秩 extent 时合法，且**不支持通用广播**。
 
 ---
@@ -207,8 +207,8 @@
 **参考答案**
 
 1. 源侧对应 `value = if_then_else(src_predicate, value, analyzer->Simplify(safe_value))`
-   （`src/op/copy.cc:520`）——用**选择**，因为每条 lane 都要产出一个值；
-   目标侧对应 `body = IfThenElse(dst_predicate, body)`（同文件 `:525`）——用
+   （`src/op/copy.cc:520`），用**选择**，因为每条 lane 都要产出一个值；
+   目标侧对应 `body = IfThenElse(dst_predicate, body)`（同文件 `:525`），用
    **条件**，因为越界的 lane 干脆不写。
 2. 输出里越界 lane 的取值从 `0.0` 变成 `-1.0`。对应源码里的 `src_oob_safe_value`
    （同文件 `:103,514-516`）。
@@ -216,7 +216,7 @@
    `cond_list` 为空、返回未定义的 `PrimExpr`，脚本也就不生成谓词
    （同文件 `:449-481`）。脚本的行为与它一致。
 
-**常见错误**：以为越界时是「跳过」而不是「填值」。源侧越界一定会产生一个值，
+**常见错误**：以为越界时是“跳过”而不是“填值”。源侧越界一定会产生一个值，
 否则整条向量化循环没法写。
 
 ---
@@ -240,7 +240,7 @@
    `out_old ⊕ reduce(src)`。对应 `reduce_op.py:141-158`：
    `if not clear: copy(out, red_frag_out)`。
 
-**常见错误**：把 `threads` 当成「归约宽度」。真正的归约宽度是 `threads / scale`。
+**常见错误**：把 `threads` 当成“归约宽度”。真正的归约宽度是 `threads / scale`。
 
 ---
 
@@ -260,15 +260,15 @@
 
 会**直接编译失败**的两类：
 
-* `T.async_copy` 在约束不满足时（不是 global→shared，或两侧 dtype 不同）——
+* `T.async_copy` 在约束不满足时（不是 global→shared，或两侧 dtype 不同），
   `Unsupported(facts.async_unavailable_reason)`（同文件 `:757-760`，原因串构造见 `:560-575`）。
 * `prefer_instruction="tma"` 与 `disable_tma=True`（或 pass config
-  `tl.disable_tma_lower`）冲突时——`Unsupported(...)`（同文件 `:762-777`）。
+  `tl.disable_tma_lower`）冲突时，`Unsupported(...)`（同文件 `:762-777`）。
 
 注意本表第一行：**默认的 `T.copy` load 不会自动走 TMA**。这是本章最容易误判的
 一处；如果你想让它走 TMA，就显式写 `prefer_instruction="tma"`。
 
-**常见错误**：把「能走 TMA」当成「默认走 TMA」。源码里的默认分支只对 store 尝试 TMA。
+**常见错误**：把“能走 TMA”当成“默认走 TMA”。源码里的默认分支只对 store 尝试 TMA。
 
 （可选硬件题：请在答案里注明实际使用的 GPU 型号、驱动、CUDA 与 TileLang 版本，
-并贴出生成源码；没有硬件的读者不要填写任何「实测」结论。）
+并贴出生成源码；没有硬件的读者不要填写任何“实测”结论。）

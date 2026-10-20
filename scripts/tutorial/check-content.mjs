@@ -26,6 +26,7 @@ const TONES = new Set(['default', 'accent', 'store', 'compute', 'muted', 'warn',
 
 /** Titles/labels that show up when a spec was scaffolded but never filled in. */
 const PLACEHOLDERS = new Set(['t', 'x', 'test', 'todo', 'tbd', 'demo', '示例', '待补', '—']);
+const EMOJI = /✅|❌|⚠️|🤖/u;
 
 function isPlaceholder(value) {
   return typeof value !== 'string' || PLACEHOLDERS.has(value.trim().toLowerCase());
@@ -40,6 +41,48 @@ function fail(chapter, message) {
 
 function warn(chapter, message) {
   warnings.push(`${chapter}: ${message}`);
+}
+
+/** The reader-visible Chinese prose follows one punctuation and quote style. */
+function checkProseStyle(chapter, where, text, checkAsciiQuotes = true) {
+  const prose = text
+    .replace(/```[\s\S]*?```/g, '')
+    // Keep a non-space placeholder so removing inline code does not create
+    // artificial spaces after punctuation (for example `“块”：`code``).
+    .replace(/`[^`\n]*`/g, 'X')
+    .replace(/<[^>]+>/g, '');
+  if (prose.includes('「') || prose.includes('」')) {
+    fail(chapter, `${where}: use “” instead of 「」`);
+  }
+  if (checkAsciiQuotes && prose.includes('"')) {
+    fail(chapter, `${where}: use “” instead of ASCII double quotes`);
+  }
+  if (prose.includes('——'))
+    fail(chapter, `${where}: replace the Chinese em dash with a full stop or comma`);
+  if (/[，。；：！？][ \t]+(?=\p{Script=Han})/u.test(prose)) {
+    fail(chapter, `${where}: remove horizontal whitespace after Chinese punctuation`);
+  }
+  if (/\|\s*[，。；：]\s*\|/u.test(prose)) {
+    fail(chapter, `${where}: table cell contains only punctuation`);
+  }
+  if (EMOJI.test(prose)) fail(chapter, `${where}: remove emoji from prose`);
+}
+
+function checkJsonProseStyle(chapter, where, value, key = '') {
+  // JSON strings often hold exact code (for example `T.gemm(..., "float16")`).
+  // Quotes there are syntax, not Chinese punctuation, so only prose markers
+  // that cannot be code are checked.
+  // `inlineQuote` reproduces a fenced diagram byte-for-byte, including its
+  // intentional alignment spaces, so it is not reader-facing prose.
+  if (typeof value === 'string' && key !== 'inlineQuote') {
+    checkProseStyle(chapter, where, value, false);
+  } else if (Array.isArray(value)) {
+    for (const item of value) checkJsonProseStyle(chapter, where, item, key);
+  } else if (typeof value === 'object' && value !== null) {
+    for (const [childKey, item] of Object.entries(value)) {
+      checkJsonProseStyle(chapter, where, item, childKey);
+    }
+  }
 }
 
 function checkTones(chapter, spec, where) {
@@ -130,6 +173,7 @@ async function checkFigures(chapter) {
     }
     checkTones(chapter, spec, file);
     checkSubstance(chapter, spec, file);
+    checkJsonProseStyle(chapter, file, spec);
     if (isPlaceholder(spec.caption)) {
       warn(chapter, `${file}: no caption (optional, but a one-line caption helps readers)`);
     }
@@ -142,25 +186,19 @@ async function checkFigures(chapter) {
       fail(chapter, `${file}: render failed (${error.message})`);
     }
   }
-  const inlineCount = await countInlineSpecs(specDir, specs);
-  if (specs.length - inlineCount > sources.length) {
-    warn(
-      chapter,
-      `${specs.length - inlineCount} specs for ${sources.length} source figures (extra specs?)`,
-    );
+  const sourceBases = sources.map((source) => source.replace(/\.(md|mmd|txt)$/, ''));
+  const orphanSpecs = [];
+  for (const file of specs) {
+    const spec = JSON.parse(await readFile(path.join(specDir, file), 'utf8'));
+    const id = file.replace(/\.json$/, '');
+    const fromSource = sourceBases.some((base) => id === base || id.startsWith(`${base}-`));
+    if (typeof spec.inlineQuote !== 'string' && !fromSource) orphanSpecs.push(file);
+  }
+  if (orphanSpecs.length > 0) {
+    warn(chapter, `figure specs without a source figure: ${orphanSpecs.join(', ')}`);
   }
   await checkInlineQuotes(chapter, specDir, specs);
   return specs.length;
-}
-
-/** Figures that stand in for a fenced block have no `source-figures/*` original. */
-async function countInlineSpecs(specDir, specs) {
-  let count = 0;
-  for (const file of specs) {
-    const spec = JSON.parse(await readFile(path.join(specDir, file), 'utf8'));
-    if (typeof spec.inlineQuote === 'string' && spec.inlineQuote !== '') count += 1;
-  }
-  return count;
 }
 
 /**
@@ -218,6 +256,7 @@ async function checkQuiz(chapter) {
     return 0;
   }
   if (quiz.chapter !== chapter) fail(chapter, `quiz.chapter must be "${chapter}"`);
+  checkJsonProseStyle(chapter, 'quiz', quiz);
   const items = quiz.items ?? [];
   if (items.length < 5 || items.length > 8) {
     fail(chapter, `quiz has ${items.length} items (want 5–8)`);
@@ -249,6 +288,9 @@ async function checkQuiz(chapter) {
     if (typeof item.explain !== 'string' || item.explain.trim().length < 10) {
       fail(chapter, `${id}: explain too short`);
     }
+    if (/第[一二三四1234]项|前[两二三四]项|后[两二三四]项/u.test(item.explain ?? '')) {
+      fail(chapter, `${id}: explain refers to an option by position; quote its content instead`);
+    }
   });
   const spread = new Set(items.map((item) => item.answer));
   if (items.length >= 5 && spread.size < 3) {
@@ -267,8 +309,23 @@ async function main() {
   let figures = 0;
   let quizItems = 0;
   for (const chapter of chapters) {
+    for (const suffix of ['', '.exercises', '.solutions', '.references']) {
+      const file = path.join(SRC, 'content', `${chapter}${suffix}.md`);
+      if (existsSync(file))
+        checkProseStyle(chapter, `${chapter}${suffix}.md`, await readFile(file, 'utf8'));
+    }
     figures += await checkFigures(chapter);
     quizItems += await checkQuiz(chapter);
+  }
+  if (filter.length === 0) {
+    for (const file of ['OUTLINE.md', 'README.md', 'VERSIONS.md']) {
+      const target = path.join(SRC, file);
+      if (existsSync(target)) checkProseStyle(file, file, await readFile(target, 'utf8'));
+    }
+    const notesDir = path.join(SRC, 'notes');
+    for (const file of (await readdir(notesDir)).filter((entry) => entry.endsWith('.md'))) {
+      checkProseStyle(`notes/${file}`, file, await readFile(path.join(notesDir, file), 'utf8'));
+    }
   }
 
   for (const message of warnings) console.log(`warn  ${message}`);

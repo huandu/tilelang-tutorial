@@ -36,6 +36,6 @@ ComputeWarpPartition:
 **两个关键推论**：
 
 * `clear_accum` 会把 C 的 access region 从 `rw` 改成 `w`
-  （`gemm_op.py:103`）——它进了 IR，影响依赖与同步分析。
+  （`gemm_op.py:103`）。它进了 IR，影响依赖与同步分析。
 * 只有 `cuda.mma` / `cuda.mma.blockscaled` 复用已有 shared layout；
   wgmma/tcgen05 会重新推导（`cuda/op/gemm.cc:398-400`）。

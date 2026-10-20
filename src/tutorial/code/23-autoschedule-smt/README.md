@@ -34,4 +34,4 @@ python3 ascend_pass_order.py --repo /path/to/tilelang-v0.1.15
 * 两个脚本都不写文件、不访问网络、不读 `_vendor/` 和自身目录以外的路径。
 * `examples/ascend/example_gemm.py` 里的真实流程（`T.Persistent` + `T.Pipelined` +
   `do_bench(backend="msprof")`）**没有被本目录执行过**；它出现在正文里只作为
-  「在有 NPU 的机器上怎么验证」的入口，验证步骤见 `chapter.md` 第 5.5 节。
+  “在有 NPU 的机器上怎么验证”的入口，验证步骤见 `chapter.md` 第 5.5 节。

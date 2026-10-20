@@ -1,7 +1,7 @@
 {
   "id": "02-compile-time-tools",
   "title": "编译期工具的分层与产物",
-  "caption": "同一个 lowering 过程，按「想看哪一层」选工具：7 个观察工具挂在管线不同位置，且都不需要加速器。",
+  "caption": "同一个 lowering 过程，按“想看哪一层”选工具：7 个观察工具挂在管线不同位置，且都不需要加速器。",
   "kind": "flow",
   "direction": "LR",
   "nodeMaxEm": 18,
@@ -63,6 +63,6 @@
   ],
   "notes": [
     "编译期工具都不需要 GPU / NPU（例外：pass_visualizer 的 CLI 目前只覆盖 CUDA 目标）。",
-    "pass_timing 测的是编译器自己花了多久，不是 kernel 跑得多快；两个「性能」不要混用。"
+    "pass_timing 测的是编译器自己花了多久，不是 kernel 跑得多快；两个“性能”不要混用。"
   ]
 }

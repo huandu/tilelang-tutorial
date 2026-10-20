@@ -37,7 +37,7 @@
     { "from": "c3", "to": "fail" }
   ],
   "notes": [
-    "三条出路都只在「同一 buffer 的两个建议不兼容」时才启动；任一条成功都无需报错。",
+    "三条出路都只在“同一 buffer 的两个建议不兼容”时才启动；任一条成功都无需报错。",
     "代价是二元组 {mem, regs}，按字典序比较：先比 mem，再比 regs。",
     "默认 register-count 只数寄存器溢出与 fragment 槽位；可选 io-aware（tl.layout_cost_model）再把触及 global 的访存字节计入 mem。"
   ]

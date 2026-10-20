@@ -79,7 +79,7 @@ float4_e2m1fn              float4_e2m1_unpacked
   bits = 4                    bits = 8
 ```
 
-两者在逻辑上都是「FP4 E2M1」：`is_float4()` 对两者都返回 `True`
+两者在逻辑上都是“FP4 E2M1”：`is_float4()` 对两者都返回 `True`
 （`tilelang/language/dtypes.py:262-305`）。
 
 ## 事实来源

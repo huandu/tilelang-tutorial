@@ -11,15 +11,6 @@
  * tokens. That is what keeps a light/dark switch from needing a second SVG.
  */
 
-const PALETTE = {
-  // Rendered through CSS classes; kept here only for the standalone fallback
-  // (`cssFallback`) so an SVG opened on its own still looks sane.
-  base: '#ffffff',
-  content: '#1f2937',
-  line: '#cbd5e1',
-  accent: '#2563eb',
-};
-
 const FONT_SIZE = 15;
 const SMALL_SIZE = 12.5;
 const LINE_HEIGHT = 20;
@@ -182,15 +173,18 @@ function arrowPath(from, to, direction, label) {
   const startY = horizontal ? from.y + from.height / 2 : from.y + from.height;
   const endX = horizontal ? to.x : to.x + to.width / 2;
   const endY = horizontal ? to.y + to.height / 2 : to.y;
-  const midX = horizontal ? (startX + endX) / 2 : startX;
-  const midY = horizontal ? startY : (startY + endY) / 2;
-  const path = horizontal
-    ? `M ${round(startX)} ${round(startY)} H ${round(midX)} V ${round(endY)} H ${round(endX)}`
-    : `M ${round(startX)} ${round(startY)} V ${round(midY)} H ${round(endX)} V ${round(endY)}`;
+  const aligned = Math.abs(startX - endX) < 0.5 || Math.abs(startY - endY) < 0.5;
+  const path = aligned
+    ? `M ${round(startX)} ${round(startY)} L ${round(endX)} ${round(endY)}`
+    : horizontal
+      ? `M ${round(startX)} ${round(startY)} H ${round(endX)} V ${round(endY)}`
+      : `M ${round(startX)} ${round(startY)} V ${round(endY)} H ${round(endX)}`;
+  const labelX = (startX + endX) / 2;
+  const labelY = (startY + endY) / 2;
   const labelMarkup =
     label === undefined
       ? ''
-      : `<text class="tlfig-edge-label" x="${round(horizontal ? midX : midX + 6)}" y="${round(horizontal ? midY - 6 : midY)}" text-anchor="${horizontal ? 'middle' : 'start'}" font-size="${SMALL_SIZE}">${escapeXml(label)}</text>`;
+      : `<text class="tlfig-edge-label" x="${round(labelX + (horizontal ? 0 : 6))}" y="${round(labelY - (horizontal ? 6 : 0))}" text-anchor="${horizontal ? 'middle' : 'start'}" font-size="${SMALL_SIZE}">${escapeXml(label)}</text>`;
   return { path, labelMarkup };
 }
 
@@ -595,14 +589,21 @@ function renderGrid(spec) {
   const rows = spec.rows ?? [];
   const headers = spec.headers ?? [];
   const width = spec.width ?? 1000;
-  const colCount = Math.max(headers.length, ...rows.map((row) => (row.cells ?? []).length), 1);
+  const maxCells = Math.max(...rows.map((row) => (row.cells ?? []).length), 0);
+  const dataColumns = Math.max(headers.length, maxCells, 1);
+  const hasRowLabels = rows.some((row) => row.label !== undefined);
+  // Some specs put the row-label heading in `headers[0]`; others start the
+  // headers at the first data column. Detect both and keep columns aligned.
+  const headersIncludeLabel = hasRowLabels && headers.length > maxCells;
+  const headerOffset = hasRowLabels && !headersIncludeLabel ? 1 : 0;
+  const colCount = dataColumns + headerOffset;
   const cellWidth = (width - MARGIN * 2) / colCount;
   const cellHeight = spec.cellHeight ?? 52;
   const parts = [];
   let y = MARGIN;
   if (headers.length > 0) {
     headers.forEach((header, index) => {
-      const x = MARGIN + index * cellWidth;
+      const x = MARGIN + (index + headerOffset) * cellWidth;
       parts.push(
         `<rect class="tlfig-node tlfig-node--header" x="${round(x + 3)}" y="${round(y)}" width="${round(cellWidth - 6)}" height="${cellHeight - 8}" rx="8" />`,
         textBlock(
@@ -726,9 +727,7 @@ export function renderFigure(spec) {
   return (
     `<svg class="tlfig" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round(width)} ${round(height)}" ` +
     `role="img" aria-label="${title}" preserveAspectRatio="xMidYMid meet" ` +
-    `style="max-width:${round(width)}px;width:100%;height:auto">` +
+    `data-wide="${width > 900 ? 'true' : 'false'}" style="max-width:${round(width)}px;width:100%;height:auto">` +
     `<title>${title}</title>${defs}${body}</svg>`
   );
 }
-
-export { PALETTE };

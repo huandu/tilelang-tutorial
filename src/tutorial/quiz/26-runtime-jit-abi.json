@@ -5,12 +5,12 @@
       "id": "q1",
       "stem": "装饰阶段 @tilelang.jit 实际做了什么？",
       "options": [
+        "只把函数包成 JITImpl，抓住源码文本与签名，此时不编译",
         "立刻编译并返回一个 JITKernel",
         "把 kernel 编成 cubin 并写进磁盘缓存",
-        "只把函数包成 JITImpl，抓住源码文本与签名，此时不编译",
         "在装饰时就判定这个 kernel 是 lazy 还是 eager 模式"
       ],
-      "answer": 2,
+      "answer": 0,
       "explain": "见 §2.1 与 §4.1：装饰只做 prim_func(func, eager_jit=True) 并记录 func_source 与 signature；mode=\"auto\"，真正的模式要等第一次调用拿到实参才能定。"
     },
     {
@@ -23,7 +23,7 @@
         "缓存查询要等 kernel launch 之后才发生"
       ],
       "answer": 1,
-      "explain": "见 §2.1 与 §4.5：命中时 ④⑤⑥ 全部跳过，你拿到的是上一轮的 kernel_lib.so / executable.so；正因如此，「改了东西却不生效」多半是 key 没变，而不是缓存坏了。"
+      "explain": "见 §2.1 与 §4.5：命中时 ④⑤⑥ 全部跳过，你拿到的是上一轮的 kernel_lib.so / executable.so；正因如此，“改了东西却不生效”多半是 key 没变，而不是缓存坏了。"
     },
     {
       "id": "q3",
@@ -89,12 +89,12 @@
       "id": "q8",
       "stem": "判断自己是不是 Host Bound，最直接的量化做法是？",
       "options": [
-        "把同一个 kernel 分别用 backend=\"event\" 与 backend=\"cudagraph\" 计时，差距越大说明 launch / 下发占比越高",
         "看 kernel 的 FLOPs 是否达到张量核峰值",
         "把 num_stages 调大再测一遍",
-        "用 nvcc -O3 重新编译一次"
+        "用 nvcc -O3 重新编译一次",
+        "把同一个 kernel 分别用 backend=\"event\" 与 backend=\"cudagraph\" 计时，差距越大说明 launch / 下发占比越高"
       ],
-      "answer": 0,
+      "answer": 3,
       "explain": "见 §5.1：cudagraph 把整段录成图后回放，把 launch 开销压掉，所以两者之差就是 host bound 的量化指标。测之前先确认自己没在测编译时间（TILELANG_JIT_DIAGNOSTICS=1）。"
     }
   ]

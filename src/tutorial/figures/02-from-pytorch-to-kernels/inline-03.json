@@ -25,6 +25,6 @@
   "caption": "从 Python 模型到硬件：中间隔着算子图与一个个 kernel，TileLang 负责的是最下面那一层。",
   "notes": [
     "第一跳（可选）由 torch.compile / TorchDynamo 捕获计算图；第二跳由 TorchInductor 做图级融合、调度与 kernel 生成。",
-    "TileLang 的位置在这一层：它不管「整张图怎么切」，只负责「一个算子怎么写快」。"
+    "TileLang 的位置在这一层：它不管“整张图怎么切”，只负责“一个算子怎么写快”。"
   ]
 }

@@ -1,6 +1,6 @@
 # 图 2：三本缓存账
 
-v0.1.15 里「缓存」不是一个东西，而是三层互不相同、失效条件也不同的账。
+v0.1.15 里“缓存”不是一个东西，而是三层互不相同、失效条件也不同的账。
 
 ## Mermaid 版
 
@@ -41,13 +41,13 @@ flowchart TD
    不是 Python 源码（`kernel_cache.py:269`）。
 2. **改 C++ pass 默认不会失效**。`base["tilelang_lib"]` 只有在
    `TILELANG_KERNEL_CACHE_USE_LIB_STAMP=1` 时才进 key（`env.py:447-448`、
-   `kernel_cache.py:142-145`）。这是「改了 pass 不生效」的头号原因。
-3. **③ 是 ② 的「下半截」**。device codegen 结束时会调用后端的编译回调
+   `kernel_cache.py:142-145`）。这是“改了 pass 不生效”的头号原因。
+3. **③ 是 ② 的“下半截”**。device codegen 结束时会调用后端的编译回调
    （CUDA：`src/cuda/codegen/rt_mod_cuda.cc:126-140` 调
    `tilelang_callback_cuda_compile`），回调里先查 ③
    （`tilelang/cuda/backend.py:106-120`），查不到才真正调 `nvcc` / `bisheng`。
    所以 ② 命中时根本不会走到 ③；**③ 只在 ② 未命中、但设备源码与上一轮完全相同时
-   才发挥作用**——典型场景是多机共享同一份
+   才发挥作用**，典型场景是多机共享同一份
    `$TILELANG_CACHE_DIR/<version>/{cuda,ascend}-binaries/`，而 host 侧
    `kernels/` 各自独立。这也解释了为什么 ③ 的 key 里刻意不含 `out_idx`、
    `pass_configs`、`execution_backend` 这些只影响 host 侧的字段。

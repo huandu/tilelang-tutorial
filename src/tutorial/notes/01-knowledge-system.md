@@ -9,7 +9,7 @@
   inference、加语言原语），理解每个 IR 变换做了什么。
 * **T3 后端工程师**：能为一个新硬件（昇腾优先）接后端，或深度迭代现有昇腾后端。
 
-下文所有「资料」都指本 corpus 里的本地文件，路径相对 `.workspace/research/tilelang-corpus/`。
+下文所有“资料”都指本 corpus 里的本地文件，路径相对 `.workspace/research/tilelang-corpus/`。
 
 ---
 
@@ -38,12 +38,12 @@ device 源码（CUDA C / PTX / Ascend C / PTO / AscendNPU IR）
 
 三个必须记住的判断：
 
-1. TileLang **不是** PyTorch 的替代品，也不是完整的图编译器。它解决的是「一个算子内部
-   怎么写快」，位置在 Inductor 之下、CUDA/Ascend C 之上。
+1. TileLang **不是** PyTorch 的替代品，也不是完整的图编译器。它解决的是“一个算子内部
+   怎么写快”，位置在 Inductor 之下、CUDA/Ascend C 之上。
 2. TileLang **不是** 语法糖。它的价值在编译期：layout 推导、软件流水、同步插入、
    多缓冲、片内存储复用这些都由 pass 完成。
-3. TileLang 的 IR 就是 **TVM TIR**。「给 TileLang 加功能」很多时候等于「写一个 TIR
-   pass」，所以 TVM 是必修，不是选修。
+3. TileLang 的 IR 就是 **TVM TIR**。“给 TileLang 加功能”很多时候等于“写一个 TIR
+   pass”，所以 TVM 是必修，不是选修。
 
 ### 0.2 五个核心概念（后续所有内容的骨架）
 
@@ -55,7 +55,7 @@ device 源码（CUDA C / PTX / Ascend C / PTO / AscendNPU IR）
 | **Pipeline（流水）** | 搬运与计算重叠、多缓冲、stage 数 | `T.Pipelined(..., num_stages=k)` | `PipelinePlanning` → `InjectSoftwarePipeline` → 多缓冲物化 |
 | **Thread / warp / core（执行映射）** | 谁执行、怎么分工（SIMT 线程、warp 组、Cube/Vector 核） | `T.Parallel`、`T.thread_binding`、`T.warp_specialize`、`T.SimtVF/T.SimdVF` | `MaterializeKernelLaunch`、`LowerThreadAllreduce`、`ThreadSync` |
 
-学会 TileLang 的过程，就是把这五个概念在「用户视角」和「编译器视角」之间来回翻译。
+学会 TileLang 的过程，就是把这五个概念在“用户视角”和“编译器视角”之间来回翻译。
 
 ---
 
@@ -70,15 +70,15 @@ device 源码（CUDA C / PTX / Ascend C / PTO / AscendNPU IR）
 
 知识点：
 
-* 存储层级与延迟/带宽差异（寄存器 → 片上 SRAM → 片外 HBM/DRAM）；「搬数据比算数据
-  贵」这件事的量化形式。
+* 存储层级与延迟/带宽差异（寄存器 → 片上 SRAM → 片外 HBM/DRAM）；“搬数据比算数据
+  贵”这件事的量化形式。
 * 计算并行度的三种基本形式：指令级并行（ILP）、数据级并行（SIMD/向量）、线程级并行
   （SIMT/多核）。
 * 流水线、延迟隐藏、吞吐 vs 延迟；生产者-消费者与双缓冲。
 * 同步原语与内存一致性（barrier、fence、acquire/release）的直觉。
 * Amdahl 定律与 roofline 模型（后者见 1.2）。
 
-掌握标准：能解释「为什么 attention 的 softmax 要在线做（online softmax）而不是两遍」，
+掌握标准：能解释“为什么 attention 的 softmax 要在线做（online softmax）而不是两遍”，
 并说出这样省掉了哪一级存储的读写。
 
 本地资料：
@@ -87,7 +87,7 @@ device 源码（CUDA C / PTX / Ascend C / PTO / AscendNPU IR）
 * `06-huawei-ascend/raw/hiascend/llms-content/hardware/zh_hardware_processor.md`（昇腾硬件规格）
 
 需要额外自备的通用教材（本 corpus 未收录）：Hennessy & Patterson《计算机体系结构》，
-或任何一份讲 cache/流水/并行体系结构的公开课。这是本 corpus 唯一明确「需要外部教材」
+或任何一份讲 cache/流水/并行体系结构的公开课。这是本 corpus 唯一明确“需要外部教材”
 的基础块。
 
 ### 1.2 深度学习算子与性能模型（必修，2 周）
@@ -110,7 +110,7 @@ memory-bound 还是 compute-bound；能说清 TileLang 里哪个 example 对应�
 
 本地资料：
 * `01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/*.md`
-* `02-tilelang-core-repo/raw/tilelang/examples/`（57 个目录，逐一看）
+* `02-tilelang-core-repo/raw/examples/`（57 个目录，逐一看）
 * `03-tilelang-papers/raw/arxiv-2205-14135.md`、`2307-08691`、`2407-08608`（FlashAttention 三部曲）
 * `03-tilelang-papers/raw/arxiv-2502-11089.md`（NSA）、`2605-02568.md`（StreamIndex）
 * `12-operator-libraries/raw/TileOPs/`（生产算子库写法）
@@ -143,7 +143,7 @@ warp specialization）都是 CUDA 概念的直接包装。
 * `05-nvidia-backend/raw/nvidia-hopper-tuning-guide.html`、`nvidia-blackwell-tuning-guide.html`
 * `05-nvidia-backend/raw/nvidia-cutlass-docs.html`、`nvidia-cutlass-media-docs-cute.html`
 * `05-nvidia-backend/raw/arxiv-2402-13499.md`（Hopper 实测数字）
-* 代码对照：`02-tilelang-core-repo/raw/tilelang/tilelang/cuda/op/gemm/` 与
+* 代码对照：`02-tilelang-core-repo/raw/tilelang/cuda/op/gemm/` 与
   `tilelang/cuda/intrinsics/macro/`（`wgmma_macro_generator`、`tcgen05_macro_generator`）
 
 ### 1.4 NPU / 昇腾执行模型（必修，3–4 周；本项目的最高优先级）
@@ -154,7 +154,7 @@ UB/L1/L0A-L0C，就读不懂 `tilelang/ascend/` 里任何一个 pass。
 知识点：
 
 * CANN 全栈结构：GE（图引擎）、runtime、编译器（毕昇）、算子库、HCCL。
-* Ascend C 编程模型（作为「TileLang 替你隐藏了什么」的对照）。
+* Ascend C 编程模型（作为“TileLang 替你隐藏了什么”的对照）。
 * AIC（Cube，矩阵）与 AIV（Vector，向量）的分工；SIMD 与 SIMT 区域。
 * 存储层级与搬运流水：GM → L1 → L0A/L0B → L0C（Cube 侧）；GM → UB（Vector 侧）；
   MTE1/MTE2/MTE3/Fixpipe 的角色。
@@ -255,16 +255,16 @@ int4/int8 量化与反量化；累加精度与舍入；为什么需要 block sca
 本地资料：`01-.../raw/site/_sources/programming_guides/` 全部；
 `07-.../docs/language_ref/`、`docs/api_docs/`；`10-.../raw/tilelang-puzzles/`。
 
-### 2.2 编程模型：三个层次与「可组合」
+### 2.2 编程模型：三个层次与“可组合”
 
 官方把接口分三层（`get_started/overview.md`）：
 
-* **Beginner（硬件无关）**：官方标注「尚未完全实现」。现阶段不要依赖。
+* **Beginner（硬件无关）**：官方标注“尚未完全实现”。现阶段不要依赖。
 * **Developer（tile library）**：用 tile 原语描述数据流，`T.gemm`/`T.copy`/`T.Pipelined`。
   日常 90% 的代码在这一层。
 * **Expert（thread primitives）**：直接控制线程/搬运/同步，或使用硬件专用存储。
 
-关键点：三层可以**混用**在同一 kernel 里（论文标题里的 "composable" 就是指这个）。
+关键点：三层可以**混用**在同一 kernel 里（论文标题里的 “composable” 就是指这个）。
 这是 TileLang 与 Triton 的核心分野：Triton 一旦下钻就离开模型，TileLang 允许局部下钻
 而不破坏其余部分的优化。
 
@@ -310,12 +310,12 @@ RewriteDualCopy → LegalizeSimdMerging → UnrollLoopSkipVF
 
 1. **怎么看到中间态**：`tools/lower_trace`、`tools/pass_diff`、`tools/pass_visualizer`、
    `TL_DEBUG`/pass config。没有这个能力，改 pass 就是盲改。
-2. **哪些 pass 是「承重墙」**：`LayoutInference`、`InjectSoftwarePipeline`、
+2. **哪些 pass 是“承重墙”**：`LayoutInference`、`InjectSoftwarePipeline`、
    `LowerTileOp`、`ThreadSync`、`StorageRewrite`、昇腾的 `AutoSchedule` + `InsertSync`。
 3. **pass 的开关与配置**：`tilelang/transform/pass_config.py` 里的 `PassConfigKey`
    （例如禁用 shared memory 复用、开 race check、强制 let inline）。
 
-### 2.4 核心算法（TileLang 的「为什么快」）
+### 2.4 核心算法（TileLang 的“为什么快”）
 
 #### 2.4.1 Layout inference
 
@@ -323,12 +323,12 @@ RewriteDualCopy → LegalizeSimdMerging → UnrollLoopSkipVF
 fragment、swizzle、fractal（ND→NZ）等带约束的映射。
 
 TileLang 的解法（`tilelang/layout/` + `src/transform/layout_inference/`）：
-* 用 layout 变量表达「元素 → (线程, 寄存器槽位)」的映射；
+* 用 layout 变量表达“元素 → (线程, 寄存器槽位)”的映射；
 * 在 tile op 图上传播约束，求解出满足所有 op 的 layout；
 * 冲突时插入转换（转换代价进入布局选择）。
 
-要点：这是「信息等价的推导」而非「猜」。知乎那篇原文的判断值得记住：*编译器应做等价
-推导，而不是在信息不足时补充信息*——所以 TileLang 把会影响合法性/性能的资源信息
+要点：这是“信息等价的推导”而非“猜”。知乎那篇原文的判断值得记住：*编译器应做等价
+推导，而不是在信息不足时补充信息*。所以 TileLang 把会影响合法性/性能的资源信息
 （L1/L0C 的使用、SIMT/SIMD 分区）保留在前端。
 
 #### 2.4.2 软件流水与多缓冲
@@ -353,7 +353,7 @@ TileLang 的解法（`tilelang/layout/` + `src/transform/layout_inference/`）�
 * 用 Z3 求满足依赖、流水间隔、缓冲区容量的可行解（`AutoSchedule`）；
 * 落地为多缓冲与同步（`PrepareMultiBuffer` → `InsertSync` → `MaterializeMultiBuffer`）。
 
-这是昇腾后端最有技术含量的部分，也是「TileLang 比 Ascend C 省掉人肉排期」的核心。
+这是昇腾后端最有技术含量的部分，也是“TileLang 比 Ascend C 省掉人肉排期”的核心。
 
 #### 2.4.5 自动调参与代价模型
 
@@ -393,9 +393,9 @@ NVIDIA 侧写 kernel 时的 block size / num_stages / 线程划分通常在 auto
 * `T.print`/`T.printf`、昇腾 `T.dump_tensor`
 * 昇腾侧：msProf、AICore exception dump、`docs/coverage_guide.md`
 
-掌握标准：任意一个编译错误或性能异常，能用上述工具定位到「哪个 pass 出了什么问题」。
+掌握标准：任意一个编译错误或性能异常，能用上述工具定位到“哪个 pass 出了什么问题”。
 
-### 2.7 算子实现模式库（读完这些，就有了「模式语言」）
+### 2.7 算子实现模式库（读完这些，就有了“模式语言”）
 
 | 模式 | 参考实现 |
 | --- | --- |
@@ -419,7 +419,7 @@ NVIDIA 侧写 kernel 时的 block size / num_stages / 线程划分通常在 auto
 
 ### 阶段 0 · 环境与第一次运行（1–3 天）
 
-目标：跑通第一个 kernel，建立「Python 里写 kernel」的手感。
+目标：跑通第一个 kernel，建立“Python 里写 kernel”的手感。
 
 动手产出：在本机安装 TileLang（`01-.../get_started/Installation.md`），跑通
 `examples/elementwise/` 与 `examples/gemm/`，把生成源码（`kernel.get_kernel_source()`）
@@ -431,7 +431,7 @@ NVIDIA 侧写 kernel 时的 block size / num_stages / 线程划分通常在 auto
 
 ### 阶段 1 · 写出第一个自己的算子（1–2 周）
 
-目标：从「照着抄」到「照着需求写」。
+目标：从“照着抄”到“照着需求写”。
 
 学什么：`T.Kernel` 网格语义、`T.Parallel`、`T.copy`、`T.alloc_shared/fragment`、
 类型系统、控制流。
@@ -462,7 +462,7 @@ layout 与 bank conflict；auto-tuning。
 
 ### 阶段 3 · attention 与融合算子（3–6 周）
 
-目标：能实现生产级融合算子——这通常是「会用 TileLang」的分水岭。
+目标：能实现生产级融合算子。这通常是“会用 TileLang”的分水岭。
 
 学什么：online softmax、attention 变体（MHA/GQA/MLA）、varlen/paged、Flash-Decoding
 与 split-KV、稀疏/索引类算子、MoE。
@@ -480,7 +480,7 @@ layout 与 bank conflict；auto-tuning。
 
 ### 阶段 4 · 编译期（T2 起点，4–8 周）
 
-目标：把 TileLang 从「黑盒编译器」变成「可读的编译器」。
+目标：把 TileLang 从“黑盒编译器”变成“可读的编译器”。
 
 学什么：TVM TIR 基础、pass 写法、layout inference 与 pipeline 的实现、
 调试工具链。
@@ -491,7 +491,7 @@ layout 与 bank conflict；auto-tuning。
 2. 自己写一个 TIR pass（例如统计某个 buffer 的访存次数）并挂进 pipeline。
 3. 修改 `LayoutInference` 的一个分支或它的输入注解，观察行为变化。
 
-验收：能回答「`T.gemm` 的 `transpose_B=True` 最终改变了哪些 IR 节点」。
+验收：能回答“`T.gemm` 的 `transpose_B=True` 最终改变了哪些 IR 节点”。
 
 资料：`04-...`；`01-.../compiler_internals/`；`02-.../src/transform/`、
 `tilelang/layout/`、`tilelang/transform/`；`03-.../arxiv-2504-17577.md`。
@@ -522,8 +522,8 @@ layout 与 bank conflict；auto-tuning。
 6. 理解 PTO：`06-.../raw/pto-spec/`、`raw/PTO-Gym/`，并对照 `T.alloc_l1/l0c`、
    `T.dual_copy` 的 codegen。
 
-验收：能对昇腾上一个 attention 算子自主完成「复现 → 定位瓶颈 → 改 layout/流水 →
-提升性能」的闭环，并说清每一步对应哪个 pass。
+验收：能对昇腾上一个 attention 算子自主完成“复现 → 定位瓶颈 → 改 layout/流水 →
+提升性能”的闭环，并说清每一步对应哪个 pass。
 
 资料：`06-...`、`07-...`、`08-...`、`09-...`。
 
@@ -531,7 +531,7 @@ layout 与 bank conflict；auto-tuning。
 
 目标：能改 TileLang 本身，并让改动被合并。
 
-见下文章节「4. 给 TileLang 做贡献」。
+见下文章节“4. 给 TileLang 做贡献”。
 
 ---
 
@@ -548,7 +548,7 @@ layout 与 bank conflict；auto-tuning。
 
 - [ ] 能读 TIR，能写 pass，能解释每个 pass 的作用与顺序理由
 - [ ] 能修改 layout inference / pipeline / sync 插入中的至少一处
-- [ ] 能诊断「编译通过但结果错」的问题（多数是同步或 layout 问题）
+- [ ] 能诊断“编译通过但结果错”的问题（多数是同步或 layout 问题）
 - [ ] 能评审别人对 `src/transform/` 的改动
 
 **T3 后端工程师**
@@ -562,9 +562,9 @@ layout 与 bank conflict；auto-tuning。
 
 ## 5. 给 TileLang 做贡献（T2/T3 的实操路径）
 
-1. **先读懂「边界」**：`08-.../raw/github-issue-2115`（多后端解耦）与
+1. **先读懂“边界”**：`08-.../raw/github-issue-2115`（多后端解耦）与
    `github-issue-2196`（TVM 迁移）决定你该往哪儿加东西。
-2. **从当前在飞的工作切入**：`08-...` 里那些未合入的 Ascend PR 就是最好的「下一步」。
+2. **从当前在飞的工作切入**：`08-...` 里那些未合入的 Ascend PR 就是最好的“下一步”。
    读它们的 diff，找准一个自己能复现的部分。
 3. **必须掌握的工程要求**：
    * 测试：`testing/` 下的 pytest（CUDA 侧）与 `07-.../testing/`（昇腾侧）；
@@ -581,7 +581,7 @@ layout 与 bank conflict；auto-tuning。
 
 ## 6. NVIDIA 专项（最小必要集）
 
-如果只学 NVIDIA 侧的「核心设计思想」，按这个顺序，不要试图覆盖全部 CUDA：
+如果只学 NVIDIA 侧的“核心设计思想”，按这个顺序，不要试图覆盖全部 CUDA：
 
 1. 线程与存储模型（1.3 的知识点）→ 2. TMA（`cp.async.bulk.tensor`）→
 3. `wgmma`（sm90）→ 4. `tcgen05` + TMEM（sm100）→ 5. warp specialization →
@@ -620,21 +620,21 @@ SM120 block-scaled MMA、persistent kernel、PDL（programmatic dependent launch
 
 ### 7.3 易被忽略但重要的事
 
-* 昇腾不是「SM 换个名字」：Cube 与 Vector 是不同执行体，不能按 CUDA 的直觉推。
+* 昇腾不是“SM 换个名字”：Cube 与 Vector 是不同执行体，不能按 CUDA 的直觉推。
 * `T.dual_copy`（L0C→UB 双目标）这类原语是硬件特性穿透到语言层的结果；
-  这类「必须显式表达」的信息是昇腾编程的成本来源，也是 TileLang 需要权衡的地方。
-* 950 同时支持 SIMT 与 SIMD（`T.SimtVF` / `T.SimdVF`），因此「GPU 是 SIMT、NPU 是
-  SIMD」的旧概括已经失效。
+  这类“必须显式表达”的信息是昇腾编程的成本来源，也是 TileLang 需要权衡的地方。
+* 950 同时支持 SIMT 与 SIMD（`T.SimtVF` / `T.SimdVF`），因此“GPU 是 SIMT、NPU 是
+  SIMD”的旧概括已经失效。
 
 ---
 
 ## 8. 常见陷阱
 
 1. **把 TileLang 当 Triton 用**：TileLang 要求你显式决定 tile 与存储位置，写得太
-   「高层」反而拿不到性能。
+   “高层”反而拿不到性能。
 2. **忽略 layout 约束**：`T.gemm` 的输入 layout 不对时，性能会断崖下跌而不是报错。
 3. **多缓冲份数随意调**：stage 数受片上容量硬约束，昇腾上会更严格。
-4. **把「编译通过」当「正确」**：同步缺失经常表现为偶发错误（尤其昇腾）。
+4. **把“编译通过”当“正确”**：同步缺失经常表现为偶发错误（尤其昇腾）。
 5. **用 master 的最新行为解释旧版本**：0.1.x 与 nightly 差异很大，引用必须带 commit。
 6. **拿 vendor 的宣传性能做基线**：核对测量口径（dtype、shape、是否含 epilogue）。
 7. **在 NVIDIA 上验证过的结论直接搬到昇腾**：存储层级、执行体、同步协议全不同。
@@ -644,7 +644,7 @@ SM120 block-scaled MMA、persistent kernel、PDL（programmatic dependent launch
     正确性边界。
 11. **在错误的地方找答案**：编译问题是 `src/transform/`，性能问题是 layout/pipeline，
     数值问题是 dtype 与累加顺序。
-12. **不看上游 issue/PR**：很多「为什么这样设计」的答案只在 PR 讨论里。
+12. **不看上游 issue/PR**：很多“为什么这样设计”的答案只在 PR 讨论里。
 
 ---
 
@@ -671,7 +671,7 @@ SM120 block-scaled MMA、persistent kernel、PDL（programmatic dependent launch
 
 ## 10. 一句话总结
 
-学好 TileLang 需要的不是「更多 CUDA 语法」，而是三层能力叠加：
+学好 TileLang 需要的不是“更多 CUDA 语法”，而是三层能力叠加：
 **硬件直觉**（存储层级、流水、同步）× **算子与性能模型**（roofline、attention/MoE 的结构）
 × **编译器思维**（IR、pass、layout 推导）。昇腾优先不是因为政治上更重要，而是因为
 它把这三层能力的要求同时推到了极限：谁能在昇腾上把同步与调度问题解干净，谁就真正

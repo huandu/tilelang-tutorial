@@ -54,15 +54,15 @@ python3 -c "import deep_gemm, torch; \
   `T.alloc_l0a/l0b/l0c`、`T.annotate_buffer_versions`、`T.Pipelined`、
   `T.dual_copy`、`T.gemm`、`T.SimdVF`、`T.PerCoreTask`、`T.set_atomic`、
   `T.ascend_sync_inter_arrive/wait`、`make_ascend_compact_nz_layout`）；
-* 结构逐段对照原文件行号（见上面的「目的」）；
+* 结构逐段对照原文件行号（见上面的“目的”）；
 * **未编译、未在 NPU 上运行**。
 
 ## 已知局限
 
 * 骨架里 `num_store_phases` / `num_always_synced_store_phases` 的推导被简化；
-  原文件 `:95-103` 有完整解释（包括「AutoSchedule 不接受 `T.PerCoreTask` 里
-  条件控制流下的核间等待」这一条实现约束）。
+  原文件 `:95-103` 有完整解释（包括“AutoSchedule 不接受 `T.PerCoreTask` 里
+  条件控制流下的核间等待”这一条实现约束）。
 * 骨架省略了尾块与 `aiv_id` 相关的细节；真要改这个 kernel，请以原文件为准。
 * 物理缓冲区按 `block_mhc_mult3` 对齐、逻辑范围按 `mhc_mult3` 收窄——
-  这个「物理大于逻辑」的约定在骨架里保留并标注（原文件 `:158-163` 有同样注释）。
+  这个“物理大于逻辑”的约定在骨架里保留并标注（原文件 `:158-163` 有同样注释）。
 

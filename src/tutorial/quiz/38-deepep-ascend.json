@@ -5,12 +5,12 @@
       "id": "q1",
       "stem": "为什么说 MoE 的 dispatch / combine 是专家并行（EP）的核心成本？",
       "options": [
-        "因为它们要做大量浮点运算，和张量核抢资源",
         "因为它们是零 FLOP 的跨设备搬运，字节数由 T、k、hidden 决定，不随 GEMM 调优变小",
+        "因为它们要做大量浮点运算，和张量核抢资源",
         "因为它们必须串行执行，无法与任何计算重叠",
         "因为它们的显存占用是所有阶段里最大的"
       ],
-      "answer": 1,
+      "answer": 0,
       "explain": "dispatch/combine 是零 FLOP 的搬运（第 16 章 §2.5），字节量只由 token 数、top-k、hidden 与字节宽度决定；GEMM 调得再好也不会让它变小。它们可以与独立计算重叠（defer_epilogue），也不是显存最大的阶段。见 §1.2。"
     },
     {
@@ -41,24 +41,24 @@
       "id": "q4",
       "stem": "使用 `defer_epilogue=True` 时，下面哪条是必须满足的？",
       "options": [
-        "必须同时设置 async_with_compute_stream=True，否则 C++ 侧直接断言失败",
         "必须同时设置 do_cpu_sync=True",
         "必须同时设置 do_handle_copy=True",
-        "必须把 num_sms 显式设成 0"
+        "必须把 num_sms 显式设成 0",
+        "必须同时设置 async_with_compute_stream=True，否则 C++ 侧直接断言失败"
       ],
-      "answer": 0,
+      "answer": 3,
       "explain": "csrc/buffers/ep.hpp:398 断言 defer_epilogue 必须搭配 async_with_compute_stream。do_handle_copy 必须为 False，num_sms 保持默认即可；do_cpu_sync 与延迟 epilogue 没有绑定关系。见 §3.4。"
     },
     {
       "id": "q5",
-      "stem": "在 DeepEP-Ascend 的通信栈里，「连接建立」与「数据搬运」分别走哪一层？",
+      "stem": "在 DeepEP-Ascend 的通信栈里，“连接建立”与“数据搬运”分别走哪一层？",
       "options": [
-        "都走 URMA：kernel 自己建立连接再搬数据",
         "连接建立走 host 侧的 HCCL/HCOMM（内存注册、建端点与信道、拿 Jetty）；数据搬运走 device kernel 直接操作 URMA 的 WRITE / WRITE_WITH_NOTIFY",
+        "都走 URMA：kernel 自己建立连接再搬数据",
         "连接建立走 device kernel，数据搬运走 HCCL 的集合通信",
         "两者都由 HCOMM 的 host API 完成"
       ],
-      "answer": 1,
+      "answer": 0,
       "explain": "HCCL 负责通信域、拓扑与内存注册，HCOMM 负责建端点/信道/拿 Jetty；真正的数据路径是 device kernel 自己拼 SQE、敲 SQ 门铃，用单边 WRITE。整个 EP group 是一个 UB 域（{1, num_ranks}）。见 §5.1、§5.2、§5.3。"
     },
     {
@@ -71,11 +71,11 @@
         "DeepJIT 不使用磁盘缓存，每次调用都重新编译"
       ],
       "answer": 1,
-      "explain": "TileLang 的 JIT 把「DSL → 可调用函数」整条链包住，必须管 packed ABI 与 adapter；DeepJIT 只做「源码 → 编译 → 加载 → launch」，且支持共享磁盘缓存。见 §6.4。"
+      "explain": "TileLang 的 JIT 把“DSL → 可调用函数”整条链包住，必须管 packed ABI 与 adapter；DeepJIT 只做“源码 → 编译 → 加载 → launch”，且支持共享磁盘缓存。见 §6.4。"
     },
     {
       "id": "q7",
-      "stem": "下面哪一项在当前的 DeepEP-Ascend 昇腾后端是「接口存在但功能未实现」？",
+      "stem": "下面哪一项在当前的 DeepEP-Ascend 昇腾后端是“接口存在但功能未实现”？",
       "options": [
         "EPBuffer 的 FP8 dispatch",
         "defer_epilogue 延迟 epilogue",
@@ -87,15 +87,15 @@
     },
     {
       "id": "q8",
-      "stem": "README 说 EP≤32 时可持续 dispatch 达到「物理 payload 带宽上限的 90–95%」。关于这句话，哪个理解正确？",
+      "stem": "README 说 EP≤32 时可持续 dispatch 达到“物理 payload 带宽上限的 90–95%”。关于这句话，哪个理解正确？",
       "options": [
-        "它表示 dispatch 已经把链路的有效 payload 带宽吃掉了九成以上，瓶颈在链路而不在算法",
         "它表示还有 90–95% 的带宽余量可供优化",
         "它是本机实测出来的精确比例，可以直接当硬件规格",
-        "它统计的字节里包含了 expert alignment 产生的 padding"
+        "它统计的字节里包含了 expert alignment 产生的 padding",
+        "它表示 dispatch 已经把链路的有效 payload 带宽吃掉了九成以上，瓶颈在链路而不在算法"
       ],
-      "answer": 0,
-      "explain": "payload 口径不含 padding、不含 barrier（tests/ep/test_ep.py:404-406），所以 90–95% 是「实测 payload 速率 ÷ 链路上限」，说明瓶颈在链路。原文是 roughly 的区间估计，corpus 里也没有 Ascend 950 UBMEM 的官方带宽规格，不能当硬件手册数字。见 §7.4。"
+      "answer": 3,
+      "explain": "payload 口径不含 padding、不含 barrier（tests/ep/test_ep.py:404-406），所以 90–95% 是“实测 payload 速率 ÷ 链路上限”，说明瓶颈在链路。原文是 roughly 的区间估计，corpus 里也没有 Ascend 950 UBMEM 的官方带宽规格，不能当硬件手册数字。见 §7.4。"
     }
   ]
 }

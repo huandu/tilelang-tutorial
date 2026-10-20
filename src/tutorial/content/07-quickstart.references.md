@@ -4,18 +4,18 @@
 [../../VERSIONS.md](../../VERSIONS.md) 为准：TileLang `v0.1.15`
 （commit `a35f8ddf45eba16c21211ec8822d56ce5363036f`）、TileLang-Ascend
 `TileLang-ascend-v0.1.2.000-release`（commit `89a9364e47a341fffdd65ed94786b1d4f9b6a78c`）。**
-文中不出现「最新（发布）版」之类的模糊表述。
+文中不出现“最新（发布）版”之类的模糊表述。
 
 写作环境：macOS (Apple Silicon)、Python 3.11；**没有 NVIDIA GPU，也没有昇腾 NPU，
-也没有安装 tilelang**。因此本章所有涉及加速器的示例最高验证级别是「仅静态核对」——
+也没有安装 tilelang**。因此本章所有涉及加速器的示例最高验证级别是“仅静态核对”，
 API 名与签名逐个在 `_vendor/` 中比对过，**没有任何一条运行结果或性能数字来自本机实测**。
 
 ---
 
 ## 锁定的源码引用（`_vendor/tilelang-v0.1.15/`）
 
-本章正文引用的范围较广，这里按「安装 / 前端 / 运行时 / 昇腾 / 示例与文档」分组。
-「已核验」的含义是：在锁定版本工作树上用 `grep -n` / `sed -n` 定位到该行，并阅读了
+本章正文引用的范围较广，这里按“安装 / 前端 / 运行时 / 昇腾 / 示例与文档”分组。
+“已核验”的含义是：在锁定版本工作树上用 `grep -n` / `sed -n` 定位到该行，并阅读了
 完整签名或段落；行号与文件内容一致。**这不是运行验证。**
 
 ### A. 安装与环境（正文第 3 节）
@@ -40,8 +40,8 @@ API 名与签名逐个在 `_vendor/` 中比对过，**没有任何一条运行�
 | --- | --- | --- | --- |
 | S12 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:10-51` | 昇腾 950 前置条件（CANN/bisheng/ld.lld/torch_npu）与源码构建 | 已核验（2026-10-01）；**未在 NPU 上运行** |
 | S13 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:27-31` | `bisheng` 在 PATH / `BISHENG_HOME/bin`；默认 `dav-3510` | 已核验（2026-10-01） |
-| S14 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:138-154` | 昇腾写法要点与「与 Ascend C 的分工」对照表 | 已核验（2026-10-01） |
-| S15 | `_vendor/tilelang-ascend-v0.1.2.000/README.md:51-52` | 「在 A2 与 A3 上验证过」 | 已核验（2026-10-01） |
+| S14 | `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:138-154` | 昇腾写法要点与“与 Ascend C 的分工”对照表 | 已核验（2026-10-01） |
+| S15 | `_vendor/tilelang-ascend-v0.1.2.000/README.md:51-52` | “在 A2 与 A3 上验证过” | 已核验（2026-10-01） |
 | S16 | `_vendor/tilelang-ascend-v0.1.2.000/README.md:76-134` | 三种安装方式（wheel / 打 wheel / install_ascend.sh）与 CANN、torch-npu 版本要求 | 已核验（2026-10-01） |
 | S17 | `_vendor/tilelang-ascend-v0.1.2.000/install_ascend.sh:37-45` | 脚本的 Python >= 3.10 门 | 已核验（2026-10-01） |
 | S18 | `_vendor/tilelang-ascend-v0.1.2.000/install_ascend.sh:171-243` | submodule、TVM 补丁、cmake/make 流程 | 已核验（2026-10-01） |
@@ -50,17 +50,17 @@ API 名与签名逐个在 `_vendor/` 中比对过，**没有任何一条运行�
 | S21 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/cache/__init__.py:70` | 独立仓库**有**顶层 `clear_cache()`（与主干不同） | 已核验（2026-10-01） |
 | S22 | `_vendor/tilelang-ascend-v0.1.2.000/VERSION` | 内容为 `0.1.4`（以 tag 为准） | 已核验（2026-10-01）：`cat VERSION` |
 | S23 | `_vendor/tilelang-ascend-v0.1.2.000/examples/elementwise/elementwise_add.py:31-46` | 独立仓库方言：`is_npu=True`、`alloc_ub`、`T.Scope("V")`、`barrier_all` | 已核验（2026-10-01） |
-| S23a | `_vendor/tilelang-v0.1.15/tilelang/ascend/language/annotations.py:19-38` | `T.annotate_buffer_versions` 的语义：`num_stages > 1` 时多缓冲份数由自动调度器计算，该注解用于锁定份数 / 索引模式 | 已核验（2026-10-01）：逐行阅读 docstring；由此确定本章昇腾示例省略它是「语义应当等价、未在 NPU 上验证」的取舍 |
+| S23a | `_vendor/tilelang-v0.1.15/tilelang/ascend/language/annotations.py:19-38` | `T.annotate_buffer_versions` 的语义：`num_stages > 1` 时多缓冲份数由自动调度器计算，该注解用于锁定份数 / 索引模式 | 已核验（2026-10-01）：逐行阅读 docstring；由此确定本章昇腾示例省略它是“语义应当等价、未在 NPU 上验证”的取舍 |
 
 ### C. 前端：网格、buffer、copy、parallel（正文第 2、4 节）
 
 | id | 引用位置 | 用途 | 核验方式与状态 |
 | --- | --- | --- | --- |
-| S24 | `_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:431-455` | `T.Kernel` 的 "grid of tile programs" / "target-neutral launch" 语义与参数说明 | 已核验（2026-10-01）：`grep -n "^def Kernel"` → 431 |
+| S24 | `_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:431-455` | `T.Kernel` 的 “grid of tile programs” / “target-neutral launch” 语义与参数说明 | 已核验（2026-10-01）：`grep -n "^def Kernel"` → 431 |
 | S25 | `_vendor/tilelang-v0.1.15/tilelang/cuda/language/kernel.py:13-52` | CUDA 方言的 `threads=`（默认 128）、`T.get_thread_binding()` 与 docstring 示例 | 已核验（2026-10-01） |
 | S26 | `_vendor/tilelang-v0.1.15/tilelang/language/loop.py:13-80` | `T.Parallel` 是块级并行域；布局注解约束由 `ParallelLoopLayoutValidator` 检查 | 已核验（2026-10-01） |
 | S27 | `_vendor/tilelang-v0.1.15/tilelang/language/loop.py:112` | `T.Pipelined(...)` 签名 | 已核验（2026-10-01） |
-| S28 | `_vendor/tilelang-v0.1.15/tilelang/language/copy_op.py:59-132` | `T.copy` 是 tile op；形状推断；「首地址」语法糖 | 已核验（2026-10-01）：docstring "Syntactic Sugar" 在 `:99` |
+| S28 | `_vendor/tilelang-v0.1.15/tilelang/language/copy_op.py:59-132` | `T.copy` 是 tile op；形状推断；“首地址”语法糖 | 已核验（2026-10-01）：docstring “Syntactic Sugar” 在 `:99` |
 | S29 | `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:49` | `T.alloc_shared(shape, dtype, scope="shared.dyn")` | 已核验（2026-10-01） |
 | S30 | `_vendor/tilelang-v0.1.15/tilelang/language/allocate.py:81` | `T.alloc_fragment(shape, dtype, scope="local.fragment")` | 已核验（2026-10-01） |
 | S31 | `_vendor/tilelang-v0.1.15/tilelang/language/fill_op.py:48` | `T.clear(buffer)` | 已核验（2026-10-01） |
@@ -104,9 +104,9 @@ API 名与签名逐个在 `_vendor/` 中比对过，**没有任何一条运行�
 | S59 | `_vendor/tilelang-v0.1.15/examples/elementwise/example_elementwise_add.py:11-63` | 官方 1-D 逐元素加示例（eager 写法 + `assert_close`） | 已核验（2026-10-01）；未运行 |
 | S60 | `_vendor/tilelang-v0.1.15/examples/ascend/example_vecadd.py:11-44` | 官方昇腾 vecadd（SIMT / SIMD 两种模式） | 已核验（2026-10-01）；未在 NPU 上运行 |
 | S61 | `_vendor/tilelang-v0.1.15/examples/ascend/README.md:19-25` | 昇腾示例的性能口径（带宽 GB/s 的计法） | 已核验（2026-10-01） |
-| S62 | `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:26-41` | 最小向量加示例与「block level, not thread level」的官方表述 | 已核验（2026-10-01） |
+| S62 | `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:26-41` | 最小向量加示例与“block level, not thread level”的官方表述 | 已核验（2026-10-01） |
 | S63 | `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:57-87` | 二维向量加示例（`bx`/`by` 参数顺序） | 已核验（2026-10-01） |
-| S64 | `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:104-133` | 边界处理与「边界判断挡住向量化」的评语 | 已核验（2026-10-01） |
+| S64 | `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:104-133` | 边界处理与“边界判断挡住向量化”的评语 | 已核验（2026-10-01） |
 | S65 | `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:155-172` | 向量化版生成 CUDA（`uint4` + `nv_bfloat162`） | 已核验（2026-10-01）：逐行比对 |
 | S66 | `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:176-211` | `num_per_thread` 建议与对应的生成 CUDA | 已核验（2026-10-01） |
 | S67 | `_vendor/tilelang-v0.1.15/docs/programming_guides/language_basics.md` | `@T.prim_func`、`T.Tensor`、动态维度（第 8 章前置） | 已核验（2026-10-01）：文件存在，正文与示例逐段阅读 |
@@ -126,45 +126,45 @@ API 名与签名逐个在 `_vendor/` 中比对过，**没有任何一条运行�
 | R4 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/elementwise.md` | https://tilelang.com/deeplearning_operators/elementwise.html | 逐元素算子教程的站点源文件；与 S62–S66 引用的仓库内文档**内容相同** | 已核验（2026-10-01）：与 `_vendor/.../docs/deeplearning_operators/elementwise.md` 做 diff，差异均为 em-dash（`—`）编码，正文与示例代码一致 |
 | R5 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/programming_guides/language_basics.md` | https://tilelang.com/programming_guides/language_basics.html | 语言基础（第 8 章前置） | 已核验（2026-10-01） |
 | R6 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tutorials/debug_tools_for_tilelang.md` | https://tilelang.com/tutorials/debug_tools_for_tilelang.html | 调试工具（第 12 章前置） | 已核验（2026-10-01） |
-| R7 | `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/docs/get_started/Installation.md` | https://github.com/tile-ai/tilelang | 主仓库快照里的同类文档，用于对照「corpus 的 main 快照比 v0.1.15 多一个提交」这一事实 | 已核验（2026-10-01）：文件存在；**仅用于对照，不作为本章依据** |
+| R7 | `../tilelang-corpus/02-tilelang-core-repo/raw/docs/get_started/Installation.md` | https://github.com/tile-ai/tilelang | 主仓库快照里的同类文档，用于对照“corpus 的 main 快照比 v0.1.15 多一个提交”这一事实 | 已核验（2026-10-01）：文件存在；**仅用于对照，不作为本章依据** |
 | R8 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/README.md` | https://github.com/tile-ai/tilelang-ascend | 昇腾适配器仓库的安装说明（与 S15–S16 引用的 `_vendor` 快照同源） | 已核验（2026-10-01） |
-| R9 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/TileLang-Ascend Programming Guide.md` | https://github.com/tile-ai/tilelang-ascend/blob/master/docs/TileLang-Ascend%20Programming%20Guide.md | 昇腾编程指南；本章只在 7.2 节做定位性引用，细节留到第 19 章 | 已核验（2026-10-01） |
+| R9 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/TileLang-Ascend Programming Guide.md` | https://github.com/tile-ai/tilelang-ascend/blob/TileLang-ascend-v0.1.2.000-release/docs/TileLang-Ascend%20Programming%20Guide.md | 昇腾编程指南；本章只在 7.2 节做定位性引用，细节留到第 19 章 | 已核验（2026-10-01） |
 
 ---
 
 ## 上游链接核验说明
 
-* 上表「已核验」的链接，核验方式是：确认对应 corpus 文件在本地存在，且其头部记录了
+* 上表“已核验”的链接，核验方式是：确认对应 corpus 文件在本地存在，且其头部记录了
   抓取日期与原始 URL。本章写作时**未重新发起网络请求**（corpus 抓取日期 2026-09-30，
   本章写作日期 2026-10-01，相差 1 天）。
 * `R1`、`R4` 与 `_vendor` 内的同名文档做了逐行 `diff`，确认是同一份内容；两者可互相
-  印证，因此本章把「安装说明来自 v0.1.15」这条判断建立在两份文件一致的基础上。
-* `R7` 是 main 快照，**不是** v0.1.15；本章只在「版本边界」语境下引用它，不作为
+  印证，因此本章把“安装说明来自 v0.1.15”这条判断建立在两份文件一致的基础上。
+* `R7` 是 main 快照，**不是** v0.1.15；本章只在“版本边界”语境下引用它，不作为
   API 是否存在判据。
 
 ---
 
 ## 关于性能数字
 
-**本章不出现任何性能数字。** 所有涉及"快慢"的表述都是定性的（例如"边界判断会挡住
-向量化"），其依据是官方文档的原文评语，而非本机或第三方的测量数据。第 11、12、19 章
+**本章不出现任何性能数字。** 所有涉及“快慢”的表述都是定性的（例如“边界判断会挡住
+向量化”），其依据是官方文档的原文评语，而非本机或第三方的测量数据。第 11、12、19 章
 涉及实测时会各自给出测量口径。
 
 ---
 
 ## 待补资料
 
-1. **PyPI 上 `0.1.15` 是否存在，未在本机核实。** 本章 3.2 节只给出「把版本号钉住」
-   的方法（`pip install "tilelang==0.1.15"`）与「从 Release Page 取版本字符串为
-   `0.1.15` 的 wheel」这条替代路径，没有断言 PyPI 上一定有该版本。建议后续版本补一条
+1. **PyPI 上 `0.1.15` 是否存在，未在本机核实。** 本章 3.2 节只给出“把版本号钉住”
+   的方法（`pip install "tilelang==0.1.15"`）与“从 Release Page 取版本字符串为
+   `0.1.15` 的 wheel”这条替代路径，没有断言 PyPI 上一定有该版本。建议后续版本补一条
    对 `https://pypi.org/project/tilelang/#history`（或对应 Release 页）的抓取，以确认
    可安装的具体版本清单。
 2. **`pip install git+https://github.com/tile-ai/tilelang.git` 装的是哪个分支，
    未核实。** v0.1.15 的 `Installation.md:25-27` 给了这条命令，但没有写分支；本章据此
-   提醒读者"它装的是那个分支的源码，不是你本地的 checkout"，但没给出该分支名。
-3. **昇腾 wheel 的发布位置与版本列表未在 corpus 中。** 本章 3.4 节只说"下载现成
-   wheel"，未给出具体下载地址（`tilelang-ascend/README.md:89-99` 也没写死 URL）。
+   提醒读者“它装的是那个分支的源码，不是你本地的 checkout”，但没给出该分支名。
+3. **昇腾 wheel 的发布位置与版本列表未在 corpus 中。** 本章 3.4 节只说“下载现成
+   wheel”，未给出具体下载地址（`tilelang-ascend/README.md:89-99` 也没写死 URL）。
    第 19 章若需要精确到文件，建议补抓昇腾侧的 Release 页。
-4. **昇腾 950 的 `dav-3510` 与 A2/A3 的对应关系未核实。** 主干文档写"默认 `dav-3510`
-   对应 Ascend 950"（S13），独立仓库文档写"在 A2/A3 上验证"（S15），两者未在同一份
+4. **昇腾 950 的 `dav-3510` 与 A2/A3 的对应关系未核实。** 主干文档写“默认 `dav-3510`
+   对应 Ascend 950”（S13），独立仓库文档写“在 A2/A3 上验证”（S15），两者未在同一份
    材料里被明确对应。本章只分别引用，未做合并结论。

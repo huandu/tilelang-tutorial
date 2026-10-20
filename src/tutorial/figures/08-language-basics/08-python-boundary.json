@@ -1,7 +1,7 @@
 {
   "id": "08-python-boundary",
   "title": "Python 在 kernel 里的可用边界",
-  "caption": "同一个 with 块里混着 Python 语义与设备语义；分清「编译期值」与「设备值」是关键。",
+  "caption": "同一个 with 块里混着 Python 语义与设备语义；分清“编译期值”与“设备值”是关键。",
   "kind": "layers",
   "section": "8",
   "layers": [

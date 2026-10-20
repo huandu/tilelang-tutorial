@@ -1,7 +1,7 @@
 {
   "id": "04-memory-scopes",
   "title": "storage scope 与分配函数",
-  "caption": "同一个高层概念换一个 scope 就是换一种物理存储；选择依据是「谁看得到」和「活多久」。",
+  "caption": "同一个高层概念换一个 scope 就是换一种物理存储；选择依据是“谁看得到”和“活多久”。",
   "kind": "grid",
   "section": "5",
   "headers": ["分配函数", "默认 scope", "谁看得到 / 用途"],

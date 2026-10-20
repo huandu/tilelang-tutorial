@@ -46,6 +46,6 @@
     "tests 矩阵：nvidia/CUDA-auto 先跑 ../examples（排除 grouped_gemm 与 examples/ascend）再跑 ./python；amd/ROCm-7.2 跑 ./python 加 4 个 portable example；macos-latest/Metal 只跑 ./python -k metal（ci.yml:77-441）",
     "ascend：self-hosted + USE_ASCEND=ON，pytest -n 4 ../examples/ascend 与 pytest -n 32 ascend（ci.yml:442-508）；cutedsl：TILELANG_TARGET=cutedsl 跑 ../examples（排除 examples/ascend）（ci.yml:509-663）",
     "tests / ascend / cutedsl 的 if 都带 github.repository_owner == 'tile-ai'，fork 仓库同步代码时不会白跑 self-hosted runner",
-    "if 里还有 !github.event.pull_request.draft：草稿 PR 不跑测试矩阵，「CI 没绿」有时只是因为它还是 draft"
+    "if 里还有 !github.event.pull_request.draft：草稿 PR 不跑测试矩阵，“CI 没绿”有时只是因为它还是 draft"
   ]
 }

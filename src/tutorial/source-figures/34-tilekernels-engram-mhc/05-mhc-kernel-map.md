@@ -1,7 +1,7 @@
 # 图 5：mHC 各 kernel 与一次训练 step 的对应
 
 对应正文第 6.6 与 7.3 节。要点：**mHC 的一半算子挂在每一层的前向/反向里，
-另一半是因为「反向要重算」才存在的**；prenorm GEMM 在 DeepGEMM（Ascend C 为主），
+另一半是因为“反向要重算”才存在的**；prenorm GEMM 在 DeepGEMM（Ascend C 为主），
 其余的 mix/Sinkhorn 算子用 TileLang 写。
 
 ## Mermaid 版本
@@ -75,13 +75,13 @@ flowchart TB
 
 ## 读图要点
 
-1. **`multilayer_recompute` 是「用算力换显存」的标准做法。** 它不减少计算，反而
+1. **`multilayer_recompute` 是“用算力换显存”的标准做法。** 它不减少计算，反而
    多做一遍前向；换来的是不必保存每层的 `residual`（`[n, 4, h]`，比 `layer_input`
-   大 4 倍）。`tests/mhc/test_multilayer_recompute.py:99-108` 把「分开调用」与
-   「融合后」的 IO 字节数摆在一起，融合后的主要收益正是**少读写那些中间残差**。
-2. **`pre_big_fuse` 是「拆分」的反面。** 数据流上它是四个算子，工程上它们是
+   大 4 倍）。`tests/mhc/test_multilayer_recompute.py:99-108` 把“分开调用”与
+   “融合后”的 IO 字节数摆在一起，融合后的主要收益正是**少读写那些中间残差**。
+2. **`pre_big_fuse` 是“拆分”的反面。** 数据流上它是四个算子，工程上它们是
    一个 kernel；反过来，`pre_split_mixes` 还提供了单独 kernel 的版本，方便
-   分别测试与调优。这种「先拆开写对、再融合」的顺序在 TileKernels 里反复出现。
+   分别测试与调优。这种“先拆开写对、再融合”的顺序在 TileKernels 里反复出现。
 3. **归约类算子总有一个伴生的 reduce kernel。** `pre_split_mixes_bwd` 只写
    `mhc_scale_grad_partial` / `mhc_base_grad_partial`（每个 CTA 一份），真正求和是
    另一个 kernel（`pre_split_mixes_bwd_reduce_cuda`）。原因与 Engram 的
@@ -104,4 +104,4 @@ flowchart TB
   §4.3.2 Recomputing（Table 3 与式 (20)，`:504-539`）、
   §4.3.3 DualPipe 上的重叠（`:541-554`）；
   论文自报的总开销 `n = 4` 时 +6.7%（`:411`）。
-  「mHC kernel 用 TileLang、prenorm GEMM 除外」的论文口径在 `:502`。
+  “mHC kernel 用 TileLang、prenorm GEMM 除外”的论文口径在 `:502`。

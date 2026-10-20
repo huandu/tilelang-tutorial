@@ -45,9 +45,9 @@
 | 3 | 它已经进了主干、但晚于 tag | 下一个 release 一定会包含它（也可能被回滚） |
 | 4 | 在这个快照时刻，它不在 release / main 里 | 它今天是否已合入 |
 
-## 为什么「找到一处提到」不算命中
+## 为什么“找到一处提到”不算命中
 
-一个名字可能在文档、注释、测试的 `xfail` 列表、甚至一句「暂不支持」里出现。
+一个名字可能在文档、注释、测试的 `xfail` 列表、甚至一句“暂不支持”里出现。
 所以 `state_audit.py` 的一条能力要求**多个探针同时命中**（例如
 `reducer-v2` 要求同时找到 `def reducer_update`、`verify_reducer_epoch.cc`、
 `canonicalize_legacy_reducer.cc`），单点命中一律不算。

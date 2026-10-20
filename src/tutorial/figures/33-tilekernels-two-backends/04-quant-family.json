@@ -78,8 +78,8 @@
     { "from": "sf", "to": "diff", "dashed": true }
   ],
   "notes": [
-    "粒度是 sf_block 的形状，不是「块大小」：(1,C) 是 per-token、(Rt,C) 是 per-block、(T,1) 是 per-channel。",
+    "粒度是 sf_block 的形状，不是“块大小”：(1,C) 是 per-token、(Rt,C) 是 per-block、(T,1) 是 per-channel。",
     "get_sf_and_inv 是两个后端唯一的算术权威，所以舍入与 clamp 的口径不可能不一致。",
-    "融合路径省掉的是「SwiGLU 结果写回 GM、再读回来量化」这一趟往返；代价是多套 UB 缓冲。"
+    "融合路径省掉的是“SwiGLU 结果写回 GM、再读回来量化”这一趟往返；代价是多套 UB 缓冲。"
   ]
 }

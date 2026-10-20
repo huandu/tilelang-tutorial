@@ -1,10 +1,10 @@
-# 示例 04：把 README 性能表换算成「相对物理上限」
+# 示例 04：把 README 性能表换算成“相对物理上限”
 
 ## 目的
 
 1. 原样打印 `DeepEP-Ascend/README.md:13-19` 的性能表（区间上下限）；
-2. 反推 `README.md:21` 那句话（「Sustained dispatch reaches roughly 90–95%
-   of the physical payload bandwidth limit for EP sizes up to 32」）
+2. 反推 `README.md:21` 那句话（“Sustained dispatch reaches roughly 90–95%
+   of the physical payload bandwidth limit for EP sizes up to 32”）
    隐含的物理上限量级。
 
 ## 运行前提
@@ -49,7 +49,7 @@ python3 bandwidth_normalize.py --low 0.9 --high 0.95
 2. 计时含 issue 与 drain，**不含最后的 epilogue**（`README.md:21`）。
 3. README 原文是 "roughly 90–95%"，所以这只是**区间估计**；
    corpus 里没有 Ascend 950 UBMEM 链路的官方带宽规格，
-   **不能当成硬件手册上的数字**（见 `../references.md` 的「待补资料」）。
+   **不能当成硬件手册上的数字**（见 `../references.md` 的“待补资料”）。
 
 ## 验证级别
 

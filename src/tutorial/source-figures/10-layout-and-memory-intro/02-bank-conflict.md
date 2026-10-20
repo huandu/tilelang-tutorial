@@ -44,7 +44,7 @@
 
 ## 方式二：XOR swizzle，不改 stride，只改行内偏移
 
-TileLang 的 bank swizzle 是**按行做异或**：把「第 s 行、第 c 个 16B 单元」搬到
+TileLang 的 bank swizzle 是**按行做异或**：把“第 s 行、第 c 个 16B 单元”搬到
 第 `c xor s` 个单元（128B swizzle 用 3 bit，64B 用 2 bit，32B 用 1 bit）。
 这样**不需要 padding，容量不膨胀**，代价是行列地址计算里多一次异或。
 

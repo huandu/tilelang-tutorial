@@ -3,7 +3,7 @@
 说明：
 
 * 难度：`★`（基础）/ `★★`（需要综合本章内容）/ `★★★`（推理链较长或需要动手设计）。
-* 「需要硬件」：`否` 表示只需要一台能跑 Python 的机器（本章绝大多数题目都是这样）；
+* “需要硬件”：`否` 表示只需要一台能跑 Python 的机器（本章绝大多数题目都是这样）；
   `是（GPU）` / `是（NPU）` 表示必须用真实加速器才能完成实验，这类题都标为**可选**。
 * 所有题目只依赖第 1–4 章的知识。凡涉及后续章节的地方会显式提示。
 * 题中出现的所有行号都以 `_vendor/tilelang-v0.1.15/` 为准；用
@@ -17,9 +17,9 @@
 以及每个阶段的入口函数。
 
 1. 写出这五个阶段的名称，以及第 ② 阶段的入口函数全名。
-2. 为什么说「后端差异被压缩进了第 ② 阶段的一个函数调用里」？请指出那个调用的
+2. 为什么说“后端差异被压缩进了第 ② 阶段的一个函数调用里”？请指出那个调用的
    文件与行号，并说明其余四个阶段为什么是共享的。
-3. 「前端共享」是否意味着「IR 也共享」？请举出本章给出的一个反例。
+3. “前端共享”是否意味着“IR 也共享”？请举出本章给出的一个反例。
 
 ---
 
@@ -28,8 +28,8 @@
 1. 用自己的话区分 **target backend** 与 **execution backend**，各写出它的职责清单。
 2. 从 v0.1.15 中各举两个例子，并给出源码位置。
 3. 判断下列说法正误，并说明理由：
-   * 「选择 `nvrtc` 执行后端，意味着走的是另一条 CUDA pass pipeline。」
-   * 「CuTeDSL 与 CUDA 是两个不同的 target backend，因此它们的 IR lowering 也不同。」
+   * “选择 `nvrtc` 执行后端，意味着走的是另一条 CUDA pass pipeline。”
+   * “CuTeDSL 与 CUDA 是两个不同的 target backend，因此它们的 IR lowering 也不同。”
 
 ---
 
@@ -39,7 +39,7 @@
 与 `:238-272`（`register_backend`）。
 
 1. 列出 `__post_init__` 至少四条硬校验，并说明每条想防住什么错误。
-2. 为什么「同一个 target kind 上允许多个 manifest」时，必须要求这些 manifest 都提供
+2. 为什么“同一个 target kind 上允许多个 manifest”时，必须要求这些 manifest 都提供
    `supports_target` 谓词？如果不加这条约束，`_resolve_backend_module`（`:300-307`）
    会发生什么？
 3. `register_backend` 在注册 FFI callback 失败时会做回滚（`:257-270`）。
@@ -90,12 +90,12 @@ if not auto_schedule_enabled:
     mod = ascend_transform.InferBufferAliases()(mod)
 ```
 
-1. 这 13 步自动调度分别在解决什么问题？请至少说出「任务化」「资源建模」「求解」「落地」
+1. 这 13 步自动调度分别在解决什么问题？请至少说出“任务化”“资源建模”“求解”“落地”
    四个词各对应哪几步。
 2. `AutoSchedule` 之前的 `EstimateLatency` 和 `AnnotateMultiBufferEligible` 为什么必须
    排在求解之前？
 3. 第 72 步（`:169-170`）为什么写成 `if not auto_schedule_enabled:`？这说明
-   「关掉自动调度」对编译器意味着什么？
+   “关掉自动调度”对编译器意味着什么？
 
 ---
 
@@ -142,7 +142,7 @@ python3 pass-order/dump_pass_order.py
 1. 运行 `python3 repo-map/inventory.py`，把
    `tilelang_top_level_dirs` / `tilelang_python_files` / `src_transform_cc_files` /
    `examples_subdirs` / `examples_top_level_files` / `docs_markdown_files` 六个数字抄下来。
-2. `VERSIONS.md` 写「`examples/` 有 57 个目录」，脚本给出的是 54 个目录 + 3 个文件。
+2. `VERSIONS.md` 写“`examples/` 有 57 个目录”，脚本给出的是 54 个目录 + 3 个文件。
    请解释这两个口径的差异，并说明章为什么采用脚本口径。
 3. 运行 `python3 compile-path-check/check_compile_path.py`。如果有跳失败，
    用 `sed -n '<行号>p' <文件>` 现场核对并给出你的判断（是章节写错了，还是
@@ -163,7 +163,7 @@ python3 pass-order/dump_pass_order.py
 4. 把 `--block-k` 从 32 改成 64 再跑一次，观察生成的 `__shared__` 大小与
    pipeline 步数的变化。
 
-**没有 GPU 时**：请只完成第 3 题的静态部分——在 `_vendor/tilelang-v0.1.15/` 里找出
+**没有 GPU 时**：请只完成第 3 题的静态部分，在 `_vendor/tilelang-v0.1.15/` 里找出
 `LowerTileOp` 前后 IR 里 tile op 是否还存在（提示：`grep -rn "tile_op" src/op/`），
 并明确写出你没有验证的部分。
 
@@ -187,7 +187,7 @@ MaterializeKernelLaunch(lower_grid_binding=True,
 
 1. 这两组参数分别会产生什么 IR 结构（`blockIdx` / `threadIdx` / `cthread` 各在哪里出现）？
 2. 这个差异对**用户能写什么代码**有什么直接影响？请用 `T.SimtVF` 解释昇腾侧
-   「线程域只存在于向量区域内」这句话。
+   “线程域只存在于向量区域内”这句话。
 3. `unsupported_annotations=["cluster_dims"]` 的作用是什么？如果用户对昇腾目标写
    `T.Kernel(..., cluster_dims=2)` 会发生什么？
 
@@ -195,13 +195,13 @@ MaterializeKernelLaunch(lower_grid_binding=True,
 
 ## E11 概念题 ★★ 不需要硬件
 
-有人告诉你：「TileLang 现在已经支持 `T.PersistentKernel`，也有 PTO 执行后端了。」
+有人告诉你：“TileLang 现在已经支持 `T.PersistentKernel`，也有 PTO 执行后端了。”
 你手头有 `_vendor/tilelang-v0.1.15/` 与 corpus 的 main 快照
 `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang`。
 
 1. 写出至少三条核验命令，用来判断这两个说法在**哪个 checkout** 里成立。
 2. 分别给出结论：`T.PersistentKernel` 与 PTO 到底在哪个版本里？
-3. 为什么本书要求「讨论 main 上的能力时必须显式标注，并且放在第 30 章」？
+3. 为什么本书要求“讨论 main 上的能力时必须显式标注，并且放在第 30 章”？
 4. 判断这条说法属于本章 5.3 节表格的哪一行，并说明你自己的核验路径。
 
 ---
@@ -211,7 +211,7 @@ MaterializeKernelLaunch(lower_grid_binding=True,
 你要给 TileLang 增加一个虚构的新后端 `foo`（假设它的 target kind 就叫 `foo`，
 代码生成走一个已有的 native 函数 `target.build.tilelang_foo`）。
 
-1. 按 `tilelang/backend/README.md:325-345` 的「Backend Package Layout」，
+1. 按 `tilelang/backend/README.md:325-345` 的“Backend Package Layout”，
    写出你要新建的文件清单，并说明每个文件的职责。
 2. 在 `BackendModule` 里你必须提供哪些字段？哪些字段是可选的？给出一个最小 manifest
    草稿（Python 代码，不用真的可运行，但要字段名正确）。

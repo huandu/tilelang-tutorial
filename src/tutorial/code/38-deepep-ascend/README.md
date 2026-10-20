@@ -34,4 +34,4 @@ code/
 | `01` | README 那段用法在参数层面是否自洽？哪些参数必须保持默认？ | 展开布局、偶数 rank、`topk ≤ 32`、`do_handle_copy=False` 等约束都能在源码里指到 |
 | `02` | 一层 MoE 到底要搬多少字节？EP 越大越多吗？ | 是的；EP 越大，token 被拆到越多 rank，跨设备字节越多 |
 | `03` | `get_buffer_size_hint()` 到底怎么算？和实际运行时的 SF 数量差多少？ | 与 `calculate_buffer_size` 公式一致；hint 为 SF 预留的量是实际的 2 倍 |
-| `04` | 「物理 payload 带宽上限的 90–95%」反推出来是多少？ | 量级 350–420 GB/s/rank，且明确标注为区间估计 |
+| `04` | “物理 payload 带宽上限的 90–95%”反推出来是多少？ | 量级 350–420 GB/s/rank，且明确标注为区间估计 |

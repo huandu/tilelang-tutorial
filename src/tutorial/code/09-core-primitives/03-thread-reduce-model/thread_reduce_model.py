@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""模拟 tl::AllReduce 的 XOR-butterfly（对应 src/tl_templates/cuda/reduce.h:240-296）。
+"""模拟 tl::AllReduce 的 XOR-butterfly（对应 src/tl_templates/cuda/reduce.h:240-295）。
 
     python3 thread_reduce_model.py --threads 256 --scale 1
     python3 thread_reduce_model.py --threads 48        # 报错，复现 static_assert

@@ -14,17 +14,42 @@
       "badge": "tile 级",
       "tone": "muted"
     },
-    { "id": "tilelang", "label": "TileLang (S1)", "badge": "tile 级", "tone": "accent" },
-    { "id": "triton", "label": "Triton (R2)", "sub": "竞争", "badge": "tile 级" },
+    {
+      "id": "tilelang",
+      "label": "TileLang (S1)",
+      "badge": "tile 级",
+      "tone": "accent"
+    },
+    {
+      "id": "triton",
+      "label": "Triton (R2)",
+      "sub": "竞争",
+      "badge": "tile 级"
+    },
     {
       "id": "cutlass",
       "label": "CUTLASS-CuTe (R5)",
       "sub": "互补：T.gemm 落到 CuTe",
       "badge": "线程 / 指令级"
     },
-    { "id": "cuda", "label": "CUDA (R7)", "sub": "互补：产出 CUDA C", "badge": "线程 / 指令级" },
-    { "id": "ac", "label": "Ascend C (R14)", "sub": "竞争 + 互补", "badge": "线程 / 指令级" },
-    { "id": "pto", "label": "PTO-DSL (R17)", "sub": "竞争 + 互补", "badge": "线程 / 指令级" },
+    {
+      "id": "cuda",
+      "label": "CUDA (R7)",
+      "sub": "互补：产出 CUDA C",
+      "badge": "线程 / 指令级"
+    },
+    {
+      "id": "ac",
+      "label": "Ascend C (R14)",
+      "sub": "竞争 + 互补",
+      "badge": "线程 / 指令级"
+    },
+    {
+      "id": "pto",
+      "label": "PTO-DSL (R17)",
+      "sub": "竞争 + 互补",
+      "badge": "线程 / 指令级"
+    },
     {
       "id": "tvm",
       "label": "TVM (R10/S10)",
@@ -34,18 +59,40 @@
     }
   ],
   "edges": [
-    { "from": "cutile", "to": "tilelang", "dashed": true },
-    { "from": "tilelang", "to": "triton" },
-    { "from": "tilelang", "to": "cutlass" },
-    { "from": "tilelang", "to": "cuda" },
-    { "from": "tilelang", "to": "ac" },
-    { "from": "tilelang", "to": "pto" },
-    { "from": "tvm", "to": "tilelang" }
+    {
+      "from": "cutile",
+      "to": "tilelang",
+      "dashed": true
+    },
+    {
+      "from": "tilelang",
+      "to": "triton"
+    },
+    {
+      "from": "tilelang",
+      "to": "cutlass"
+    },
+    {
+      "from": "tilelang",
+      "to": "cuda"
+    },
+    {
+      "from": "tilelang",
+      "to": "ac"
+    },
+    {
+      "from": "tilelang",
+      "to": "pto"
+    },
+    {
+      "from": "tvm",
+      "to": "tilelang"
+    }
   ],
   "caption": "三层 + 连线类型 + 证据编号：TileLang 在 tile 级与 Triton 竞争、与 cuTile 资料不足，在低层与 CUTLASS-CuTe / CUDA 互补。",
   "notes": [
     "互补：T.gemm 落到 CuTe、产出 CUDA C；竞争 + 互补：Ascend C 与 PTO-DSL。",
     "TVM 不是某一层的一员，而是横穿所有层的底盘（R10/S10）。",
-    "常见错误：把 CUTLASS 放到 tile 级——CuTe DSL 虽然用 Python，用户仍写 tidx、warp 归约与 barrier（R27）。"
+    "常见错误：把 CUTLASS 放到 tile 级，CuTe DSL 虽然用 Python，用户仍写 tidx、warp 归约与 barrier（R27）。"
   ]
 }

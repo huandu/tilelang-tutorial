@@ -3,14 +3,14 @@
   "items": [
     {
       "id": "q1",
-      "stem": "锁定版本里，「昇腾后端」其实是四条可执行的编译路线。哪一条进了主干 v0.1.15，并且生成物是 CCE/Ascend C？",
+      "stem": "锁定版本里，“昇腾后端”其实是四条可执行的编译路线。哪一条进了主干 v0.1.15，并且生成物是 CCE/Ascend C？",
       "options": [
+        "M1：target=\"ascend\"（别名 \"asc\"），bisheng dav-3510 编出可执行 CCE ELF",
         "A1：target=\"ascendc\"，生成 AscendC 类库 C++",
         "A2：target=\"pto\"，生成 PTO-DSL 模板 C++",
-        "M1：target=\"ascend\"（别名 \"asc\"），bisheng dav-3510 编出可执行 CCE ELF",
         "L1：TVM target kind \"npuir\"，生成 AscendNPU IR"
       ],
-      "answer": 2,
+      "answer": 0,
       "explain": "见 §1.1 与 §6.2：只有 M1 随 PR3308 进了主干，其余三条分别在适配器仓库（A1/A2）与 corpus 的 MLIR 快照（L1）里；v0.1.15 里搜不到 \"pto\" target，那是最容易误选的一项。"
     },
     {
@@ -31,46 +31,46 @@
       "options": [
         "按 arch 在 mma / wgmma / tcgen05 之间选择",
         "统一的 SIMT 通用矩阵乘",
-        "需要显式写 use_wgmma=True 才会生成矩阵指令",
-        "唯一的 MAD 原语 asc_mmad：A 在 L0A、B 在 L0B、累加进 L0C，M/N/K 是循环维度"
+        "唯一的 MAD 原语 asc_mmad：A 在 L0A、B 在 L0B、累加进 L0C，M/N/K 是循环维度",
+        "需要显式写 use_wgmma=True 才会生成矩阵指令"
       ],
-      "answer": 3,
+      "answer": 2,
       "explain": "见 §4.4：SelectInst 是常量返回 kAscendMAD，ComputeWarpPartition 固定返回 {1,1}，昇腾侧没有 m×n×k 指令族；而且 node_M/N/K 必须是静态 IntImm，否则 T.gemm 直接抛错。"
     },
     {
       "id": "q4",
-      "stem": "T.dual_copy 的哪一条限制会在 Python 层主动报错，属于「编译期保护」？",
+      "stem": "T.dual_copy 的哪一条限制会在 Python 层主动报错，属于“编译期保护”？",
       "options": [
         "只允许在纯 Vector kernel 里使用",
-        "L0C → UB 的双目的拷贝里，src 与 dst 的 dtype 不同时直接 raise ValueError",
         "静态 extent 必须是 2 的幂",
-        "只能在 dav-2201 架构上运行"
+        "只能在 dav-2201 架构上运行",
+        "L0C → UB 的双目的拷贝里，src 与 dst 的 dtype 不同时直接 raise ValueError"
       ],
-      "answer": 1,
+      "answer": 3,
       "explain": "见 §4.5：dav-950 不支持在 cc→ub 的双目的拷贝里做类型转换，copy_op.py 在 Python 层拦截并建议改用单独拷贝或在 VF 区域里 cast。其余三条都不是它的契约（形状要求是 2:1 而不是 2 的幂）。"
     },
     {
       "id": "q5",
       "stem": "关于 T.SimdVF，下列哪一项是硬约束？",
       "options": [
+        "向量宽度必须恰好 2048 bit（f32×64 / f16×128），predicate 必须是 boolx256",
         "线程数必须是 128 的倍数",
         "必须至少 4 个 warp",
-        "向量宽度必须恰好 2048 bit（f32×64 / f16×128），predicate 必须是 boolx256",
         "只能处理 fp16 数据"
       ],
-      "answer": 2,
+      "answer": 0,
       "explain": "见 §4.6：ValidateSimdVectorType 要求 element_bits × lanes == 2048，否则 LOG(FATAL)；predicate 也必须是 boolx256。这也是官方示例里 SIMD 循环步长写成 tile // 64 的原因。"
     },
     {
       "id": "q6",
       "stem": "为什么昇腾能用 num_stages 自动决定 buffer 版本数，而 NV 侧要靠 PipelinePlanning + InjectSoftwarePipeline？",
       "options": [
-        "因为依赖被表达成「生产 pipe → 消费 pipe + 距离」的事件，InsertSync 插成对 Set/Wait flag，版本数变成一个可求解的约束问题",
         "因为昇腾没有同步，所以不需要流水",
+        "因为依赖被表达成“生产 pipe → 消费 pipe + 距离”的事件，InsertSync 插成对 Set/Wait flag，版本数变成一个可求解的约束问题",
         "因为昇腾的 UB 容量总是够大",
         "因为硬件会自动帮你做双缓冲"
       ],
-      "answer": 0,
+      "answer": 1,
       "explain": "见 §2.4 与 §5：NV 同步的是线程（barrier/mbarrier），昇腾同步的是流水线之间的事件（hard_event → 8 槽 flag）。把两者当成同一种东西，是理解昇腾自动同步时最常见的错误。"
     },
     {
@@ -79,10 +79,10 @@
       "options": [
         "用户在 kernel 里直接写 asc_copy_gm2l1_nd2nz 这类名字",
         "由 nvcc 在链接期决定",
-        "由 Z3 求解器直接生成 intrinsic 调用",
-        "先按 src/dst 的 scope 选 DMAPath，再归到 MTE1/MTE2/MTE3/FIX，最后由 codegen 换成 asc_copy_* 的名字"
+        "先按 src/dst 的 scope 选 DMAPath，再归到 MTE1/MTE2/MTE3/FIX，最后由 codegen 换成 asc_copy_* 的名字",
+        "由 Z3 求解器直接生成 intrinsic 调用"
       ],
-      "answer": 3,
+      "answer": 2,
       "explain": "见 §2.3 与 §4.3：copy_op.py 先把 tl.tileop.copy 重拼成 tl.tileop.ascend_copy，AscendLowerTileOp 按 scope 选 DMAPath，copy.cc 再组装 ascend_copy_* 的实参。"
     },
     {

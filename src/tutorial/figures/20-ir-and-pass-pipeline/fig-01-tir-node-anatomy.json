@@ -24,9 +24,20 @@
       "label": "params / buffer_map",
       "sub": "T.handle 参数 → T.match_buffer 建立 Buffer"
     },
-    { "id": "body", "label": "body（Stmt）" },
-    { "id": "attr", "label": "AttrStmt(\"thread_extent\")", "sub": "线程域；物化后是 threadIdx.*" },
-    { "id": "for", "label": "For(kind=THREAD_BINDING)", "sub": "网格维度（blockIdx.x）" },
+    {
+      "id": "body",
+      "label": "body（Stmt）"
+    },
+    {
+      "id": "attr",
+      "label": "AttrStmt(\"thread_extent\")",
+      "sub": "线程域；物化后是 threadIdx.*"
+    },
+    {
+      "id": "for",
+      "label": "For(kind=THREAD_BINDING)",
+      "sub": "网格维度（blockIdx.x）"
+    },
     {
       "id": "block",
       "label": "SBlock(\"tilelang_root\")",
@@ -45,17 +56,41 @@
     }
   ],
   "edges": [
-    { "from": "mod", "to": "func" },
-    { "from": "func", "to": "params" },
-    { "from": "func", "to": "body" },
-    { "from": "body", "to": "attr" },
-    { "from": "attr", "to": "for" },
-    { "from": "body", "to": "block" },
-    { "from": "block", "to": "stmt" },
-    { "from": "stmt", "to": "expr" }
+    {
+      "from": "mod",
+      "to": "func"
+    },
+    {
+      "from": "func",
+      "to": "params"
+    },
+    {
+      "from": "func",
+      "to": "body"
+    },
+    {
+      "from": "body",
+      "to": "attr"
+    },
+    {
+      "from": "attr",
+      "to": "for"
+    },
+    {
+      "from": "body",
+      "to": "block"
+    },
+    {
+      "from": "block",
+      "to": "stmt"
+    },
+    {
+      "from": "stmt",
+      "to": "expr"
+    }
   ],
   "notes": [
-    "T.reads() / T.writes() 是声明，不是指令——它们是给 layout 推导与同步分析用的读写集合，拿到它们不等于发生了内存访问。",
+    "T.reads() / T.writes() 是声明，不是指令。它们是给 layout 推导与同步分析用的读写集合，拿到它们不等于发生了内存访问。",
     "thread_extent 是 AttrStmt，不是 For；网格（blockIdx）才是 For(kind=THREAD_BINDING)，线程域在物化之后是 AttrStmt(\"thread_extent\")。",
     "scope 决定一切：alloc_buffer(scope=\"shared\") 与 scope=\"local.fragment\"、\"local.var\"、\"shared.dyn\" 在后继 pass 里走完全不同的布局、同步与内存规划路径。"
   ]

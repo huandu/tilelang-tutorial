@@ -6,7 +6,7 @@
 
 1. `engram_gate_fwd` 的输入输出到底长什么样、哪一维是 head、哪一维是被
    `hidden_size` 归一化掉的归约维？
-2. 「把 RMSNorm 的权重先乘成一个 `weight_fused`，再在 kernel 里只做一次累加」——
+2. “把 RMSNorm 的权重先乘成一个 `weight_fused`，再在 kernel 里只做一次累加”——
    这个融合在**代数上**是否与原式等价？
 
 第 2 点是本章 §3 讲的融合设计的核心。脚本把两条路径都算一遍：
@@ -76,6 +76,6 @@ python3 engram_gate_shapes.py
 * 脚本用的是 `hidden_size = 256`、`num_tokens = 5`；真实 kernel 只针对
   `hidden_size ∈ {4096, 7168}` 调过参数（`engram_gate_fwd_cuda.py:31`），且要求
   `hidden_size` 能被 128（昇腾）或对应的 `blk_d`（CUDA）整除。
-* 「融合前后各多少字节」是**按元素个数算的记账**，不是测量。真实收益还取决于
+* “融合前后各多少字节”是**按元素个数算的记账**，不是测量。真实收益还取决于
   cache、寄存器压力与是否真的多跑了一次 kernel。
 * 脚本没有实现 `clamp_value` 边界的梯度、也没有实现反向；反向见正文 §4。

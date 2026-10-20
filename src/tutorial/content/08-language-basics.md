@@ -11,7 +11,7 @@
    bfloat16、float32、float64 / float8 八种 / float6 两种 / float4 两种存储模型 /
    tfloat32），以及 `'float16'`、`T.float16`、`torch.float16` 三种写法为什么会
    归一到同一个类型；并能正确写出 fp8 / fp4 的 dtype。
-3. 按「谁看得到这份数据」「它活多久」两条标准，在
+3. 按“谁看得到这份数据”“它活多久”两条标准，在
    `T.alloc_shared` / `alloc_fragment` / `alloc_local` / `alloc_var` 之间做出选择，
    并解释为什么 `alloc_fragment` 写成块形状却落在寄存器里；同时认得昇腾侧
    `T.alloc_l1` / `alloc_l0a` / `alloc_l0b` / `alloc_l0c` 与 UB 的分配方式。
@@ -21,13 +21,13 @@
 5. 在 `if/else`、`T.if_then_else`、`T.Select`、`while` 之间做出正确选择，并说出
    控制流对向量化与软流水造成的两种典型代价。
 6. 判断一段 Python 代码在 kernel 里能不能写：知道哪些语法会被 trace 期展开、
-   哪些会变成设备循环、哪些直接不可用；并知道「编译期值」与「设备值」混用是
+   哪些会变成设备循环、哪些直接不可用；并知道“编译期值”与“设备值”混用是
    最常见的坑。
 
 ## 前置知识
 
-* 第 3 章：tile / dataflow / schedule 三层解耦，以及「数据流留给人、调度空间
-  交给编译器」这条主线。
+* 第 3 章：tile / dataflow / schedule 三层解耦，以及“数据流留给人、调度空间
+  交给编译器”这条主线。
 * 第 6 章：`grid → block → warp → thread`、NV 的 shared memory、昇腾的
   UB / L1 / L0A / L0B / L0C 与 MTE 路径。本章会直接使用这些机器图，不再重复。
 * 第 7 章：装好 TileLang，写出并跑通第一个 kernel，会打印生成的 CUDA 源码。
@@ -35,38 +35,38 @@
 
 > **本章的验证边界。** 写作环境是 macOS（Apple Silicon）、Python 3.11，
 > **没有 NVIDIA GPU，也没有昇腾 NPU**（见 [../../VERSIONS.md](../../VERSIONS.md)）。
-> 本章所有需要加速器的代码示例都只做到「**仅静态核对**」：`python3 -m py_compile`
+> 本章所有需要加速器的代码示例都只做到“**仅静态核对**”：`python3 -m py_compile`
 > 通过，且每个 API 名与签名都在 `_vendor/tilelang-v0.1.15/` 里逐条读过。
 > 凡是在本机真正运行过的脚本（都是纯标准库的小模型），会明确写成
-> 「**CPU 逻辑验证**」。本章**不含任何实测性能数字**。
+> “**CPU 逻辑验证**”。本章**不含任何实测性能数字**。
 
 ---
 
-## 1. 问题的由来：kernel 里到底要"表达"什么
+## 1. 问题的由来：kernel 里到底要“表达”什么
 
 在 PyTorch 里写 `y = x * 2`，你表达的是**数学意图**。写 TileLang kernel 时，
-你要表达的是一组**工程事实**——这些事实在 PyTorch 里由框架替你决定，在 kernel
+你要表达的是一组**工程事实**。这些事实在 PyTorch 里由框架替你决定，在 kernel
 里必须由你说清楚：
 
 1. **这次 launch 有多少个块、每块多少线程。** 决定硬件怎么把工作铺开，也决定
    你能用多少并行度。
 2. **每个数的位宽与语义。** fp16 和 bf16 都占 2 字节，但一个截尾数、一个截指数；
-   fp8 有八种拼法，选错了不是"精度差一点"，而是数值范围完全不同。
+   fp8 有八种拼法，选错了不是“精度差一点”，而是数值范围完全不同。
 3. **每份数据住在哪一级存储、谁能看见它。** shared 是块内共享的暂存区，
    fragment 名义上也是块形状但实际切到寄存器，`alloc_var` 只是一个标量。
 4. **哪些迭代是并行的、哪些是顺序的、哪些要流水。** 同一段循环写成
    `T.Parallel` 和写成 `T.serial` 是两种完全不同的硬件行为。
 5. **什么条件下走哪条路。** 边界处理、稀疏分支、提前退出。
-6. **哪些是 Python，哪些是设备代码。** 这是 TileLang 作为「Python 嵌入 DSL」
+6. **哪些是 Python，哪些是设备代码。** 这是 TileLang 作为“Python 嵌入 DSL”
    独有的边界问题：同一个 `with` 块里混着两种语义的东西，分不清就会写出
-   「看起来对、编译不出来」或者更糟的「编译出来但语义错了」的代码。
+   “看起来对、编译不出来”或者更糟的“编译出来但语义错了”的代码。
 
 第 7 章你已经跑通过第一个 kernel，看过它生成的 CUDA 源码。本章要做的是把那份
 源码往回拆：**每个语言构造对应到 IR 里的什么、代价是什么、什么时候该用哪个。**
 
 阅读本章时请始终记住第 4 章的那条管线：你写的 Python 先被解析成 TIR，
-再经过一系列 pass 变成具体后端的代码。本章每一节都会给出「你写的」和
-「编译器看到的」两侧。
+再经过一系列 pass 变成具体后端的代码。本章每一节都会给出“你写的”和
+“编译器看到的”两侧。
 
 ---
 
@@ -90,7 +90,7 @@
 要么变成**设备上真正执行**的 TIR 语句。`for k in [0, 1, 2]` 是第一种（trace 期
 把循环体复制三份），`for i in T.serial(4)` 与 `for i in range(4)` 都是第二种；
 `if True:` 是第一种，`if i < N:`（其中 `i` 是 TIR 变量）是第二种。
-本章 §6–§8 的所有坑，几乎都能归到「我以为是这一种，其实是那一种」。
+本章 §6–§8 的所有坑，几乎都能归到“我以为是这一种，其实是那一种”。
 
 ---
 
@@ -122,11 +122,11 @@ def Kernel(
 * **`cluster_dims=`**：CUDA 的线程块簇（SM90+）。`2` 或 `(2,1,1)` 表示
   2-CTA 簇。`T.ClusterKernel` 是要求必须给 `cluster_dims` 的同款 launch。
 
-这四条**不是**「随便什么关键字都能塞」：每个后端方言用自己 `Kernel` 的关键字
+这四条**不是**“随便什么关键字都能塞”：每个后端方言用自己 `Kernel` 的关键字
 参数声明它认识哪些注解，其它一律拒绝。CUDA 方言认 `threads` / `prelude` /
 `cluster_dims`；ROCm 与 Metal 认 `threads` / `prelude`；CPU 只认 `prelude`。
 
-### 3.2 网格是"块"的网格，不是"线程"的网格
+### 3.2 网格是“块”的网格，不是“线程”的网格
 
 这是从 PyTorch 走过来最容易带错的观念。**`T.Kernel` 里的一切默认是块级的**：
 
@@ -136,9 +136,9 @@ with T.Kernel(T.ceildiv(N, 128), threads=128) as bx:
         C[bx * 128 + i] = A[bx * 128 + i] + B[bx * 128 + i]
 ```
 
-`T.Parallel(128)` 的 128 是**逻辑迭代数**，不是「128 个线程各做一次」——
+`T.Parallel(128)` 的 128 是**逻辑迭代数**，不是“128 个线程各做一次”，
 虽然在这个例子里结果恰好一样。编译器的布局推导会决定把这 128 次迭代切成
-「哪几条 lane、哪些线程、每线程几次」。所以你不需要、通常也不应该手写
+“哪几条 lane、哪些线程、每线程几次”。所以你不需要、通常也不应该手写
 `threadIdx`。真需要线程级行为时，CUDA 方言提供
 `T.get_thread_binding(dim=0)`（`tilelang/language/kernel.py:587`），
 而昇腾侧要先开一个 `T.SimtVF(threads=...)` 区域（见 3.5）。
@@ -161,10 +161,10 @@ def elementwise_scale(N, block=256, dtype="float32"):
 
 逐行：
 
-* **①** `T.ceildiv(N, block)` 是 x 轴的块数——上取整，所以最后一轮可能盖住
+* **①** `T.ceildiv(N, block)` 是 x 轴的块数，上取整，所以最后一轮可能盖住
   一部分越界位置（由后面的守卫处理）。`threads=block` 把每块线程数定死成
   `block`；`as bx` 拿到 x 轴块索引，等价于 `blockIdx.x`。
-* **②** `T.Parallel(block)` 声明「这一块要做的 `block` 件事」。它是块级意图，
+* **②** `T.Parallel(block)` 声明“这一块要做的 `block` 件事”。它是块级意图，
   映射由编译器做。
 * **③** 全局下标 = 块号 × 每块元素数 + 块内偏移。这就是所有 elementwise
   kernel 的通用公式。
@@ -185,14 +185,17 @@ with T.Kernel(T.ceildiv(N, BN), T.ceildiv(M, BM), threads=128) as (bx, by):
 `as bx` 或 `as (bx,)` 都行。这个行为写在
 `tilelang/language/kernel.py:88-96` 的 `_normalize_bindings` 里。
 
-块索引的分解遵循「**x 变得最快**」：
+块索引的分解遵循“**x 变得最快**”：
 
-```text
-grid = (gx, gy, gz) 时，一次 launch 的线性块号 p 分解为
-    bx = p % gx
-    by = (p // gx) % gy
-    bz = p // (gx * gy)
-```
+当网格为 $(g_x,g_y,g_z)$ 时，一次 launch 的线性块号 $p$ 分解为
+
+$$
+\begin{aligned}
+b_x &= p \bmod g_x,\\
+b_y &= \left\lfloor \frac{p}{g_x} \right\rfloor \bmod g_y,\\
+b_z &= \left\lfloor \frac{p}{g_x g_y} \right\rfloor.
+\end{aligned}
+$$
 
 这不是 TileLang 自己的约定，而是 CUDA 的 `blockIdx` 顺序。TileLang 只是在
 `src/ir.cc:236-262` 里给每个轴建一个标签为 `blockIdx.x/y/z` 的绑定帧。
@@ -218,8 +221,8 @@ def Kernel(*blocks, prelude=None) -> KernelLaunchFrame:
 * 线程域用 `with T.SimtVF(threads=128):`（真实的 `threadIdx` 作用域）或
   `with T.SimdVF():`（寄存器级 SIMD，没有线程维）打开。
 
-这解释了第 6 章那张机器图在语言层的落点：**NV 是「块网格 + 块内隐式线程」，
-昇腾是「核网格 + 核内显式线程域」。**
+这解释了第 6 章那张机器图在语言层的落点：**NV 是“块网格 + 块内隐式线程”，
+昇腾是“核网格 + 核内显式线程域”。**
 
 ### 3.6 块内取索引的三种写法
 
@@ -232,7 +235,7 @@ with T.Kernel(N, M, B, threads=(64, 2)) as (bx, by, bz):
 
 * ① `T.get_thread_binding(dim)` / `T.get_thread_bindings()`：线程索引。
   **返回的永远是三个**（x、y、z），`threads=(64, 2)` 时第三个是 1。
-  注意一个限制——**`T.Kernel` 没写 `threads=` 时，trace 期不知道线程数**，
+  注意一个限制，**`T.Kernel` 没写 `threads=` 时，trace 期不知道线程数**，
   此刻调 `get_thread_extent()` 会抛
   `"The thread extent is not known at trace time"`（`kernel.py:215-226`）。
 * ② `T.get_block_extent(dim)`：该轴的网格 extent；没启动的轴返回 1
@@ -264,7 +267,7 @@ dtype = torch.float16       # 框架 dtype
 dtype 走 `_TORCH_DTYPE_TO_STR` / `_NUMPY_DTYPE_TO_STR` 映射表；最后都进
 `dtype.__new__`（`:245-253`）得到同一个 `tvm.DataType`。
 
-**这条规则的实际好处**：你不用为了「传参」和「写 buffer」记两套名字。
+**这条规则的实际好处**：你不用为了“传参”和“写 buffer”记两套名字。
 `torch.randn(..., dtype=torch.bfloat16)` 得到的张量，直接喂给
 `T.Tensor((N,), T.bfloat16)` 的 kernel 就行；第 7 章的 JIT 会用张量的实际
 dtype 去推断目标与类型。
@@ -294,14 +297,14 @@ v0.1.15 里 `tilelang.language` 导出的 dtype 名字一共 **173 个**
 
 > **注意 `bfloat16` 的特殊性。** 它只有 `bfloat16` 和 `bfloat16x2` 两个名字，
 > 没有 `bfloat16x4` 及以上。如果你下意识地写 `T.bfloat16x8`，那是错的。
-> 需要「一次处理 8 个 bf16」时，只能靠循环或展开表达，或者改用
+> 需要“一次处理 8 个 bf16”时，只能靠循环或展开表达，或者改用
 > `float8`（如果数值范围允许）。
 
 ### 4.3 fp8：八个拼法不是一回事
 
-fp8 是"8 位浮点"的统称，E4M3 与 E5M2 的**数值范围完全不同**；同一份 E4M3 在不同
-平台还有不同的 NaN 规则。列出八个成员时，要同时说清「指数/尾数怎么分」和
-「NaN / 溢出怎么处理」：
+fp8 是“8 位浮点”的统称，E4M3 与 E5M2 的**数值范围完全不同**；同一份 E4M3 在不同
+平台还有不同的 NaN 规则。列出八个成员时，要同时说清“指数/尾数怎么分”和
+“NaN / 溢出怎么处理”：
 
 | dtype | 指数 / 尾数 | 备注 |
 | --- | --- | --- |
@@ -315,7 +318,7 @@ fp8 是"8 位浮点"的统称，E4M3 与 E5M2 的**数值范围完全不同**；
 | `float8_e8m0fnu` | 8 / 0 | **只有指数**，用作 MX 的块 scale 因子 |
 
 不想背这张表也可以：`tilelang/language/fp8.py` 提供了
-`determine_fp8_type(fp8_format="e4m3")`，它按运行时平台返回正确的拼法——
+`determine_fp8_type(fp8_format="e4m3")`，它按运行时平台返回正确的拼法，
 CUDA 返回 `float8_e4m3fn`，ROCm 返回 `float8_e4m3fnuz`，gfx950 例外地回到
 OCP 拼法。
 
@@ -325,7 +328,7 @@ accum_dtype = T.float32        # 累加 dtype 必须显式给
 ```
 
 **混合精度时累加 dtype 永远是显式的。** `type_system.md:38-39` 把这条写在
-"Notes" 里：要 fp16 输入、fp32 累加，就把 `accum_dtype` 写成 `T.float32`，
+“Notes” 里：要 fp16 输入、fp32 累加，就把 `accum_dtype` 写成 `T.float32`，
 不要指望推导。
 
 ### 4.4 fp4：两种存储模型
@@ -339,7 +342,7 @@ FP4 E2M1 在 v0.1.15 里有**两个** dtype，区别不在数值，在**存储**
 
 两者的 docstring 写在 `dtypes.py:268-304`。`is_float4()` 对两者都返回 `True`；
 `is_float4_e2m1fn()` / `is_float4_e2m1_unpacked()` 才区分它们。用错模型的
-典型症状是「访存对不上」或者「TMA 描述符对不上」——因为它们对应不同的
+典型症状是“访存对不上”或者“TMA 描述符对不上”。因为它们对应不同的
 `CU_TENSOR_MAP_DATA_TYPE_*`。
 
 还有一个实际约束：**PyTorch 没有 `float4_e2m1fn` 这个 dtype**，所以
@@ -417,13 +420,13 @@ with T.Kernel(T.ceildiv(N, BN), T.ceildiv(M, BM), threads=128) as (bx, by):
     T.copy(C_f, C[by * BM, bx * BN])
 ```
 
-* **①** A/B 是「搬上来、反复用」的 tile，需要块内共享 → `alloc_shared`。
+* **①** A/B 是“搬上来、反复用”的 tile，需要块内共享 → `alloc_shared`。
 * **②** C 是累加器。写成 `(BM, BN)` 的块形状，但 `local.fragment` 意味着
   布局推导会把它切成每线程的寄存器片段。
 * **③** `alloc_local` 是一个每线程私有的小数组，索引空间普通（`scratch[k]`）。
 * **④** `T.alloc_var` 只分配**一个元素**。docstring 里的例子给了五种写法，
   常用的是 `T.alloc_var("float32", init=0.5)` 或
-  `T.alloc_var("int32", 0)`。用的时候是 `scale[0]`——它仍然是一个 buffer，
+  `T.alloc_var("int32", 0)`。用的时候是 `scale[0]`。它仍然是一个 buffer，
   只是长度为 1。
 * **⑤** 注意 `scale[0]` 而不是 `scale`。
 
@@ -431,20 +434,32 @@ with T.Kernel(T.ceildiv(N, BN), T.ceildiv(M, BM), threads=128) as (bx, by):
 
 `docs/get_started/overview.md:82-84` 把这件事讲得最清楚：`alloc_fragment` 分配
 的是**整个线程块**的寄存器文件，TileLang 用布局推导（LayoutInference）推一个
-`T.Fragment` 对象，决定「这块寄存器怎么分给每个线程」。
+`T.Fragment` 对象，决定“这块寄存器怎么分给每个线程”。
 
 所以下面这段算术是成立的（`code/03-memory-scopes/scope_footprint.py`
 现算）：
 
-```text
-C_f = T.alloc_fragment((128, 128), "float32")     # 逻辑上 128×128
-128 × 128 × 4 B = 64 KiB
-64 KiB / 128 线程 = 512 B/线程 = 128 个 fp32 寄存器/线程
+```python
+C_f = T.alloc_fragment((128, 128), "float32")  # 逻辑上 128×128
 ```
+
+$$
+128\times128\times4\ \mathrm{B}=64\ \mathrm{KiB},
+$$
+
+$$
+\frac{64\ \mathrm{KiB}}{128\ \text{线程}}
+=512\ \mathrm{B}/\text{线程},
+$$
+
+$$
+\frac{512\ \mathrm{B}/\text{线程}}{4\ \mathrm{B}/\text{寄存器}}
+=128\ \text{个 fp32 寄存器}/\text{线程}.
+$$
 
 **128 个寄存器/线程是个很大的数字**（NV 每线程最多 255 个 32-bit 寄存器，
 见第 6 章）。这就是为什么 `BM × BN` 不能随便放大：它直接吃掉 occupancy。
-这也是为什么第 10 章要专门讲 layout——`fragment` 的布局不是装饰，它决定
+这也是为什么第 10 章要专门讲 layout，`fragment` 的布局不是装饰，它决定
 寄存器压力与后续 `T.copy` 的合并方式。
 
 ### 5.4 一个特例：bool buffer 在 CUDA 侧会被改写 scope
@@ -456,10 +471,10 @@ if dtype == "bool":
 
 `allocate.py:60-62` 的注释解释了原因：smem 合并 pass 目前处理不了 bool 类型，
 所以 `T.alloc_shared(..., "bool")` 会落到静态 `shared` 上。昇腾方言**故意覆盖**
-了这个函数，去掉了这个 workaround——它的 docstring 写着「Ascend UB handles
-bool buffers in the requested scope directly」
+了这个函数，去掉了这个 workaround。它的 docstring 写着“Ascend UB handles
+bool buffers in the requested scope directly”
 （`tilelang/ascend/language/allocate.py:15-24`）。这是第 6 章说过的
-「同一个高层概念在两台上落点不同，且被显式承认」的又一个例子。
+“同一个高层概念在两台上落点不同，且被显式承认”的又一个例子。
 
 ### 5.5 昇腾侧：UB / L1 / L0A / L0B / L0C
 
@@ -474,22 +489,22 @@ C_ub = T.alloc_shared((BM // 2, BN), "float32")  # UB，scope shared.dyn (:15)
 ```
 
 `alloc_l0a`（`:37`）与 `alloc_l0b`（`:46`）的 docstring 各写了一句关键的话：
-**「Layout is deferred to the consuming gemm operation, which infers K-major or
-MN-major from its transpose flags.」** 也就是说，L0A/L0B 的物理排布不是你在
+**“Layout is deferred to the consuming gemm operation, which infers K-major or
+MN-major from its transpose flags.”** 也就是说，L0A/L0B 的物理排布不是你在
 分配时定的，而是由消费它的 `T.gemm` 的 `transpose_A` / `transpose_B` 反推。
-这是第 21 章布局推导要处理的核心问题，本章只需要记住「**别自己假设 L0 的排布**」。
+这是第 21 章布局推导要处理的核心问题，本章只需要记住“**别自己假设 L0 的排布**”。
 
 `alloc_l0c` 还会额外挂一个 `make_ascend_l0c_layout` 的布局注解（`:55-66`），
 因为 L0C 是固定布局。
 
 ### 5.6 一个必须记住的版本差异：`alloc_ub` 在哪
 
-**主库 v0.1.15 里没有 `T.alloc_ub`。** UB 就用 `T.alloc_shared` 分配——
+**主库 v0.1.15 里没有 `T.alloc_ub`。** UB 就用 `T.alloc_shared` 分配，
 昇腾后端 README 的原话是：
 
-> 「Use `T.alloc_shared` for Unified Buffer storage, `T.alloc_l1` for L1 storage,
-> and `T.alloc_l0a`, `T.alloc_l0b`, or `T.alloc_l0c` for Cube buffers.」
-> —— `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:138-139`
+> “Use `T.alloc_shared` for Unified Buffer storage, `T.alloc_l1` for L1 storage,
+> and `T.alloc_l0a`, `T.alloc_l0b`, or `T.alloc_l0c` for Cube buffers.”
+> 来源：`_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:138-139`
 
 `alloc_ub` 是**适配器仓库**的拼法。`_vendor/tilelang-ascend-v0.1.2.000/`
 的 `tilelang/language/allocate.py:140-157` 里同时有
@@ -526,7 +541,7 @@ T.alloc_L0C   → "wmma.accumulator"    T.alloc_l0c → "shared.l0c"
 | `T.Pipelined(start, stop=None, num_stages=0, order=None, stage=None)` | `:112` | 生产者—消费者软流水 |
 
 大写版本 `T.Serial` / `T.Unroll` / `T.Vectorized` 只是小写版的别名
-（`:297`、`:309`、`:349`），用大写强调「这是 tile 级循环」。
+（`:297`、`:309`、`:349`），用大写强调“这是 tile 级循环”。
 
 ### 6.2 语义差异：谁执行、为了什么
 
@@ -564,33 +579,39 @@ for i, j in T.Parallel(BM, BN):            # ⑤
 ```
 
 * **①** 归约的累加器用一个标量 `acc`（`alloc_var`），所以它必须是串行的。
-* **②** `T.serial` 表达「一次加一个」。这条依赖链本身不能并行。
-* **③** `T.vectorized(4)` 要求「这 4 次迭代拼成一条向量操作」。它的前提是
+* **②** `T.serial` 表达“一次加一个”。这条依赖链本身不能并行。
+* **③** `T.vectorized(4)` 要求“这 4 次迭代拼成一条向量操作”。它的前提是
   `X[base..base+3]` 在内存里连续、且对齐。
 * **④** `T.unroll` 只是请求展开；能不能展开由后端决定。需要保证时用
   `explicit=True`，或者 CUDA 方言的 `unroll_factor=N`。
-* **⑤** `T.Parallel` 把线程映射全部交给编译器——这是最常用、也最该优先用的
+* **⑤** `T.Parallel` 把线程映射全部交给编译器。这是最常用、也最该优先用的
   一种。
 
 ### 6.3 `T.Parallel` 的维度映射规则
 
 这是本章技术含量最高的一节。**`T.Parallel` 的 extents 是逻辑迭代空间，
-不是「哪个维度给线程」的声明。** 默认映射由
+不是“哪个维度给线程”的声明。** 默认映射由
 `src/transform/loop_partition.cc` 的 `PlanLoopPartition` 决定
 （`:248-271`）：
 
-```text
-对 k 维 T.Parallel(e0, e1, ..., e_{k-1})：
+对 $k$ 维的 `T.Parallel`，记其 extents 为 $e_0,\ldots,e_{k-1}$，默认映射是
 
-  flattened  = e0*(e1*(...*i0 + i1)...) + i_{k-1}     # 行优先展平
-  access_idx = flattened // vector_size                # 先按 lane 分组
-  thread     = access_idx % num_thread                 # 再轮转到线程
-  local_idx  = (access_idx // num_thread) * vector_size
-               + (flattened % vector_size)             # 剩下的变每线程串行
+$$
+\begin{aligned}
+\mathit{flattened}
+  &= e_0(e_1(\cdots(i_0)+i_1)\cdots)+i_{k-1},\\
+\mathit{access\_idx}
+  &= \left\lfloor\frac{\mathit{flattened}}{v}\right\rfloor,\\
+\mathit{thread}
+  &= \mathit{access\_idx}\bmod n,\\
+\mathit{local\_idx}
+  &= \left\lfloor\frac{\mathit{access\_idx}}{n}\right\rfloor v
+     +\mathit{flattened}\bmod v,
+\end{aligned}
+$$
 
-  快 ────────────────────────────────────────────────→ 慢
-  │  lane（连续，可向量化） │ thread（相邻，可合并） │ 每线程串行复制 │
-```
+其中 $v$ 是 `vector_size`，$n$ 是 `num_thread`。访存粒度从连续 lane 开始，
+再轮到相邻线程，剩余部分变成每线程串行复制。
 
 三个结论：
 
@@ -612,8 +633,8 @@ T.Parallel(2, 32)     per-thread=8    thread 0 owns (0,0) (0,1) (0,16) (0,17) ..
 T.Parallel(4, 4, 4)   per-thread=8    thread 0 owns (0,0,0) (0,0,1) (1,0,0) (1,0,1) ...
 ```
 
-**每线程的工作量完全相同，但归属不同。** 所以「nest 形状无所谓，反正次数
-一样」是错的：形状决定了 `thread 0` 读的是哪几个逻辑下标，也就决定了
+**每线程的工作量完全相同，但归属不同。** 所以“nest 形状无所谓，反正次数
+一样”是错的：形状决定了 `thread 0` 读的是哪几个逻辑下标，也就决定了
 load 会不会合并。
 
 ### 6.4 什么时候必须自己给布局
@@ -632,7 +653,7 @@ for i, j in T.Parallel(BM, BN, loop_layout=layout):
     ...
 ```
 
-另一个 hint 是 `coalesced_width=`，它告诉向量化规划器「期望的合并宽度」，
+另一个 hint 是 `coalesced_width=`，它告诉向量化规划器“期望的合并宽度”，
 用于向量化可行性判断（`loop.py:22-30`）。
 
 ### 6.5 `T.Pipelined`：把 copy 和 compute 叠起来
@@ -644,7 +665,7 @@ for ko in T.Pipelined(T.ceildiv(K, BK), num_stages=3):
     T.gemm(A_s, B_s, C_f)                # 消费者
 ```
 
-`num_stages` 是「生产者和消费者之间最多用几份 buffer」。它的**代价是片上
+`num_stages` 是“生产者和消费者之间最多用几份 buffer”。它的**代价是片上
 容量**：第 5 章算过，`(128,256)` fp32 开两份就放不进示例里的 192 KiB UB。
 
 想手工排调度就用 `order` / `stage`（两个长度相同的列表，按顺序给循环体里的
@@ -687,15 +708,15 @@ Y[by, 0] = S[by] if by < M else 0.0   # ② 三元 → if_then_else 表达式
 **编译期常量会被折叠。** 条件是纯 Python 的 `bool` 时
 （比如 `if USE_FAST_PATH:` 里 `USE_FAST_PATH = True`），trace 期就定下来了，
 不会在设备上留下分支（`control_flow.md:19-21`）。这也意味着：从 Python 常量
-推导出来的 `if` 可以放心用来「按参数开关一段实现」。
+推导出来的 `if` 可以放心用来“按参数开关一段实现”。
 
 ### 7.2 `T.if_then_else` 与 `T.Select`：不是一回事
 
-这两个都是「取值」，但求值方式不同。`tilelang/language/tir/ir.py:172-179`
+这两个都是“取值”，但求值方式不同。`tilelang/language/tir/ir.py:172-179`
 的 `Select` docstring 把区别写死了：
 
-> 「``Select`` evaluates both value expressions. Use ``if_then_else`` when a
-> branch must guard side effects or out-of-bounds memory accesses.」
+> “``Select`` evaluates both value expressions. Use ``if_then_else`` when a
+> branch must guard side effects or out-of-bounds memory accesses.”
 
 ```python
 # 安全：条件为假时，X[gi] 这个 load 根本不会发生
@@ -724,8 +745,8 @@ def any_of(buffer: BufferLikeType) -> tirx.PrimExpr: ...
 def all_of(buffer: BufferLikeType) -> tirx.PrimExpr: ...
 ```
 
-它们接受的是一个**缓冲区或缓冲区切片**，语义是「这个切片里是否至少有一个 /
-全部元素为真」。对应测试的用法是
+它们接受的是一个**缓冲区或缓冲区切片**，语义是“这个切片里是否至少有一个 /
+全部元素为真”。对应测试的用法是
 `T.all_of(BlockMask[by, bx, k, :])`
 （`testing/python/language/test_tilelang_language_all_of.py:56`）。
 
@@ -778,7 +799,7 @@ for (int i = 0; i < 8; ++i) {
 
 没有向量化，也没有合并访存。同一份文档紧接着指出：**除了尾部那一组，
 其它线程本来可以走更优化的代码。** 这正是 `LegalizeSafeMemoryAccess`
-自动插守卫的代价，也是「默认安全」与「默认快」之间的取舍。
+自动插守卫的代价，也是“默认安全”与“默认快”之间的取舍。
 
 **代价二：分支会切开流水。** `T.Pipelined` 的 `order` / `stage` 是按循环体里的
 **可调度语句**编号的。一段 `if` 会把循环体切成多个基本块，`Bind` 的可重放性
@@ -813,7 +834,7 @@ for (int i = 0; i < 8; ++i) {
 自查工具：`code/06-python-boundary/py_compat_scan.py`（CPU 逻辑验证）把这张表
 做成了一个 AST 扫描器，能在编译之前先把显然越界的构造挑出来。
 
-### 8.2 `@T.macro`：kernel 里的"函数"
+### 8.2 `@T.macro`：kernel 里的“函数”
 
 kernel 里不能写函数，但可以写宏：
 
@@ -845,7 +866,7 @@ X[i]           buffer load                         →  设备值（TIR 表达�
   就会掉进 trace 期的坑。
 * **把应该展开的东西写成设备循环**：Python 的 `range` 在 `for` 语句里**会变成
   设备侧的 `T.serial`**，包括边界是动态的时候（`python_compatibility.md:32-37`）。
-  「我只想展开 4 次」和「我要一个 4 次的设备循环」在写法上要分清：
+  “我只想展开 4 次”和“我要一个 4 次的设备循环”在写法上要分清：
   循环一个具体的 Python 列表是展开，`range` 是设备循环。
 
 ```python
@@ -867,12 +888,12 @@ Python list 不会生成设备侧查表，要用 buffer 或直接把下标算出
 
 ## 9. 类型系统与隐式转换的坑
 
-第 4 节讲了「有哪些类型」，这一节讲「编译器会替你转什么、不会替你转什么」。
+第 4 节讲了“有哪些类型”，这一节讲“编译器会替你转什么、不会替你转什么”。
 
 **① 整数字面量与浮点混用。** `T.max(C_f[i, j], 0)` 是
 `examples/quickstart.py` 的写法：`0` 是 Python int，`C_f` 是 fp32 的 fragment。
-这类「字面量与 buffer 元素」的混用会被接受并做类型提升。但**两个不同 dtype 的
-buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。遇到"类型不匹配"的
+这类“字面量与 buffer 元素”的混用会被接受并做类型提升。但**两个不同 dtype 的
+buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。遇到“类型不匹配”的
 报错，先把操作数显式转成同一个 dtype 再看。
 
 **② `bool` 的存储。** CUDA 侧 `T.alloc_shared(..., "bool")` 会落到静态
@@ -886,7 +907,7 @@ buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。�
 
 **④ `float8_e4m3` 与 `float8_e4m3fn` 是两个不同的类型。** 前者是抽象 E4M3，
 `as_torch()` 会按平台在 `float8_e4m3fn`（CUDA）与 `float8_e4m3fnuz`（ROCm）
-之间切换（`dtypes.py:187-206`）。同一段代码在两个平台上会得到不同的物理类型——
+之间切换（`dtypes.py:187-206`）。同一段代码在两个平台上会得到不同的物理类型，
 这正是 `fp8.py` 的 `determine_fp8_type()` 存在的理由。
 
 **⑤ 累加 dtype 必须显式。** 见 4.3。fp16 输入 + fp16 累积在 K 很大时会明显
@@ -910,7 +931,7 @@ buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。�
 （`_normalize_threads`，`:99-135`，补成三维）、簇维度
 （`_normalize_cluster_dims`，`:138-151`，`[1,1,1]` 视为没给）。
 然后 `DEFAULT_SIMT_THREADS = 128`（`transform/__init__.py:201`）在 pass
-阶段补上默认线程数。这个 pass 还决定「这个后端有没有线程维度」：
+阶段补上默认线程数。这个 pass 还决定“这个后端有没有线程维度”：
 `lower_thread_binding=True`（CUDA/ROCm/Metal）把线程占位符绑成
 `threadIdx.*` 作用域；`False`（CPU、Ascend）丢掉它们，**body 里引用线程索引
 会被拒绝**。昇腾因此把线程域做成 `T.SimtVF` 自己的作用域。
@@ -933,11 +954,11 @@ buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。�
 `dtype.__new__`（`dtypes.py:245-253`），产出同一个 `tvm.DataType`。之后
 `validate_gemm_ab_dtypes`（`:319-340`）之类的检查才有统一的比较基准。
 
-**⑤ 布局推导是"所有并行循环都必须被覆盖"的。**
+**⑤ 布局推导是“所有并行循环都必须被覆盖”的。**
 `ParallelLoopLayoutValidator` 在 `tl.transform.LayoutInference` 里检查：
 每个并行循环最终都要有布局注解，且必须在最外层（`loop.py:40-58`）。
-这条规则是第 10、21 章的主角，本章只要求你知道「`T.Parallel` 不是免费的，
-它背后有一次布局推导」。
+这条规则是第 10、21 章的主角，本章只要求你知道“`T.Parallel` 不是免费的，
+它背后有一次布局推导”。
 
 ---
 
@@ -965,7 +986,7 @@ buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。�
 7. **在流水循环里放会分叉的 `if`。** `order` / `stage` 是按可调度语句编号的，
    分叉会改变编号与 `Bind` 的可重放性。
 
-8. **把 Python 的 `range` 当成"展开"。** 在 `for` 语句里它会变成设备侧的
+8. **把 Python 的 `range` 当成“展开”。** 在 `for` 语句里它会变成设备侧的
    `T.serial`。要展开就循环一个具体的 Python 序列。
 
 9. **相信文档里的 `T.all_of(i < M, j < N)`。** v0.1.15 的 `all_of` 接的是
@@ -980,7 +1001,7 @@ buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。�
 ## 12. 本章小结
 
 * **六个构件**：网格（`T.Kernel`）、dtype、buffer/作用域、迭代、控制流、
-  Python 边界。前五个直接决定 IR 的形状，第六个决定「哪些东西根本进不了 IR」。
+  Python 边界。前五个直接决定 IR 的形状，第六个决定“哪些东西根本进不了 IR”。
 * **`T.Kernel`**：位置参数按顺序对应 x/y/z 的块数，返回块索引；`threads=` 是
   每块线程数（默认 128）；`prelude` / `cluster_dims` 是后端注解。块内默认是
   **块级**世界，线程级要用 `T.get_thread_binding()`（NV）或 `T.SimtVF`（昇腾）。
@@ -998,10 +1019,10 @@ buffer 直接运算就未必**，尤其在有 lanes（向量形）的时候。�
   `T.all_of` / `T.any_of` 接的是 buffer，不是条件列表。
 * **Python 边界**：`range` 在 `for` 里是设备循环，具体序列是 trace 期展开；
   没有函数/类（用 `@T.macro`）、没有链式赋值、没有 `len()`。
-  分清「编译期值」与「设备值」是这一节最关键的一件事。
+  分清“编译期值”与“设备值”是这一节最关键的一件事。
 
 下一章（第 9 章）会在这些构件之上讲**核心原语**：`T.copy`、`T.gemm`、
-`T.reduce_*`、`T.atomic_add`、`T.fill`、`T.tile.*`——每一个的语义、参数与
+`T.reduce_*`、`T.atomic_add`、`T.fill`、`T.tile.*`，每一个的语义、参数与
 降级行为，以及它们各自会展开成什么样的 `T.Parallel` / `T.serial`。
 
 ## 延伸阅读

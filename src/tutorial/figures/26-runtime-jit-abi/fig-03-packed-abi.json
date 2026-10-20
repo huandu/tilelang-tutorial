@@ -1,7 +1,7 @@
 {
   "id": "fig-03-packed-abi",
   "title": "MakePackedAPI 在 host 入口插入的检查顺序",
-  "caption": "kernel(a, b) 落到 host 侧就是一个签名固定的 packed function；「ABI」的实体就是这一串按序生效的运行时检查。",
+  "caption": "kernel(a, b) 落到 host 侧就是一个签名固定的 packed function；“ABI”的实体就是这一串按序生效的运行时检查。",
   "kind": "steps",
   "direction": "TB",
   "section": "4.8",

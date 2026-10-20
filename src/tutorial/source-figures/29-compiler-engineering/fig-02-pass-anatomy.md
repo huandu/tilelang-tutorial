@@ -46,7 +46,7 @@ src/transform/verify_buffer_init.cc                                (426 行)
    └─ 字符串必须与 ⑤ 里的 pass 名、Python 侧的 _ffi_api 调用三者一致。
 ```
 
-## 两条会「静默失败」的地方
+## 两条会“静默失败”的地方
 
 1. **重载函数名写错不报错。** `VisitStmt_(const BufferStoreNode *op)` 写成
    `VisitStmt(const BufferStoreNode *op)`，编译通过、pass 也跑，只是永远不生效。

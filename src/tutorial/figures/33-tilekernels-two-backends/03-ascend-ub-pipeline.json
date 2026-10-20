@@ -28,8 +28,8 @@
   ],
   "notes": [
     "缓冲版本数由 T.annotate_buffer_versions 显式声明：scores_ub = num_stages(6)、out_ub = num_stages(6)、invalid_logits_ub = 1。",
-    "invalid_logits_ub 只有 1 份，因为它是「跨所有迭代共享的累积器」，不是流水数据；所以 T.device_assert 在循环之外执行（:155）。",
+    "invalid_logits_ub 只有 1 份，因为它是“跨所有迭代共享的累积器”，不是流水数据；所以 T.device_assert 在循环之外执行（:155）。",
     "annotations.py:19-45 的语义：1 = 退出多缓冲资格；num_versions >= 2 = 固定份数；也可只给模式（auto / iteration / counter）。",
-    "调度器求的是「依赖上至少要几份」，num_stages 表达的是「我想重叠多深」——后者是性能意图，必须由写 kernel 的人给出。"
+    "调度器求的是“依赖上至少要几份”，num_stages 表达的是“我想重叠多深”，后者是性能意图，必须由写 kernel 的人给出。"
   ]
 }

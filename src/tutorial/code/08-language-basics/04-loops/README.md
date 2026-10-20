@@ -7,7 +7,7 @@
 1. 把 `T.serial / T.unroll / T.vectorized / T.Parallel / T.Pipelined` 的语义摆在一起；
 2. 说明 `T.Parallel` 的 extents 是**逻辑迭代空间**，线程映射由布局推导决定；
 3. 给出 `T.Parallel` 默认映射的**可复算模型**（lane → thread → 每线程串行）；
-4. 说明「同一次数、不同 nest 形状」会改变哪个下标落到哪个线程。
+4. 说明“同一次数、不同 nest 形状”会改变哪个下标落到哪个线程。
 
 ## 文件
 
@@ -71,14 +71,14 @@ $ python3 loop_mapping.py --compare
 
 ## 一处容易误判的地方
 
-`loop_mapping.py` 显示的「每线程次数」对所有形状都一样（因为映射先把整个 nest
-行优先展平）；变化的是**归属**。所以「nest 形状无所谓」是错的：它决定了
+`loop_mapping.py` 显示的“每线程次数”对所有形状都一样（因为映射先把整个 nest
+行优先展平）；变化的是**归属**。所以“nest 形状无所谓”是错的：它决定了
 `thread 0` 读的是哪几个逻辑下标，也就决定了访存能不能合并。
 
 ## 原文出处
 
 * `_vendor/tilelang-v0.1.15/tilelang/language/loop.py:13-357`
-* `_vendor/tilelang-v0.1.15/tilelang/cuda/language/loop.py:16-79`
+* `_vendor/tilelang-v0.1.15/tilelang/cuda/language/loop.py:18-87`
 * `_vendor/tilelang-v0.1.15/src/transform/loop_partition.cc:112-350`
 * `_vendor/tilelang-v0.1.15/docs/programming_guides/control_flow.md:47-140`
 * `_vendor/tilelang-v0.1.15/docs/programming_guides/python_compatibility.md:21-46`

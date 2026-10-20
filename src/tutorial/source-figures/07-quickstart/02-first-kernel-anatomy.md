@@ -23,7 +23,7 @@
                                                                                    }
 ```
 
-## 2.2 一次 1-D 向量加法的「块级」视角
+## 2.2 一次 1-D 向量加法的“块级”视角
 
 ```text
   全局向量 A / B / C（长度 N）
@@ -39,7 +39,7 @@
   └────────────────────────────────────────────────────────────┘
 ```
 
-## 2.3 为什么是「block 级」而不是「thread 级」
+## 2.3 为什么是“block 级”而不是“thread 级”
 
 ```text
   CUDA（thread 级）                             TileLang（block 级）
@@ -55,7 +55,7 @@
 ## 事实来源
 
 * `_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:431-455`（`T.Kernel` 的
-  "grid of tile programs" 语义）。
+  “grid of tile programs” 语义）。
 * `_vendor/tilelang-v0.1.15/tilelang/cuda/language/kernel.py:13-52`（CUDA 方言的
   `threads=`、`T.get_thread_binding()`）。
 * `_vendor/tilelang-v0.1.15/tilelang/language/loop.py:13-80`（`T.Parallel` 是块级
@@ -63,4 +63,4 @@
 * `_vendor/tilelang-v0.1.15/tilelang/language/copy_op.py:59-132`（`T.copy` 是 tile op，
   低级循环在 lowering 时构造）。
 * `_vendor/tilelang-v0.1.15/docs/deeplearning_operators/elementwise.md:39-41,120-171`
-  （"block level, not thread level" 的官方表述与两份生成结果）。
+  （“block level, not thread level” 的官方表述与两份生成结果）。

@@ -24,7 +24,7 @@ TileLang  数据流 + 资源信息（放哪、怎么流）          布局推导
   `../tilelang-corpus/11-related-compilers/raw/triton-mapl-2019.md`，第 3 页。
 * TileLang 的解耦声明：
   `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2504-17577.md`（摘要）。
-* 三层接口（含 beginner 层「not yet fully implemented」）：
+* 三层接口（含 beginner 层“not yet fully implemented”）：
   `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/get_started/overview.md`。
 * 编译期实际执行的 pass 位置：
   `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:104-196`（NV）、

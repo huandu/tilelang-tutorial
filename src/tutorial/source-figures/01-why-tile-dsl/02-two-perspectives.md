@@ -27,7 +27,7 @@ ASCII 版本：
 
 ## 来源
 
-* 「tile 可以被某个并行单元拥有和操作」的定义：
+* “tile 可以被某个并行单元拥有和操作”的定义：
   `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/get_started/overview.md`。
 * CUDA 侧的管理对象清单：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-c-programming-guide.md`
   与 `../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-best-practices.md`。

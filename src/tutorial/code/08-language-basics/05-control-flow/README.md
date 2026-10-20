@@ -5,7 +5,7 @@
 ## 目的
 
 1. `if / elif / else`、三元表达式、`while`、`break` / `continue` 的写法；
-2. `T.if_then_else` 与 `T.Select` 的区别（「只求值一边」 vs 「两边都求值」），
+2. `T.if_then_else` 与 `T.Select` 的区别（“只求值一边” vs “两边都求值”），
    以及为什么越界保护只能用前者；
 3. 控制流对 **向量化**（守卫挡住宽访存）与 **流水**（可调度语句与可重放 Bind）
    的影响；

@@ -4,11 +4,11 @@
 
 读完本章，你应当能够：
 
-1. 把 MoE 的一层拆成四段——**路由（router/gating）→ 重排（dispatch/permute）→
-   grouped GEMM → 合并（combine）**——并写出每段的 FLOP 与字节账；能说明为什么
+1. 把 MoE 的一层拆成四段，**路由（router/gating）→ 重排（dispatch/permute）→
+   grouped GEMM → 合并（combine）**，并写出每段的 FLOP 与字节账；能说明为什么
    这四段里有两段**完全没有矩阵乘**。
-2. 用「每个专家分到多少 token」判断一个 routed GEMM 是 compute-bound 还是被
-   权重流量压成 memory-bound，并解释为什么这是**结构问题**而不是「实现没调好」。
+2. 用“每个专家分到多少 token”判断一个 routed GEMM 是 compute-bound 还是被
+   权重流量压成 memory-bound，并解释为什么这是**结构问题**而不是“实现没调好”。
 3. 说清 MLA（Multi-head Latent Attention，多头潜注意力）相对 MHA / GQA 的
    KV 压缩发生在哪一步，算出 KV 预算与 decode 算术强度；并同时说清它**为什么
    对 kernel 友好**（KV 小、复用高）和**为什么不友好**（576/512 的 head 维度、
@@ -18,17 +18,17 @@
 5. 在昇腾侧把同一套 MoE 拆解对应到 `fusedmoe` / `moe_token_permute` /
    `dispatch_combine` 的写法：L1/L0C、combineCV 与自动同步、shmem 的 put/get。
 6. 说出**显存、通信、varlen、一致性（确定性）**四个工程约束如何改变 MoE / MLA
-   的 kernel 设计，并给出「一个 decode step 里哪些算子最贵」的判断表。
+   的 kernel 设计，并给出“一个 decode step 里哪些算子最贵”的判断表。
 
 ## 前置知识
 
 * 第 7–9 章：`@tilelang.jit`、`T.Kernel`、`T.copy` / `T.gemm` / `T.alloc_shared` /
-  `T.alloc_fragment` 的语义——本章直接引用官方 example，不再重复骨架。
+  `T.alloc_fragment` 的语义，本章直接引用官方 example，不再重复骨架。
 * 第 10–11 章：shared memory 与 fragment、`T.annotate_layout` / `T.use_swizzle`、
   `T.Pipelined` 与多缓冲。本章的 grouped GEMM 会直接复用第 11 章的时空图。
 * 第 13 章：融合（把 SiLU、逐元素乘并进 GEMM 的 epilogue）。
 * 第 14 章：**grouped GEMM / batched GEMM / split-K 的判据**、低精度 GEMM、以及
-  「tile 尺寸决定片上访存与寄存器压力」的三张约束表。本章的 MoE 一半内容就是
+  “tile 尺寸决定片上访存与寄存器压力”的三张约束表。本章的 MoE 一半内容就是
   grouped GEMM 的延伸。
 * 第 15 章：attention 家族、online softmax、split-KV（FlashDecoding）、paged KV、
   varlen。本章的 MLA 与稀疏注意力都建立在它之上。
@@ -41,7 +41,7 @@
   **本书模型输出**（`code/` 下的纯 Python 账本，可在任意机器复算）与
   **锁定版本里的第一方配置 / 官方 example 的既有表述**（带路径与条件）。
 * 本章不重复贴第 13–15 章已经给过的算子骨架，而是**直接引用官方 example**，
-  并把每条引用的「文件 + 行号」做成可运行的核对（`code/04`、`code/05`、`code/06`）。
+  并把每条引用的“文件 + 行号”做成可运行的核对（`code/04`、`code/05`、`code/06`）。
   这些引用并未在硬件上运行过，验证级别是**仅静态核对**。
 
 ---
@@ -49,14 +49,14 @@
 ## 1. 问题的由来：一个 decode step 里最贵的是什么
 
 第 15 章讲完了 attention 家族。到了 DeepSeek 这一代模型，attention 只是半边天：
-另外半边是 MoE。两者合起来决定了「一次 decode step 要花多久」。我们先把
+另外半边是 MoE。两者合起来决定了“一次 decode step 要花多久”。我们先把
 **真实形状**摆出来，再谈 kernel。
 
 ### 1.1 先把模型形状钉死
 
 锁定版本里有一份第一方配置：
 `_vendor/tilelang-v0.1.15/examples/deepseek_v32/inference/config_671B_v3.2.json`。
-它是 DeepSeek-V3.2-671B 的推理配置，也是本章所有「真实模型形状」的唯一来源：
+它是 DeepSeek-V3.2-671B 的推理配置，也是本章所有“真实模型形状”的唯一来源：
 
 | 参数 | 值 | 含义 |
 | --- | --- | --- |
@@ -72,7 +72,7 @@
 | `index_topk` | 2048 | sparse attention 每步选多少个 KV 位置 |
 
 这张表本身就是本章的骨架：**MLA 决定了 KV cache 有多大，MoE 决定了每 token 要
-做多少次小 GEMM，indexer 决定长上下文里「省下的 attention」要花多少代价买回来。**
+做多少次小 GEMM，indexer 决定长上下文里“省下的 attention”要花多少代价买回来。**
 
 ### 1.2 两类结构，两条不同的瓶颈
 
@@ -82,10 +82,10 @@
 | 部分 | FLOP | 字节（下界） | 算术强度 | 判定 |
 | --- | --- | --- | --- | --- |
 | router（`T×d @ d×E`） | 0.94 GFLOP | 112 MB | 8.0 | memory-bound |
-| permute + combine（纯搬运） | **0** | 1.75 GB | 0 | —— |
+| permute + combine（纯搬运） | **0** | 1.75 GB | 0 | memory-bound |
 | grouped GEMM（gate+up+down） | 2.89 TFLOP | 2.11 GB | 1365 | compute-bound |
 
-同一份记账，换到「decode 的小 batch」上，结论会翻转。用
+同一份记账，换到“decode 的小 batch”上，结论会翻转。用
 `code/03-mla-kv/kv_budget.py` 的 KV 预算与 `code/01` 的单专家账：
 
 | 形状（`code/01` 的三组） | 每个专家分到多少 token | grouped GEMM 的算术强度 | 判定 |
@@ -97,7 +97,7 @@
 
 这两张表加起来就是本章的主命题：
 
-> **MoE 的矩阵乘本身不是稀缺资源，稀缺的是「把数据按专家摆好」的能力。**
+> **MoE 的矩阵乘本身不是稀缺资源，稀缺的是“把数据按专家摆好”的能力。**
 > 原因有两个：小 M 的 GEMM 打不满张量核（第二张表的后三行），而重排与通信是
 > 每个 token 都要付、且完全不产生 FLOP 的固定成本（第一张表的 permute+combine 行）。
 
@@ -110,7 +110,7 @@ MLA 那边是另一条瓶颈线。用 `code/03` 的账：
 | **MLA（c_KV 512 + k_R 64）** | **1152 字节** | **241.8 FLOP/Byte** |
 
 MLA 把 KV cache 压到 MHA 的 **1.76%**，同时把 decode 的算术强度抬高了两个数量级。
-它不是「更快的 attention」，而是**换了一种 attention 的算术结构**。
+它不是“更快的 attention”，而是**换了一种 attention 的算术结构**。
 
 ### 1.3 本章要解决的四个问题
 
@@ -119,7 +119,7 @@ MLA 把 KV cache 压到 MHA 的 **1.76%**，同时把 decode 的算术强度抬�
 3. 稀疏/索引类算子为什么出现、对 kernel 提了什么新要求（第 4 节）；
 4. 昇腾侧实际怎么做，以及显存/通信/varlen/一致性四个约束（第 5、6 节）。
 
-最后在第 7 节给出一张「一个 decode step 里最贵算子」的总结表，作为第 17、18 章
+最后在第 7 节给出一张“一个 decode step 里最贵算子”的总结表，作为第 17、18 章
 （端到端训练与推理）的输入。
 
 ---
@@ -144,15 +144,15 @@ flowchart TD
 
 官方 `fusedmoe` 例子就是按这四段写的，而且**不是**一个巨型 kernel：
 `_vendor/tilelang-v0.1.15/examples/fusedmoe/example_fusedmoe_tilelang.py`
-里有两个 kernel——`moe_forward_tilelang_shared`（共享专家，第 12 行）与
-`moe_forward_tilelang_routed`（路由专家，第 92 行）——中间夹着 PyTorch 侧的路由、
-排序与 `scatter_reduce`（第 406 行）。这个「几个 GEMM kernel + host 侧重排」
+里有两个 kernel，`moe_forward_tilelang_shared`（共享专家，第 12 行）与
+`moe_forward_tilelang_routed`（路由专家，第 92 行），中间夹着 PyTorch 侧的路由、
+排序与 `scatter_reduce`（第 406 行）。这个“几个 GEMM kernel + host 侧重排”
 的结构，是当前 MoE 实现的主流形态，也是理解瓶颈的关键。
 
 ### 2.2 第 1 段：router / gating
 
 router 本身极小：`logits = x[T,d] @ W_g[d,E]`，即一个 `M=T`、`N=E`、`K=d` 的 GEMM。
-在我们默认形状下它只有 0.94 GFLOP，算术强度 8.0 FLOP/Byte——**它不吃算力**。
+在我们默认形状下它只有 0.94 GFLOP，算术强度 8.0 FLOP/Byte。**它不吃算力**。
 
 router 真正花时间的是它后面的三件事：
 
@@ -173,14 +173,14 @@ router 真正花时间的是它后面的三件事：
    “auxiliary-loss-free strategy for load balancing”（见
    `../tilelang-corpus/12-operator-libraries/raw/arxiv-2412-19437.md`）。
    从 kernel 的角度，这个策略是否有效，直接表现为**每个专家拿到的 token 数是否
-   接近平均值**——也就是 2.5 与 6.3 节要算的不均衡度。
+   接近平均值**，也就是 2.5 与 6.3 节要算的不均衡度。
    配置里还有 `n_expert_groups=8` / `n_limited_groups=4` 的**分组受限路由**，
-   它把「每个 token 可以选哪些专家」限制在若干组内，这会影响 dispatch 的通信
+   它把“每个 token 可以选哪些专家”限制在若干组内，这会影响 dispatch 的通信
    模式（第 6.2 节）。
 
-### 2.3 第 2 段：dispatch / permute——零 FLOP 的那一段
+### 2.3 第 2 段：dispatch / permute，零 FLOP 的那一段
 
-MoE 的输入是「按 token 排列」的，而专家 GEMM 需要「按专家排列」的。这一步重排
+MoE 的输入是“按 token 排列”的，而专家 GEMM 需要“按专家排列”的。这一步重排
 有两种名字：
 
 * **permute / unpermute**：在**同一张卡内**按专家把 token 行重排（昇腾的
@@ -196,8 +196,8 @@ FLOP  = 0
 ```
 
 在我们的默认形状下这是 **896 MB**（`code/01` 的输出）。而 grouped GEMM 要用
-2.89 TFLOP 换来 2.11 GB 的访存——**两者是同一个数量级**。换句话说：
-一层 MoE 里，「搬一遍数据」和「算一遍矩阵」花掉的字节数差不多。
+2.89 TFLOP 换来 2.11 GB 的访存，**两者是同一个数量级**。换句话说：
+一层 MoE 里，“搬一遍数据”和“算一遍矩阵”花掉的字节数差不多。
 
 permute 的实现要点有三条，都能在官方代码里指到：
 
@@ -218,15 +218,15 @@ permute 的实现要点有三条，都能在官方代码里指到：
    有用结果，却要占满 grid 和显存。
 
 `code/02` 还顺手验证了一件工程上必须成立的事：**重排是可逆的**。token 按专家
-重排 → 逐 assignment 算专家 → 按原位置 `scatter_reduce` 求和，结果与「不重排、
-直接对每个 token 调用它选中的专家」精确相等（最大误差 0.0）。这就是
+重排 → 逐 assignment 算专家 → 按原位置 `scatter_reduce` 求和，结果与“不重排、
+直接对每个 token 调用它选中的专家”精确相等（最大误差 0.0）。这就是
 `combine` 能写成一次归约的前提。
 
 ### 2.4 第 3 段：grouped GEMM
 
 第 14 章已经把 grouped GEMM 的两种形态讲清楚了，这里只补 MoE 特有的三点。
 
-**（a）grid 是「每个专家各自的块数之和」**。拼接式的实现里，
+**（a）grid 是“每个专家各自的块数之和”**。拼接式的实现里，
 `total_m_blocks = Σ_e ceil(size_e / block_M)`
 （`examples/grouped_gemm/example_grouped_gemm_fwd.py:64`），然后在 kernel 内
 用偏移表反解当前 block 属于哪个专家：
@@ -249,7 +249,7 @@ actual_rows = T.max(0, T.min(block_M, cur_batch_size
 `T.make_tensor(A_ptrs[cur_batch_idx], ...)`（第 63 行）在 kernel 里构造每个专家
 的张量视图，好处是不必真的把 token 拼成一个大张量；代价写在文件头注释里：
 “Multi-stage software pipelining on ptr-backed tensors is not correct yet”，
-所以 `copy_num_stages = 1`（第 32 行）。**这是一个用「放弃流水」换「不用拼接」的
+所以 `copy_num_stages = 1`（第 32 行）。**这是一个用“放弃流水”换“不用拼接”的
 取舍**，不是免费的选择。
 
 **（c）gate 与 up 可以共享同一次 input 读**。MoE 的 MLP 是
@@ -257,12 +257,12 @@ actual_rows = T.max(0, T.min(block_M, cur_batch_size
 dual GEMM把两份权重都读进来、`x` 只读一次。昇腾的 `example_fusedmoe.py:89`
 就是 `dual_gemm_kernel`，它的 routed 版本
 （`grouped_dual_gemm_kernel_fixed`，第 886 行）把这一招和 grouped 路由合在一起。
-这不是「少算」，而是**少读一遍激活**——在小 M 场景下，省下的正是稀缺的那一项。
+这不是“少算”，而是**少读一遍激活**，在小 M 场景下，省下的正是稀缺的那一项。
 
 最后回到 2.5 的核心：**小 M 让这个 GEMM 变成 memory-bound**。单个专家的
 权重是 `3·d·de·b` 字节（三个矩阵）；给它 1 个 token 也要付这一遍。表在
 `code/01` 里：`tokens_for_expert` 从 16 涨到 512，算术强度从 15.8 涨到 384
-（跨过 333 的平衡点）。这就是为什么 MoE 的专家数越多、每个专家越「瘦」
+（跨过 333 的平衡点）。这就是为什么 MoE 的专家数越多、每个专家越“瘦”
 （如 V3.2 的 256 个专家、每个只激活 8 个），小 M 问题越严重。
 
 ### 2.5 第 4 段：combine
@@ -277,12 +277,12 @@ epilogue（`routed_expert_kernel` 里的 `output_gm * expert_weights.unsqueeze(1
 * **浮点求和的顺序决定结果**。`k` 路求和，按什么顺序加，结果会有末位差异。
   用原子加（第 14 章的 split-K）或 `scatter_reduce` 都意味着顺序不由你控制。
   要可复现，就得固定一个顺序（例如按 expert id 排序后串行累加）或用更高精度累加。
-* **它常常和 permute 的逆过程耦合**。理想情况是「谁 permute 谁 unpermute」，
-  但如果 dispatch 阶段已经打散了顺序，combine 就需要一份额外的「来源表」
+* **它常常和 permute 的逆过程耦合**。理想情况是“谁 permute 谁 unpermute”，
+  但如果 dispatch 阶段已经打散了顺序，combine 就需要一份额外的“来源表”
   （昇腾 `dispatch_combine` 里的三元组 `(rank, token, topk_id)`），这笔记录本身
   也要存、也要传。
 
-### 2.6 为什么「瓶颈常在通信与重排」
+### 2.6 为什么“瓶颈常在通信与重排”
 
 把上面的账合起来，MoE 的瓶颈可以归成五条，每条都有可复算或可指认的依据：
 
@@ -290,7 +290,7 @@ epilogue（`routed_expert_kernel` 里的 `output_gm * expert_weights.unsqueeze(1
    线性增长，且完全不产生 FLOP。它不会因为你的 GEMM 调得更好而变小。
    （`code/01`：默认形状下 1.75 GB。）
 2. **小 M 的 GEMM 打不满张量核**。每个专家分到的 token 数常远小于权重能摊薄的
-   规模；账面上是 memory-bound，实际是「张量核在等权重」。
+   规模；账面上是 memory-bound，实际是“张量核在等权重”。
 3. **跨卡时多一次 all-to-all 与一次全局同步**。dispatch 送 `k` 份、combine 收
    `k` 份，`code/06` 的账是每 token 每方向 `k·d·b` 字节；在 T=8192、k=8、d=7168
    下，一层就要搬 1879 MB，是这层激活量的 16 倍。而这一步是**同步**的：最慢的
@@ -302,7 +302,7 @@ epilogue（`routed_expert_kernel` 里的 `output_gm * expert_weights.unsqueeze(1
 
 **但要给出反例**：如果 batch 足够大、专家数很少（比如默认例子的 T=8192、E=8），
 每个专家能拿到几千个 token，grouped GEMM 的算术强度（1365 FLOP/Byte）远高于
-平衡点——这时**矩阵乘就是主角**，重排只是一次性成本。所以正确的表述是：
+平衡点。这时**矩阵乘就是主角**，重排只是一次性成本。所以正确的表述是：
 
 > MoE 的瓶颈**随规模迁移**：大 prefill 批 → 算力主导；decode/小批、专家多、
 > 跨卡 → 重排、通信与启动开销主导。写 kernel 之前先算这两张表，比直接调
@@ -314,7 +314,7 @@ epilogue（`routed_expert_kernel` 里的 `output_gm * expert_weights.unsqueeze(1
 
 ### 3.1 从 MHA 到 MLA：被缓存的东西变了
 
-先把三代的「缓存什么」摆在一起（图见 `figures/mla-structure.md`）：
+先把三代的“缓存什么”摆在一起（图见 `figures/mla-structure.md`）：
 
 | 变体 | 每个 token、每层缓存什么 | 大小 |
 | --- | --- | --- |
@@ -322,7 +322,7 @@ epilogue（`routed_expert_kernel` 里的 `output_gm * expert_weights.unsqueeze(1
 | GQA / MQA | 只有 `H_kv` 个 KV head 的 K、V | `2·H_kv·d` |
 | **MLA** | 一份低秩潜向量 `c_KV`（`d_c` 维）+ 一份**解耦的 RoPE key** `k_R`（`d_r` 维） | `d_c + d_r` |
 
-GQA 的思路是「少缓存几个 head 的 KV」；MLA 的思路是**换一个被缓存的对象**。
+GQA 的思路是“少缓存几个 head 的 KV”；MLA 的思路是**换一个被缓存的对象**。
 K 和 V 不再直接缓存，而是缓存一个低秩潜向量，K/V 在**用的时候**从它长出来：
 
 ```
@@ -332,10 +332,10 @@ v_h  = W_UV,h · c_KV            (每个 head 一张上投影, d_h 维)
 ```
 
 再加一条与它并列的、**不做低秩压缩**的 RoPE 分支：位置编码直接作用在一个
-`d_r=64` 维的小 key 上，避免 RoPE 的旋转把低秩结构破坏掉。这就是「解耦
-（decoupled）RoPE」的含义。
+`d_r=64` 维的小 key 上，避免 RoPE 的旋转把低秩结构破坏掉。这就是“解耦
+（decoupled）RoPE”的含义。
 
-### 3.2 关键一步：把上投影「吸收」掉
+### 3.2 关键一步：把上投影“吸收”掉
 
 如果真按上式做，每个 head 都要算一份 `k_h`、`v_h`，KV 依旧很大。MLA 的巧妙
 之处在于**矩阵结合律**：
@@ -352,7 +352,7 @@ o_h     = Σ_s a_s · v_s
 
 于是 **attention kernel 只需要和 `c_KV`（潜向量）打交道**：
 
-* 左边的 `Q` 已经是「吸收过 `W_UK`」的 512 维向量；
+* 左边的 `Q` 已经是“吸收过 `W_UK`”的 512 维向量；
 * 右边的 `V` 就是 `c_KV` 本身，attention 的输出仍在 512 维潜空间，
   最后再乘一次 `W_UV`（这一步在 kernel 之外）。
 
@@ -373,7 +373,7 @@ MHA   128 heads x 128 dim : 2*128*128*2 = 65536 字节/token/层
 MLA   c_KV(512) + k_R(64) :     576*2 =  1152 字节/token/层   （MHA 的 1.76%）
 ```
 
-换成「一条序列、整个模型」的量级（61 层）：
+换成“一条序列、整个模型”的量级（61 层）：
 
 | 序列长度 | MLA 潜 KV | MHA 等价 KV |
 | --- | --- | --- |
@@ -382,8 +382,8 @@ MLA   c_KV(512) + k_R(64) :     576*2 =  1152 字节/token/层   （MHA 的 1.76
 
 （`code/01` 与 `code/03` 的输出；MHA 一列按同样的 61 层、128 heads × 128 dim 折算。）
 
-再看 decode 的算术强度。MHA/GQA 在 decode 时每个 KV 元素只被「H_q / H_kv 个
-query head」复用一次，于是
+再看 decode 的算术强度。MHA/GQA 在 decode 时每个 KV 元素只被“H_q / H_kv 个
+query head”复用一次，于是
 
 ```
 AI(MHA/GQA) = 2·H_q / (H_kv · b)                  ← 与序列长度无关
@@ -398,7 +398,7 @@ AI(MLA)     = 2·H_q·(2·d_c + d_r) / (b·(d_c + d_r))
 | GQA（8 kv-heads） | 16.0 FLOP/Byte |
 | MLA（1 个潜向量） | **241.8 FLOP/Byte** |
 
-**MLA 的 decode 不是「省了一些字节」，而是把算术强度提高了两个数量级。**
+**MLA 的 decode 不是“省了一些字节”，而是把算术强度提高了两个数量级。**
 原因是分母只有一份潜向量，而分子里有 128 个 head 在复用它。这也解释了
 3.4 节那个反直觉的现象：MLA 的 decode kernel 在账面已经很接近机器平衡点，
 却仍然不是张量核吞吐受限的。
@@ -406,12 +406,12 @@ AI(MLA)     = 2·H_q·(2·d_c + d_r) / (b·(d_c + d_r))
 ### 3.4 为什么 MLA 对 kernel 友好
 
 1. **访存量降一个数量级**：decode 每步的 KV 读取是 `L·(d_c+d_r)·b`，不是
-   `L·2·H·d·b`。长上下文下这条差距决定「能不能装下 / 能不能跑完」。
+   `L·2·H·d·b`。长上下文下这条差距决定“能不能装下 / 能不能跑完”。
 2. **复用率高**：一份潜向量服务 128 个 head，算术强度高，接近平衡点，
    在大批量的 prefill 上更容易让张量核吃饱。
-3. **数据形态规整**：每个 token 的 KV 就是连续的一段「512 + 64」，单个 kv-head，
+3. **数据形态规整**：每个 token 的 KV 就是连续的一段“512 + 64”，单个 kv-head，
    天然适合做 paged KV 与流式读取（第 4、5 节的稀疏变体也都建立在这一点上）。
-4. **K 维不必是 576**：官方做法是拆成两段——潜向量 512 用一次 `T.gemm`，
+4. **K 维不必是 576**：官方做法是拆成两段，潜向量 512 用一次 `T.gemm`，
    RoPE 的 64 用另一次 `T.gemm`，**累加到同一个 `acc_s`**
    （`example_mla_decode.py:65-66`）。这样避开了 576 这个非 2 的幂宽度的对齐问题。
 
@@ -439,16 +439,16 @@ Q/K/V 的寄存器、地址与循环变量。于是：
    `wgmma.mma_async` 要求 M ≥ 64（4 个 warp 组成一个 warpgroup），`block_H`
    最多只能降到 64。`block_H` 越大 `acc_o` 越大，两头夹住。
 2. **只能沿 `dim` 把 `acc_o` 切开**。官方的解法是让两个 warpgroup 各算一半
-   `acc_o`——这就是 `T.gemm(..., policy=T.GemmWarpPolicy.FullCol)`
+   `acc_o`。这就是 `T.gemm(..., policy=T.GemmWarpPolicy.FullCol)`
    （`example_mla_decode.py:65`；策略定义在
    `tilelang/tileop/base.py:5`：`FullCol = 2`，把 warp 全分到列方向）。
 3. **切开之后必须交换 `acc_s`**。`acc_o` 的左右两半都要用到完整的
    `acc_s`，所以一个 warpgroup 算出的那半 `acc_s` 要通过 shared memory
    交给另一个。这是 MLA kernel 里额外的片上流量，也是这张
-   「layout inference」示意图想说明的事（第 21 章会讲编译器如何自动推出这些
+   “layout inference”示意图想说明的事（第 21 章会讲编译器如何自动推出这些
    形状）。
 4. **片上容量紧张**。把官方 example 的 buffer 逐项相加是 288 KB（`code/03` 的
-   C 部分），已经超过 H100 单 SM 的 228 KB——真实占用靠编译器的缓冲复用才压下来。
+   C 部分），已经超过 H100 单 SM 的 228 KB，真实占用靠编译器的缓冲复用才压下来。
    在 MI300X（约 64 KB shared）上，官方给的对策是**把 Q 从 shared 搬到寄存器
    fragment**，并降低流水级数。
 5. **split-KV 是必需品，不是优化**。decode 时 batch 小、`L` 大，grid 的并行度只能
@@ -463,7 +463,7 @@ Q/K/V 的寄存器、地址与循环变量。于是：
    H800 SXM 上 25.79 ms / 14.24 ms / 13.77 ms；**这是厂商 example 作者的数字，
    不是本书的测量**）。该 README 同时给出一条重要
    结论：**那个 fp8 kernel 并没有比 bf16 更快**，因为它受限于 softmax 与
-   shared memory 流量，而不是张量核吞吐——这正好呼应 3.3 节的判断。
+   shared memory 流量，而不是张量核吞吐。这正好呼应 3.3 节的判断。
 
 ### 3.6 decode 的形状与官方变体
 
@@ -478,8 +478,8 @@ MLA decode 的形状特征是**batch 小、`L` 极大、head 维极大**，因�
 | `example_mla_decode_ws.py` | warp specialization：producer 搬数据、consumer 计算 |
 | `experimental/example_mla_decode_kv_fp8.py` | fp8 KV cache |
 
-官方文档的卖点之一是「**around 80 lines of Python code**」做到与 FlashMLA 相当
-的性能——这句话本身在 corpus 里，可以直接引用；但请注意它的条件是
+官方文档的卖点之一是“**around 80 lines of Python code**”做到与 FlashMLA 相当
+的性能。这句话本身在 corpus 里，可以直接引用；但请注意它的条件是
 Hopper + 特定 batch/seqlen，且**不是本机实测**。
 
 ---
@@ -490,9 +490,9 @@ Hopper + 特定 batch/seqlen，且**不是本机实测**。
 
 dense attention 的代价随序列长度长起来：prefill 的 QKᵀ 是 `O(L²)`，decode 每步
 要读完整 KV（`O(L)` 字节/token），KV cache 也随 `L` 线性膨胀。到了 10 万 token
-这个量级，「每条 query 都看所有 KV」变成了不可承受的默认值。
+这个量级，“每条 query 都看所有 KV”变成了不可承受的默认值。
 
-思路只有一句话：**不要 attend 所有位置，先选出值得看的那几个。** 但「选」本身
+思路只有一句话：**不要 attend 所有位置，先选出值得看的那几个。** 但“选”本身
 是新的算子，于是出现了 4.2–4.4 的三条路线。
 
 ### 4.2 NSA：把稀疏做成可训练的
@@ -500,7 +500,7 @@ dense attention 的代价随序列长度长起来：prefill 的 QKᵀ 是 `O(L²
 DeepSeek 的 NSA（Native Sparse Attention）用三条并行的分支覆盖不同的信息尺度：
 粗粒度的**压缩块**、细粒度的**选中块**、以及局部的**滑窗**（选摘要见
 `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2502-11089.md` 的摘要）。
-它的卖点是「natively trainable」——稀疏模式在整个预训练里参与学习，而不是
+它的卖点是“natively trainable”，稀疏模式在整个预训练里参与学习，而不是
 推理时外挂剪枝。
 
 在 TileLang 里，NSA 的输入是一张**块索引**表：
@@ -518,12 +518,12 @@ i_s = BlockIndices[i_b, i_t, i_h, i] * BS
 if i_s <= i_t and i_s >= 0:        # 因果 + 有效性
 ```
 做掩码。注意这里多出来的东西：一个**间接寻址**，和一个**每个 query 都可能不同**
-的 block 列表。`code/05` 的引用核对表把它标为「NSA：按 block 索引做块稀疏
-注意力」。
+的 block 列表。`code/05` 的引用核对表把它标为“NSA：按 block 索引做块稀疏
+注意力”。
 
 ### 4.3 DSA：indexer + top-k + sparse MLA（DeepSeek-V3.2 的路子）
 
-V3.2 把「选」拆成了三个独立的 kernel，正好对应 `examples/deepseek_v32/` 的三个文件：
+V3.2 把“选”拆成了三个独立的 kernel，正好对应 `examples/deepseek_v32/` 的三个文件：
 
 | 阶段 | 文件 | 做什么 |
 | --- | --- | --- |
@@ -538,12 +538,12 @@ clear_accum=True, policy=T.GemmWarpPolicy.FullCol)`（`fp8_lighting_indexer.py:1
 s_reshaped[...] = (T.max(s[...], 0) * weights[bq_i, h_i]) * index_k_scale_fragment[...]
 T.reduce_sum(s_reshaped, logits, dim=-1, clear=True)
 ```
-（第 165-167 行）——先是 ReLU，再按每个 index head 的权重加权，最后归约成一条
+（第 165-167 行），先是 ReLU，再按每个 index head 的权重加权，最后归约成一条
 logits。官方 README 还记录了一个 varlen 细节：长序列时用每 token 的
 `CuSeqLenKS` / `CuSeqLenKE` 下界与上界，把循环限制在 `[cu_k_s_min, cu_k_e_max)`
 区间里（`examples/deepseek_v32/README.md` 的 “Lightning Indexer” 一节）。
 
-第 3 步把 dense MLA 改成了稀疏版，改动小得惊人——**只换了 KV 的加载方式**：
+第 3 步把 dense MLA 改成了稀疏版，改动小得惊人，**只换了 KV 的加载方式**：
 
 ```python
 # dense：遍历所有 KV
@@ -560,22 +560,22 @@ for i_i in T.Pipelined(NI, num_stages=num_stages):
 
 ### 4.4 HISA 与 V4：两条后续路线
 
-* **HISA（HIerarchical Sparse Attention）** 把「平面扫描」换成两级：
+* **HISA（HIerarchical Sparse Attention）** 把“平面扫描”换成两级：
   先按 `k_block_size` 把 K 做 mean-pool，选出 `block_topk` 个块；再在这些块内部
   按原始 token 做全分辨率打分，选出 `topk_tokens` 个 token
   （`examples/dsa_hisa/README.md:8-14`）。它替换的是 indexer 的搜索路径，
   而不是 attention 本身。
 * **DeepSeek-V4 的 sparse flash MLA** 用**同一套骨架**支持三种访问模式：
   滑窗（`swa`）、原始 + 压缩（`hca`）、以及原始 + 按 top-k 选中的压缩（`csa`）；
-  差别只在「访问哪些 KV block」（
+  差别只在“访问哪些 KV block”（
   `_vendor/tilelang-ascend-v0.1.2.000/examples/deepseek_v4/sparse_flash_mla/bench_mark.md`）。
   该文档还给了官方的性能对比（同一 shape、`msprof` 的 device Task Duration、
-  丢掉 first launch 取平均），这里只引用它的**口径**而不复述数字——因为那是厂商
+  丢掉 first launch 取平均），这里只引用它的**口径**而不复述数字。因为那是厂商
   在特定设备上的实测，不是本书的测量。
 
 ### 4.5 indexer 不是免费的：一个必须算的账
 
-稀疏 attention 的常见误解是「省了 attention」。但 indexer 要在**整条序列**上
+稀疏 attention 的常见误解是“省了 attention”。但 indexer 要在**整条序列**上
 算相似度，而被它选中的 attention 只算 top-k 个位置。`code/05` 用 V3.2 的真实
 参数算了这笔账：
 
@@ -600,8 +600,8 @@ for i_i in T.Pipelined(NI, num_stages=num_stages):
 
 盈亏平衡点是 `topk = L · I·di / (H_q·(2·d_c+d_r))`（V3.2 参数下约为 `0.0588·L`）：
 `L=131072` 时要选到约 7710 个位置，indexer 才与 attention 打平，而配置里只选 2048。
-**这就是为什么稀疏算子的设计目标不是「省 FLOP」，而是「（算术强度）平衡」**
-——NSA 的摘要里用的正是 “arithmetic intensity-balanced algorithm design” 这个说法。
+**这就是为什么稀疏算子的设计目标不是“省 FLOP”，而是“（算术强度）平衡”**
+NSA 的摘要里用的正是 “arithmetic intensity-balanced algorithm design” 这个说法。
 
 ### 4.6 这类算子对 kernel 的要求
 
@@ -609,16 +609,16 @@ for i_i in T.Pipelined(NI, num_stages=num_stages):
    做 `T.Parallel` 的逐元素拷贝，而不是指望 `T.copy` 一把搬完。
 2. **掩码必须精确**。`sparse_mla_fwd.py:33-34` 有两行断言值得背下来：
    `assert is_causal == True`（当时的实现不支持非因果），以及
-   `assert topk % block_I == 0, "otherwise will load some index=0 thus causing
-   wrong kv to be loaded"`——**索引里混进一个 0，就会读到错误的 KV，而且不报错。**
-   稀疏 kernel 的正确性问题大多是这种「静默错误」。
+   `assert topk % block_I == 0, “otherwise will load some index=0 thus causing
+   wrong kv to be loaded”`，**索引里混进一个 0，就会读到错误的 KV，而且不报错。**
+   稀疏 kernel 的正确性问题大多是这种“静默错误”。
 3. **top-k 是排序/直方图问题**，不是 GEMM。它需要 shared memory 里的直方图、
    原子加、以及**确定性**的并列处理（基数排序天然对并列稳定）。
 4. **索引本身要存、要传**。`indices: [batch, seq, kv_group, topk]` 是 int32，
    2048 个位置就是 8 KB/query；它自己也是一次访存。
 5. **paged KV 与 varlen 是常态**。稀疏索引通常指向 paged KV 的块（V4 的
    `block_size=128`、`cmp_ratio=4/128`），而每个 query 的有效范围由
-   `cu_seqlens` 决定——这两件事决定了 kernel 的循环边界是**运行时**的，
+   `cu_seqlens` 决定。这两件事决定了 kernel 的循环边界是**运行时**的，
    不能编译期展开。
 
 ---
@@ -655,7 +655,7 @@ for i_i in T.Pipelined(NI, num_stages=num_stages):
    和第 14 章昇腾侧的三张约束表是同一套账。
 2. **`combineCV` + 自动同步**：`pass_configs` 打开
    `TL_ASCEND_AUTO_CV_COMBINE` / `TL_ASCEND_AUTO_CV_SYNC` / `TL_ASCEND_AUTO_SYNC`
-   （第 29-33 行），于是 kernel 里**不需要手写 `T.barrier_all()`**——对比适配器
+   （第 29-33 行），于是 kernel 里**不需要手写 `T.barrier_all()`**，对比适配器
    最朴素的 GEMM 例子（第 14 章的 6.2 节）可以看到这个差别。
 3. **路由表是 `[total_m_blocks, 3]` 的 `block_metadata`**（第 163 行），
    `[expert, m_start, valid_m]` 三个字段就够 kernel 定位数据。生成它的
@@ -664,8 +664,8 @@ for i_i in T.Pipelined(NI, num_stages=num_stages):
    `T.mma` + `set_flag`/`wait_flag` 的 developer 版（第 324 行起，L0A/L0B/L0C
    双缓冲、手写 MTE2→MTE1→M→FIX 流水）。同一文件里还有一句作者自评：
    “Best performance: 21.28ms pipeline (vs 23.26ms original, 8.5% speedup)”
-   （第 961 行）——**这是该 example 作者在特定设备上的自测数字，不是本书的测量**，
-   引用它只为了说明「developer 模式确实能换来收益」。
+   （第 961 行）。**这是该 example 作者在特定设备上的自测数字，不是本书的测量**，
+   引用它只为了说明“developer 模式确实能换来收益”。
 
 ### 5.2 `moe_token_permute`：把重排做成 kernel
 
@@ -673,13 +673,13 @@ for i_i in T.Pipelined(NI, num_stages=num_stages):
 `examples/moe_token_permute/moe_token_permute.py`。要点：
 
 * 用 UB（Unified Buffer，向量单元的片上缓冲）做**直方图与前缀和**，把
-  「每个专家收到多少 token」算出来（第 79 行起的 `T.alloc_ub`）。
+  “每个专家收到多少 token”算出来（第 79 行起的 `T.alloc_ub`）。
 * 需要一块 **workspace** 做跨核前缀和：
   `@tilelang.jit(out_idx=[2, 3], workspace_idx=[4], ..., target="pto")`（第 38 行）。
-  这块 workspace 是 host 侧要备好的中间显存——**重排的成本不只字节，还有中间缓冲**。
+  这块 workspace 是 host 侧要备好的中间显存，**重排的成本不只字节，还有中间缓冲**。
 * 同一目录还给了逐元素乘法与反向（`moe_token_unpermute*`），以及
   `moe_token_utils.py` 里的 `pad_first_dim` / `pad_last_dim` / `auto_tile_t`
-  ——对齐与分块这两件事在这里是显式工具函数。
+  对齐与分块这两件事在这里是显式工具函数。
 
 ### 5.3 `dispatch_combine`：跨 rank 的 all-to-all
 
@@ -689,7 +689,7 @@ for i_i in T.Pipelined(NI, num_stages=num_stages):
 
 | 元素 | 作用 |
 | --- | --- |
-| `win_data` / `win_status` | 对端可见的「窗口」缓冲：数据区 + 状态区 |
+| `win_data` / `win_status` | 对端可见的“窗口”缓冲：数据区 + 状态区 |
 | `T.shmem_ub_put_nbi`（第 148 行） | 非阻塞 put，把 token 写到目标 rank 的窗口 |
 | `ep_receive_count`（第 68 行） | dispatch 输出的前缀和：每个专家收到多少 token |
 | `expert_token_nums_out`（第 254 行） | 用前缀和差分算出每个专家最终的 token 数 |
@@ -709,11 +709,11 @@ README 里的运行前提也要记住：需要 Atlas A3 系列 + CANN 8.2.RC1 �
   `T.alloc_L1`），累加器在 **L0C**，top-k 在 kernel 内完成。
 * `sparse_flash_mla/`：V4 的 sparse flash MLA，用 paged KV 支持
   `swa` / `hca` / `csa` 三种访问模式（`bench_mark.md`）。对比口径是
-  `msprof` 的 device Task Duration、丢掉第一次启动后取平均——这是**厂商实测**，
-  本章只引用它作为「昇腾上这类算子已经能跑到什么程度」的证据，不复述具体数值。
+  `msprof` 的 device Task Duration、丢掉第一次启动后取平均。这是**厂商实测**，
+  本章只引用它作为“昇腾上这类算子已经能跑到什么程度”的证据，不复述具体数值。
 * `hc_split_sinkhorn.py`（第 27 行）：mHC（Manifold-Constrained Hyper-Connections）
   里的 Sinkhorn 归一化。它不属于 MoE 或 MLA，但和它们出现在同一批 V4 算子中，
-  说明**残差流的重排/归一化也已经被做成 kernel**——「数据重排」这类工作的
+  说明**残差流的重排/归一化也已经被做成 kernel**，“数据重排”这类工作的
   占比在上升。
 
 ### 5.5 昇腾与 NV 的两点结构差异
@@ -738,15 +738,15 @@ README 里的运行前提也要记住：需要 Atlas A3 系列 + CANN 8.2.RC1 �
 
 1. **KV cache**（只在 MLA 里被压小）：`code/03` 给的数字是每 token 每层 1152
    字节（fp16），131072 上下文、61 层时约 8.58 GB/序列；换回 MHA 结构是 488 GB。
-   这也是 MLA 在长上下文场景「从不可能变成可能」的原因。
+   这也是 MLA 在长上下文场景“从不可能变成可能”的原因。
 2. **专家权重**。每个专家 `3·d·d_e·b` 字节。按 V3.2 的 fp8 权重
    （`b=1`）折算：`3 × 7168 × 2048 × 1 = 44.0 MB/专家`，256 个专家就是
-   **11.3 GB/层**，58 个 MoE 层合计约 **654 GB**——和「671B 参数」对得上。
+   **11.3 GB/层**，58 个 MoE 层合计约 **654 GB**，和“671B 参数”对得上。
    （本书推导，用 `code/01` 的公式。）
    > 顺带一个工程结论：专家权重不可能全放片上，甚至不一定全放单卡；所以
    > **专家并行（EP）几乎是必然的**，而 EP 就把 6.2 的通信变成常项。
 3. **中间缓冲**。permuted token 缓冲要 `T·k·d·b` 字节（默认形状下 448 MB 一份，
-   输入输出各一份）；permute 还需要 workspace（5.2）。这类「为了规整而付的」
+   输入输出各一份）；permute 还需要 workspace（5.2）。这类“为了规整而付的”
    显存常被忽略。
 
 ### 6.2 通信
@@ -755,14 +755,14 @@ README 里的运行前提也要记住：需要 Atlas A3 系列 + CANN 8.2.RC1 �
   这个数的两倍。T=8192、k=8、d=7168、fp16 时，**一层**要搬 1879 MB，
   是该层激活量的 16 倍。
 * **同步性**：dispatch → 专家 GEMM → combine 是串行依赖，而且要和其它 rank
-  对齐；**最慢的 rank 决定整步时间**。这就是为什么负载均衡不是「训练技巧」，
+  对齐；**最慢的 rank 决定整步时间**。这就是为什么负载均衡不是“训练技巧”，
   而是 kernel 性能的一部分。
 * **rank 数与专家数的关系**：从纯工程角度看，专家数与并行度越接近，每个 rank
   上的专家越少、dispatch 的目标越集中。corpus 里有一篇知乎分析
   （`../tilelang-corpus/09-zhihu-da-zhi-ruo-yu/raw/answers/2031020927979406721.md`）
   提到 V4-Pro 有 384 个 routed experts、每个 token 激活 6 个，并把它与
-  「昇腾 384 超节点」并列讨论。**这是二手分析，不是官方规格**，本书引用它只为
-  说明「专家数、并行度、互联拓扑在设计上是耦合的」这一工程直觉。
+  “昇腾 384 超节点”并列讨论。**这是二手分析，不是官方规格**，本书引用它只为
+  说明“专家数、并行度、互联拓扑在设计上是耦合的”这一工程直觉。
 
 ### 6.3 varlen：长度不齐是常态，不是异常
 
@@ -775,31 +775,31 @@ README 里的运行前提也要记住：需要 Atlas A3 系列 + CANN 8.2.RC1 �
    GEMM 存在的意义；也是 `fusedmoe` 要把 `group_sum`（`= T*k`）作为编译期
    参数传进去、而把每个专家的 `size` 留成运行时的原因。稀疏 attention 里
    `CuSeqLenKS` / `CuSeqLenKE` 也是同一类东西。
-* **代价**：varlen + padding 对齐会让「有效算力」下降。用 `code/02` 的偏斜
+* **代价**：varlen + padding 对齐会让“有效算力”下降。用 `code/02` 的偏斜
    例子，`block_M=32` 时 padding 浪费 150%；如果 `block_M` 再开大，浪费更多，
    但如果开小，又会掉进 2.4 节的小 M 陷阱。**这是一个两头夹的取舍。**
 
 ### 6.4 一致性（确定性）
 
-MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
+MoE 和 MLA 都引入了“顺序”问题，值得单列一条：
 
 1. **combine 的求和顺序**。`k` 路加权求和，按什么顺序加，浮点结果会有末位差异。
    `torch.scatter_reduce` 与原子加都不保证顺序；要可复现就得固定顺序（例如按
    expert id 排序后串行累加）或用更宽累加。
 2. **split-K 的原子合并**。第 14 章讲过 split-K 用 `atomic_add`（fp32），
-   顺序不定；MLA 的 split-KV 用「写 `Output_partial` + 第二个 kernel 合并」
-   回避了原子（`example_mla_decode.py:30-31`），代价是多一份中间显存——
+   顺序不定；MLA 的 split-KV 用“写 `Output_partial` + 第二个 kernel 合并”
+   回避了原子（`example_mla_decode.py:30-31`），代价是多一份中间显存，
    **确定性是可以买到的，只是要付显存或时间。**
 3. **top-k 的并列**。logits 相同时取哪个位置？基数排序天然稳定；但用
    `atomic_add` 抢占位置的实现就不稳。稀疏算子的可复现性从这一步开始。
 4. **路由本身是数据相关的**。`x` 变一个 bit，某个 token 可能换专家，进而换掉
    整个重排布局；如果实现里有原子加，两次相同的运行也可能给出不同的末位结果。
    DeepSeek 的 aux-loss-free 均衡策略还会**在训练中更新路由偏置**，这让
-   「同一份输入、不同时刻」的结果本来就不该完全相同。做数值回归测试时必须把
+   “同一份输入、不同时刻”的结果本来就不该完全相同。做数值回归测试时必须把
    这一层区分开。
 
-**一句话总结这一节**：显存决定「能不能跑」，通信决定「跑多快」，varlen 决定
-「布局有多难」，一致性决定「结果能不能用来做回归」。这四件事在 MoE/MLA 里
+**一句话总结这一节**：显存决定“能不能跑”，通信决定“跑多快”，varlen 决定
+“布局有多难”，一致性决定“结果能不能用来做回归”。这四件事在 MoE/MLA 里
 都不是可选项。
 
 ---
@@ -808,8 +808,8 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
 
 下表是**本章模型的结论**（可用 `code/01-cost-ledger/decode_step_ledger.py`
 复算），不是任何设备的实测。它是第 17、18 章的输入：第 17 章要用它决定
-「哪些热点算子值得换成 TileLang kernel」，第 18 章要用它决定「推理服务里
-先优化哪一段」。
+“哪些热点算子值得换成 TileLang kernel”，第 18 章要用它决定“推理服务里
+先优化哪一段”。
 
 | # | 算子 | 一次 decode step 的规模 | 受什么限制 | 关键机制 / 备注 |
 | --- | --- | --- | --- | --- |
@@ -819,7 +819,7 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
 | 4 | Combine（unpermute + 归约） | `2·T·k·d_model·b` 字节 + 归约 | **显存带宽 + 归约的确定性** | `k` 路求和顺序影响可复现性；可融进 GEMM epilogue |
 | 5 | MLA attention（decode） | `T·L·H_q·(2·d_c+d_r)` FLOP；每 token 读 `L·(d_c+d_r)·b` 字节 | `L` 大时是 **KV 带宽**；账面 AI≈242（高于 MHA/GQA 两个量级） | 128 个 head 共享 1 份潜向量；`acc_o` 寄存器压力决定 tile 形状 |
 | 6 | Sparse indexer（仅 DSA/NSA 类） | 约 `T·L·d_index` FLOP + top-k(L) | **与 attention 同量级的访存**；top-k 是排序/直方图 | `L` 很长时 indexer 的 FLOP 可超过被选中的 attention |
-| 7 | Dense 投影 / 共享专家 / Norm / RoPE | `O(T·d_model²)` 或 `O(T·d_model)` | `T` 大时 compute-bound；`T=1` 时 memory-bound | decode 单步是「小而多」的算子，走第 13 章的融合 |
+| 7 | Dense 投影 / 共享专家 / Norm / RoPE | `O(T·d_model²)` 或 `O(T·d_model)` | `T` 大时 compute-bound；`T=1` 时 memory-bound | decode 单步是“小而多”的算子，走第 13 章的融合 |
 
 ### 7.1 谁最贵？看你在哪个 regime
 
@@ -834,7 +834,7 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
 | 超长上下文 + 稀疏（DSA/NSA） | **6 indexer** | 扫全序列的代价随 `L` 增长，而被选中的 attention 已经固定为 top-k |
 
 读法：**先判断 regime，再决定优化对象**。这也解释了第 18 章为什么要分开讨论
-「prefill 吞吐」与「decode 延迟」——它们的瓶颈根本不是一个算子。
+“prefill 吞吐”与“decode 延迟”。它们的瓶颈根本不是一个算子。
 
 ### 7.2 这张表怎么被第 17、18 章使用
 
@@ -849,8 +849,8 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
 
 ## 8. 常见陷阱
 
-1. **把 MoE 当成「一个大 GEMM」**。它至少有四段，其中两段没有 FLOP。
-   只算 `2MNK` 会得出「MoE 是 compute-bound」的错误结论。
+1. **把 MoE 当成“一个大 GEMM”**。它至少有四段，其中两段没有 FLOP。
+   只算 `2MNK` 会得出“MoE 是 compute-bound”的错误结论。
 2. **忘记 `valid_m`**。padding 出来的行必须被 mask 掉；`actual_rows` 写错就会
    把脏数据写进结果，而且**不会报错**。官方 grouped GEMM 与昇腾 `block_metadata`
    都专门为此留了第三个字段。
@@ -860,13 +860,13 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
    低精度累加会放大误差（第 14 章 split-K 也是同一个坑）。
 5. **以为 MLA 的一个 head 可以直接用一个 `K=576` 的 GEMM**。576 不是 2 的幂，
    官方做法是拆成 512 + 64 两段累加到同一个 `acc_s`；更有甚者，整个潜向量
-   吸收（3.2 节）会让 kernel 的形状与「教科书 MLA」完全不同。
-6. **相信「稀疏一定更快」**。`code/05` 的账显示 `L=131072` 时 indexer 的 FLOP
+   吸收（3.2 节）会让 kernel 的形状与“教科书 MLA”完全不同。
+6. **相信“稀疏一定更快”**。`code/05` 的账显示 `L=131072` 时 indexer 的 FLOP
    是被它选中的 attention 的 3.76 倍；稀疏省的是**访存**，不是 FLOP。
 7. **忽略 varlen 与 paged KV**。`cu_seqlens` 与 page table 让循环边界是运行时量；
    `topk % block_I != 0` 之类的对齐约束一旦违反，就会静默读到错误的 KV
    （`sparse_mla_fwd.py:34` 有原文断言）。
-8. **把「仅静态核对」的示例当实测**。本章所有 kernel 引用都**没有**在硬件上
+8. **把“仅静态核对”的示例当实测**。本章所有 kernel 引用都**没有**在硬件上
    运行过；写进报告的性能数字必须来自真机，并带第 14 章 7.1 节的完整口径。
 
 ---
@@ -886,7 +886,7 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
   wgmma 又要求 M ≥ 64，只能按 `dim` 切（`policy=FullCol`）并跨 warpgroup
   交换 `acc_s`；fp8 还强制 K-major，否则慢 1.81×。
 * **稀疏/索引是第三种代价**：NSA 用 block 索引、DSA 用 indexer + top-k +
-  sparse MLA、HISA 用两级层级；共同点是「读索引 + 读少量 KV」，
+  sparse MLA、HISA 用两级层级；共同点是“读索引 + 读少量 KV”，
   代价是 indexer 扫全序列与一次 top-k。
 * **昇腾侧**：`fusedmoe`（L1/L0C + combineCV + `block_metadata`）、
   `moe_token_permute`（UB 直方图 + workspace）、`dispatch_combine`
@@ -894,7 +894,7 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
   （lightning indexer / sparse flash MLA / mHC）。
 * **四个约束**：显存（KV + 专家权重 654 GB + 中间缓冲）、通信（all-to-all 且
   同步）、varlen（`cu_seqlens` 与运行时专家计数）、一致性（求和顺序与 top-k 并列）。
-* **第 7 节的表**给出了「哪个 regime 里谁最贵」，是第 17、18 章的输入。
+* **第 7 节的表**给出了“哪个 regime 里谁最贵”，是第 17、18 章的输入。
 
 ## 延伸阅读
 
@@ -905,7 +905,7 @@ MoE 和 MLA 都引入了「顺序」问题，值得单列一条：
   NSA 论文、昇腾 README，以及 V3.2 推理配置。
 * 第 14 章：grouped GEMM / split-K / 低精度 GEMM 的判据（本章 2.4 的前置）。
 * 第 15 章：online softmax / split-KV / paged KV / varlen（本章第 3、4 节的前置）。
-* 第 21 章：layout inference——MLA 里「两个 warpgroup、一份 `acc_s`」是如何被
+* 第 21 章：layout inference，MLA 里“两个 warpgroup、一份 `acc_s`”是如何被
   编译器推导出来的。
 * 第 24 / 25 章：`wgmma` / TMEM 与昇腾 Cube/MTE 的硬件细节。
 * 第 27 章：fp8 KV cache 与低精度累加的数值问题。

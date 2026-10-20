@@ -6,7 +6,7 @@
   "labelWidth": 150,
   "rowHeight": 46,
   "section": "4.4",
-  "caption": "同一份算法，同一套 tie-break 契约；下表的每一行差异都是「并行映射」差异，没有一行改变算法语义。行号为 corpus 快照里的行号。",
+  "caption": "同一份算法，同一套 tie-break 契约；下表的每一行差异都是“并行映射”差异，没有一行改变算法语义。行号为 corpus 快照里的行号。",
   "columns": ["CUDA 版 topk_gate_cuda.py", "Ascend 版 topk_gate_asc.py"],
   "rows": [
     {
@@ -56,8 +56,8 @@
     }
   ],
   "notes": [
-    "左列多出来的两行（PDL、pass_configs）是「CUDA 有、昇腾没有对应物」。",
-    "右列多出来的四行（流水、缓冲版本、mem_bar、显式向量宽度）是「昇腾必须显式表达、CUDA 交给编译器」。",
-    "tie-break 契约（并列取最小下标）在两边都用「最小归约」实现：左边是 op='min' 的 reducer，右边是 S.vmin + S.vcmin。"
+    "左列多出来的两行（PDL、pass_configs）是“CUDA 有、昇腾没有对应物”。",
+    "右列多出来的四行（流水、缓冲版本、mem_bar、显式向量宽度）是“昇腾必须显式表达、CUDA 交给编译器”。",
+    "tie-break 契约（并列取最小下标）在两边都用“最小归约”实现：左边是 op='min' 的 reducer，右边是 S.vmin + S.vcmin。"
   ]
 }

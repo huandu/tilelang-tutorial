@@ -1,7 +1,7 @@
 # 图 4：本章那些算子落在 roofline 的哪一边
 
 对应正文第 2.2、2.3 节。横轴是算术强度（FLOP/Byte，对数），纵轴是这台机器上
-「理论最少时间」对应的算力（TFLOPS，对数）。机器的脊点（ridge point）在
+“理论最少时间”对应的算力（TFLOPS，对数）。机器的脊点（ridge point）在
 `AI = 平衡点 = 162 FLOP/Byte`（H200 标定参数，来自 `code/01-op-traffic-model/op_traffic.py`）。
 
 ```text

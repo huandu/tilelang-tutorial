@@ -1,9 +1,9 @@
-# 图 4：从读写集到同步点——CUDA 与昇腾的两条路径
+# 图 4：从读写集到同步点，CUDA 与昇腾的两条路径
 
 对应正文 §4。要点：两条路径的**输入是同一个东西**（带距离的访问冲突），
 但**输出不是同一个东西**：CUDA 侧落成 `__syncthreads()` / `cp.async.wait_group` /
 mbarrier parity，昇腾侧落成 `SetFlag/WaitFlag`（或 `PipeBarrier`），并且必须经过
-「flag 槽位分配」这一层资源约束。
+“flag 槽位分配”这一层资源约束。
 
 ## Mermaid 版本
 
@@ -80,7 +80,7 @@ flowchart TB
 | 维度 | CUDA 侧 | 昇腾侧 |
 | --- | --- | --- |
 | 同步原语 | 块级 barrier（`__syncthreads`）、异步拷贝的 `wait_group`、mbarrier 的 arrive/parity wait | `SetFlag/WaitFlag`（带 `HardEvent` 与 event id）、`PipeBarrier`、`CrossCoreSetFlag/WaitFlag` |
-| 「谁等谁」怎么表达 | 用 barrier 的**位置**表达；barrier 本身不区分生产者与消费者 | 用 `HardEvent = PROD_CONS` 的**有向**事件对表达，天然区分方向 |
+| “谁等谁”怎么表达 | 用 barrier 的**位置**表达；barrier 本身不区分生产者与消费者 | 用 `HardEvent = PROD_CONS` 的**有向**事件对表达，天然区分方向 |
 | 资源约束 | 主要是 barrier 数量与异步组数（`cp.async` 在飞组数） | 每个 `HardEvent` **只有 8 个 event id**，超出要背包挑选并溢出到互斥池 |
 | 与多缓冲的关系 | 版本维由 `InjectSoftwarePipeline` 加，barrier 由 `ExpandPipelineBarriers` 同步展开 | 版本由 `PrepareMultiBuffer` / `MaterializeMultiBuffer` 管，`InsertSync` 直接消费 `num_versions` 生成 `event_id = i % nv + base` |
 

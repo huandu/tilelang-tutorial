@@ -46,7 +46,7 @@ NVIDIA GPU                                       昇腾 950
 
 * NV 侧的层级与容量：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-c-programming-guide.md`
   与 `../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
-  （H100 厂商公开资料：256 KB shared+L1、shared 可配到 228 KB、50 MB L2、「over 3 TB/sec」）。
+  （H100 厂商公开资料：256 KB shared+L1、shared 可配到 228 KB、50 MB L2、“over 3 TB/sec”）。
 * 昇腾侧的层级：`../tilelang-corpus/09-zhihu-da-zhi-ruo-yu/raw/zhihu-dazhiruoyu-deepseek-ascend.md`
   （**社区一手文章，非厂商官方文档**）与
   `_vendor/tilelang-v0.1.15/tilelang/ascend/README.md:134-139`。

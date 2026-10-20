@@ -1,7 +1,7 @@
 # 图 4：昇腾自动调度段（`tilelang/ascend/pipeline.py:104-116`）（自绘）
 
-昇腾侧没有 CUDA 那样的通用软件流水，而是把「任务化 → 资源建模 → 求解 → 物化 →
-同步」做成一整段，全部受 `allow_autoschedule()` 守卫（默认开启，
+昇腾侧没有 CUDA 那样的通用软件流水，而是把“任务化 → 资源建模 → 求解 → 物化 →
+同步”做成一整段，全部受 `allow_autoschedule()` 守卫（默认开启，
 配置键 `tl.enable_auto_schedule`）。
 
 ```text
@@ -48,5 +48,5 @@
 **为什么这段只能属于昇腾**：CUDA 的软件流水是围绕 `T.Pipelined` 这一个循环构造
 展开的（`PipelinePlanning` + `InjectSoftwarePipeline`）；而昇腾的一个 kernel 里
 同时有 Cube、Vector、MTE1/2/3、Fixpipe 多条流水，任务之间的依赖与资源占用必须
-一起解，才能回答「这一轮 MTE2 搬到哪了 / Cube 什么时候能吃 / 何时能覆盖 UB」。
+一起解，才能回答“这一轮 MTE2 搬到哪了 / Cube 什么时候能吃 / 何时能覆盖 UB”。
 第 23 章会把 Z3 求解与资源建模展开。

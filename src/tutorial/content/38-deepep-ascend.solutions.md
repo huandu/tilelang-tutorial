@@ -1,13 +1,13 @@
 # 第 38 章 习题参考答案
 
-每题给「解题思路 + 参考答案 + 常见错误」。行号都指向 DeepEP-Ascend 快照
+每题给“解题思路 + 参考答案 + 常见错误”。行号都指向 DeepEP-Ascend 快照
 commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 
 ---
 
 ## E1（★）通信量从哪来
 
-**思路**：先算「一个 token 送到一个目标 rank」的 payload，再乘 k。
+**思路**：先算“一个 token 送到一个目标 rank”的 payload，再乘 k。
 
 **参考答案**：
 
@@ -27,7 +27,7 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    它的大小只由 `T、k、hidden、字节宽度` 决定，与 GEMM 的 tile 尺寸、
    指令选择无关（第 16 章 §2.5–§2.6）。
 
-**常见错误**：把 SF 当成「每个 token 一份」而不是「每 token 每目标 rank 一份」；
+**常见错误**：把 SF 当成“每个 token 一份”而不是“每 token 每目标 rank 一份”；
 忘了 FP8 仍然要传 SF。
 
 ---
@@ -43,12 +43,12 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    所以必须所有 rank 一致（`README.md:90`）。
 2. `expert_alignment` 决定展开后每个专家的行数按多少对齐。后面 grouped GEMM
    要求 M 是 block_M 的整数倍，对齐不一致会让 GEMM 读到错的边界
-   （`README.md:131` 的注释「Match the grouped GEMM's token alignment」）。
+   （`README.md:131` 的注释“Match the grouped GEMM's token alignment”）。
 3. `do_zero_padding` 只保证**对齐空隙**被清零。`do_cpu_sync=False` 时输出按
    **容量**分配，尾部可能是没被写过的内存；`do_zero_padding` 不会把它变成
    有效数据（`DeepEP/README.md:287`）。
 
-**常见错误**：以为 `do_zero_padding=True` 就等于「输出全部有效」。
+**常见错误**：以为 `do_zero_padding=True` 就等于“输出全部有效”。
 
 ---
 
@@ -63,8 +63,8 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    （`common/compiled.hpp:48`）。
 3. hint 用 `ceil_div(hidden, 32)`（`:594`），实际运行时是
    `ceil_div(hidden, 128)×2 = ceil_div(hidden, 64)`（`tests/ep/test_ep.py:91-93`），
-   相差 **2 倍**。hint **偏大**——这是源码注释里写明的近似
-   （`:593`「approximate the SF pack count」），用于安全规划，
+   相差 **2 倍**。hint **偏大**。这是源码注释里写明的近似
+   （`:593`“approximate the SF pack count”），用于安全规划，
    不会影响实际运行的字节流量。`code/03-buffer-size/` 给出了具体数字
    （hidden=7168 时多预留 112 个 pack，共 224 B/token）。
 
@@ -82,7 +82,7 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    把它拆成 2 个 int16 ⇒ `num_sf_packs = 56 × 2 = **112**`
    （也就是 `7168/64`）。
 2. 每 token 的 SF 字节 = `112 × 2 = **224 B**`。
-3. **字节重解释**。判据：`56 × 4 = 224` 字节，`112 × 2 = 224` 字节——
+3. **字节重解释**。判据：`56 × 4 = 224` 字节，`112 × 2 = 224` 字节，
    **元素数翻倍、字节总数不变**。数值转换会改变字节数与值域。
 
 **常见错误**：以为 SF 被压缩了。这里 hidden 压缩了（7168→7168 字节的 fp8，
@@ -92,7 +92,7 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 
 ## E5（★★★）为什么 EP 越大越慢
 
-**思路**：从「字节量」「固定开销」「同步」三个角度各找一条。
+**思路**：从“字节量”“固定开销”“同步”三个角度各找一条。
 
 **参考答案**（列出四条，答对三条即可）：
 
@@ -100,16 +100,16 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    EP128 时只有 2 个本地专家，几乎每个 top-k 专家都在别的 rank 上，
    去重率与本地命中率都下降。依据：`dispatch.hpp:183` 的
    `simt::deduplicate<kNumRanks>` 与正文 §1.3 的 `R·(1-(1-1/R)^k)`。
-2. **固定开销随 rank 数上升**：barrier 的源码注释写「this costs 4 us (8 ranks)」
-   （`dispatch.hpp:643`），kernel launch 与 SoC 初始化「cost 1.9 us」
+2. **固定开销随 rank 数上升**：barrier 的源码注释写“this costs 4 us (8 ranks)”
+   （`dispatch.hpp:643`），kernel launch 与 SoC 初始化“cost 1.9 us”
    （`dispatch.hpp:573`）。这些开销与 payload 无关，rank 越多占比越高。
-3. **上游还没优化完**：README 明确说「Larger EP sizes ... remain under
-   optimization」（`README.md:21`），所以下降里有一部分是实现余量，
+3. **上游还没优化完**：README 明确说“Larger EP sizes ... remain under
+   optimization”（`README.md:21`），所以下降里有一部分是实现余量，
    不是物理必然。
 4. **（加分）padding 更多**：expert alignment=128 在大 EP 下产生更多空行，
    它们不产生有效 payload 却占用 grid 与显存（§2.2）。
 
-**常见错误**：只说「通信量变大」而说不出为什么——关键是**去重率**与
+**常见错误**：只说“通信量变大”而说不出为什么。关键是**去重率**与
 **本地专家数**这两个随 R 变化的量。
 
 ---
@@ -124,13 +124,13 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 2. **额外的本地归约开销**（本地开销）：combine 要把收到的 k 份 BF16 先写进
    UB 接收环、再读出来做 FP32 累加、再转回 BF16
    （`combine_utils.hpp:56-90`）。这段不占网络，但占流水线时间。
-   README 原话「additional local reduction overhead」（`README.md:21`）。
+   README 原话“additional local reduction overhead”（`README.md:21`）。
 3. **与 HBM 抢带宽**（与 HBM 有关）：URMA 的数据落地要写显存，
    本地归约读显存、写结果也写显存，两者争抢 HBM。
-   README 原话「HBM contention with URMA」（`README.md:21`），
+   README 原话“HBM contention with URMA”（`README.md:21`），
    并说华为固件改进就是针对这条。
 
-**常见错误**：只答「combine 是归约所以慢」，不同时指出**payload 翻倍**这一条——
+**常见错误**：只答“combine 是归约所以慢”，不同时指出**payload 翻倍**这一条，
 它其实是三者里最容易量化的一条。
 
 ---
@@ -139,7 +139,7 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 
 **参考答案**：
 
-1. **针对「目标 rank」去重**：同一次 token 的多个 top-k 专家如果落在同一个 rank，
+1. **针对“目标 rank”去重**：同一次 token 的多个 top-k 专家如果落在同一个 rank，
    只往那个 rank 传一次。用的是 `simt::deduplicate<kNumRanks>(dst_rank_idx, ...)`
    （`dispatch.hpp:183`）。
 2. **数据和元数据是同一条 SQE 里的两个 SGE**：源码注释 `:360-369` 说明
@@ -160,14 +160,14 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 1. 必须同时打开 **`async_with_compute_stream=True`**；
    断言在 `csrc/buffers/ep.hpp:398`。
 2. 因为通信**之前**排的 kernel 决定了输入何时就绪；`buffer.capture()` 记录
-   「输入就绪」事件，作为 `previous_event` 传进去，库才知道可以安全开始搬数据
+   “输入就绪”事件，作为 `previous_event` 传进去，库才知道可以安全开始搬数据
    （`DeepEP/README.md:289`）。
-3. 当**没有别的计算可以重叠**时：延迟 epilogue 只是把「收尾」往后挪，
+3. 当**没有别的计算可以重叠**时：延迟 epilogue 只是把“收尾”往后挪，
    却多了一次 `.wait()` 的调度与事件开销，反而更慢。
-   README 明确说「Without other work to overlap, call `.wait()` immediately」
+   README 明确说“Without other work to overlap, call `.wait()` immediately”
    （`DeepEP/README.md:287`）。
 
-**常见错误**：以为「延迟」本身就会变快。
+**常见错误**：以为“延迟”本身就会变快。
 
 ---
 
@@ -189,7 +189,7 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 
 ## E10（★★★）画通信栈
 
-**思路**：按「谁在什么时候被调用」分层。
+**思路**：按“谁在什么时候被调用”分层。
 
 **参考答案**：
 
@@ -201,13 +201,13 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 2. 因为**整个 EP group 是一个 UB 域**：`get_physical_domain_size()` 与
    `get_logical_domain_size()` 都返回 `{1, num_ranks}`
    （`csrc/kernels/comm/api.hpp:82-89`），对应 NVIDIA 的
-   「rdma_ranks=1、nvlink_ranks=num_ranks」。所以 scale-out 域大小为 1。
+   “rdma_ranks=1、nvlink_ranks=num_ranks”。所以 scale-out 域大小为 1。
 3. 检查在 `csrc/comm/handle.hpp:54-64`：对每个非自身 peer 调
    `HcclRankGraphGetLinks`，要求至少有一条 `COMM_PROTOCOL_UB_MEM` 链路，
-   否则 `EP_HOST_ASSERT(has_ubmem and "Ascend currently requires direct UBMEM
-   connectivity to every peer")`。
+   否则 `EP_HOST_ASSERT(has_ubmem and “Ascend currently requires direct UBMEM
+   connectivity to every peer”)`。
 
-**常见错误**：把 URMA 说成「双边 RDMA」——它的数据路径只有单边 WRITE
+**常见错误**：把 URMA 说成“双边 RDMA”。它的数据路径只有单边 WRITE
 （`comm/handle.hpp:257-258`），没有 READ。
 
 ---
@@ -229,7 +229,7 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 给它套一层自动 ABI 反而会挡住作者对启动参数（`num_blocks`、
 `num_ubuf_bytes`、`jetty_ptrs`）的控制。
 
-**常见错误**：把两者说成「谁更好」。它们解决的是**不同层次**的问题。
+**常见错误**：把两者说成“谁更好”。它们解决的是**不同层次**的问题。
 
 ---
 
@@ -238,7 +238,7 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
 **参考答案**：
 
 1. **Bucket all-reduce**：**不能**。Bucket 只实现了 batched all-gather；
-   reduce-scatter / all-reduce 的昇腾 kernel「still being built」
+   reduce-scatter / all-reduce 的昇腾 kernel“still being built”
    （`README.md:80`）。替代：用 all-gather 的结果在本地做归约
    （或等上游补齐）。
 2. **动态冗余专家**：**不能端到端做**。`lb_prefetch_weights` /
@@ -247,16 +247,16 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    `EP_HOST_UNREACHABLE`）。EPLB 只能给出**规划**（`EPLB/README.md:35`），
    搬运这一步缺失。
 3. **把 decode 的 EP 通信 capture 进图**：**不能**。README 明确
-   「graph capture remain unsupported」（`README.md:84`）。
+   “graph capture remain unsupported”（`README.md:84`）。
    替代：走 eager 路径，用 `defer_epilogue` 与算子的融合来压低开销。
 4. **7 张卡**：**不能**。多卡通信要求 rank 数为偶数
    （`README.md:29`；`csrc/kernels/comm/hccl.hpp:85` 断言 `num_ranks % 2 == 0`）。
 
-**常见错误**：把「接口存在」当成「功能可用」——第 2 问就是这个陷阱。
+**常见错误**：把“接口存在”当成“功能可用”，第 2 问就是这个陷阱。
 
 ---
 
-## E13（★★★）复算「90–95%」的含义
+## E13（★★★）复算“90–95%”的含义
 
 **参考答案**：
 
@@ -271,11 +271,11 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    * EP32：353–378 GB/s
    * 并集 ≈ **353–417 GB/s/rank**（量级 350–420）。
 3. 不能当硬件规格的两个理由：
-   * README 原文是 "roughly 90–95%"，比例本身是模糊的；
+   * README 原文是 “roughly 90–95%”，比例本身是模糊的；
    * corpus 里没有 Ascend 950 UBMEM 链路的官方带宽规格，无法交叉验证
-     （见 `references.md` 的「待补资料」第 1 条）。
+     （见 `references.md` 的“待补资料”第 1 条）。
 
-**常见错误**：把 373–375 直接当成「链路带宽」而不做除法；
+**常见错误**：把 373–375 直接当成“链路带宽”而不做除法；
 或者忘了带宽是**每 rank** 的量。
 
 ---
@@ -289,16 +289,16 @@ commit `3b25377d04b2`；引用格式见 [`references.md`](references.md)。
    * `x`（FP8 数据 + SF）：`tile_kernels/quant/per_token_cast_kernel.py`
      （`topk_gate_kernel.py:7-43`、`moe_topk_gate_forward_kernel.py:9-53`、
      `per_token_cast_kernel.py:9-60`）。
-2. 因为 dispatch/combine 的核心不是「在 AIV 上做 tile 级计算」，而是
+2. 因为 dispatch/combine 的核心不是“在 AIV 上做 tile 级计算”，而是
    **直接写 URMA 队列、操作 Jetty、逐 lane 拼 64 字节的 SQE**
-   （§4.3、§5.2）。这属于「按字节/按协议操作硬件」的领域，
-   TileLang 的 tile 级数据流抽象在这个层次帮不上忙——
-   与第 35 章「瓶颈在通信与协议时，编译器路线收益有限」是同一结论。
+   （§4.3、§5.2）。这属于“按字节/按协议操作硬件”的领域，
+   TileLang 的 tile 级数据流抽象在这个层次帮不上忙，
+   与第 35 章“瓶颈在通信与协议时，编译器路线收益有限”是同一结论。
 3. MegaMoE 把 **dispatch + 两个 grouped GEMM + SwiGLU + combine** 融进
    一个 kernel（`DeepGEMM-Ascend/.../mega_moe.hpp:26-33`）。
    两条路的适用场景：**算法还在动 / 要复用 / 要接不同模型 → DeepEP-Ascend**；
    **形状冻结、要把通信压到最低 → MegaMoE**（代价是核数写死 32、形状提前注册，
    见第 35 章 §4.5）。
 
-**常见错误**：以为 TileLang 与 DeepEP 是对立的——它们是**分工**，
+**常见错误**：以为 TileLang 与 DeepEP 是对立的。它们是**分工**，
 接口就是三个张量（`topk_idx` / `topk_weights` / `x`）。

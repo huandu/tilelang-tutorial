@@ -3,7 +3,7 @@
 版本以 [../../VERSIONS.md](../../VERSIONS.md) 为准：TileLang `v0.1.15`
 （commit `a35f8ddf45eba16c21211ec8822d56ce5363036f`）、TileLang-Ascend
 `TileLang-ascend-v0.1.2.000-release`（commit `89a9364e47a341fffdd65ed94786b1d4f9b6a78c`）。
-本章不使用任何「最新版」类措辞。
+本章不使用任何“最新版”类措辞。
 
 写作环境：macOS（Apple Silicon）、Python 3.11.7；**没有 NVIDIA GPU，没有昇腾 NPU**，
 未安装 `tilelang` / `torch` / `torch_npu`。
@@ -13,7 +13,7 @@
 * **已核验（2026-10-01）**：在锁定版本工作树上用 `sed -n '<N>p'` / `cat -n` /
   `grep -n` 定位并逐行阅读。**不等于运行过。**
 * **已核验（2026-10-01，脚本）**：由本章自带的脚本在本机跑出结论，可复现。
-* **部分核验**：只核验了「文件存在 / 命令无输出」这一层，正文对应结论标注为推断。
+* **部分核验**：只核验了“文件存在 / 命令无输出”这一层，正文对应结论标注为推断。
 
 ---
 
@@ -21,7 +21,7 @@
 
 | id | 位置 | 用途 | 状态 |
 | --- | --- | --- | --- |
-| T1 | `code/01-runtime-anchor-check/verify_runtime_anchors.py` | 两层核对：172 条「文件:行号」锚点表 + 全章 241 处行内引用的存在性/范围/非空扫描；同时覆盖 `_vendor/tilelang-v0.1.15/` 与 `_vendor/tilelang-ascend-v0.1.2.000/` | **已核验（2026-10-01，脚本）**：`citation scan: 241 line references checked`、`ok: 172/172 anchors verified`，退出码 0 |
+| T1 | `code/01-runtime-anchor-check/verify_runtime_anchors.py` | 两层核对：172 条“文件:行号”锚点表 + 全章 241 处行内引用的存在性/范围/非空扫描；同时覆盖 `_vendor/tilelang-v0.1.15/` 与 `_vendor/tilelang-ascend-v0.1.2.000/` | **已核验（2026-10-01，脚本）**：`citation scan: 241 line references checked`、`ok: 172/172 anchors verified`，退出码 0 |
 | T2 | `code/02-cache-dir-inspect/inspect_cache_dir.py` | 复刻 `KernelCache` 的 manifest 校验与设备二进制缓存读取；`--selftest` 造 fixture 自检 | **已核验（2026-10-01，脚本）**：`--selftest` 三条判据全过，退出码 0；默认模式在本机退出码 2（无缓存目录） |
 | T3 | `code/03-packed-abi-sim/packed_abi_sim.py` | 用纯 Python 复刻 packed ABI 的检查规则与报错文案 | **已核验（2026-10-01，脚本）**：`13/13 scenarios behaved as the source says`，退出码 0 |
 | T4 | `code/04-torch-stream-call/torch_stream_call.py` | stream 语义实验（含反例注释） | **仅静态核对**：`py_compile` 通过；**未运行**（无 CUDA GPU） |
@@ -37,7 +37,7 @@
 
 ## 二、锁定的源码引用
 
-> 行号由 T1 逐条核对。为节省篇幅，本节按主题分组，不再逐条重复「已核验（2026-10-01）」；
+> 行号由 T1 逐条核对。为节省篇幅，本节按主题分组，不再逐条重复“已核验（2026-10-01）”；
 > 未特别注明者，核验状态一律为**已核验（2026-10-01）**，方式为阅读源码。
 
 ### 2.1 JIT、装饰与生命周期
@@ -114,7 +114,7 @@
 | S53 | `_vendor/tilelang-v0.1.15/tilelang/cache/kernel_cache.py:872-906` | `_build_kernel` → `JITKernel.from_database` |
 | S54 | `_vendor/tilelang-v0.1.15/tilelang/cache/binary_cache.py:20-55` | `BinaryCache` 的设计说明（不可变条目、不删共享条目） |
 | S55 | `_vendor/tilelang-v0.1.15/tilelang/cache/binary_cache.py:112-197` | `_finalize_key` / `get_path` / `load` / `save` |
-| S56 | `_vendor/tilelang-v0.1.15/tilelang/cache/cuda_binary_cache.py:12-45` | CUDA 二进制缓存的 key 字段与「编译选项必须进 key」的注释 |
+| S56 | `_vendor/tilelang-v0.1.15/tilelang/cache/cuda_binary_cache.py:12-45` | CUDA 二进制缓存的 key 字段与“编译选项必须进 key”的注释 |
 | S57 | `_vendor/tilelang-v0.1.15/tilelang/cache/ascend_binary_cache.py:12-42` | Ascend 二进制缓存（`.aibin`，多一个 `linker_options`） |
 | S58 | `_vendor/tilelang-v0.1.15/tilelang/cuda/backend.py:59-120` | `tilelang_callback_cuda_compile`：先查二进制缓存再调 nvcc |
 | S59 | `_vendor/tilelang-v0.1.15/tilelang/ascend/backend.py:15-49` | `tilelang_callback_ascend_compile`：bisheng + 二进制缓存 |
@@ -138,7 +138,7 @@
 | S72 | `_vendor/tilelang-v0.1.15/src/transform/make_packed_api.cc:721-783` | anchor 校验、`BindDLTensors` 调用、buffer 声明 |
 | S73 | `_vendor/tilelang-v0.1.15/src/transform/make_packed_api.cc:1003-1070` | calling conv 改写、返回值改写、`params` 落地 |
 | S74 | `_vendor/tilelang-v0.1.15/src/transform/make_packed_api.cc:1072-1122` | pass 工厂与注册名 `tl.MakePackedAPI` |
-| S75 | `_vendor/tilelang-v0.1.15/src/transform/tvm_ffi_binder.h:28-186` | `TVMFFIABIBuilder` 的公开契约（含「错误经 FFI error slot 回传」的说明） |
+| S75 | `_vendor/tilelang-v0.1.15/src/transform/tvm_ffi_binder.h:28-186` | `TVMFFIABIBuilder` 的公开契约（含“错误经 FFI error slot 回传”的说明） |
 | S76 | `_vendor/tilelang-v0.1.15/src/transform/tvm_ffi_binder.cc:30-76` | 约束文案与 `BinderAddAssert`（编译期可证伪就 `LOG(FATAL)`） |
 | S77 | `_vendor/tilelang-v0.1.15/src/transform/tvm_ffi_binder.cc:294-328` | `RelaxedStrideCheck` |
 | S78 | `_vendor/tilelang-v0.1.15/src/transform/tvm_ffi_binder.cc:330-424` | 非空检查与 shape 指针短路 |
@@ -187,19 +187,19 @@
 | S111 | `_vendor/tilelang-v0.1.15/tilelang/__init__.py:160-167, :200-221` | 顶层导出（`jit` / `compile` / `PassConfigKey` / 缓存开关） |
 | S112 | `_vendor/tilelang-v0.1.15/tilelang/profiler/__init__.py:214-295` | `run_once` / `do_bench` |
 | S113 | `_vendor/tilelang-v0.1.15/tilelang/profiler/bench.py:193-259` | 计时后端分派，含 `"cudagraph"` |
-| S114 | `_vendor/tilelang-v0.1.15/tilelang/profiler/torch_bench.py:144-152` | `bench_with_cudagraph` 及其「minimal launch overhead」注释 |
+| S114 | `_vendor/tilelang-v0.1.15/tilelang/profiler/torch_bench.py:144-152` | `bench_with_cudagraph` 及其“minimal launch overhead”注释 |
 | S115 | `_vendor/tilelang-v0.1.15/tilelang/tools/compile_only.py:1-42, :169-200` | 无卡编译工具与 `compile_kernel_source` |
 
 ### 2.8 版本边界（v0.1.15 里**没有**什么）
 
 | id | 引用位置 / 命令 | 结论 | 核验状态 |
 | --- | --- | --- | --- |
-| S116 | `ls _vendor/tilelang-v0.1.15/tilelang/jit/adapter/` | 输出 `base.py cutedsl cython kernel_cache.py libgen.py nvrtc torch tvm_ffi.py utils.py wrapper.py`——**没有** `pto/` | 已核验（2026-10-01） |
+| S116 | `ls _vendor/tilelang-v0.1.15/tilelang/jit/adapter/` | 输出 `base.py cutedsl cython kernel_cache.py libgen.py nvrtc torch tvm_ffi.py utils.py wrapper.py`，**没有** `pto/` | 已核验（2026-10-01） |
 | S117 | `grep -rn "pto" _vendor/tilelang-v0.1.15/tilelang/ascend/target.py` | 无输出；v0.1.15 没有 `target_is_pto` / `normalize_pto_target` | 已核验（2026-10-01） |
 | S118 | `ls _vendor/tilelang-v0.1.15/examples/ \| grep -i aclgraph` 与 `grep -rli "aclgraph\|NPUGraph" _vendor/tilelang-v0.1.15/examples _vendor/tilelang-v0.1.15/tilelang` | 均无输出；v0.1.15 主干**没有** ACLGraph 示例（示例只在昇腾适配器仓库） | 已核验（2026-10-01） |
 | S119 | `grep -rn "torch.autograd\|autograd.Function\|torch.library\|register_autograd" _vendor/tilelang-v0.1.15/tilelang _vendor/tilelang-v0.1.15/src` | 无输出；**没有** autograd 集成 | 已核验（2026-10-01） |
 | S120 | `grep -rln "backward" _vendor/tilelang-v0.1.15/examples` | 一组成对的反向 kernel 示例（attention_sink、linear_attention、deepseek_mhc、ascend/flash_attention 等） | 已核验（2026-10-01） |
-| S121 | `ls _vendor/tilelang-ascend-v0.1.2.000/tilelang/jit/adapter/` | 输出 `base.py ctypes cython dlpack.py libgen.py utils.py wrapper.py`——独立仓库的 adapter 家族与主干不同 | 已核验（2026-10-01） |
+| S121 | `ls _vendor/tilelang-ascend-v0.1.2.000/tilelang/jit/adapter/` | 输出 `base.py ctypes cython dlpack.py libgen.py utils.py wrapper.py`，独立仓库的 adapter 家族与主干不同 | 已核验（2026-10-01） |
 | S122 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/jit/__init__.py:36` | 独立仓库的 `execution_backend` 取值域是 `dlpack` / `ctypes` / `cython` | 已核验（2026-10-01） |
 | S123 | `_vendor/tilelang-ascend-v0.1.2.000/tilelang/cache/__init__.py:70` | 独立仓库有顶层 `tilelang.cache.clear_cache()` | 已核验（2026-10-01） |
 
@@ -211,14 +211,14 @@
 
 | id | 本地路径 | 上游链接 | 用途 | 核验状态 |
 | --- | --- | --- | --- | --- |
-| R1 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3325.md` | https://github.com/tile-ai/tilelang/pull/3325 | `T.PersistentKernel` + `AutoPersistent`：动机、wave 折叠规则、性能对比表与测试条件（**未合入**） | 已核验（2026-10-01）：本地文件存在，逐段阅读；**合入状态以 S116–S118 的同类 grep 为准——本章未在 `_vendor/tilelang-v0.1.15/` 找到 `PersistentKernel`** |
-| R2 | `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/tilelang/jit/adapter/pto/` | https://github.com/tile-ai/tilelang | main 快照（commit `994b44e`）里的 PTO adapter 目录：`__init__.py` / `adapter.py` / `cython_wrapper.pyx` / `libgen.py` / `wrapper.py` | 已核验（2026-10-01）：目录与文件存在；**仅 main，非 v0.1.15** |
-| R3 | `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/tilelang/jit/adapter/pto/adapter.py:1-33` | 同上 | PTO adapter 的定位（"Compile and execute PTODSL kernels using the PTO launch wrapper"）与 stream provider | 已核验（2026-10-01）：阅读前 40 行；**仅 main** |
+| R1 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3325.md` | https://github.com/tile-ai/tilelang/pull/3325 | `T.PersistentKernel` + `AutoPersistent`：动机、wave 折叠规则、性能对比表与测试条件（**未合入**） | 已核验（2026-10-01）：本地文件存在，逐段阅读；**合入状态以 S116–S118 的同类 grep 为准，本章未在 `_vendor/tilelang-v0.1.15/` 找到 `PersistentKernel`** |
+| R2 | `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/jit/adapter/pto/` | https://github.com/tile-ai/tilelang | main 快照（commit `994b44e`）里的 PTO adapter 目录：`__init__.py` / `adapter.py` / `cython_wrapper.pyx` / `libgen.py` / `wrapper.py` | 已核验（2026-10-01）：目录与文件存在；**仅 main，非 v0.1.15** |
+| R3 | `../tilelang-corpus/02-tilelang-core-repo/raw/tilelang/jit/adapter/pto/adapter.py:1-33` | 同上 | PTO adapter 的定位（“Compile and execute PTODSL kernels using the PTO launch wrapper”）与 stream provider | 已核验（2026-10-01）：阅读前 40 行；**仅 main** |
 | R4 | `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/developer/zh_developer_techArticles_20240715-1.md:27-49` | 华为昇腾开发者技术文章（GE 图引擎与 Host 调度） | Host Bound / Device Bound 的定义，以及 eager 单算子模式下发的五步 Host 流程 | 已核验（2026-10-01）：本地文件存在，阅读 §1–§2.2 |
 | R5 | `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/developer/zh_developer_techArticles_20260326-4.md:89-95` | 同上 | vLLM 启用 ACLGraph 后 rollout 场景端到端提升 15%–20%（带条件的框架级数字） | 已核验（2026-10-01）：本地文件存在；**该数字是上层框架的端到端结果，不是 TileLang kernel 的加速比** |
 | R6 | `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/examples/aclgraph/README.md` | https://github.com/tile-ai/tilelang-ascend | ACLGraph 的三步流程、`capture model` 日志判据、图捕获的两条语义 | 已核验（2026-10-01）：与 `_vendor/tilelang-ascend-v0.1.2.000/examples/aclgraph/README.md` 同源；本章引用锁定版本内的那份 |
-| R7 | `../tilelang-corpus/90-synthesis/02-compiler-internals-map.md:12-40` | （编者综合稿，非上游） | 与本章 2.1 节互为对照的「一次编译的全部参与者」图 | **部分核验**：编者二手材料。其第 37 行把 adapter 家族写成 `{cython,torch,nvrtc,pto,cutedsl}`，依据的是 corpus 的 **main 快照**；v0.1.15 实测**没有** `pto/`，见 S116。本章以 `_vendor/` 为准 |
-| R8 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/runtime_internals/stubs.md:1-77` | https://tilelang.com/（runtime internals） | CUDA / ROCm / Ascend 三套 stub 的机制，解释「为什么在没有加速器的机器上也能 import」 | 已核验（2026-10-01）：本地为站点源文件；**未在正文展开**，仅作为 3.1 节「无卡也能 lower」的背景 |
+| R7 | `../tilelang-corpus/90-synthesis/02-compiler-internals-map.md:12-40` | （编者综合稿，非上游） | 与本章 2.1 节互为对照的“一次编译的全部参与者”图 | **部分核验**：编者二手材料。其第 37 行把 adapter 家族写成 `{cython,torch,nvrtc,pto,cutedsl}`，依据的是 corpus 的 **main 快照**；v0.1.15 实测**没有** `pto/`，见 S116。本章以 `_vendor/` 为准 |
+| R8 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/runtime_internals/stubs.md:1-77` | https://tilelang.com/（runtime internals） | CUDA / ROCm / Ascend 三套 stub 的机制，解释“为什么在没有加速器的机器上也能 import” | 已核验（2026-10-01）：本地为站点源文件；**未在正文展开**，仅作为 3.1 节“无卡也能 lower”的背景 |
 | R9 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/tools/compile_only.md:1-80` | https://tilelang.com/（tools/compile_only） | `compile_only` 的用法与两份示例输出（CPU C 与 CUDA C） | 已核验（2026-10-01）：本地为站点源文件；与 S115 的源码一致 |
 
 ---
@@ -241,14 +241,14 @@
 
 | 项 | 另一处的说法 | 本章实测 | 处理方式 |
 | --- | --- | --- | --- |
-| 缓存 key 里的 `args_repr` | 第 7 章 6.3 节把「编译参数（N、block_N、threads …）」列为 `args_repr` 的来源 | `cached()` 在 v0.1.15 只被 `compile()` 调用，而 `compile()` 的两个调用点（`tilelang/jit/__init__.py:466-477`、`tilelang/autotuner/param.py:67-77`）都只用关键字参数（`:164-173`），`*args` 恒为空，`args_repr` 恒为 `()`；编译期参数是**经由 TIR 文本**进 key 的 | 本章按源码写（4.4 节）；已在此登记，建议后续版本在下一轮统一第 7 章 6.3 节的表述。**不修改其他章节目录** |
-| adapter 家族成员 | corpus 编者综合稿 `90-synthesis/02-compiler-internals-map.md:37` 与本章任务说明都列出 `pto` | v0.1.15 **没有** `pto/`（S116、S117）；main 快照才有（R2、R3） | 本章把 PTO 归入第 6 节「前沿」，并给出核验命令 |
-| 「有没有 ACLGraph 支持」 | 容易读成「主干支持 / 不支持」 | ACLGraph 属于 CANN / `torch_npu`；v0.1.15 主干里只是**没有示例**（S118） | 正文 5.2 节显式区分「示例缺失」与「能力不可用」 |
+| 缓存 key 里的 `args_repr` | 第 7 章 6.3 节把“编译参数（N、block_N、threads …）”列为 `args_repr` 的来源 | `cached()` 在 v0.1.15 只被 `compile()` 调用，而 `compile()` 的两个调用点（`tilelang/jit/__init__.py:466-477`、`tilelang/autotuner/param.py:67-77`）都只用关键字参数（`:164-173`），`*args` 恒为空，`args_repr` 恒为 `()`；编译期参数是**经由 TIR 文本**进 key 的 | 本章按源码写（4.4 节）；已在此登记，建议后续版本在下一轮统一第 7 章 6.3 节的表述。**不修改其他章节目录** |
+| adapter 家族成员 | corpus 编者综合稿 `90-synthesis/02-compiler-internals-map.md:37` 与本章任务说明都列出 `pto` | v0.1.15 **没有** `pto/`（S116、S117）；main 快照才有（R2、R3） | 本章把 PTO 归入第 6 节“前沿”，并给出核验命令 |
+| “有没有 ACLGraph 支持” | 容易读成“主干支持 / 不支持” | ACLGraph 属于 CANN / `torch_npu`；v0.1.15 主干里只是**没有示例**（S118） | 正文 5.2 节显式区分“示例缺失”与“能力不可用” |
 
 ### 5.2 尚需在真实硬件上验证的事项（本章不宣称）
 
 1. `code/04-torch-stream-call/` 的 stream 竞态统计（无同步组的失败次数）；
-   这是本章唯一「只有真机才能给出数字」的实验，正文与答案都刻意留空。
+   这是本章唯一“只有真机才能给出数字”的实验，正文与答案都刻意留空。
 2. `code/05-compile-only-inspect/` 在装好 `tilelang==0.1.15` 的机器上的实际输出，
    尤其是 CPU 目标生成的 `*_kernel` 签名。
 3. `code/06-ascend-aclgraph/` 在昇腾 950 上的 `capture model` 日志取值，
@@ -261,7 +261,7 @@
 
 | 缺什么 | 为什么需要 | 建议来源 |
 | --- | --- | --- |
-| TVM-FFI 的 DLPack Exchange API 正式规范 | 本章 4.11 节说明「stream 由运行时去问」时，只能引 TileLang 侧注释与 Cython 结构体定义；缺少一份权威的 API 语义说明，难以判断 `current_work_stream` 的契约细节 | `apache/tvm-ffi` 的 `include/tvm/ffi/extra/` 与 DLPack 规范文档 |
-| v0.1.15 官方 release note | 本章用 `git describe --tags` 与源码检索确认版本边界，但没有 release note 来交叉核对「本版新增/移除」的官方表述 | https://github.com/tile-ai/tilelang/releases/tag/v0.1.15 |
+| TVM-FFI 的 DLPack Exchange API 正式规范 | 本章 4.11 节说明“stream 由运行时去问”时，只能引 TileLang 侧注释与 Cython 结构体定义；缺少一份权威的 API 语义说明，难以判断 `current_work_stream` 的契约细节 | `apache/tvm-ffi` 的 `include/tvm/ffi/extra/` 与 DLPack 规范文档 |
+| v0.1.15 官方 release note | 本章用 `git describe --tags` 与源码检索确认版本边界，但没有 release note 来交叉核对“本版新增/移除”的官方表述 | https://github.com/tile-ai/tilelang/releases/tag/v0.1.15 |
 | TileLang 官方对 host ABI 的开发者文档 | 本章的 ABI 描述完全来自 `src/transform/` 的实现与注释；若上游有一份 ABI 契约文档，可用来判断哪些字段属于稳定承诺 | `tile-ai/tilelang` 的 `docs/developer_guide/` 或 RFC 目录 |
-| `cuLibraryLoadData` 路径下 NVRTC adapter 的 stream 归属说明 | 本章只确认了「缺省取 `torch.cuda.current_stream().cuda_stream`」这一行，未深究 cuda-python 层是否还做额外同步 | `cuda-python` 的 `cuda.bindings.driver` 文档与 `tilelang/jit/adapter/nvrtc/wrapper.py` |
+| `cuLibraryLoadData` 路径下 NVRTC adapter 的 stream 归属说明 | 本章只确认了“缺省取 `torch.cuda.current_stream().cuda_stream`”这一行，未深究 cuda-python 层是否还做额外同步 | `cuda-python` 的 `cuda.bindings.driver` 文档与 `tilelang/jit/adapter/nvrtc/wrapper.py` |

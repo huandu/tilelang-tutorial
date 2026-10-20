@@ -1,7 +1,7 @@
 # 第 03 章 代码
 
 本章讲的是设计哲学，所以代码也存在两个使命：**把抽象主张变成可以复算的东西**，
-以及**把「可以混用」写成看得见的代码**。三个示例互相独立，可以单独复制出去运行。
+以及**把“可以混用”写成看得见的代码**。三个示例互相独立，可以单独复制出去运行。
 
 ## 目录
 
@@ -23,7 +23,7 @@ code/
 
 | 示例 | 它证明什么 | 运行前提 | 作者实际做到的验证级别 |
 | --- | --- | --- | --- |
-| `01-layer-inventory/layer_inventory.py` | 三层接口 + CUDA 方言扩展的 47 个 API 名字，逐个在 v0.1.15 的语言层里存在；官方文档里「beginner 层未完全实现」的说明仍在 | Python 3.9+（只用标准库） | **CPU 逻辑验证**：在 macOS (Apple Silicon)、Python 3.11 上实际运行过，退出码 0，输出见该目录 README |
+| `01-layer-inventory/layer_inventory.py` | 三层接口 + CUDA 方言扩展的 47 个 API 名字，逐个在 v0.1.15 的语言层里存在；官方文档里“beginner 层未完全实现”的说明仍在 | Python 3.9+（只用标准库） | **CPU 逻辑验证**：在 macOS (Apple Silicon)、Python 3.11 上实际运行过，退出码 0，输出见该目录 README |
 | `02-one-kernel-two-levels/one_kernel_two_levels.py` | 同一个 `T.Kernel` 体里 developer 层与 expert 层共存（composable 的最小实证） | NVIDIA GPU（sm70+）+ CUDA toolkit + torch(CUDA) + TileLang v0.1.15 | **仅静态核对**：`py_compile` 通过；10 个 API 逐个在 `_vendor/` 里核对；**未在硬件上运行** |
 | `03-schedule-as-annotation/schedule_as_annotation.py` | 同一段数据流，四个变体各只改一个调度维度（thread binding / layout / pipeline） | 同上 | **仅静态核对**：`py_compile` 通过；API 逐个核对；**未运行、未做任何性能比较** |
 

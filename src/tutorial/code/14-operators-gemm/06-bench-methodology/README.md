@@ -5,8 +5,8 @@
 第 14 章第 7 节说：**不写清口径的对比数字不可信。** 这个小工具把其中两件
 可以机械化的事做出来：
 
-1. 「目标毫秒数 → 迭代次数」的换算（warmup / repeat）；
-2. 「统一用 2MNK → TFLOP/s」的换算，以及一份必须逐条填写的口径表。
+1. “目标毫秒数 → 迭代次数”的换算（warmup / repeat）；
+2. “统一用 2MNK → TFLOP/s”的换算，以及一份必须逐条填写的口径表。
 
 它不测量任何真实性能；所有输出都是换算结果。
 
@@ -53,11 +53,11 @@ python3 bench_methodology.py --per-iter 0.35 --m 4096 --n 4096 --k 4096
 
 * `warmup=25 ms`、`rep=100 ms` 来自 TileLang `do_bench` 的默认值
   （`_vendor/tilelang-v0.1.15/tilelang/profiler/bench.py:31`）；
-* 「重复次数至少 5 次」「按 `minimal_repeat_ms=100` 换算」来自
+* “重复次数至少 5 次”“按 `minimal_repeat_ms=100` 换算”来自
   corpus 里 cuBLAS 对比脚本的实测口径
   （`../references.md` 的 R8）；
 * TFLOP/s 的换算永远是 `2MNK / t`，与 epilogue 无关——epilogue 的有无
-  要写在口径表里，不能靠改分母来「补偿」。
+  要写在口径表里，不能靠改分母来“补偿”。
 
 ## 作者实际做到的验证级别
 
@@ -68,5 +68,5 @@ python3 bench_methodology.py --per-iter 0.35 --m 4096 --n 4096 --k 4096
 
 * 换算表假设每次迭代耗时稳定；真实 kernel 有抖动，`do_bench` 因此会在每次
   采样前 flush L2，并支持 `mean` / `median` / `min` 等多种取数方式。
-* 工具不判断你的对比是否公平；它只是把「应该写下来的东西」列出来。第 7.1
+* 工具不判断你的对比是否公平；它只是把“应该写下来的东西”列出来。第 7.1
   节的表格是人工 checklist，本工具不替你做决定。

@@ -51,6 +51,6 @@ flowchart LR
 产物            cubin / fatbin                      linked CCE ELF (aibin)
 ```
 
-一句话总结：**NV 的「一个线程块一组线程、共享内存 + 寄存器」模型，在昇腾被拆成
-「Cube 核 + 两个 Vector 子核 + 五个片上 buffer + 四条搬运/收尾流水线」**；
+一句话总结：**NV 的“一个线程块一组线程、共享内存 + 寄存器”模型，在昇腾被拆成
+“Cube 核 + 两个 Vector 子核 + 五个片上 buffer + 四条搬运/收尾流水线”**；
 这是两侧 codegen 与同步 pass 完全不同的根因。

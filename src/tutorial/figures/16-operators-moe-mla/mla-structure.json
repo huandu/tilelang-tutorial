@@ -3,7 +3,7 @@
   "title": "MHA → GQA → MLA 与 KV 预算",
   "kind": "compare",
   "section": "3",
-  "caption": "GQA 少缓存几个 KV 头；MLA 换一个被缓存的对象——低秩潜向量。",
+  "caption": "GQA 少缓存几个 KV 头；MLA 换一个被缓存的对象，低秩潜向量。",
   "columns": ["MHA", "GQA", "MLA"],
   "rows": [
     {

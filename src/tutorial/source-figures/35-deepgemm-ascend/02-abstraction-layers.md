@@ -30,7 +30,7 @@ graph TD
 **要点**
 
 * 两条路线**共享最上面两层**：调用方接口相同，抽象意图相同（都写 tile 级数据流）。
-* 分歧只在「怎么降到 Ascend C」：TileLang 交给编译期，DeepGEMM-Ascend 交给运行期
+* 分歧只在“怎么降到 Ascend C”：TileLang 交给编译期，DeepGEMM-Ascend 交给运行期
   的字符串实例化 + JIT 编译。
 * 两者的产物在同一层（Ascend C），因此它们是**同一层上的两种工程选择**，
   不是上下层关系。

@@ -2,7 +2,7 @@
 
 ## 目的
 
-把「缓存目录长什么样」从一句描述变成一次可重复的读取：
+把“缓存目录长什么样”从一句描述变成一次可重复的读取：
 
 * 递归列出 `$TILELANG_CACHE_DIR/<version>/<platform>-<machine>/` 下的
   `kernels/` 与 `.staging/`；
@@ -63,11 +63,11 @@ ok: reader classifies complete / corrupt / incomplete entries and reads the bina
 ## 这个示例**没有**证明什么
 
 fixture 是脚本按源码里读到的路径约定自己造的。所以本示例验证的是**读取逻辑**，
-不是「TileLang 真的这样落盘」。后者由 `01-runtime-anchor-check` 的源码锚点 +
+不是“TileLang 真的这样落盘”。后者由 `01-runtime-anchor-check` 的源码锚点 +
 `tilelang/cache/kernel_cache.py:552-640` 的阅读共同支撑，属于静态核对。
 
 ## 作者实际做到的验证级别
 
 **在本机运行过（2026-10-01）**：`--selftest` 输出上述内容、退出码 0；
-默认模式在本机返回退出码 2 并打印「cache directory not found: ~/.tilelang/cache」，
-这与「本机没有安装 tilelang、从未产生缓存」一致。
+默认模式在本机返回退出码 2 并打印“cache directory not found: ~/.tilelang/cache”，
+这与“本机没有安装 tilelang、从未产生缓存”一致。

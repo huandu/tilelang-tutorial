@@ -32,7 +32,7 @@
   "caption": "三层接口可以混用；最左边那层（beginner）官方文档明确标注尚未完全实现，本章如实标注。",
   "notes": [
     "官方类比：Level 1 ≈ TVM，Level 2 ≈ Triton，Level 3 ≈ 手写 CUDA/HIP（docs/deeplearning_operators/matmul.md:17-21）。",
-    "「三层可以混用」是 TileLang 相对 Triton 的官方差异之一（docs/deeplearning_operators/matmul.md:214-218）。",
-    "beginner 那条的两句官方原话：本文档标注「This interface is not yet fully implemented」，且这一层「can incur longer auto-tuning times」。"
+    "“三层可以混用”是 TileLang 相对 Triton 的官方差异之一（docs/deeplearning_operators/matmul.md:214-218）。",
+    "beginner 那条的两句官方原话：本文档标注“This interface is not yet fully implemented”，且这一层“can incur longer auto-tuning times”。"
   ]
 }

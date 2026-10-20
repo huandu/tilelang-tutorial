@@ -4,12 +4,12 @@
 
 读完本章，你应当能够：
 
-1. 用「搬运与计算的重叠」解释为什么同一个 GEMM，加了 `num_stages=3` 之后能明显变快，
+1. 用“搬运与计算的重叠”解释为什么同一个 GEMM，加了 `num_stages=3` 之后能明显变快，
    并说清流水优化的是**吞吐**而不是单次延迟。
 2. 写出一个循环的时空图：哪一段是填充（prologue）、哪一段是稳态、哪一段是排空
-   （epilogue），并据此判断「这个循环值不值得做流水」。
+   （epilogue），并据此判断“这个循环值不值得做流水”。
 3. 读懂 `T.Pipelined(..., num_stages=N)` / `order=` / `stage=` 的语义，知道每种写法
-   下编译期会走哪条路径，以及 `num_stages` 在什么情况下等于「不做流水」。
+   下编译期会走哪条路径，以及 `num_stages` 在什么情况下等于“不做流水”。
 4. 说清 `PipelinePlanning` 与 `InjectSoftwarePipeline` 各自负责什么，并把
    `stage`/`order` 注解、`use - def + 1` 的版本数、多缓冲版本维这三件事串起来。
 5. 在动手编译之前估算一份配置的片上占用，判断 `num_stages` 还能不能再加。
@@ -25,7 +25,7 @@
 * 第 10 章：shared memory 与 fragment 的区别、layout 为什么是接口。
 * 第 6 章（可选，本章 2.6 节要用）：NV 与昇腾在存储层级与同步模型上的差异。
 
-本章几乎不引入新的硬件名词；所有新概念都先用「它解决什么问题」讲一遍。
+本章几乎不引入新的硬件名词；所有新概念都先用“它解决什么问题”讲一遍。
 
 **本章的验证边界（很重要）**：写作环境是 macOS (Apple Silicon)，**没有 NVIDIA GPU，
 也没有昇腾 NPU**。因此本章出现的数字只有两类，来源都写清楚：
@@ -60,7 +60,7 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx,
 ```
 
 每一轮做两件事：**把下一块数据搬进片上**，**对上一块数据做矩阵乘**。它们由不同的硬件
-负责——搬运走访存通路，计算走矩阵运算单元——所以这两条通路**天生可以同时工作**。
+负责，搬运走访存通路，计算走矩阵运算单元。所以这两条通路**天生可以同时工作**。
 
 但上面这段代码里它们没有同时工作。原因是 `A_shared` / `B_shared` 各自只有一份：
 
@@ -68,7 +68,7 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx,
 2. `T.gemm` 读 `A_shared`；
 3. 只有 `T.gemm` **读完**之后，第 `ko+1` 轮的 `T.copy` 才敢覆盖 `A_shared`。
 
-于是每一轮的时间是「搬运 + 计算」，而不是「搬运与计算取较大者」：
+于是每一轮的时间是“搬运 + 计算”，而不是“搬运与计算取较大者”：
 
 ```text
 不做流水（教学简化：把 num_stages 当作缓冲份数，一份 buffer）
@@ -87,12 +87,12 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx,
 图 1 会把不做流水、2-stage、3-stage 三档画成带具体周期数的时空图，并附上 1..8 的
 扫描表。
 
-「不做流水会怎样」的答案就是这句话：**搬运与计算各自都要排队等对方，二者的和成了
+“不做流水会怎样”的答案就是这句话：**搬运与计算各自都要排队等对方，二者的和成了
 每一轮的下界。**
 
-### 1.2 把「等」量化：三个量
+### 1.2 把“等”量化：三个量
 
-要把上面的直觉变成可以算的东西，只需要三个量（都以「周期」为单位）：
+要把上面的直觉变成可以算的东西，只需要三个量（都以“周期”为单位）：
 
 | 记号 | 含义 | 直觉 |
 | --- | --- | --- |
@@ -101,27 +101,27 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx,
 | `compute` | 一次计算占用计算单元多久 | 计算单元被**占住的时间** |
 
 为什么要把 `latency` 单独拎出来，而不是把搬运当成一件整体的活儿？因为现代加速器把
-「发出」和「到达」拆开了。H100 的厂商资料原话是：
+“发出”和“到达”拆开了。H100 的厂商资料原话是：
 
 > It enables applications to build end-to-end asynchronous pipelines that move data into
 > and off the chip, completely overlapping and hiding data movement with computation.
-> —— `../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
+> 来源：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
 > 第 79 行（NVIDIA Hopper Architecture In-Depth，厂商公开资料；条件：H100）
 
 同一份资料在解释异步执行时又说：
 
 > Asynchronous execution involves finding independent tasks to overlap with memory
 > transfers and other processing. The goal is to keep all the units in the GPU fully
-> used. —— 同文件第 241 行
+> used. ，同文件第 241 行
 
-「发出之后不用干等」就是为什么一份 buffer 不够：**要重叠，就得让下一轮的数据已经在
+“发出之后不用干等”就是为什么一份 buffer 不够：**要重叠，就得让下一轮的数据已经在
 路上，而这一轮的计算还没结束。**
 
-至于 `latency` 为什么要单独考虑，第 1 章引用过的数据给出了量级：访存「hundreds of
-clock cycles」，而算术指令「typically 4 cycles」（来源：
+至于 `latency` 为什么要单独考虑，第 1 章引用过的数据给出了量级：访存“hundreds of
+clock cycles”，而算术指令“typically 4 cycles”（来源：
 `../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-best-practices.md` 第 3629 行与
 第 3145 行；条件分别是未缓存的 local/global 访存，以及 compute capability 7.0 设备上
-多数算术指令的延迟）。两者差两个数量级，所以「让计算等数据」和「让数据等计算」的
+多数算术指令的延迟）。两者差两个数量级，所以“让计算等数据”和“让数据等计算”的
 代价完全不同。
 
 ### 1.3 用本章的模型算一遍
@@ -157,10 +157,12 @@ model: copy -> compute, greedy list schedule, abstract cycles
 
 模型还给出一个可以背下来的判据：
 
-```text
-最小够用深度 = 1 + ceil(latency / compute)
-             = 1 + ceil(30 / 20) = 3
-```
+$$
+D_{\min}=1+\left\lceil\frac{L}{C}\right\rceil
+=1+\left\lceil\frac{30}{20}\right\rceil=3.
+$$
+
+这里 $D_{\min}$ 是最小够用深度，$L$ 是搬运延迟，$C$ 是每轮计算时间。
 
 直觉是：要盖住 `latency` 那么长的飞行时间，生产者得能领先消费者
 `ceil(latency / compute)` 轮；再加上消费者正在读的那一份，就是需要的份数。
@@ -173,7 +175,7 @@ model: copy -> compute, greedy list schedule, abstract cycles
 
 这解释了为什么 GEMM 的 `K/BK` 循环、Attention 的 KV 长度循环、MoE 的 token 循环都是
 流水的主战场：它们的 reduction 维度很长，填充可以被摊薄到几乎可以忽略。反过来，
-一个只跑两三轮的短循环，做流水的意义就有限——**这也是一类值得先算一笔账再动手的
+一个只跑两三轮的短循环，做流水的意义就有限。**这也是一类值得先算一笔账再动手的
 优化**。
 
 ---
@@ -198,15 +200,15 @@ TileLang 的流水线里只有三个概念，但它们的名字很容易混：
 > For manually scheduled pipelines, prefer specifying `order` and `stage` without
 > `num_stages`; the pipeline depth is inferred as `max(stage) + 1`.
 
-> **口径提醒（与第 22 章一致）**：本章为了讲清直觉，把 `num_stages` 当作「缓冲份数」；
+> **口径提醒（与第 22 章一致）**：本章为了讲清直觉，把 `num_stages` 当作“缓冲份数”；
 > 严格说它是给 planner 的**上界/提示**，最终版本数由 `ComputeBufferVersions` 按
 > `use − def + 1` 推出，两者可能不同（`num_stages=1` 仍可能得到一个带多份 buffer 的
 > 流水循环）。教学示意与实际 IR 的差异见第 22 章 §2.4 与 §7.3。
 
 也就是说，**深度有两种给法**：要么直接给 `num_stages`（让编译器自己决定 stage/order），
 要么给 `stage`/`order`（深度由 `max(stage) + 1` 推出来）。**不要两个一起给**，
-除非你确实想要覆盖深度——docstring 的原话是「Avoid setting `num_stages` together with
-manual `order`/`stage` unless you intend an explicit depth override」。
+除非你确实想要覆盖深度，docstring 的原话是“Avoid setting `num_stages` together with
+manual `order`/`stage` unless you intend an explicit depth override”。
 
 还有一个容易被忽略的细节：`num_stages=0` 时，IR 上根本不会出现 `num_stages` 注解。
 参数在 `src/ir.cc` 里就被丢掉了：
@@ -222,9 +224,9 @@ if (!stages.empty())
   anno.Set("tl_pipeline_stage", stages);
 ```
 
-`num_stages=0` 于是意味着「这个循环不是流水循环」——下游的 `PipelinePlanning`、
+`num_stages=0` 于是意味着“这个循环不是流水循环”，下游的 `PipelinePlanning`、
 `InjectSoftwarePipeline` 都不会碰它。自动调优时把 `0` 放进搜索空间，就是在搜索里包含
-「不做流水」这个选项；`_vendor/tilelang-v0.1.15/examples/gemm/example_gemm_autotune.py`
+“不做流水”这个选项；`_vendor/tilelang-v0.1.15/examples/gemm/example_gemm_autotune.py`
 正是这么做的（它的 roller 映射里有一句
 `config["num_stages"] = hint.pipeline_stage if hint.pipeline_stage > 1 else 0`）。
 
@@ -236,7 +238,7 @@ if (!stages.empty())
 
 1. **有没有重叠**：图里 `B`（搬运与计算同时进行）出现的次数，就是重叠的周期数。
    不做流水时 `B` 一次都不出现。
-2. **填充有多长**：最左边那段「只有搬运、没有计算」的区间就是 prologue。
+2. **填充有多长**：最左边那段“只有搬运、没有计算”的区间就是 prologue。
 3. **稳态的步长是多少**：稳态里相邻两次计算开始时间的差，就是每一轮的真实成本。
    它等于
 
@@ -245,7 +247,7 @@ if (!stages.empty())
                                  ↑ 在「够深」之前，瓶颈在这一项
 ```
 
-   直觉是：每一个缓冲区从「被写入」到「被读完」要占 `latency + compute` 那么久，
+   直觉是：每一个缓冲区从“被写入”到“被读完”要占 `latency + compute` 那么久，
    `depth` 个缓冲区同时在飞，所以产能上限是 `depth / (latency + compute)`。
    把这个上限与 `1/compute` 一比，就得到 1.3 节那条判据：
    `depth ≥ 1 + latency / compute` 之后，瓶颈才从缓冲区数量转到计算本身。
@@ -254,33 +256,33 @@ if (!stages.empty())
 
 **图 2 · 多缓冲的内存布局与槽位轮转** 见 `figures/02-multibuffer-layout.md`。
 要让第 `ko+1` 轮的搬运与第 `ko` 轮的计算重叠，第 `ko+1` 轮就不能写第 `ko` 轮正在读的
-那块内存。唯一的办法是**多准备几份**：把「一份 A tile」变成「N 份 A tile」。
+那块内存。唯一的办法是**多准备几份**：把“一份 A tile”变成“N 份 A tile”。
 
 编译期做这件事的方式非常具体（图 2 有完整示意）：
 
-1. 先做活跃期分析，得到每个 buffer 的「被定义的 stage」与「最后被读的 stage」；
+1. 先做活跃期分析，得到每个 buffer 的“被定义的 stage”与“最后被读的 stage”；
 2. 版本数 = `use_stage - def_stage + 1`；
 3. 把版本数作为**最外层新维度**插到 buffer 的 shape 前面，例如
    `(block_M, block_K)` → `(num_stages, block_M, block_K)`；
 4. 每个访问点改写为 `buffer[ko % num_stages, ...]`。
 
 代价是**片上存储线性增长**：深度 `N` 意味着 `N` 份 A tile 与 `N` 份 B tile。
-第 4.5 节会把这件事算清楚，因为它是本章唯一一个「加 stage 会直接把 kernel 编译失败」
+第 4.5 节会把这件事算清楚，因为它是本章唯一一个“加 stage 会直接把 kernel 编译失败”
 的硬约束。
 
 ### 2.4 吞吐 vs 延迟：流水到底优化了什么
 
 这是最容易说错的一点，值得单独讲清楚。
 
-* **延迟（latency）**：一次操作从开始到结束要多久。流水**几乎不改变**它——第 `ko` 轮
+* **延迟（latency）**：一次操作从开始到结束要多久。流水**几乎不改变**它，第 `ko` 轮
   的计算在数据到齐之后要跑 `compute` 那么久，这个数字没变。
-* **吞吐（throughput）**：单位时间内能完成多少轮迭代。流水**改变的就是它**——
+* **吞吐（throughput）**：单位时间内能完成多少轮迭代。流水**改变的就是它**，
   从 `1/(latency + compute)` 变成 `min(depth / (latency + compute), 1/compute)`
   （这里忽略 `issue` 的影响；把 `issue` 算进来就是上一小节的完整式子）。
 
 一个只跑一次的算子（单次 `reduce`、batch size = 1 的 decode 首步），流水能做的只是把
 填充藏到别的工作后面；一个跑几千轮的循环（大 `K`、长 context），流水能把吞吐抬到
-接近计算单元的物理上限。所以「要不要加流水」「加多深」这两个问题的答案，取决于
+接近计算单元的物理上限。所以“要不要加流水”“加多深”这两个问题的答案，取决于
 **这个循环有多少轮**：
 
 ```text
@@ -291,21 +293,21 @@ if (!stages.empty())
 
 ### 2.5 自动调优在解决什么
 
-上面这些参数——`block_M`、`block_N`、`block_K`、`num_stages`、`threads`——**没有一组
+上面这些参数，`block_M`、`block_N`、`block_K`、`num_stages`、`threads`，**没有一组
 能在所有形状、所有 GPU 上都最优的值**。原因很朴素：
 
 * tile 越大，片上占用越大，能同时驻留的 block 越少（occupancy 下降）；
-* `block_K` 越大，每轮的搬运越「整块」，但循环轮数变少，填充占比上升；
+* `block_K` 越大，每轮的搬运越“整块”，但循环轮数变少，填充占比上升；
 * `num_stages` 越大，延迟藏得越好，但片上占用线性增长，超过预算直接编译失败；
 * 不同 SM 数的 GPU 对同一份 tile 的 wave 划分不同，尾部浪费也不同。
 
 这些效应互相耦合，靠解析式算不准。**自动调优就是用真实测量替代猜测**：把参数暴露成
 函数参数、给一个候选集合、让编译器并排编译并测量、选出最好的那一组。它的输入是
-「搜索空间」，输出是「一组具体参数 + 它的实测延迟」。
+“搜索空间”，输出是“一组具体参数 + 它的实测延迟”。
 
 ### 2.6 两台机器的流水抽象对照
 
-NVIDIA 与昇腾都做「搬运与计算重叠」，但**抽象层次不一样**。下表只做定位，机制细节
+NVIDIA 与昇腾都做“搬运与计算重叠”，但**抽象层次不一样**。下表只做定位，机制细节
 留给第 23 章。
 
 | 维度 | NVIDIA 侧（v0.1.15 的 CUDA pipeline） | 昇腾侧（v0.1.15 的 Ascend pipeline） |
@@ -315,7 +317,7 @@ NVIDIA 与昇腾都做「搬运与计算重叠」，但**抽象层次不一样**
 | 多缓冲怎么来 | `ComputeBufferVersions` 算版本数，`RewriteAllocBuffer` 加版本维 | `PrepareMultiBuffer` → `MaterializeMultiBuffer` 两个 pass 物化 |
 | 同步怎么插 | `InjectSoftwarePipeline` 内部生成异步拷贝与其等待；`ThreadSync` 补线程同步 | `InsertSync` 统一插入成对的 flag 读写 |
 | 深度信息从哪来 | 循环注解 `num_stages` / `tl_pipelined_num_stages` / `max(stage)+1` | 同一套注解，但求解器还会自己决定任务顺序与缓冲区生命周期 |
-| 有没有「核间」流水 | 没有这个概念：同一个 block 内所有单元在同一套线程/同步模型下 | 有：同一个 `T.Pipelined` 里可以让 Cube 与 Vector 交叠，见 4.6 节 |
+| 有没有“核间”流水 | 没有这个概念：同一个 block 内所有单元在同一套线程/同步模型下 | 有：同一个 `T.Pipelined` 里可以让 Cube 与 Vector 交叠，见 4.6 节 |
 | 你要不要手写 stage/order | 需要时才写（例如循环体不规整） | 一般不需要 |
 
 对应的源码位置：
@@ -328,8 +330,8 @@ NVIDIA 与昇腾都做「搬运与计算重叠」，但**抽象层次不一样**
 
 **本章只需要记住两个结论**：
 
-1. `T.Pipelined` 这个**接口**在两边一样；不一样的是它背后那把「决定 stage/order、
-   决定缓冲区份数、决定同步点」的引擎。
+1. `T.Pipelined` 这个**接口**在两边一样；不一样的是它背后那把“决定 stage/order、
+   决定缓冲区份数、决定同步点”的引擎。
 2. 因此第 4.5 节的容量约束两边都存在，但**约束的具体资源不同**：NVIDIA 侧主要看
    shared memory，昇腾侧要看 L1 / UB / L0 各自的大小以及它们之间搬运的粒度。
 
@@ -337,7 +339,7 @@ NVIDIA 与昇腾都做「搬运与计算重叠」，但**抽象层次不一样**
 
 ## 3. 用法
 
-本节从「最小可用」走到「自动调优」，每一步都有可对照的代码：
+本节从“最小可用”走到“自动调优”，每一步都有可对照的代码：
 `code/04-tilelang-pipelined-gemm/` 覆盖 3.1–3.4，`code/05-tilelang-autotune-gemm/`
 覆盖 3.5–3.8。两个示例都需要 GPU 才能运行，本章只做到静态核对，验证级别写在各目录
 的 README 里。
@@ -354,7 +356,7 @@ for ko in T.Pipelined(T.ceildiv(K, block_K), num_stages=3):
 ```
 
 这三行就是 GEMM 流水的全部。`matmul_plain` 那个 `T.serial` 版本不是凑数：它把 1.1 节的
-「不做流水」写成了可编译的对照组。
+“不做流水”写成了可编译的对照组。
 
 ### 3.2 参数逐个解释
 
@@ -372,16 +374,16 @@ def Pipelined(
 | --- | --- | --- |
 | `start` / `stop` | 循环范围；只给一个参数时它就是 `stop`，`start` 默认为 0 | 总是 |
 | `num_stages` | 生产者与消费者之间的缓冲区份数上限；`0` 表示不启用流水 | 编译器能自己推断时（GEMM 这类规整体） |
-| `order` | 被调度语句的发射顺序 | 需要把「未来轮次的搬运」插到「当前轮次的计算」之前时 |
+| `order` | 被调度语句的发射顺序 | 需要把“未来轮次的搬运”插到“当前轮次的计算”之前时 |
 | `stage` | 每条被调度语句的逻辑 stage | 循环体不规整、自动推断结果不合意时 |
 | `annotations` | 透传给下游 pass 的额外注解 | 高级用法 |
 
 关于 `order` 和 `stage` 的**对齐规则**，官方文档说得很清楚
 （`../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/programming_guides/software_pipeline.md`）：
-两个数组**按源码顺序**对齐到「被调度的语句」，而且**只数有副作用的语句**——
+两个数组**按源码顺序**对齐到“被调度的语句”，而且**只数有副作用的语句**，
 copy、fill、gemm、reduce、store、atomic，以及显式写出的 wait / commit / 同步语句。
 
-还要注意它们**不是**「数组下标 = 源码行号」。下面两种写法都不行：
+还要注意它们**不是**“数组下标 = 源码行号”。下面两种写法都不行：
 
 * 数了不该数的（把可重放的标量 `Bind` 也算进去，见 3.4 节）；
 * 用了一套顺序去描述另一个顺序（例如按发射顺序数语句，而数组要按源码顺序对齐）。
@@ -390,7 +392,7 @@ copy、fill、gemm、reduce、store、atomic，以及显式写出的 wait / comm
 
 最常见的两种手动写法。
 
-**（a）标准的两级拆分**——搬运在 stage 0，计算在 stage 1：
+**（a）标准的两级拆分**，搬运在 stage 0，计算在 stage 1：
 
 ```python
 for ko in T.Pipelined(
@@ -403,9 +405,9 @@ for ko in T.Pipelined(
     T.gemm(A_shared, B_shared, C_local, transpose_B=True)
 ```
 
-深度由 `max(stage) + 1 = 2` 推出，恰好对应 2.3 节说的「两份 buffer」。
+深度由 `max(stage) + 1 = 2` 推出，恰好对应 2.3 节说的“两份 buffer”。
 
-**（b）调整发射顺序**——让「下一轮的生产者」先于「这一轮的消费者」发射：
+**（b）调整发射顺序**，让“下一轮的生产者”先于“这一轮的消费者”发射：
 
 ```python
 for ko in T.Pipelined(num_tiles, stage=[0, 1], order=[1, 0]):
@@ -415,7 +417,7 @@ for ko in T.Pipelined(num_tiles, stage=[0, 1], order=[1, 0]):
 
 官方文档对这一对的解释是：编译期生成 prologue / 稳态 / epilogue 时，会为每个 stage 取
 **正确的逻辑迭代号**；而源码顺序只负责把注解的每一项对到哪条语句上，`order` 管的是
-「分类之后按什么顺序发射」。这两个数组的职责是分开的，这一点在手写调度时最容易搞混。
+“分类之后按什么顺序发射”。这两个数组的职责是分开的，这一点在手写调度时最容易搞混。
 
 编译器会校验你的注解。`InjectSoftwarePipeline` 的 `ValidatePipelineBody` 有两条硬规则
 （`_vendor/tilelang-v0.1.15/src/transform/inject_pipeline.cc:3104-3138`）：
@@ -438,12 +440,12 @@ for ko in T.Pipelined(num_tiles, stage=[0, 1], order=[1, 0]):
     B[base + tx] = A_shared[tx]
 ```
 
-答案是 **两个**，`base` 不占位置。官方文档把这条规则称为「可重放的标量 `Bind`
-（replayable scalar `Bind`）」：
+答案是 **两个**，`base` 不占位置。官方文档把这条规则称为“可重放的标量 `Bind`
+（replayable scalar `Bind`）”：
 
 * 一个 `Bind` 是**值别名**，没有存储、没有副作用；
 * 它可能被不同 stage 的多条语句使用，而每条语句需要的是**自己那一轮的** `base`；
-* 因此「给 `base` 选一个 stage/order」在语义上就没有唯一正确答案。
+* 因此“给 `base` 选一个 stage/order”在语义上就没有唯一正确答案。
 
 编译器的处理是：把可重放的 `Bind` 从可调度语句里剔除，在**每个消费者前面按需重建**它，
 并代入该消费者自己的逻辑迭代号。
@@ -451,8 +453,8 @@ for ko in T.Pipelined(num_tiles, stage=[0, 1], order=[1, 0]):
 两种情况下 `Bind` **不是**可重放的，必须占一个注解位置：
 
 1. 它读的 buffer **在同一个流水体内被写过**。例如
-   `value: T.float32 = A_shared[tx]`——这个读依赖前一级的生产者，不能随意重放。
-2. 你想要的是「算一次、多处共享」的语义——那就把它**物化**成一次 buffer 或寄存器写，
+   `value: T.float32 = A_shared[tx]`。这个读依赖前一级的生产者，不能随意重放。
+2. 你想要的是“算一次、多处共享”的语义。那就把它**物化**成一次 buffer 或寄存器写，
    而不是靠 `Bind` 重放。
 
 旧代码把可重放的 `Bind` 也写进 `order`/`stage` 的做法仍然被接受（为了兼容），但那几项
@@ -522,7 +524,7 @@ tuned(A, B, C)
 写成装饰器也一样：`@tilelang.autotune(configs=...)` 直接叠在 `@tilelang.jit` 之上。
 `tilelang.autotune(...)` 返回的就是一个 decorator，而它内部会断言被装饰的对象是
 `JITImpl`（`_vendor/tilelang-v0.1.15/tilelang/autotuner/tuner.py:1397-1398`），
-所以「叠装饰器」和「显式调用」是同一件事。
+所以“叠装饰器”和“显式调用”是同一件事。
 
 四个要点：
 
@@ -532,12 +534,12 @@ tuned(A, B, C)
   报错 `Unused keys in config`（见 5.3 节）；反过来，签名里有、内核里却不用的参数
   不会被报错，但会让整轮调优失去意义。
 * **`configs` 可以是列表，也可以是函数**。函数的入参是调用时的实参（这里是
-  `M, N, K`），返回值是候选列表——这让搜索空间可以随问题尺寸变化。
+  `M, N, K`），返回值是候选列表。这让搜索空间可以随问题尺寸变化。
   `AutoTuner.run` 里明确处理了这个分支
   （`_vendor/tilelang-v0.1.15/tilelang/autotuner/tuner.py:866-870`）：
   如果 `configs` 是 `Callable`，就先用实参调它一次，把结果当成真正的候选列表。
 * **`set_autotune_inputs` 让所有候选跑在同一份输入上**。这是可复现性的关键：否则每个
-  候选可能拿到不同的随机张量，「最优」就可能只是运气。官方文档把它列为输入供给的最高
+  候选可能拿到不同的随机张量，“最优”就可能只是运气。官方文档把它列为输入供给的最高
   优先级（`../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/programming_guides/autotuning.md`）。
 
 ### 3.6 自动调优之二：`AutoTuner` 路径
@@ -587,7 +589,7 @@ tuner = AutoTuner.from_kernel(matmul, configs=matmul_configs(M, N, K))
 ```
 
 这里传的是 3.5 节那个 `@tilelang.jit` 工厂本身（**不是**已经叠了自动调优的
-`matmul_tuned`）。官方文档的说法是「the function above (already `@tilelang.jit`)」，
+`matmul_tuned`）。官方文档的说法是“the function above (already `@tilelang.jit`)”，
 也正是这个意思。
 
 ### 3.7 参数空间怎么写
@@ -604,7 +606,7 @@ tuner = AutoTuner.from_kernel(matmul, configs=matmul_configs(M, N, K))
 `code/05-tilelang-autotune-gemm/autotune_gemm.py` 里的 `grid_configs` 就是按第 2 条做的
 预剪枝：先剔掉不能整除问题尺寸的 tile，再剔掉超 shared 预算的组合。对
 4096³ 的问题、`(64,128,256) × (64,128,256) × (16,32,64) × (1,2,3,4) × (128,256)`
-这个网格，216 个候选里有 214 个合法——被拒的恰好是
+这个网格，216 个候选里有 214 个合法，被拒的恰好是
 `block_M = block_N = 256, block_K = 64, num_stages = 4` 的那两个线程数变体
 （`4 × 65536 B = 256 KiB`，超了）。这个数字可以用
 `code/03-autotune-config-space/config_space.py` 复算。
@@ -629,7 +631,7 @@ else:
                        num_stages=2, threads=256)
 ```
 
-   第一次调用带自动调优，之后走固定配置——否则每次启动都要重跑一遍搜索。
+   第一次调用带自动调优，之后走固定配置。否则每次启动都要重跑一遍搜索。
 
 另外，v0.1.15 的调优器会把结果缓存到 `$TILELANG_CACHE_DIR/autotuner`，缓存键包含
 TileLang 版本、函数源码、闭包自由变量、候选列表与编译/测量参数；落盘的产物里有人可读的
@@ -643,19 +645,19 @@ TileLang 版本、函数源码、闭包自由变量、候选列表与编译/测�
 根本驻留不下，而 `block_K = 16` 在某些机器上会让每轮搬运太碎。Carver 就是来填这个
 缺口的。
 
-Carver 的自我定位是「a lightweight framework for generating and ranking tile
-configurations … for common GPU, CPU, and accelerator backends」
+Carver 的自我定位是“a lightweight framework for generating and ranking tile
+configurations … for common GPU, CPU, and accelerator backends”
 （`_vendor/tilelang-v0.1.15/tilelang/carver/README.md`）。它做三件事：
 
 1. **建模硬件**：`TileDevice` 上挂着 `smem_cap`（每 block 可用的 shared 字节）、
    `warp_size`、可用张量指令等
    （`_vendor/tilelang-v0.1.15/tilelang/carver/arch/arch_base.py:8`）。
 2. **枚举 tile 结构**：`MatmulTemplate` / `GeneralReductionTemplate` /
-   `FlashAttentionTemplate` 等把「循环该怎么分块」参数化。
+   `FlashAttentionTemplate` 等把“循环该怎么分块”参数化。
 3. **按 cost model 排名并返回 top-k 提示**：`recommend_hints(topk=20)`。
 
 它的 cost model 里就包含本章关心的那类约束。例如 tensor-core policy 里有一句
-`if td.smem_cost > (self.arch.smem_cap): ...` ——
+`if td.smem_cost > (self.arch.smem_cap): ...` ，
 共享内存算不过去就退到动态 shared
 （`_vendor/tilelang-v0.1.15/tilelang/carver/roller/policy/tensorcore.py:320-335`），
 default policy 里还有更直接的一版：超了就丢弃这个候选
@@ -667,17 +669,17 @@ default policy 里还有更直接的一版：超了就丢弃这个候选
 
 * 把明显不可行的候选挡在门外（省编译时间）；
 * 把搜索排序，让 `early_stop` 之类的优化有机会生效；
-* 给出一个「从哪里开始测」的建议集合。
+* 给出一个“从哪里开始测”的建议集合。
 
 它**不**替代测量。本章 `code/03-autotune-config-space/config_space.py` 就是刻意做这个
-演示：它的解析代理在 214 个合法候选上只产出 12 个不同的 cost 值——也就是说模型已经用
-完了分辨率，排名里大量的是并列。**并列就是「该去测量」的信号。**
+演示：它的解析代理在 214 个合法候选上只产出 12 个不同的 cost 值，也就是说模型已经用
+完了分辨率，排名里大量的是并列。**并列就是“该去测量”的信号。**
 
 ---
 
 ## 4. 实现机制
 
-这一节回答「编译器到底做了什么」。所有引用都指向锁定版本
+这一节回答“编译器到底做了什么”。所有引用都指向锁定版本
 `_vendor/tilelang-v0.1.15/`，行号在写作时逐条核对过。
 
 ### 4.1 编译期两步（图 3）
@@ -705,8 +707,8 @@ mod = tilelang.transform.LowerTileOp()(mod)
    不用先按旧结构推一遍再返工。
 2. **两步之间只有注解在传递**。`PipelinePlanning` 不重排语句，它只把循环体规范化
    （摊平嵌套的 `SeqStmt`、剔除不该调度的语句）并往循环上写注解；真正搬语句的是
-   `InjectSoftwarePipeline`。这也意味着你可以在两步之间 dump IR，观察「规划结果对
-   不对」——第 12 章讲的 IR diff 调试法就靠这个。
+   `InjectSoftwarePipeline`。这也意味着你可以在两步之间 dump IR，观察“规划结果对
+   不对”，第 12 章讲的 IR diff 调试法就靠这个。
 3. **`Simplify` 夹在中间**，把规划阶段暴露出来的常量表达式折掉。
 
 ### 4.2 `PipelinePlanning`：自动定 stage/order
@@ -724,7 +726,7 @@ AnalyzeScheduledStmts  →  标出哪些语句是可重放的标量 Bind（不�
 ```
 
 **第二步，给每条语句分类。** `PropagateBufferProducersForCopy` 做一件容易被忽略的事：
-它把「为搬运做准备的写操作」和搬运绑在一起。源码里的例子是：
+它把“为搬运做准备的写操作”和搬运绑在一起。源码里的例子是：
 
 ```python
 fill(shared, 0)        # 写 shared
@@ -732,10 +734,10 @@ copy(global, shared)   # 可能依赖刚填进去的值
 ```
 
 如果搬运被挪到生产者一侧，这个 `fill` 必须**跟着一起挪**，否则搬运可能读到未初始化或
-错误的值。代码注释把这个传播称为「buffer-level backward dependency closure」。
+错误的值。代码注释把这个传播称为“buffer-level backward dependency closure”。
 
 然后是 `AnalyzeCopyLastUse`：找出每个搬运的**最后一个消费者**。这一步决定了搬运该排到
-哪里——「放在它最后一个消费者之前」通常比「放在循环体最前面」更能缩短数据在片上的
+哪里，“放在它最后一个消费者之前”通常比“放在循环体最前面”更能缩短数据在片上的
 存活时间。
 
 **第三步，分配 stage 与 order。** 主循环的逻辑是（源码注释的复述）：
@@ -752,9 +754,9 @@ for 每条语句 pinfo:
         p1.stage = 0                   # 搬运固定在最前面一格
 ```
 
-接着有一段「收尾整形」：如果所有搬运的 `order` 都排在了非搬运语句之后，说明这一轮
-循环是从「先算后搬」开始的，于是把整个 order 数组循环右移，并把非搬运语句的
-`stage` 减 1。**这一步就是「深度 = num_stages」的来历**：
+接着有一段“收尾整形”：如果所有搬运的 `order` 都排在了非搬运语句之后，说明这一轮
+循环是从“先算后搬”开始的，于是把整个 order 数组循环右移，并把非搬运语句的
+`stage` 减 1。**这一步就是“深度 = num_stages”的来历**：
 
 ```text
 典型的两搬一算 GEMM 体，num_stages = 3：
@@ -784,19 +786,19 @@ software_pipeline_tma_copies   # 逐语句的 TMA 可用性
 > We intentionally do NOT keep the legacy key `num_stages` here because multiple
 > downstream passes (e.g. internal buffer versioning / warp specialization) treat it as
 > an active pipeline marker and do not support nested pipelines.
-> —— `_vendor/tilelang-v0.1.15/src/transform/pipeline_planning.cc:1287-1293`
+> 来源：`_vendor/tilelang-v0.1.15/src/transform/pipeline_planning.cc:1287-1293`
 
 **这也连着一条更普遍的规则：流水不能嵌套。** 上游对嵌套循环的态度写在
-`NestedLoopChecker` 的文档里——「Nested loops is an annoying problem in tilelang or
+`NestedLoopChecker` 的文档里，“Nested loops is an annoying problem in tilelang or
 other polyhedral-style compilers. It contains many corner cases and undefined
-behaviours」，并且明确规定 `T.Pipelined` **不能**嵌在 `T.Parallel` 里
+behaviours”，并且明确规定 `T.Pipelined` **不能**嵌在 `T.Parallel` 里
 （`_vendor/tilelang-v0.1.15/tilelang/analysis/nested_loop_checker.py:65-100`）。
-那个文件里判断「这是不是一个流水循环」用的正是 2.1 节提到的三个注解键
+那个文件里判断“这是不是一个流水循环”用的正是 2.1 节提到的三个注解键
 （同文件 `:12-15`）。昇腾侧的文档把这条规矩写得更直白：
 
 > `T.Pipelined` **does not support nesting**. You cannot place a `T.Pipelined` loop
 > inside another `T.Pipelined` loop.
-> —— `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/README.md`
+> 来源：`../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/README.md`
 > 第 521 行
 
 所以：需要嵌套的流水结构时，先把它拆成两个 kernel，或者重新组织循环，而不要把两个
@@ -855,21 +857,23 @@ if (num_versions >= 2) {
 }
 ```
 
-`def` 是 buffer 被写入的 stage，`use` 是它最后被读的 stage。对 4.2 节那个「copy 在
-stage 0、gemm 在 stage `num_stages-1`」的典型结果：`use - def + 1 = num_stages`，
+`def` 是 buffer 被写入的 stage，`use` 是它最后被读的 stage。对 4.2 节那个“copy 在
+stage 0、gemm 在 stage `num_stages-1`”的典型结果：`use - def + 1 = num_stages`，
 于是 A/B tile 各要 `num_stages` 份。
 
-关于「深度」还有一点值得单独记下来：源码里明确区分了两个数（
+关于“深度”还有一点值得单独记下来：源码里明确区分了两个数（
 `_vendor/tilelang-v0.1.15/src/transform/inject_pipeline.cc:3628-3638`）：
 
-```text
-actual pipeline depth (number of buffer copies) = num_stages
-SW pipeline stage count                          = max_stage + 1
-```
+$$
+\begin{aligned}
+\text{实际流水深度（buffer 份数）} &= \text{num\_stages},\\
+\text{软件流水 stage 数} &= \max(\text{stage})+1.
+\end{aligned}
+$$
 
-注释原话是「Use the actual pipeline depth (number of buffer copies) for barrier sizing,
-not the SW pipeline stage count (max_stage + 1)」。在「copy 在 stage 0、gemm 在
-stage `num_stages-1`」这个常见形态下两者相等（都是 `num_stages`），但它们是两个概念：
+注释原话是“Use the actual pipeline depth (number of buffer copies) for barrier sizing,
+not the SW pipeline stage count (max_stage + 1)”。在“copy 在 stage 0、gemm 在
+stage `num_stages-1`”这个常见形态下两者相等（都是 `num_stages`），但它们是两个概念：
 前者说的是**内存里放几份**，后者说的是**循环被切成几段**。手写 stage/order 时如果
 只盯着 `max(stage)+1`，就会忽略 `num_stages` 这个更权威的深度来源。
 
@@ -889,20 +893,24 @@ Buffer RewriteAllocBuffer(const Buffer &buffer, int num_versions) {
 `A_shared[ko % 3][...]` 这种下标的原因。
 
 还有一条容易被忽略的注释：如果 buffer 的定义 stage 是 `-1`（也就是它**不**在这个流水
-体内被写），函数直接返回 1，注释是「Keep the original number of versions as buffers
-defined outside the software pipeline should not be mutated」。**只读的输入 buffer
-不会被复制**——这一点决定了容量估算要不要把它算进去。
+体内被写），函数直接返回 1，注释是“Keep the original number of versions as buffers
+defined outside the software pipeline should not be mutated”。**只读的输入 buffer
+不会被复制**。这一点决定了容量估算要不要把它算进去。
 
 ### 4.5 多缓冲与片上容量的硬约束：stage 数不是越大越好
 
 把 4.4 节的结果乘上 dtype 大小，就得到本章最重要的一个估算式：
 
-```text
-每份 A tile 字节 = block_M × block_K × sizeof(dtype)
-每份 B tile 字节 = block_K × block_N × sizeof(dtype)
+$$
+\begin{aligned}
+S_A &= B_MB_K\,s,\\
+S_B &= B_KB_N\,s,\\
+S_{\text{pipe}} &\le N_{\text{stages}}(S_A+S_B),
+\end{aligned}
+$$
 
-流水相关的片上占用上界 = num_stages × (A + B)
-```
+其中 $B_M,B_N,B_K$ 是三个 tile 维度，$s$ 是 dtype 的字节数，
+$N_{\text{stages}}$ 是 `num_stages`。
 
 用 `code/02-shared-memory-budget/smem_budget.py` 算两个具体例子（作者在本机实际运行过）：
 
@@ -925,15 +933,15 @@ largest stage count that fits: 3
 ```
 
 同一个 `num_stages=4`，在 `128×128×32` 的 tile 上只用了 64 KiB（宽裕），在
-`256×256×64` 的 tile 上要 256 KiB（**直接放不下**）。这就是「stage 数不是越大越好」的
+`256×256×64` 的 tile 上要 256 KiB（**直接放不下**）。这就是“stage 数不是越大越好”的
 全部含义：**能加多少 stage，是 tile 尺寸的函数，不是常量。**
 
 判断当前配置放不放得下，按这个顺序做：
 
-1. **数清楚哪些 buffer 会被多版本化。** 只有「在本流水体内被写」的 buffer 才复制
+1. **数清楚哪些 buffer 会被多版本化。** 只有“在本流水体内被写”的 buffer 才复制
    （4.4 节那条 `def == -1` 的规则）；只读输入不算。
 2. **按上面的公式算上界**，用 `code/02` 的工具算，别心算。
-3. **和真实预算比，并留余量。** 上界是「不做任何复用时」的占用；TileLang 会合并
+3. **和真实预算比，并留余量。** 上界是“不做任何复用时”的占用；TileLang 会合并
    shared 分配并复用 live range 不重叠的存储
    （`_vendor/tilelang-v0.1.15/src/transform/merge_shared_memory_allocations.cc:1576-1660`），
    所以实际可能更小。反过来，累加器 fragment 走寄存器、barrier 另有开销，别把预算
@@ -941,7 +949,7 @@ largest stage count that fits: 3
 4. **加 stage 之前先问：1.3 节的判据说还需要吗？** 如果
    `num_stages ≥ 1 + ceil(latency / compute)` 已经满足，再加只会增加占用。
 
-超过预算时的表现是**编译或启动阶段直接失败**，不是「跑得慢一点」。这是好事：
+超过预算时的表现是**编译或启动阶段直接失败**，不是“跑得慢一点”。这是好事：
 它是一条**硬**约束，你没有调优到一半才发现的机会。`code/04` 里就留了一个故意超预算的
 命令（`--block-m 256 --block-n 256 --block-k 64 --stages 4`），用来在有卡的机器上复现
 这条边界。
@@ -950,13 +958,13 @@ largest stage count that fits: 3
 
 昇腾侧的接口同样是 `T.Pipelined`。`_vendor/tilelang-v0.1.15/tilelang/ascend/README.md`
 的官方 GEMM+ReLU 例子里就是 `for k in T.Pipelined(K // block_K, num_stages=2):`，
-并且明确写着「`T.Pipelined` uses a two-stage pipeline for the reduction loop」。
+并且明确写着“`T.Pipelined` uses a two-stage pipeline for the reduction loop”。
 
 Ascend 适配器仓库的 README 把 `T.Pipelined` 在这边的职责说得更完整：
 
 > enables automatic pipeline scheduling to achieve intra-core computation and data
 > movement overlap, as well as inter-core pipeline overlap between Cube and Vector units.
-> —— `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/README.md`
+> 来源：`../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/README.md`
 > 第 512 行
 
 也就是说，同一句 `T.Pipelined` 在昇腾上还要负责**核间**流水（Cube 与 Vector 之间）。
@@ -1017,13 +1025,13 @@ C++ 侧通过 `tl.transform.z3_schedule_python` 这个 FFI 全局函数调用它
 `num_stages = 1..8`，每个 tile 尺寸都试，结果一半候选在编译期或启动期直接报错，
 浪费大量编译时间。
 
-**为什么会发生**：4.4 节的版本数计算是「`num_stages` 越大、版本数越多」，
-而版本数最终乘到字节数上（4.5 节）。`num_stages` 从 3 加到 4 不是「多花一点」，
+**为什么会发生**：4.4 节的版本数计算是“`num_stages` 越大、版本数越多”，
+而版本数最终乘到字节数上（4.5 节）。`num_stages` 从 3 加到 4 不是“多花一点”，
 而是**多一整份 A tile 加一整份 B tile**。
 
 **怎么避免**：
 
-* 在定义搜索空间时就按 4.5 节的公式做**预剪枝**——`code/05` 里的 `grid_configs`
+* 在定义搜索空间时就按 4.5 节的公式做**预剪枝**，`code/05` 里的 `grid_configs`
   就是示例，它把 4096³ 上的 216 个候选择到 214 个；
 * 把 tile 尺寸和深度**一起**考虑：`256×256×64` 的 tile 最多只能配 3 深，
   而 `128×128×32` 可以配到 14 深；
@@ -1034,14 +1042,14 @@ C++ 侧通过 `tl.transform.z3_schedule_python` 这个 FFI 全局函数调用它
 **昇腾侧同理，只是资源换了名字**：你要看的不再是 shared memory 一个数，而是 L1、UB、
 L0A/L0B/L0C 各自的大小，以及它们之间搬运的粒度。约束的方向一样，细节在第 25 章。
 
-### 5.2 陷阱二：把流水当成了「自动加快」，忘了它的前提
+### 5.2 陷阱二：把流水当成了“自动加快”，忘了它的前提
 
 流水不是魔法，它成立需要两个前提，缺一个就会得到错误结果或没有收益。
 
 **前提一：搬运与计算之间真的没有数据依赖。** 第 `ko+1` 轮的搬运要能和第 `ko` 轮的
 计算并行，前提是第 `ko+1` 轮的搬运**不依赖**第 `ko` 轮计算的结果。GEMM 满足这一点
-（A、B 都来自全局内存，与累加器无关）。但如果你写的是「上一轮的输出作为下一轮的输入」
-的循环——例如某些 scan / 累积型算子——那就不满足，编译器要么拒绝流水，要么给你一个
+（A、B 都来自全局内存，与累加器无关）。但如果你写的是“上一轮的输出作为下一轮的输入”
+的循环。例如某些 scan / 累积型算子。那就不满足，编译器要么拒绝流水，要么给你一个
 依赖链串起来的伪流水。**这类循环需要换算法，不是换 num_stages。**
 
 **前提二：同步必须跟着多缓冲一起变。** 一份 buffer 时，同步靠顺序就能表达；
@@ -1052,10 +1060,10 @@ L0A/L0B/L0C 各自的大小，以及它们之间搬运的粒度。约束的方�
 读 slot s 之前：等「写 slot s 的生产者」写完
 ```
 
-这就是图 2 里「写 ← 覆盖」那一格的含义。编译期负责插这些同步
+这就是图 2 里“写 ← 覆盖”那一格的含义。编译期负责插这些同步
 （NVIDIA 侧在 `InjectSoftwarePipeline` 内部生成异步拷贝及其等待，昇腾侧由 `InsertSync`
 统一插成对的 flag），但前提是你**不要手动破坏它**：不要在流水体内手写
-`T.sync_threads` 之类的原语去「帮忙」，也不要对同一块 buffer 做编译期看不到的别名访问。
+`T.sync_threads` 之类的原语去“帮忙”，也不要对同一块 buffer 做编译期看不到的别名访问。
 
 判断一个循环能不能流水，最省事的自检是：**把循环体单独看，如果第 `ko+1` 轮完全不
 依赖第 `ko` 轮的任何结果，那就可以。**
@@ -1082,11 +1090,11 @@ distinct cost values:     1
 | 坏空间的形态 | 症状 | 怎么改 |
 | --- | --- | --- |
 | 全部不可行 | `legal = 0`，整轮调优只产出编译错误 | 按 4.5 节做容量预剪枝；检查 tile 是否整除问题尺寸 |
-| 只剩一两个可行 | 调优耗时与「什么都不调」一样，甚至更慢 | 放宽 tile 尺寸/深度的取值范围，但保持可行 |
+| 只剩一两个可行 | 调优耗时与“什么都不调”一样，甚至更慢 | 放宽 tile 尺寸/深度的取值范围，但保持可行 |
 | 可行但分不开 | cost model 的取值大量并列，排名是噪声 | 加更多有物理意义的维度（深度、线程数），或直接上真机测量 |
 
 还有一条**比上面三条更隐蔽**的：**搜索空间里的参数没有被内核真正用上**。
-`AutoTuner.run` 会显式检查这件事——如果候选 dict 里有内核参数列表里没有的键，它会直接
+`AutoTuner.run` 会显式检查这件事。如果候选 dict 里有内核参数列表里没有的键，它会直接
 报错：
 
 ```text
@@ -1094,32 +1102,32 @@ ValueError: Unused keys in config: {...}
 ```
 
 （`_vendor/tilelang-v0.1.15/tilelang/autotuner/tuner.py:904-913`）。报错是好事；
-真正危险的是**键存在但不起作用**——例如你把 `num_stages` 传进了工厂函数，但内核里写的
+真正危险的是**键存在但不起作用**。例如你把 `num_stages` 传进了工厂函数，但内核里写的
 是 `T.Pipelined(n)` 而不是 `T.Pipelined(n, num_stages=num_stages)`。这时所有候选的
-性能完全相同，调优会「成功」地给你一个毫无意义的赢家。**改完搜索空间后，务必确认
+性能完全相同，调优会“成功”地给你一个毫无意义的赢家。**改完搜索空间后，务必确认
 每个被调参数在生成的 kernel 里真的出现了。**
 
 ### 5.4 其它常见坑
 
 **（1）把 `num_stages=1` 与 `num_stages=0` 当成一回事。** 不是。docstring 说
-`num_stages` 是「the max number of buffer used between pipeline producers and
-consumers」，所以 `1` 意味着「只留一份缓冲」——性能上等于不做重叠；而 `0` 是
+`num_stages` 是“the max number of buffer used between pipeline producers and
+consumers”，所以 `1` 意味着“只留一份缓冲”，性能上等于不做重叠；而 `0` 是
 **关闭流水**：注解根本不会写进 IR（见 2.1 节），下游根本不把这里当流水循环。
-两者在自动调优里语义不同，别混着放。另外如 4.4 节所述，源码把「缓冲区份数」
-（`num_stages`）与「流水级数」（`max(stage)+1`）分开处理，`num_stages` 才是权威的那一个。
+两者在自动调优里语义不同，别混着放。另外如 4.4 节所述，源码把“缓冲区份数”
+（`num_stages`）与“流水级数”（`max(stage)+1`）分开处理，`num_stages` 才是权威的那一个。
 
 **（2）给 `order`/`stage` 数错了对象。** 数组只数有副作用的语句。把可重放的标量
 `Bind` 数进去（3.4 节）是最常见的错法；旧代码里这种写法被兼容并忽略，但新代码会让你
 误以为注解生效了。
 
 **（3）忘了 `order` 必须唯一。** `ValidatePipelineBody` 会直接报
-「Two statements in the software pipeline cannot have the same order」。
-手动写 `[0, 0, 1]` 这种 `order` 是错的；想表达「同一级里这两条并行」用的是**相同的
+“Two statements in the software pipeline cannot have the same order”。
+手动写 `[0, 0, 1]` 这种 `order` 是错的；想表达“同一级里这两条并行”用的是**相同的
 `stage` + 不同的 `order`**。
 
-**（4）以为加了流水就等于「延迟变小」。** 如 2.4 节所述，流水把每一轮的成本从
+**（4）以为加了流水就等于“延迟变小”。** 如 2.4 节所述，流水把每一轮的成本从
 `latency + compute` 压到 `max(compute, issue, (latency + compute) / depth)`，
-但**单次操作的完成时间没变**。如果你的指标是「单个请求的端到端延迟」，需要看的是整个
+但**单次操作的完成时间没变**。如果你的指标是“单个请求的端到端延迟”，需要看的是整个
 kernel 的填充与排空占比，而不是只看稳态。
 
 **（5）在循环太短时硬上流水。** 填充的绝对代价与轮数无关。轮数只有两三轮的循环，
@@ -1127,7 +1135,7 @@ kernel 的填充与排空占比，而不是只看稳态。
 
 **（6）把 `latency` 当固定常量来推公式。** 1.3 节的 `1 + ceil(latency / compute)`
 是一个**模型判据**，不是硬件的公开规格。真实机器上 `latency`、`issue`、`compute`
-都随 tile 尺寸、dtype、访存模式变化。这个判据的用途是给你一个「从多深开始试」的
+都随 tile 尺寸、dtype、访存模式变化。这个判据的用途是给你一个“从多深开始试”的
 起点，不是终点。
 
 ---
@@ -1172,7 +1180,7 @@ InjectSoftwarePipeline  按 order 重排、生成 prologue/body/epilogue、
 昇腾侧是把任务、延迟、资源约束交给 Z3 求解开始时间。细节在第 23 章。
 
 **三个最容易踩的坑。** ①stage 太多撑爆片上存储；②忘了流水的两个前提
-（无跨轮依赖、同步随多缓冲一起变）；③搜索空间定义不当——全部不可行、只剩一个可行、
+（无跨轮依赖、同步随多缓冲一起变）；③搜索空间定义不当，全部不可行、只剩一个可行、
 或者参数根本没被内核用上。
 
 ## 延伸阅读
@@ -1199,4 +1207,4 @@ InjectSoftwarePipeline  按 order 重排、生成 prologue/body/epilogue、
   `R5`（访存与算术指令的延迟量级）。
 * **下一章**：第 12 章讲怎么把这些结论落到调试与性能分析上（`lower_trace`、
   `pass_diff`、Nsight Compute / msProf）；第 23 章展开昇腾的延迟估计与 Z3 求解；
-  第 28 章把「tile 尺寸与深度怎么选」上升成方法论。
+  第 28 章把“tile 尺寸与深度怎么选”上升成方法论。

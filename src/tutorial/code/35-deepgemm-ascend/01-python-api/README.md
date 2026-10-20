@@ -2,7 +2,7 @@
 
 ## 目的
 
-正文 §3.1 的三个调用样例。把「API 兼容」落到可以复制的代码上：
+正文 §3.1 的三个调用样例。把“API 兼容”落到可以复制的代码上：
 
 * BF16 dense：`bf16_gemm_nt(a, b, d)`；
 * FP8 dense：`fp8_gemm_nt((a, sf_a), (b, sf_b), d, recipe_a=..., recipe_b=...)`；

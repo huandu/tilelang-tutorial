@@ -12,7 +12,7 @@
 ```
 
 六个取舍里有两个是**故意**让搬运更多字节的那一方胜出——split-K 和 split-KV 就是
-「用流量买并行度」。这就是为什么判据必须写出来，而不能靠感觉。
+“用流量买并行度”。这就是为什么判据必须写出来，而不能靠感觉。
 
 ## 运行前提
 
@@ -40,7 +40,7 @@ decode attention, sq=1, skv=128k, split-KV=64    2147.5    2149.6      -2.1     
 norm fused into the Q projection's output       67.1       0.0      67.1     16384      1024  norm fused into the GEMM epilogue
 ```
 
-两条被同一个判据选中的「搬运更多字节」的选项：
+两条被同一个判据选中的“搬运更多字节”的选项：
 
 ```text
 winner: split-K=8 -- parallelism: the other option launches 64 blocks for 132 SMs,
@@ -62,7 +62,7 @@ winner: split-KV=64 -- parallelism: the other option launches 32 blocks for 132 
 
 * 六个取舍的字节数都是**手推的**，公式写在构造它们的 `build()` 里（每一项都有一行
   注释说明它数的是什么）。它们不是从真实 kernel 里量出来的。
-* 「装得满设备」的判据用了简单的 `grid >= SM 数`，没有考虑 `blocks_per_SM`。
+* “装得满设备”的判据用了简单的 `grid >= SM 数`，没有考虑 `blocks_per_SM`。
   严格的做法见 `../04-tile-size-decision/`。
 * `on chip` 只算了这一级 fusion 需要同时活着的 buffer，不含流水多版本。
 * 芯片型号不同，结论可能翻转：把带宽或 SM 数改小，元素级融合的收益会一起变小。

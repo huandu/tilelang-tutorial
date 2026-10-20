@@ -7,45 +7,138 @@
   "section": "4.1",
   "caption": "decode 的并行度只有 batch × heads，于是把 KV 方向切成 S 段分别求部分输出，最后按 ℓ_s / Σℓ 加权合并。",
   "nodes": [
-    { "id": "q", "label": "Q[bid, head block, :]", "sub": "q_len = 1", "tone": "compute" },
-    { "id": "k0", "label": "K/V 第 0 段 [0, L/S)" },
-    { "id": "k1", "label": "K/V 第 1 段 [L/S, 2L/S)" },
-    { "id": "ks", "label": "… 第 S-1 段" },
-    { "id": "p0", "label": "部分输出 O_0", "sub": "部分 lse_0" },
-    { "id": "p1", "label": "部分输出 O_1", "sub": "部分 lse_1" },
-    { "id": "ps", "label": "部分输出 O_{S-1}", "sub": "部分 lse_{S-1}" },
-    { "id": "part", "label": "Output_partial", "code": "[batch, heads, S, dim]", "tone": "store" },
-    { "id": "lse", "label": "Lse", "code": "[batch, S, heads]", "tone": "store" },
-    { "id": "acc", "label": "按 ℓ_s / Σℓ 加权求和", "tone": "accent" },
-    { "id": "out", "label": "Output", "code": "[batch, heads, dim]", "tone": "compute" }
+    {
+      "id": "q",
+      "label": "Q[bid, head block, :]",
+      "sub": "q_len = 1",
+      "tone": "compute"
+    },
+    {
+      "id": "k0",
+      "label": "K/V 第 0 段 [0, L/S)"
+    },
+    {
+      "id": "k1",
+      "label": "K/V 第 1 段 [L/S, 2L/S)"
+    },
+    {
+      "id": "ks",
+      "label": "… 第 S-1 段"
+    },
+    {
+      "id": "p0",
+      "label": "部分输出 O_0",
+      "sub": "部分 lse_0"
+    },
+    {
+      "id": "p1",
+      "label": "部分输出 O_1",
+      "sub": "部分 lse_1"
+    },
+    {
+      "id": "ps",
+      "label": "部分输出 O_{S-1}",
+      "sub": "部分 lse_{S-1}"
+    },
+    {
+      "id": "part",
+      "label": "Output_partial",
+      "code": "[batch, heads, S, dim]",
+      "tone": "store"
+    },
+    {
+      "id": "lse",
+      "label": "Lse",
+      "code": "[batch, S, heads]",
+      "tone": "store"
+    },
+    {
+      "id": "acc",
+      "label": "按 ℓ_s / Σℓ 加权求和",
+      "tone": "accent"
+    },
+    {
+      "id": "out",
+      "label": "Output",
+      "code": "[batch, heads, dim]",
+      "tone": "compute"
+    }
   ],
   "edges": [
-    { "from": "q", "to": "k0" },
-    { "from": "k0", "to": "p0" },
-    { "from": "q", "to": "k1" },
-    { "from": "k1", "to": "p1" },
-    { "from": "q", "to": "ks" },
-    { "from": "ks", "to": "ps" },
-    { "from": "p0", "to": "part" },
-    { "from": "p1", "to": "part" },
-    { "from": "ps", "to": "part" },
-    { "from": "p0", "to": "lse" },
-    { "from": "p1", "to": "lse" },
-    { "from": "ps", "to": "lse" },
-    { "from": "part", "to": "acc" },
-    { "from": "lse", "to": "acc" },
-    { "from": "acc", "to": "out" }
+    {
+      "from": "q",
+      "to": "k0"
+    },
+    {
+      "from": "k0",
+      "to": "p0"
+    },
+    {
+      "from": "q",
+      "to": "k1"
+    },
+    {
+      "from": "k1",
+      "to": "p1"
+    },
+    {
+      "from": "q",
+      "to": "ks"
+    },
+    {
+      "from": "ks",
+      "to": "ps"
+    },
+    {
+      "from": "p0",
+      "to": "part"
+    },
+    {
+      "from": "p1",
+      "to": "part"
+    },
+    {
+      "from": "ps",
+      "to": "part"
+    },
+    {
+      "from": "p0",
+      "to": "lse"
+    },
+    {
+      "from": "p1",
+      "to": "lse"
+    },
+    {
+      "from": "ps",
+      "to": "lse"
+    },
+    {
+      "from": "part",
+      "to": "acc"
+    },
+    {
+      "from": "lse",
+      "to": "acc"
+    },
+    {
+      "from": "acc",
+      "to": "out"
+    }
   ],
   "groups": [
     {
       "label": "split 段：grid = (batch, heads/block_H, num_splits)",
       "nodes": ["q", "k0", "k1", "ks", "p0", "p1", "ps"]
     },
-    { "label": "combine 段：grid = (batch, heads/block_H)", "nodes": ["acc"] }
+    {
+      "label": "combine 段：grid = (batch, heads/block_H)",
+      "nodes": ["acc"]
+    }
   ],
   "notes": [
     "为什么要加权：每段输出已各自除过自己的 ℓ_s，真实输出是 (Σ_s ℓ_s·O_s) / (Σ_s ℓ_s)，权重 ℓ_s/Σℓ 不是 1。",
     "并行度从 batch × heads 变成 batch × heads × S；代价是多一次 launch 与一份 Output_partial 的显存。",
-    "S 太小喂不饱机器，S 太大则 combine 流量与 kernel 启动开销占主导——官方把它放进 autotune 空间 [1, 2, 4, 8]。"
+    "S 太小喂不饱机器，S 太大则 combine 流量与 kernel 启动开销占主导，官方把它放进 autotune 空间 [1, 2, 4, 8]。"
   ]
 }

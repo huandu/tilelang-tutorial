@@ -100,6 +100,14 @@ describe('generated chapters', () => {
       }
     });
 
+    it(`${slug}: publishes source files rather than Python bytecode`, () => {
+      const code = readJson(path.join(generated, 'code', `${slug}.json`)) as {
+        files: { path: string }[];
+      };
+      expect(code.files.every((file) => !file.path.includes('__pycache__'))).toBe(true);
+      expect(code.files.every((file) => !file.path.endsWith('.pyc'))).toBe(true);
+    });
+
     it(`${slug}: quiz items are answerable`, () => {
       expect(chapter.quiz.length).toBe(entry.quizCount);
       if (chapter.quiz.length === 0) return;
@@ -126,6 +134,27 @@ describe('generated chapters', () => {
       expect(readerVisible).not.toContain('katex-error');
       expect(readerVisible).not.toMatch(/<code>[^<]*tilelang-corpus[^<]*<\/code>/);
       expect(readerVisible).not.toContain('href="/tilelang');
+      for (const match of readerVisible.matchAll(/href="([^"]+)"/g)) {
+        const href = match[1] ?? '';
+        expect(href, `${slug}: malformed generated link`).not.toMatch(
+          /%20_vendor|\{|\}|&&|tilelang\/blob\/[^"]*%3A/,
+        );
+        const range = /#L(\d+)-L(\d+)$/.exec(href);
+        if (range !== null) expect(Number(range[2])).toBeGreaterThanOrEqual(Number(range[1]));
+      }
+      const generatedIds = new Set(
+        [...readerVisible.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]),
+      );
+      // These section ids are supplied by the page shell rather than generated
+      // chapter HTML, so include them when checking same-page links.
+      const pageIds = new Set(['main', 'references', 'exercises', 'quiz', 'code']);
+      for (const match of readerVisible.matchAll(/href="#([^"]+)"/g)) {
+        const id = decodeURIComponent(match[1] ?? '');
+        expect(
+          generatedIds.has(id) || pageIds.has(id),
+          `${slug}: missing same-page anchor #${id}`,
+        ).toBe(true);
+      }
       // `$…$` that KaTeX did not consume means the delimiter never closed.
       expect(readerVisible).not.toMatch(/(?<!\\)\$[^$\n]{1,120}(?<!\\)\$/);
       for (const block of readerVisible.match(/<pre[^>]*>[\s\S]*?<\/pre>/g) ?? []) {
@@ -219,6 +248,17 @@ describe('figure renderer', () => {
     });
     expect(svg).not.toContain('<script>');
     expect(svg).toContain('&lt;script&gt;');
+  });
+
+  it('aligns grid headers with labelled rows', () => {
+    const svg = renderFigure({
+      ...base,
+      kind: 'grid',
+      headers: ['列一', '列二'],
+      rows: [{ label: '行一', cells: ['甲', '乙'] }],
+    });
+    expect(svg).toContain('x="27"');
+    expect(svg).toContain('x="344.3"');
   });
 
   it('rejects unknown kinds loudly', () => {

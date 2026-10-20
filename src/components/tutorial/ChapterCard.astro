@@ -7,7 +7,9 @@ interface Props {
 }
 
 const { chapter } = Astro.props;
-const topics = chapter.toc.slice(0, 4);
+const plainHeading = (text: string): string =>
+  text.replaceAll('`', '').replaceAll('**', '').replaceAll('__', '').trim();
+const topics = chapter.toc.slice(0, 2).map((topic) => plainHeading(topic.text));
 ---
 
 <article
@@ -27,7 +29,7 @@ const topics = chapter.toc.slice(0, 4);
           </a>
         </h3>
       </div>
-      <span class="badge badge-success badge-sm badge-outline" data-card-status></span>
+      <span class="badge badge-success badge-sm badge-outline" data-card-status hidden></span>
     </div>
 
     <p class="text-sm leading-relaxed opacity-70">{chapter.summary}</p>
@@ -35,7 +37,7 @@ const topics = chapter.toc.slice(0, 4);
     {topics.length > 0 && (
       <ul class="flex flex-wrap gap-1.5">
         {topics.map((topic) => (
-          <li class="badge badge-ghost badge-sm">{topic.text}</li>
+          <li class="badge badge-ghost badge-sm">{topic}</li>
         ))}
       </ul>
     )}

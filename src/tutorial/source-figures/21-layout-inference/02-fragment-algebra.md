@@ -2,7 +2,7 @@
 
 来源：论文 `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2504-17577-fulltext.md:598-608`
 （图 6）；实现见 `_vendor/tilelang-v0.1.15/tilelang/layout/fragment.py:117-186`
-与 `src/layout/gemm_layouts.cc:45-53`（`MakeGemmFragment8x8`）。
+与 `src/layout/gemm_layouts.cc:45-52`（`MakeGemmFragment8x8`）。
 
 ## Mermaid
 

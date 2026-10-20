@@ -7,7 +7,7 @@
 
 ## E1 概念题 ★
 
-**思路**：这一类题只要把「位置参数 → 轴」和「关键字参数 → launch 注解」两条
+**思路**：这一类题只要把“位置参数 → 轴”和“关键字参数 → launch 注解”两条
 规则分开记，就不会乱。
 
 **参考答案**
@@ -25,7 +25,7 @@
    `src/ir.cc:29-36` 附近还给 `Var` 补了 `__iter__` / `__len__`，所以
    `as (bx,)` 也能解包。
 
-**常见错误**：把 `A`、`B` 说成「线程数」；或者以为 `as (bx, by)` 的顺序与
+**常见错误**：把 `A`、`B` 说成“线程数”；或者以为 `as (bx, by)` 的顺序与
 `A`、`B` 的书写顺序相反（x 是先写的那个）。
 
 ---
@@ -33,7 +33,7 @@
 ## E2 概念题 ★
 
 **思路**：三种写法能等价，是因为它们都走同一个归一化入口。八个 fp8 成员要
-按「指数/尾数」记，不能只记名字。
+按“指数/尾数”记，不能只记名字。
 
 **参考答案**
 
@@ -46,7 +46,7 @@
    `float8_e8m0fnu`（8/0，只有指数，用作 MX 块 scale）。
 3. `float4_e2m1fn` 是 4 bit（打包，一字节两个值）；`float4_e2m1_unpacked` 是
    8 bit（一个 FP4 值占一个字节槽）。前者用于全局张量与打包 SMEM 往返，后者
-   只用于 SMEM/TMA，配对 tcgen05 的 `kind::f8f6f4` / `mxf8f6f4` 路径 —— 对应
+   只用于 SMEM/TMA，配对 tcgen05 的 `kind::f8f6f4` / `mxf8f6f4` 路径 ，对应
    不同的 TMA 描述符类型，所以必须是两个 dtype。见 `dtypes.py:268-304`。
 4. 不合法。`bfloat16` 只有 `bfloat16` 和 `bfloat16x2` 两个名字，
    没有 x4 及以上（`dtypes.py` 的 `_all_dtypes` 里可以逐个核。
@@ -97,7 +97,7 @@
 
 ## E4 概念题 ★★
 
-**思路**：两个问题——「谁看得到」（块内共享 / 每线程私有）和「活多久」
+**思路**：两个问题，“谁看得到”（块内共享 / 每线程私有）和“活多久”
 （一次迭代 / 整个块 / 整个 kernel）。
 
 **参考答案**
@@ -115,8 +115,8 @@
 要和 A/B 的 tile 抢同一块片上空间，(c) 还得自己处理线程间的写冲突。
 见 `docs/get_started/overview.md:82-84`。
 
-**常见错误**：只说「shared 更快」。**shared 比 global 快，但比寄存器慢**；
-这条题的关键是「累加器应该是每线程私有的寄存器」。
+**常见错误**：只说“shared 更快”。**shared 比 global 快，但比寄存器慢**；
+这条题的关键是“累加器应该是每线程私有的寄存器”。
 
 ---
 
@@ -139,7 +139,7 @@
    或查对应型号文档。这一点第 6 章 §7 也强调过。
 
 **常见错误**：把 `64 KiB / 128` 算成 `512 KiB`；把 192 KiB 当成
-「昇腾 UB 都是 192 KiB」。
+“昇腾 UB 都是 192 KiB”。
 
 ---
 
@@ -149,16 +149,16 @@
 
 1. `T.Parallel(128)`。元素间无依赖，交给布局推导最省心。
 2. `T.serial(32)`。这是归约，必须顺序累加（或者用 `T.reduce_*`，见第 9 章）。
-3. `T.Pipelined(..., num_stages=...)`。它专门表达「搬运与计算重叠」。
-4. `T.vectorized(8)`。它就是「把这几次迭代拼成一条向量操作」。
+3. `T.Pipelined(..., num_stages=...)`。它专门表达“搬运与计算重叠”。
+4. `T.vectorized(8)`。它就是“把这几次迭代拼成一条向量操作”。
 5. `T.unroll(4)`。次数少、希望摊掉循环开销。
 
 默认差异：`T.serial` 由**单个线程**顺序执行整段循环（除非被外层 `T.Parallel`
-分了活）；`T.Parallel` 是**编译器决定**谁来执行——先展平、再按
+分了活）；`T.Parallel` 是**编译器决定**谁来执行，先展平、再按
 lane → thread → 每线程串行复制切分。
 
-**常见错误**：把第 1 题答成 `T.serial`（「反正 128 次」）；把第 5 题答成
-`T.unroll` 时说不清「请求」与「保证」的区别。
+**常见错误**：把第 1 题答成 `T.serial`（“反正 128 次”）；把第 5 题答成
+`T.unroll` 时说不清“请求”与“保证”的区别。
 
 ---
 
@@ -172,7 +172,7 @@ lane → thread → 每线程串行复制切分。
    `thread = 1 % 4 = 1`；`local_idx = (1 // 4)*2 + (2 % 2) = 0`。所以是
    `(thread=1, slot=0)`，与输出一致。
 2. 因为映射是**先对整个 nest 做行优先展平**再切分的。两种 nest 的总迭代数
-   一样（64），所以每线程的次数一样；但展平后的「第 k 个迭代点」对应哪一组
+   一样（64），所以每线程的次数一样；但展平后的“第 k 个迭代点”对应哪一组
    `(i, j)` 不同，因此归属不同。见
    `_vendor/tilelang-v0.1.15/src/transform/loop_partition.cc:248-271`。
 3. `_vendor/tilelang-v0.1.15/src/transform/loop_partition.cc:248-271`
@@ -188,7 +188,7 @@ lane → thread → 每线程串行复制切分。
 
 ## E8 动手题 ★★（CPU）
 
-**思路**：跑脚本，读输出，注意「每线程次数」与「归属」是两件事。
+**思路**：跑脚本，读输出，注意“每线程次数”与“归属”是两件事。
 
 **参考答案（判据）**
 
@@ -200,12 +200,12 @@ lane → thread → 每线程串行复制切分。
    `(0,0) (0,1) (0,16) (0,17)`。
 3. 例如 `--extents 4 4 --threads 32 --vector 2`：总迭代数 16，而
    `access_idx` 最大只有 `16/2 - 1 = 7`，所以 `thread = access_idx % 32`
-   只会取到 0..7 —— **32 个线程里有 24 个一个点都分不到**。
+   只会取到 0..7 ，**32 个线程里有 24 个一个点都分不到**。
 4. `--vector 1` 之后 lane 那一层退化：`access_idx = flattened`，
-   `local_idx = (flattened // num_thread)`，也就是「一个迭代点一个元素」，
+   `local_idx = (flattened // num_thread)`，也就是“一个迭代点一个元素”，
    不再有向量合并。
 
-**常见错误**：把 `--compare` 的输出读成「nest 形状无所谓」。
+**常见错误**：把 `--compare` 的输出读成“nest 形状无所谓”。
 
 ---
 
@@ -235,18 +235,18 @@ lane → thread → 每线程串行复制切分。
 
 1. `T.Select` **两边都求值**；`T.if_then_else` 只求值被选中的那一支。
    原始说明在 `_vendor/tilelang-v0.1.15/tilelang/language/tir/ir.py:172-179`
-   （`Select` 的 docstring：「``Select`` evaluates both value expressions.
+   （`Select` 的 docstring：“``Select`` evaluates both value expressions.
    Use ``if_then_else`` when a branch must guard side effects or out-of-bounds
-   memory accesses.」）。
+   memory accesses.”）。
 2. A 不会读 `X[gi]`；B 会读。
 3. 两边都安全、只想按条件选一个值时。`T.Select` 通常更接近硬件 select，
    没有分支开销。
 4. P 会把全部 128 个值乘 2；Q 只把前 64 个乘 2（其余保持原值）；
    R 里的 `x = 3 if 1 > 2 else 4` 是**纯 Python** 的条件表达式，
    `1 > 2` 在 trace 期就求值成 `False`，所以 `x = 4`，
-   循环体等价于 `C[i] = C[i] * 4`——也就是说 R 会把 128 个值都乘 4。
+   循环体等价于 `C[i] = C[i] * 4`，也就是说 R 会把 128 个值都乘 4。
 
-**常见错误**：第 4 题里把 R 当成「不会执行」。纯 Python 的 `if/else` 只是
+**常见错误**：第 4 题里把 R 当成“不会执行”。纯 Python 的 `if/else` 只是
 被 trace 期折叠，不是被删掉。
 
 ---
@@ -255,8 +255,8 @@ lane → thread → 每线程串行复制切分。
 
 **参考答案**
 
-1. `T.all_of(buffer)` 的语义是「这个缓冲区（或缓冲区切片）里的**所有元素**都为
-   真」。它接受 `BufferLikeType` —— 具体是 `Buffer` 或 `BufferRegion`
+1. `T.all_of(buffer)` 的语义是“这个缓冲区（或缓冲区切片）里的**所有元素**都为
+   真”。它接受 `BufferLikeType` ，具体是 `Buffer` 或 `BufferRegion`
    （`_vendor/tilelang-v0.1.15/tilelang/language/logical.py:12-87`）。
 2. 不一致。文档给的是条件列表形式，源码接的是缓冲区。正确写法是用 `and`：
 
@@ -267,13 +267,13 @@ lane → thread → 每线程串行复制切分。
 
    （`and` / `or` / `not` 在 TIR 表达式上会降级成 `tir.And` / `tir.Or` /
    `tir.Not`，见 `tilelang/language/eager/builder.py:820-846`。）
-   如果确实想表达「某个 mask 切片全为真」，就按缓冲区形式写：
+   如果确实想表达“某个 mask 切片全为真”，就按缓冲区形式写：
    `T.all_of(mask_shared)` 或 `T.all_of(mask[by, bx, k, :])`。
 3. 例如 `_vendor/tilelang-v0.1.15/testing/python/language/test_tilelang_language_all_of.py:56`
    的 `if T.all_of(BlockMask[by, bx, k, :]):`。
 4. **文档与源码冲突时，以锁定版本的源码为准**（并用该版本的测试交叉验证）。
 
-**常见错误**：看到文档例子就照抄，然后在编译期报一个「参数个数不对」的错却
+**常见错误**：看到文档例子就照抄，然后在编译期报一个“参数个数不对”的错却
 不知道从哪查起。
 
 ---
@@ -282,17 +282,17 @@ lane → thread → 每线程串行复制切分。
 
 **参考答案**
 
-1. 能用 —— 但它在 `for` 语句里会被当成 `T.serial(N)`，即**设备循环**，
+1. 能用 ，但它在 `for` 语句里会被当成 `T.serial(N)`，即**设备循环**，
    不是 trace 期展开。
-2. 能用 —— 同样是设备侧的 `T.serial`，这次边界是运行期符号。
-3. 能用 —— 循环一个具体的 Python 列表是**trace 期展开**（必须有限）。
+2. 能用 ，同样是设备侧的 `T.serial`，这次边界是运行期符号。
+3. 能用 ，循环一个具体的 Python 列表是**trace 期展开**（必须有限）。
 4. 不能。`len()` 在 kernel 里不可用；用 `X.shape[0]`。
 5. 不能。链式赋值要拆成 `a = 0`、`b = 0`。
 6. 不能。kernel 里不能定义函数；用 `@T.macro` 定义可复用代码块。
 7. 不能直接用。用 `T.device_assert` 或 `T.assert`。
 8. 设备侧要用 `T.print(...)`；`print()` 只对 Python（host）表达式有效。
 9. 能。列表推导式和 `enumerate()` 都是 trace 期展开；但要注意
-   `range(16)` 的边界必须在 trace 期可求值，并且**这个 list 不是设备 buffer**——
+   `range(16)` 的边界必须在 trace 期可求值，并且**这个 list 不是设备 buffer**，
    用运行期变量去索引它不会生成设备侧查表。
 
 **常见错误**：把 1 和 3 混为一谈（一个设备循环、一个 trace 期展开）。
@@ -316,9 +316,9 @@ lane → thread → 每线程串行复制切分。
 
    输出里会出现若干 `WARN`（`def kernel_factory`、`def kernel` 等）与
    可能出现的 `BAD`。这些**基本是假阳性**：脚本不区分 kernel 体与 host 侧，
-   把每一个 `def` 都当成了「kernel 里定义函数」。真正的判定要交给
+   把每一个 `def` 都当成了“kernel 里定义函数”。真正的判定要交给
    TileLang 自己编译。
-4. 它**不能替代 TileLang 的解析器/编译器**——只是一个编译前的粗筛。
+4. 它**不能替代 TileLang 的解析器/编译器**，只是一个编译前的粗筛。
 
 **常见错误**：把 `WARN` 当成错误；或者反过来，以为没有 `BAD` 就一定能编译过。
 
@@ -326,7 +326,7 @@ lane → thread → 每线程串行复制切分。
 
 ## E14 综合题 ★★★
 
-**思路**：按「网格 → dtype → 作用域 → 控制流 → Python 边界」五条线索扫。
+**思路**：按“网格 → dtype → 作用域 → 控制流 → Python 边界”五条线索扫。
 
 **参考答案（至少五处）**
 
@@ -347,11 +347,11 @@ lane → thread → 每线程串行复制切分。
    （例如都用 fp8），或先把 B 转成 fp8。
 
 3. **`T.bfloat16x8` 不存在（§4.2）。** bf16 只有 `bfloat16` 和 `bfloat16x2`。
-   而且即便存在，**GEMM 的累加器也不该用 bf16**——应该是 `float32`。
+   而且即便存在，**GEMM 的累加器也不该用 bf16**，应该是 `float32`。
    修法：`C_f = T.alloc_fragment((BM, BN), "float32")`。
 
 4. **`alloc_var` 是每线程私有，不能当块级标志（§5.1、§5.3）。** `mask` 被当成
-   一个跨语句的「标志」用，但 `local.var` 是每个线程各有一份。如果它确实要
+   一个跨语句的“标志”用，但 `local.var` 是每个线程各有一份。如果它确实要
    在块内共享，应该用 `T.alloc_shared((1,), "float32")`；如果只是每线程自己的
    临时值，那就不该在条件里跨线程语义地使用。这里语义不清，建议改写或换 scope。
 
@@ -378,14 +378,14 @@ lane → thread → 每线程串行复制切分。
 
 ## E15 动手题 ★★★（可选，需要硬件）
 
-**这道题在本机**（macOS，无 GPU 无 NPU）**没有执行**，所以下面只给「预期判据」
-与「怎么记录」，不给结果数字。
+**这道题在本机**（macOS，无 GPU 无 NPU）**没有执行**，所以下面只给“预期判据”
+与“怎么记录”，不给结果数字。
 
 **思路与判据（NVIDIA 侧）**
 
 1. 用 `guard_costs_vectorization.compile(N=2047)` 与
    `guard_free_full_blocks.compile(N=2047)`，各自 `get_kernel_source()`。
-2. 预期判据：带守卫那一份应当出现「标量循环 + 谓词」（形如
+2. 预期判据：带守卫那一份应当出现“标量循环 + 谓词”（形如
    `if (gi < 2047)` 包着单个元素访问），而无守卫那一份因为
    `gi < full <= N` 恒成立，规划器**有可能**发出向量化访问（如 `float4`）。
    **请以你实际看到的源码为准**；如果两份都没出现向量化，请看
@@ -404,9 +404,9 @@ lane → thread → 每线程串行复制切分。
 **判据（昇腾侧）**
 
 1. 跑 `GetCoreMemSize` 记录该设备的 UB / L1 / L0C 容量。
-2. 与 `scope_footprint.py` 里的 `196608`（192 KiB）对照。**大概率不相等** ——
+2. 与 `scope_footprint.py` 里的 `196608`（192 KiB）对照。**大概率不相等** ，
    192 KiB 只是官方文档里某个型号的示例值。这正是第 6 章与本章 §5 反复强调
-   「容量数字一定要带型号和出处」的原因。
+   “容量数字一定要带型号和出处”的原因。
 
-**常见错误**：把「预期判据」抄成「实验结果」。本章禁止在没有硬件的情况下
+**常见错误**：把“预期判据”抄成“实验结果”。本章禁止在没有硬件的情况下
 声称跑过。

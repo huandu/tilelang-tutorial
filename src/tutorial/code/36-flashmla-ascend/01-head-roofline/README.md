@@ -1,13 +1,13 @@
-# 示例 01：复现「算存比」表（每个 AI Core 多少个 q head）
+# 示例 01：复现“算存比”表（每个 AI Core 多少个 q head）
 
 ## 目的
 
-把官方技术报告里决定 **「每个 AI Core 负责多少 q head」** 的那段算术复现成
+把官方技术报告里决定 **“每个 AI Core 负责多少 q head”** 的那段算术复现成
 一个可运行、可断言的 Python 脚本。对应正文 §3.1，来源：
 
 * `../tilelang-corpus/14-deepseek-ascend-stack/raw/FlashMLA/docs/20260930-ascend-prefill-deep-dive-zh.md:85-111`
   （报告里的脚本与输出表）
-* 判据一句话在报告 `:114`：「head ≥ 64 才是 compute bound」。
+* 判据一句话在报告 `:114`：“head ≥ 64 才是 compute bound”。
 
 ## 关键公式
 
@@ -57,7 +57,7 @@ OK: output matches the report table (...)
 
 ## 已知局限
 
-* 这个模型只算 Cube 的 MAC 与 L2 的字节（见正文 §3.1.1 对「它忽略了什么」的讨论）；
+* 这个模型只算 Cube 的 MAC 与 L2 的字节（见正文 §3.1.1 对“它忽略了什么”的讨论）；
   它不包含 HBM→L2、L1→L0、L0C→UB、UB 读写、同步与发射开销。
 * `5 TB/s`、`32 核`、`1650 MHz`、`4096 FMA/cycle` 都是报告给的**假设值**，
   不是本书测量的硬件参数。换平台请换这四个数。

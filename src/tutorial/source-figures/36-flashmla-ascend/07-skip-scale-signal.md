@@ -24,10 +24,10 @@ flowchart TD
 2. 中间必须经过 **Scalar Core**：只有它能读写 SS buffer
    （`__ssbuf__`，`config.h:110-112`），所以
    `SIMD VF → Scalar Core` 是**阻塞式**同步（报告 `:204`）。
-3. `CrossCoreSetFlag<4, PIPE>(id)` 里的 `4` 是「同时发给两个 AIV」的模式，
-   helper 会发 `id` 与 `id+16` 两份（`kernel_body.h:69-81`）——
+3. `CrossCoreSetFlag<4, PIPE>(id)` 里的 `4` 是“同时发给两个 AIV”的模式，
+   helper 会发 `id` 与 `id+16` 两份（`kernel_body.h:69-81`），
    这正是 1C2V 带来的协议。
-4. 加上「各条 PIPE 顺序发射、顺序执行」（报告 `:206`），
+4. 加上“各条 PIPE 顺序发射、顺序执行”（报告 `:206`），
    一次没排好的等待就会卡住整条 `PIPE_V`；所以 `systolic_arr_activate`
    会按情况把 `set_is_rescale_triggered_flag` 提前
    （`kernel_body.h:1306-1319`）。

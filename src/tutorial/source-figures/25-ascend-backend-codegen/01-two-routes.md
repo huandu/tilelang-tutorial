@@ -5,7 +5,7 @@
 `_vendor/tilelang-ascend-v0.1.2.000/tilelang/engine/lower.py:156-170`、
 `_vendor/tilelang-ascend-v0.1.2.000/tilelang/jit/adapter/libgen.py:150-230`、
 `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-mlir-ascend/tilelang/jit/jit_npu.py:1862-1916`。
-图为**本书绘制**，「生成物」一栏的措辞来自各自 codegen 的 include / 输出名前缀。
+图为**本书绘制**，“生成物”一栏的措辞来自各自 codegen 的 include / 输出名前缀。
 
 ## Mermaid
 

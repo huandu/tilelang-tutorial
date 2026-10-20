@@ -4,10 +4,10 @@
 
 读完本章，你应当能够：
 
-1. 用一套「账本」方法估算：训练一个 7B 模型在给定硬件上需要多少显存、多少算力，
+1. 用一套“账本”方法估算：训练一个 7B 模型在给定硬件上需要多少显存、多少算力，
    并能说清每一步估算的假设与它会在哪里失真。
-2. 分辨「从零训练」在实际语境下的两条路线——**预训练小规模复现**与**从开源权重
-   继续训练**——并说出它们在成本、风险与可验证性上的取舍。
+2. 分辨“从零训练”在实际语境下的两条路线，**预训练小规模复现**与**从开源权重
+   继续训练**，并说出它们在成本、风险与可验证性上的取舍。
 3. 搭出一条可用的数据管线：HF datasets 流式读取、去重、带缓冲的 shuffle、
    tokenize 与 packing，并解释它如何影响训练吞吐。
 4. 读懂 Qwen2.5-7B 的结构参数（层数、hidden、GQA、SwiGLU、RMSNorm），并由此判断
@@ -22,39 +22,39 @@
 ## 前置知识
 
 * 第 2 章的 roofline 与算术强度：本章的算力账本直接复用它的口径。
-* 第 13–16 章的算子实战：本章只讲「换哪个、怎么接、怎么验」，不重复 kernel 写法。
+* 第 13–16 章的算子实战：本章只讲“换哪个、怎么接、怎么验”，不重复 kernel 写法。
 * 会写 PyTorch 训练循环（`forward` / `loss` / `backward` / `step`）。
 * 需要 `HuggingFace` 生态的基本概念：`datasets`、`transformers`、`accelerate`、
   `peft`；不熟悉也没关系，本章会指出其中实际用到的部分。
 
-本章的定位是全书两个「大目标」章中的第一个（第二个是第 18 章的推理与部署）。它**不是**
+本章的定位是全书两个“大目标”章中的第一个（第二个是第 18 章的推理与部署）。它**不是**
 一篇 7B 预训练配方，而是一份**可退可进的工程计划**：先告诉你成本有多高、哪些假设必须
 实测，再给你一条从小到大的路径，让每一步都被验证过，再往上放大。
 
 本章有一条贯穿始终的边界，请先记住：
 
-> **TileLang 的职责只有一件事——把模型前向里那几个热点算子写成 tile kernel。
+> **TileLang 的职责只有一件事，把模型前向里那几个热点算子写成 tile kernel。
 > 数据、分布式、优化器、checkpoint、评测都不归它管。**
 
-任何把 TileLang 说成「训练框架」的说法都是误导。它在训练里扮演的角色，等价于你把
+任何把 TileLang 说成“训练框架”的说法都是误导。它在训练里扮演的角色，等价于你把
 某几行 `torch.nn.functional.*` 换成一个自研算子；剩下的训练骨架原封不动。
 
 ---
 
-## 1. 问题的由来：「从零训练一个 7B 模型」这句话哪里是真的
+## 1. 问题的由来：“从零训练一个 7B 模型”这句话哪里是真的
 
 先拆掉两个常见的误解。
 
 **误解一：能在一台机器上训练 7B。** 这是错的。下一节的账本会给出硬数字：Qwen2.5-7B
 的权重、梯度、Adam 状态、fp32 主权重加起来约 **113 GiB**，这还不算激活值。单张
-80GB 卡连「摆下参数和优化器状态」都做不到，更不用说激活值、通信缓冲和显存碎片。
+80GB 卡连“摆下参数和优化器状态”都做不到，更不用说激活值、通信缓冲和显存碎片。
 
 **误解二：从零训练 7B 就等于复现一个 Qwen。** 也不是。公开的 7B 模型是在数万亿 token
-上、用成千上万张卡训练的。本教材的「从零训练」指的是下面这件事：
+上、用成千上万张卡训练的。本教材的“从零训练”指的是下面这件事：
 
 > 用一套你能完全看懂、完全掌控的代码，在一个**按比例缩小**的规模上，把预训练这条
-> 链路完整地跑一遍——数据、tokenize、模型、训练循环、checkpoint、评测、以及把热点
-> 算子换成自己的 kernel——并且每一步都验证过它是对的。
+> 链路完整地跑一遍，数据、tokenize、模型、训练循环、checkpoint、评测、以及把热点
+> 算子换成自己的 kernel，并且每一步都验证过它是对的。
 
 这件事的价值不在于训出一个能打的模型，而在于**你不再是黑盒的使用者**。当你在别的
 地方遇到一个训练不动、loss 不下降、显存爆掉的问题时，你知道应该从哪里查起。
@@ -67,7 +67,7 @@
 ## 2. 可行性核算：显存与算力两本账
 
 这一节复用第 2 章的思路：**先算清楚，再动手**。所有数字都可以用本章的
-`code/01-plan-ledger/train_plan.py` 复现——它只做算术，不做任何对硬件的断言。
+`code/01-plan-ledger/train_plan.py` 复现。它只做算术，不做任何对硬件的断言。
 
 ### 2.1 显存账本：一个参数要存几份
 
@@ -99,7 +99,7 @@
 两个立刻能得出的结论：
 
 * **优化器状态才是大头。** 权重和梯度加起来 28 GiB，只占四分之一；Adam 的 m、v 加上
-  fp32 主权重合计 85 GiB。所以「训练比推理吃显存」的根源在优化器，不在模型本身。
+  fp32 主权重合计 85 GiB。所以“训练比推理吃显存”的根源在优化器，不在模型本身。
 * **分片是唯一出路。** 8 路 ZeRO-3/FSDP 之后，每卡只剩约 14 GiB 的参数相关开销，
   batch 才真正放得下。这也是 torchtitan 把 FSDP2、张量并行、流水并行放在第一位的原因
   （见 `../tilelang-corpus/13-e2e-training-and-serving/raw/github-pytorch-torchtitan.md`）。
@@ -114,10 +114,10 @@
 激活值字节数 ≈ 系数 × micro_batch × seq_len × hidden × 层数 × dtype_bytes
 ```
 
-其中「系数」随实现变化一个数量级——开了 activation checkpointing 可以小到个位数，
+其中“系数”随实现变化一个数量级，开了 activation checkpointing 可以小到个位数，
 不开则可能是几十。**所以正确做法不是背这个公式，而是量它**：把 `micro_batch` 从 1
 开始往上加，每加一档记一次 `torch.cuda.max_memory_allocated()`，直到接近上限。这条
-「从 1 开始试探」的纪律，比任何估算都可靠。
+“从 1 开始试探”的纪律，比任何估算都可靠。
 
 ### 2.3 算力账本：`C ≈ 6·N·D` 与 MFU
 
@@ -125,12 +125,12 @@
 **`C ≈ 6·N·D`** 估算。这个 6 从哪来：
 
 * **前向**：每个参数、每个 token 约 2 次浮点运算（一次乘、一次加，矩阵乘的基本单位
-  是「乘加」）。
+  是“乘加”）。
 * **反向**：需要分别对权重和对输入求梯度，约为前向的 2 倍，即 4 次。
 * 合计：`2 + 4 = 6`。
 
 它的**适用边界**必须记住：这个式子忽略了 attention 里随序列长度二次增长的项，只有在
-「序列长度远小于训练 token 数」时才准。上下文越长、越需要单独核算 attention 的开销
+“序列长度远小于训练 token 数”时才准。上下文越长、越需要单独核算 attention 的开销
 （见第 15 章）。
 
 把 Qwen2.5-7B 的 `N = 7.61e9` 代入，训练 `D = 10e9` 个 token：
@@ -142,7 +142,7 @@
    64 卡 ×   120 TFLOP/s 有效吞吐 →     1056.9 卡·小时，墙钟    16.51 小时
 ```
 
-**这张表里的 `120 TFLOP/s` 是占位假设，不是测量结论。** 它代表「每张卡的有效吞吐」，
+**这张表里的 `120 TFLOP/s` 是占位假设，不是测量结论。** 它代表“每张卡的有效吞吐”，
 等于硬件峰值乘以 **MFU（Model FLOPs Utilization，模型浮点利用率）**。你要做的第一件事，
 就是在自己的机器上用第 12 章的方法实测这个值，然后重新跑这条命令：
 
@@ -152,7 +152,7 @@ python3 code/01-plan-ledger/train_plan.py --tokens 10e9 --eff-tflops <你的实�
 
 对照 nanoGPT 的公开参照：GPT-2（124M）在 8×A100 40GB 上训练 4 天、val loss 降到
 约 2.85（见 `.../raw/github-nanogpt.md`）。把它放大到 7B，参数多了 60 倍、数据需求还要
-再翻数倍——这就是「单机做不了 7B」的直观来源。
+再翻数倍。这就是“单机做不了 7B”的直观来源。
 
 ### 2.4 单机与集群的分界线
 
@@ -201,7 +201,7 @@ python3 code/01-plan-ledger/train_plan.py --tokens 10e9 --eff-tflops <你的实�
 
 ## 4. 数据管线：从 HF datasets 流式到 packing
 
-数据管线不是「训练前的准备」，它就是训练循环的一部分。它供给得够快，GPU 才不空转。
+数据管线不是“训练前的准备”，它就是训练循环的一部分。它供给得够快，GPU 才不空转。
 
 ### 4.1 流式读取：`streaming=True`
 
@@ -215,7 +215,7 @@ python3 code/01-plan-ledger/train_plan.py --tokens 10e9 --eff-tflops <你的实�
 ### 4.2 去重与 shuffle
 
 * **去重**：网页语料里有大量重复。本章示例用内容哈希做**精确去重**，成本低、无副作用。（近似去重属于数据工程更大的一块，本章不展开。）
-* **shuffle**：流式数据不能做全局 shuffle——那要求全部读进内存。标准做法是维护一个
+* **shuffle**：流式数据不能做全局 shuffle。那要求全部读进内存。标准做法是维护一个
   固定容量的**缓冲**：每次随机取一篇输出、再补一篇进来。固定 `seed` 保证可复现，
   也是断点续训能重放位置的前提。
 
@@ -226,7 +226,7 @@ tokenize 之后，文档长度参差不齐。两种处理方式：
 * **padding**：补齐到统一长度。简单，但填充的 token 不产生有效梯度，白烧算力，还会
   污染 attention 的统计。
 * **packing**：把多篇文档首尾相连（文档之间插一个 EOS），再切成定长块。**没有填充**，
-  算力全用在真实 token 上。代价是同一块里会跨文档，需要 EOS 告诉模型「这里断开了」。
+  算力全用在真实 token 上。代价是同一块里会跨文档，需要 EOS 告诉模型“这里断开了”。
 
 本章 `code/02-data-pipeline/pack_tokens.py` 实现了 packing，并且能在没有网络、没有
 GPU 的机器上跑通（内置语料 + 字节级 tokenizer）。它的真实输出、以及如何验证 packing
@@ -238,7 +238,7 @@ GPU 的机器上跑通（内置语料 + 字节级 tokenizer）。它的真实输
 回到 §2.3 的算力账本：那个估算假设 GPU 一直在算。如果数据管线供给不够快，GPU 会周期性
 空转，实际吞吐就达不到账本上的数字。典型症状是**训练日志里 GPU 利用率周期性掉到接近
 0**。这时先查三件事：`DataLoader` 的 `num_workers`、tokenizer 是否单线程成了瓶颈、
-以及 packing 是否在训练循环里同步做（应该提前做或并行做）。**不要**去调 kernel——
+以及 packing 是否在训练循环里同步做（应该提前做或并行做）。**不要**去调 kernel，
 kernel 再快也救不了喂不进去的数据。
 
 ---
@@ -253,29 +253,29 @@ kernel 再快也救不了喂不进去的数据。
 | 层数 | 28 | 每一层都会重复一遍 RMSNorm/RoPE/attention/MLP，融合收益被放大 28 倍 |
 | 注意力头 | GQA：Q 头 28、KV 头 4 | KV 投影比 Q 投影小得多；attention 的 KV 侧访存是瓶颈 |
 | context | 131,072 tokens | 长上下文下 attention 的二次项不可忽略（§2.3 的修正项） |
-| 结构 | RoPE + SwiGLU + RMSNorm + QKV bias | 这四类就是本节的「候选热点算子」 |
+| 结构 | RoPE + SwiGLU + RMSNorm + QKV bias | 这四类就是本节的“候选热点算子” |
 
 > **口径说明（2026-10-01 更新）**：`hidden_size`、`intermediate_size` 与词表大小未在
 > 模型卡的散文里给出，但本书资料库已存档官方 `config.json` 的原始文件与摘要
 > （`../tilelang-corpus/13-e2e-training-and-serving/raw/hf-qwen2-5-7b-config.md`），
 > 其中 `hidden=3584`、`intermediate=18944`、`vocab_size=152064`、`rope_theta=1e6`
-> 与本章取值一致；本章账本可直接引用该文件，不再需要「待核」。
+> 与本章取值一致；本章账本可直接引用该文件，不再需要“待核”。
 > **需以官方 `config.json` / `tokenizer_config.json` 为准**（见 `references.md` 的
-> 「待补资料 E1」）。这几个值只影响账本里的中间量，不影响本章的结论。
+> “待补资料 E1”）。这几个值只影响账本里的中间量，不影响本章的结论。
 
 **为什么结构决定算子选择？**
 
 * **RMSNorm 出现 2×28 = 56 次，RoPE 出现在每一层的 attention 内部。** 它们单个都不重，
-  但调用次数多、访存密集，是「大批小算子融合」的经典目标——这正是第 13 章的主题。
+  但调用次数多、访存密集，是“大批小算子融合”的经典目标。这正是第 13 章的主题。
 * **GQA 把 KV 头压到 4 个。** 训练时 attention 的算术强度主要由 Q·Kᵀ 的 `seq_len²`
-  决定；长上下文下它是 compute-bound，短上下文下更接近 memory-bound——具体判据见第 2 章
+  决定；长上下文下它是 compute-bound，短上下文下更接近 memory-bound，具体判据见第 2 章
   的 roofline。
 * **SwiGLU 是三个 GEMM。** Qwen2.5 的前馈网络里，`gate`/`up`/`down` 三个矩阵乘占了
   非嵌入参数的大头，属于第 14 章的 GEMM 家族。
 
 tokenizer 方面：训练时用与权重**同一个** tokenizer，否则 token id 与 embedding 对不上，
-loss 会明显偏高且训不动。tokenizer 的选择还会反过来影响 `D`——同样一份语料，词表越大，
-切出来的 token 数越少——而 `D` 直接进 §2.3 的算力账本，所以**换 tokenizer 会改变训练
+loss 会明显偏高且训不动。tokenizer 的选择还会反过来影响 `D`，同样一份语料，词表越大，
+切出来的 token 数越少。而 `D` 直接进 §2.3 的算力账本，所以**换 tokenizer 会改变训练
 成本**，这不是细节。（Qwen2.5 的词表构成与精确大小以模型仓库的 `tokenizer_config.json`
 为准，见上面的待核项。）
 
@@ -302,11 +302,11 @@ loss 会明显偏高且训不动。tokenizer 的选择还会反过来影响 `D`�
 
 关于**混合精度**：本章统一用 bf16 权重与激活、fp32 累加和优化器状态。bf16 的表示精度
 比 fp16 低，但动态范围大，通常不需要梯度缩放（`GradScaler`）。torchtitan 还提供
-bf16 优化器状态来省显存（见 R8），代价是更新精度下降——这是显存与精度之间的取舍，
+bf16 优化器状态来省显存（见 R8），代价是更新精度下降。这是显存与精度之间的取舍，
 不是死规矩。
 
 关于**梯度累积**：它把小 `micro_batch` 拼成等效的大 `global_batch`，代价是每步多做
-几次前向反向。正确性判据很简单——**用累积和用真大 batch 得到的梯度应当一致**（见习题
+几次前向反向。正确性判据很简单，**用累积和用真大 batch 得到的梯度应当一致**（见习题
 E10）。torchtitan 用 `--training.num_tokens_per_train_step` 表达这个等效关系，是同一
 件事的另一种记法。
 
@@ -316,8 +316,8 @@ E10）。torchtitan 用 `--training.num_tokens_per_train_step` 表达这个等�
 
 **里程碑 M1/M2 本项目实测**：在写作机器的 CPU 上跑
 `python3 train_step.py --steps 100 --micro-batch 8 --grad-accum 2`，loss 从
-前 10 步均值 **5.4314** 降到后 10 步均值 **3.8365**，且全程是有限值。这证明「能跑通
-一步」和「loss 在下降」两个阶段目标在这套骨架上成立（规模是 0.09M 的冒烟模型）。
+前 10 步均值 **5.4314** 降到后 10 步均值 **3.8365**，且全程是有限值。这证明“能跑通
+一步”和“loss 在下降”两个阶段目标在这套骨架上成立（规模是 0.09M 的冒烟模型）。
 
 ---
 
@@ -327,7 +327,7 @@ E10）。torchtitan 用 `--training.num_tokens_per_train_step` 表达这个等�
 
 ### 7.1 哪些算子值得换
 
-按「换完之后能省多少、风险多大」排序：
+按“换完之后能省多少、风险多大”排序：
 
 | 算子 | 值不值得换 | 理由 |
 | --- | --- | --- |
@@ -359,16 +359,16 @@ kernel，调用时可以直接传 `torch.Tensor`，返回的也是 `torch.Tensor
 `out_idx` 指定哪些参数是输出（支持负数下标，见
 `tilelang/jit/adapter/base.py:27-53`），adapter 会替你在正确的设备上分配输出张量并返回。
 
-**事实二：`tilelang/jit/adapter/torch/` 这个目录并不是通用的「torch 适配层」。**
+**事实二：`tilelang/jit/adapter/torch/` 这个目录并不是通用的“torch 适配层”。**
 在 v0.1.15 里它只有 `__init__.py`、`kernel_cache.py`、`metal.py` 三个文件，
 `__init__.py` 只导出 `MetalKernelAdapter`（见
 `tilelang/jit/adapter/torch/__init__.py:1-3`）。而且 `tilelang/jit/kernel.py:390-393`
-明确写着：`execution_backend == "torch"` 时 `assert is_metal_target(target)`——也就是
+明确写着：`execution_backend == "torch"` 时 `assert is_metal_target(target)`，也就是
 说，名为 `"torch"` 的执行后端**只服务苹果 Metal**。
 
 CUDA 与昇腾的默认执行后端是 `tvm_ffi`，可选 `cython`；顺序定义在
 `tilelang/cuda/execution_backend.py:24-33` 与
-`tilelang/ascend/execution_backend.py:1-21`。所以「TileLang 怎么接进 torch」的准确答案
+`tilelang/ascend/execution_backend.py:1-21`。所以“TileLang 怎么接进 torch”的准确答案
 是：**通过 tvm_ffi / cython 适配器直接收发 torch 张量**，而不是通过那个 `torch/` 目录。
 
 一个最小的接入形态（完整版见 `code/03-tilelang-norm-torch/rmsnorm_tl.py`）：
@@ -389,15 +389,15 @@ def _rmsnorm_fwd(M, N, eps, dtype="bfloat16"):
 y = _rmsnorm_fwd(M=4096, N=3584, eps=1e-6)(x, w)   # x, w 是 torch.Tensor
 ```
 
-### 7.3 数值一致：把「对不对」变成可执行的检查
+### 7.3 数值一致：把“对不对”变成可执行的检查
 
 换完算子必须有门限、可复现的检查。三条纪律：
 
 1. **逐元素对齐**：同一随机输入，比较 kernel 输出与 PyTorch 参考，报最大绝对/相对误差。
 2. **门限按 dtype 选**：bf16 只有 8 位尾数，本来就带千分级相对误差，**不能用 `1e-6`
    当门限**；fp32 才敢收到 `1e-5`。本章示例用 bf16 `rtol=atol=2e-2`、fp32 `1e-5`。
-3. **端到端对齐**：在**同一批 token、同一份权重**下，比较「全 PyTorch 模型」与「替换了
-   算子的模型」的 loss，相对差要小于千分之一量级。
+3. **端到端对齐**：在**同一批 token、同一份权重**下，比较“全 PyTorch 模型”与“替换了
+   算子的模型”的 loss，相对差要小于千分之一量级。
 
 `code/04-verify-numerics/compare_ref.py` 把这三条实现成一个脚本（写作机器无 GPU，
 只做过静态核对，未运行）。
@@ -449,7 +449,7 @@ y = _rmsnorm_fwd(M=4096, N=3584, eps=1e-6)(x, w)   # x, w 是 torch.Tensor
 **昇腾上训练的四个现实约束**（务必先接受，再动手）：
 
 1. **没有 autograd**。和 NV 侧一样，TileLang-Ascend 只给前向。反向要么自己写 kernel，
-   要么用 PyTorch 补——这决定了你能不能真的在 NPU 上端到端训练。
+   要么用 PyTorch 补。这决定了你能不能真的在 NPU 上端到端训练。
 2. **算子覆盖面**。官方已验证的算子族（GEMM / attention / normalization / FP8 等）
    覆盖了训练前向的大部分；但 optimizer 里那些零碎算子通常还是走 torch-npu 自带实现。
 3. **同步模型不同**。昇腾后端会自动插入核内同步（`InsertSync`，见
@@ -460,14 +460,14 @@ y = _rmsnorm_fwd(M=4096, N=3584, eps=1e-6)(x, w)   # x, w 是 torch.Tensor
    `.../examples/norm/rms_norm.py`）。跨硬件复用 kernel 需要改这几处。
 
 **结论**：昇腾路线适合**先把推理和算子跑通**，训练则要评估反向链路的完整性。在昇腾上
-做完整 7B 训练，目前更像一条需要逐算子验证的工程路径，而不是「装完就能跑」。
+做完整 7B 训练，目前更像一条需要逐算子验证的工程路径，而不是“装完就能跑”。
 
 ---
 
 ## 9. 验收标准：可检查的阶段目标
 
-把上面的内容变成一组**可执行、可判定**的里程碑。每一项都写清「前提 / 命令 / 期望输出 /
-验证级别」。
+把上面的内容变成一组**可执行、可判定**的里程碑。每一项都写清“前提 / 命令 / 期望输出 /
+验证级别”。
 
 **M0 · 计划与账本能复现**
 
@@ -494,7 +494,7 @@ y = _rmsnorm_fwd(M=4096, N=3584, eps=1e-6)(x, w)   # x, w 是 torch.Tensor
 
 * 前提：一块 GPU；TinyStories 或同量级语料。
 * 命令：`python3 code/06-train-loop/train_step.py --from-hf ... --dataset roneneldan/TinyStories --tokenizer ... --steps 2000 --bf16 --device cuda`
-* 期望：验证集 loss 明显低于随机基线，并出现「生成的文本开始像故事」的定性信号。
+* 期望：验证集 loss 明显低于随机基线，并出现“生成的文本开始像故事”的定性信号。
 * 验证级别：**未运行**（写作机器无 GPU）；需在真机上取得证据。
 
 **M4 · 与 HF 参考实现数值对齐**
@@ -565,7 +565,7 @@ y = _rmsnorm_fwd(M=4096, N=3584, eps=1e-6)(x, w)   # x, w 是 torch.Tensor
 ## 延伸阅读
 
 * 数据管线与语料：`references.md` R1（datasets 文档）、R3（FineWeb-Edu）、R4（TinyStories）。
-* 训练参考资料：R8（torchtitan）、R9（litgpt）、R10（nanoGPT）——它们互相印证了 §6 的
+* 训练参考资料：R8（torchtitan）、R9（litgpt）、R10（nanoGPT）。它们互相印证了 §6 的
   每个部件的职责。
 * 模型与 tokenizer：R2（Qwen2.5-7B 模型卡）。
 * 算子替换与数值验证：本章 `code/03`、`code/04`，以及第 13–15 章的算子实战。

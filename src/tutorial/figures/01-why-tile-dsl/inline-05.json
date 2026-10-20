@@ -37,7 +37,7 @@
   ],
   "caption": "tile 这个概念被一步步推出来的谱系：每一代都留下了一个待解决的问题。",
   "notes": [
-    "Halide 把「算什么」与「怎么排」分开写；TVM / TensorIR 把调度变成可组合、可搜索的 IR 变换。",
+    "Halide 把“算什么”与“怎么排”分开写；TVM / TensorIR 把调度变成可组合、可搜索的 IR 变换。",
     "Triton 让 tile 成为语言原语，代价是调度也一并交出；TileLang 把调度空间重新变成可选的、可注解的。",
     "cuTile 与 PTO-DSL 把 tile 抽象带到各家硬件，两条线各自演进，生态尚未统一。"
   ]

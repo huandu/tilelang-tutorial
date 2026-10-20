@@ -5,12 +5,12 @@
       "id": "q1",
       "stem": "拿到一个 kernel 问题，本章建议的第一步是什么？",
       "options": [
+        "先按“有没有报错 / 结果对不对 / 快不快 / 稳不稳”把问题分到四类，再选工具",
         "先改 tile 大小试性能",
-        "先按「有没有报错 / 结果对不对 / 快不快 / 稳不稳」把问题分到四类，再选工具",
         "先上 profiler 看数据",
         "先在 kernel 里加一堆 T.print"
       ],
-      "answer": 1,
+      "answer": 0,
       "explain": "不同类别对应不同工具：拿 profiler 去查编译错误、拿 print 去查容差口径都是浪费（见 §1.1、§2.1）。分类靠的是四个可观测信号，而不是猜。"
     },
     {
@@ -18,23 +18,23 @@
       "stem": "关于本章介绍的编译期工具，下列哪项正确？",
       "options": [
         "它们都需要 GPU / NPU 才能用",
-        "只有日志不需要加速器，其余都要上卡",
         "它们都不需要加速器（例外：pass_visualizer 的 CLI 只覆盖 CUDA 目标）",
+        "只有日志不需要加速器，其余都要上卡",
         "布局可视化必须上卡，否则画不出图"
       ],
-      "answer": 2,
-      "explain": "日志、compile_only、IR Lower Trace、Pass Diff、Pass Visualizer、布局可视化、pass_timing 都在本机可做（见 §3.3、§5.3）。这就是「没有卡也能做前面一半调试」的底气。"
+      "answer": 1,
+      "explain": "日志、compile_only、IR Lower Trace、Pass Diff、Pass Visualizer、布局可视化、pass_timing 都在本机可做（见 §3.3、§5.3）。这就是“没有卡也能做前面一半调试”的底气。"
     },
     {
       "id": "q3",
       "stem": "IR Lower Trace 的定位是什么？",
       "options": [
-        "捕获每一个 pass 的前后 IR 与最终 codegen；Pass Diff 是它的 legacy 前身",
         "只在终端打印最终 CUDA 源码",
         "只能用在昇腾后端",
+        "捕获每一个 pass 的前后 IR 与最终 codegen；Pass Diff 是它的 legacy 前身",
         "它比较的是运行期数据，不是 IR 文本"
       ],
-      "answer": 0,
+      "answer": 2,
       "explain": "官方已把 IR Lower Trace 标为 Pass Diff 的严格超集，新代码直接用后者（见 §3.3）。它落到 ./tmp/lower_trace_dir 下，既有 report.html 也有按 phase 分目录的 .tir 快照。"
     },
     {
@@ -42,23 +42,23 @@
       "stem": "关于 T.print 的门控行为，下列哪项正确？",
       "options": [
         "打印标量表达式时 TileLang 会自动只让一个线程打印",
-        "打印 local.fragment 走 tx == main_lane 门控；打印 PrimExpr 没有门控",
         "打印 global buffer 只会打印一次，不会重复",
-        "开打印不影响耗时，可以留在最终代码里"
+        "开打印不影响耗时，可以留在最终代码里",
+        "打印 local.fragment 走 tx == main_lane 门控；打印 PrimExpr 没有门控"
       ],
-      "answer": 1,
+      "answer": 3,
       "explain": "门控由参数类型和 buffer scope 决定：fragment / shared 有单线程门控，PrimExpr 与 global buffer 没有，后者会重复 threads 倍（见 §3.5、§4.3）。device printf 会串行化并显著改变耗时，调完必须删。"
     },
     {
       "id": "q5",
       "stem": "关于昇腾侧的运行期调试，下列哪项正确？",
       "options": [
+        "每个核上所有 dump 接口总空间上限 1 MB，超出会被丢弃",
         "每个核的 dump 空间没有上限",
         "T.printf 就是 CUDA 的 printf，语义完全一致",
-        "每个核上所有 dump 接口总空间上限 1 MB，超出会被丢弃",
         "异常 dump 的两个环境变量要在 import torch 之后再设置"
       ],
-      "answer": 2,
+      "answer": 0,
       "explain": "昇腾侧主动打印用 T.printf / T.dump_tensor，每个核上全部 dump 共用 1 MB 上限（见 §3.6）。TL_PTO_DEBUG 只对 target=pto 起作用；异常 dump 的环境变量必须在 import torch / ACL 初始化之前设置。"
     },
     {
@@ -66,23 +66,23 @@
       "stem": "低精度对拍时，为什么长归约不能只靠 rtol？",
       "options": [
         "因为 rtol 只在 fp32 上生效",
+        "因为相对结果的误差可放大到 u·√K，接近零的输出必须用 atol 兜住",
         "因为 bf16 的精度高于 fp16，rtol 不再适用",
-        "因为长归约的误差一定小于 u",
-        "因为相对结果的误差可放大到 u·√K，接近零的输出必须用 atol 兜住"
+        "因为长归约的误差一定小于 u"
       ],
-      "answer": 3,
+      "answer": 1,
       "explain": "fp16 的 u ≈ 4.88e-4、bf16 的 u ≈ 3.91e-3；零均值数据下相对误差可放大到 u√K（见 §3.7.1）。所以长归约必须配 atol，并另用 fp64 参考复核。"
     },
     {
       "id": "q7",
-      "stem": "遇到「偶发结果错误」（同一输入有时对有时错），排查顺序应该是什么？",
+      "stem": "遇到“偶发结果错误”（同一输入有时对有时错），排查顺序应该是什么？",
       "options": [
-        "先去掉并发（单 block、num_stages=1、关流水），再加回并发，定位第一次出错处",
         "直接通读 kernel 代码找 bug",
         "先上 profiler 看每个 pipe 的利用率",
+        "先去掉并发（单 block、num_stages=1、关流水），再加回并发，定位第一次出错处",
         "先把 tile 换得更大再试"
       ],
-      "answer": 0,
+      "answer": 2,
       "explain": "这类问题绝大多数是同步问题（缺 barrier、pipeline 缓冲版本错、跨 block 无序写），先下并发再加回是标准顺序（见 §3.7.2）。若不可复现，先固定 seed 与输入统计复现率。"
     },
     {
@@ -90,12 +90,12 @@
       "stem": "算 roofline 预期时，bytes 这一项应该用哪个口径？",
       "options": [
         "profiler 测到的 DRAM 流量",
-        "算法最小搬运量：每个输入存储读一次、每个公开输出写一次",
         "片上 shared memory 的字节数",
-        "只用 FLOPs 估算，不需要 bytes"
+        "只用 FLOPs 估算，不需要 bytes",
+        "算法最小搬运量：每个输入存储读一次、每个公开输出写一次"
       ],
-      "answer": 1,
-      "explain": "bytes 用算法最小搬运量，不是 profiler 测到的 DRAM 流量；两者之差本身就是「多搬了」的证据（见 §3.8）。TileLang 的 tilelang.tools.Analyzer 就是这个流程的静态实现，但它是估算不是实测。"
+      "answer": 3,
+      "explain": "bytes 用算法最小搬运量，不是 profiler 测到的 DRAM 流量；两者之差本身就是“多搬了”的证据（见 §3.8）。TileLang 的 tilelang.tools.Analyzer 就是这个流程的静态实现，但它是估算不是实测。"
     }
   ]
 }

@@ -4,7 +4,7 @@
 （`find tilelang -maxdepth 1 -type d`、`find src -maxdepth 1 -type d` 的输出，
 核验日期 2026-10-01）。图中所有路径都是相对 `_vendor/tilelang-v0.1.15/` 的路径。
 
-## 1.1 一张图看懂「谁负责什么」
+## 1.1 一张图看懂“谁负责什么”
 
 ```mermaid
 flowchart TB
@@ -104,6 +104,6 @@ tilelang/jit/adapter/  (tvm_ffi / nvrtc / cython / torch / cutedsl)
 | `examples/` 子目录 | 54（另有 `conftest.py` / `pytest.ini` / `quickstart.py` 三个文件，共 57 项） | `find examples -maxdepth 1 -type d \| tail -n +2 \| wc -l` |
 | `docs/` 下 Markdown | 37 | `find docs -name '*.md' \| wc -l` |
 
-> 注意：`VERSIONS.md` 写的是「`examples/` 有 57 个目录」。按 `find ... -type d`
+> 注意：`VERSIONS.md` 写的是“`examples/` 有 57 个目录”。按 `find ... -type d`
 > 实际统计是 54 个目录 + 3 个文件 = 57 项。本章采用实测口径，并把这一差异记在
-> `references.md` 的「待确认」小节。
+> `references.md` 的“待确认”小节。

@@ -3,22 +3,22 @@
 本章所有结论都基于下表中的本地资料或锁定版本源码。**版本以
 [../../VERSIONS.md](../../VERSIONS.md) 为准：TileLang `v0.1.15`
 （commit `a35f8ddf45eba16c21211ec8822d56ce5363036f`）；对照版本 `v0.1.14`
-（commit `7e3bbf3703e769479757eb7ecec2f2626f3cd0a8`）。** 文中不出现「最新」这类不带版本号的
+（commit `7e3bbf3703e769479757eb7ecec2f2626f3cd0a8`）。** 文中不出现“最新”这类不带版本号的
 模糊表述；凡版本一律写明 `v0.1.15` 或 `v0.1.14`。
 
 写作环境：macOS (Apple Silicon)、Python 3.11（miniconda）；**没有 NVIDIA GPU，
 没有昇腾 NPU，也没有安装 TileLang 或 CUDA toolkit**。因此：
 
-* 本章所有代码示例的最高验证级别是「**仅静态核对**」（API 存在性与签名逐个在 `_vendor/`
+* 本章所有代码示例的最高验证级别是“**仅静态核对**”（API 存在性与签名逐个在 `_vendor/`
   中比对过，`python3 -m py_compile` 通过），除 `code/01`–`code/03` 三个纯标准库模型属于
-  「CPU 逻辑验证」（实际运行过）；
-* **没有任何一条性能数字来自本机实测**；本章正文里没有给出任何「这样写更快」的断言。
+  “CPU 逻辑验证”（实际运行过）；
+* **没有任何一条性能数字来自本机实测**；本章正文里没有给出任何“这样写更快”的断言。
 
 ---
 
 ## 锁定的源码引用（`_vendor/tilelang-v0.1.15/`）
 
-「已核验」的含义：在锁定版本的工作树上用 `grep -n` / `sed -n` 定位到该行区间，并阅读了
+“已核验”的含义：在锁定版本的工作树上用 `grep -n` / `sed -n` 定位到该行区间，并阅读了
 完整内容；行号区间与文件内容一致。**这不是运行验证。** 本章共核对 155 处源码引用。
 
 ### 后端注册、编译入口与 host/device 切分
@@ -119,7 +119,7 @@
 | S72 | `_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:1050-1120` | `ClusterCopyReplacer`（SIMT 回退） | 已核验（2026-10-01） |
 | S73 | `_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:2108-2215` | `Copy::LowerBulk`：描述符构造、mbarrier 选择、multicast 参数 | 已核验（2026-10-01） |
 | S74 | `_vendor/tilelang-v0.1.15/src/cuda/op/copy.cc:2061-2091` | `desc.global_stride` 用**字节**填充，并校验最内层 stride 为 1 | 已核验（2026-10-01） |
-| S75 | `_vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:40-46` | `kTmaMaxBoxDim = 256` / `kTmaSmemAddrAlign = 128` | 已核验（2026-10-01） |
+| S75 | `_vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:41-45` | `kTmaMaxBoxDim = 256` / `kTmaSmemAddrAlign = 128` | 已核验（2026-10-01） |
 | S76 | `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/copy_sm90.h:51-210` | `tma_store_cluster` 与 `tma_load_multicast` 系列 | 已核验（2026-10-01） |
 | S77 | `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/copy_sm90.h:212-270` | 1D/2D `tma_load` | 已核验（2026-10-01） |
 | S78 | `_vendor/tilelang-v0.1.15/src/tl_templates/cuda/barrier.h:11-194` | mbarrier 原语与 `tma_store_arrive/wait` | 已核验（2026-10-01） |
@@ -160,9 +160,9 @@
 | S103 | `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:110-114` | `LowerBlackwell2SM` 必须在 `LayoutInference` 之前 | 已核验（2026-10-01） |
 | S104 | `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:175-202` | `LowerSharedTmem` / mbarrier 前置检查 / `LowerSharedBarrier` / `FuseMBarrierArriveExpectTx` | 已核验（2026-10-01） |
 | S105 | `_vendor/tilelang-v0.1.15/tilelang/cuda/pipeline.py:256-266` | `InjectFenceProxy` → `ThreadSync` → `InjectTcgen05Fence` | 已核验（2026-10-01） |
-| S106 | `_vendor/tilelang-v0.1.15/tilelang/cuda/language/kernel.py:12-40` | CUDA 方言 `Kernel`：`cluster_dims` 与「T.ClusterKernel 是必填版本」 | 已核验（2026-10-01） |
+| S106 | `_vendor/tilelang-v0.1.15/tilelang/cuda/language/kernel.py:12-40` | CUDA 方言 `Kernel`：`cluster_dims` 与“T.ClusterKernel 是必填版本” | 已核验（2026-10-01） |
 | S107 | `_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:397-420` | `launch_kernel`：`cluster_dims` 归一化与写入 launch block | 已核验（2026-10-01） |
-| S108 | `_vendor/tilelang-v0.1.15/examples/gemm_tcgen05/README.md` | TCGEN05 的「preview」定位、手工 mbarrier 协议、`InjectTcgen05Fence` 的边界 | 已核验（2026-10-01）；**未运行** |
+| S108 | `_vendor/tilelang-v0.1.15/examples/gemm_tcgen05/README.md` | TCGEN05 的“preview”定位、手工 mbarrier 协议、`InjectTcgen05Fence` 的边界 | 已核验（2026-10-01）；**未运行** |
 | S109 | `_vendor/tilelang-v0.1.15/examples/gemm_tcgen05/gemm_tcgen5mma.py` | 本章 3.4 节与 `code/05` 的原型（注意其 `T.tcgen05_gemm` 调用，见 S116） | 已核验（2026-10-01）；**未运行** |
 | S110 | `_vendor/tilelang-v0.1.15/examples/blockscaled_gemm_sm100/gemm_mxfp8_blockscaled_1d1d.py` | MXFP8 block-scaled 的 SM100 形态（C 在 TMEM） | 已核验（2026-10-01）：读取前 70 行；**未运行** |
 | S111 | `_vendor/tilelang-v0.1.15/examples/gemm_sm120/sm120_nvfp4_blockscaled_gemm.py` | SM120 的 NVFP4 block-scaled 形态（C 在 fragment） | 已核验（2026-10-01）：文件存在；**未运行** |
@@ -214,8 +214,8 @@ diff -u  <v0.1.14 文件> <v0.1.15 文件>
 | R4 | `../tilelang-corpus/05-nvidia-backend/raw/nvidia-blackwell-compatibility-guide.md` | https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html | `sm_100a` / `compute_100a` 的 PTX 既不前向也不后向兼容（第 28 行）；`CUDA_FORCE_PTX_JIT=1` 的验证方法（第 39-46 行） | 已核验（2026-10-01）：本地为全文；**厂商公开资料** |
 | R5 | `../tilelang-corpus/03-tilelang-papers/raw/arxiv-2407-08608-fulltext.md` | https://arxiv.org/abs/2407.08608 | FlashAttention-3：warp specialization 的 producer/consumer 定义（第 173 行）、`setmaxnreg` 与寄存器再分配（第 176-178 行）、FP8 WGMMA 只支持 k-major（第 186-190 行） | 已核验（2026-10-01）：本地为全文；数字均为**论文自述**，本章未引用其性能数值 |
 | R6 | `../tilelang-corpus/11-related-compilers/raw/github-nvidia-cutile-python.md` | https://github.com/NVIDIA/cutile-python | cuTile 走 Tile IR、需要 r580+ 驱动、`tileiras` 13.2 目前只支持 Blackwell 与 Ampere/Ada（第 64-70 行） | 已核验（2026-10-01）：本地为仓库 README 快照 |
-| R7 | `../tilelang-corpus/11-related-compilers/raw/nvidia-cutedsl-docs.md` | https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/cute_dsl.html | 仅用于确认「NVIDIA 官方有 CuTe DSL 这条路线」；本地文件只有 22 行的导航壳 | **部分核验**：文件存在但其内容只是文档站导航，没有正文。见「待补资料」第 1 条 |
-| R8 | `../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-c-programming-guide.md` | https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html | 仅用于「CUDA 编程模型对 DSL 使用者也重要」这一句定位（文档目录结构说明） | **部分核验**：本地 48 行是文档的**总览页**，不是完整编程指南；对应的 `.html`（29 KB）也只是落地页。见「待补资料」第 2 条 |
+| R7 | `../tilelang-corpus/11-related-compilers/raw/nvidia-cutedsl-docs.md` | https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/cute_dsl.html | 仅用于确认“NVIDIA 官方有 CuTe DSL 这条路线”；本地文件只有 22 行的导航壳 | **部分核验**：文件存在但其内容只是文档站导航，没有正文。见“待补资料”第 1 条 |
+| R8 | `../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-c-programming-guide.md` | https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html | 仅用于“CUDA 编程模型对 DSL 使用者也重要”这一句定位（文档目录结构说明） | **部分核验**：本地 48 行是文档的**总览页**，不是完整编程指南；对应的 `.html`（29 KB）也只是落地页。见“待补资料”第 2 条 |
 | R9 | `../tilelang-corpus/README.md` | （corpus 自述，无独立上游链接） | corpus 的目录地图与抓取日期 | 已核验（2026-10-01） |
 | R10 | `../tilelang-corpus/sources/sources.yaml` | （corpus 的源清单） | R1–R8 各条目的 id / 类别 / trust 等级 / 备注 | 已核验（2026-10-01）：`sed -n '345,560p'`、`:1150,1180p` |
 
@@ -223,11 +223,11 @@ diff -u  <v0.1.14 文件> <v0.1.15 文件>
 
 ## 上游链接核验说明
 
-* 上表标注「已核验」的含义是：确认对应 corpus 文件在本地存在，且其头部记录了抓取日期与
+* 上表标注“已核验”的含义是：确认对应 corpus 文件在本地存在，且其头部记录了抓取日期与
   原始 URL；本章写作时**没有重新发起网络请求**（corpus 抓取日期为 2026-09-30，早于本章
   写作日期 2026-10-01，差异在 1 天内）。
 * R7、R8 是本章最弱的两条资料：它们对应的 corpus 文件只有文档站的导航壳/总览页。
-  因此本章**没有**基于这两条资料做任何技术论断——CUDA 编程模型的表述一律改引 R2
+  因此本章**没有**基于这两条资料做任何技术论断，CUDA 编程模型的表述一律改引 R2
   （PTX ISA，本地全文）或 TileLang 自己的源码与 `docs/`。
 * `_vendor/tilelang-v0.1.15/docs/` 是**随锁定版本发布的文档**，属于锁定版本的一部分，
   不是外部链接，因此在上表中归入源码引用（S83、S84）。
@@ -239,11 +239,11 @@ diff -u  <v0.1.14 文件> <v0.1.15 文件>
 **本章正文中没有任何性能数字。** 原因有两层：
 
 1. 写作环境没有 NVIDIA GPU，无法做任何实测；
-2. 本章的主题是「代码生成与硬件特性」，回答的是「会选哪条指令、产物长什么样」，
-   不是「哪条更快」。
+2. 本章的主题是“代码生成与硬件特性”，回答的是“会选哪条指令、产物长什么样”，
+   不是“哪条更快”。
 
-正文中出现的与性能相关的表述全部是**定性且可溯源**的，例如「TMA 把地址生成交给硬件、
-只需要一个线程发射」（R1 第 295 行）、「更大的 cluster 会降低可并行的 block 数」
+正文中出现的与性能相关的表述全部是**定性且可溯源**的，例如“TMA 把地址生成交给硬件、
+只需要一个线程发射”（R1 第 295 行）、“更大的 cluster 会降低可并行的 block 数”
 （R3 第 73 行）。这些是厂商文档的陈述，不是本章的实测结论。
 
 `../tilelang-corpus/05-nvidia-backend/raw/nvidia-ptx-isa.md` 里出现的算力/带宽表格本章

@@ -5,7 +5,7 @@
 **事实来源**：`DeepGEMM-Ascend/README.md:90-170` 的六张表（口径：
 Ascend 950DT / CANN 9.20 / `bench_msprof` / 冷 L2，见 `README.md:84-87`）。
 
-**复算**：「Hardware limit」一列不是宣传口径，它可以由源码里的硬件模型复算出来
+**复算**：“Hardware limit”一列不是宣传口径，它可以由源码里的硬件模型复算出来
 （`heuristics.hpp:46-48,52-71`）：
 
 ```text
@@ -43,8 +43,8 @@ HC Prenorm M=8192  82 / 432   =  4.7%（it 不是算力问题，只有算力利�
 
 **要点**
 
-* **同一张表的「利用率」要看分母是哪条流水线**：dense / grouped / MegaMoE 用算力
+* **同一张表的“利用率”要看分母是哪条流水线**：dense / grouped / MegaMoE 用算力
   极限；MQA 的官方口径是 FIX pipe 99%；HC prenorm 应看带宽。
-* 把 HC prenorm 的 4.7% 当成「很差」是典型的读错表——它是 memory-bound，
+* 把 HC prenorm 的 4.7% 当成“很差”是典型的读错表。它是 memory-bound，
   带宽利用率才是它的成绩。
 

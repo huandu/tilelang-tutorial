@@ -9,7 +9,7 @@
 写作环境：macOS（Apple Silicon）、Python 3.11；**没有 NVIDIA GPU，没有昇腾 NPU**，
 也没有安装 `tilelang` / `torch`。因此：
 
-* 标题为「已核验」的源码引用，指的是**在锁定版本工作树上用 `grep -n` / `sed -n` /
+* 标题为“已核验”的源码引用，指的是**在锁定版本工作树上用 `grep -n` / `sed -n` /
   `cat -n` 定位并逐行阅读**，不是运行验证；
 * 本章唯一涉及真实硬件的示例是 `code/quickstart-gemm/`，其验证级别为
   **仅静态核对**（`python3 -m py_compile` 通过 + API 名与签名逐个比对）。
@@ -22,7 +22,7 @@
 | --- | --- | --- | --- |
 | T1 | `code/pass-order/dump_pass_order.py` | 从 `tilelang/cuda/pipeline.py` 与 `tilelang/ascend/pipeline.py` 逐行提取真实 pass 顺序与条件守卫；生成正文 4.5 / 4.6 / 4.7 节的数字 | **在本机运行过（2026-10-01）**：输出 CUDA 73 步、Ascend 80 步、同名 39 个、条件 CUDA 7 / Ascend 17 |
 | T2 | `code/repo-map/inventory.py` | 统计模块清单与规模，生成正文 2.3 节表格与图 1 的数字 | **在本机运行过（2026-10-01）** |
-| T3 | `code/compile-path-check/check_compile_path.py` | 逐跳校验图 2 与 4.1–4.4 节声称的 30 个「文件:行号」 | **在本机运行过（2026-10-01）**：`30/30 verified`，退出码 0 |
+| T3 | `code/compile-path-check/check_compile_path.py` | 逐跳校验图 2 与 4.1–4.4 节声称的 30 个“文件:行号” | **在本机运行过（2026-10-01）**：`30/30 verified`，退出码 0 |
 | T4 | `code/quickstart-gemm/quickstart_gemm.py` | 用官方 GEMM+ReLU 示例走一遍完整编译流程（kernel 主体取自 `examples/quickstart.py:8-48`） | **仅静态核对**：`py_compile` 通过；本机无 GPU、无 torch/tilelang，**未运行** |
 | F1 | `figures/fig-01-repo-map.md` | 仓库地图（Mermaid + ASCII）与数量口径 | 自绘；数据由 T2 生成 |
 | F2 | `figures/fig-02-compile-flow.md` | 一次编译的全流程图 | 自绘；每跳行号由 T3 校验 |
@@ -36,8 +36,8 @@
 
 ## 二、锁定的源码引用（`_vendor/tilelang-v0.1.15/`）
 
-> 表中「行号」均已用 `sed -n '<行号>p' <文件>` 或 `cat -n` 现场核对。
-> 「已核验（2026-10-01）」= 定位到该行并阅读了上下文，**不代表运行过**。
+> 表中“行号”均已用 `sed -n '<行号>p' <文件>` 或 `cat -n` 现场核对。
+> “已核验（2026-10-01）”= 定位到该行并阅读了上下文，**不代表运行过**。
 
 ### 2.1 仓库结构与模块职责
 
@@ -46,7 +46,7 @@
 | S1 | `_vendor/tilelang-v0.1.15/VERSION` | 版本号 `0.1.15`；`git describe --tags` → `v0.1.15`；`git log -1` → `a35f8dd` | 已核验（2026-10-01） |
 | S2 | `_vendor/tilelang-v0.1.15/tilelang/__init__.py:211-230` | import 时加载 `analysis/transform/language/engine/tools/autotuner` 与五个后端包（`cpu/ascend/cuda/rocm/metal/webgpu`） | 已核验（2026-10-01） |
 | S3 | `_vendor/tilelang-v0.1.15/tilelang/language/__init__.py:1-32` | `tilelang.language` 复合 CUDA 方言；`__tilelang_dialect__ = "cuda"`（:32） | 已核验（2026-10-01） |
-| S4 | `_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:431-455` | target-neutral `T.Kernel`（「a grid of tile programs」） | 已核验（2026-10-01） |
+| S4 | `_vendor/tilelang-v0.1.15/tilelang/language/kernel.py:431-455` | target-neutral `T.Kernel`（“a grid of tile programs”） | 已核验（2026-10-01） |
 | S5 | `_vendor/tilelang-v0.1.15/tilelang/cuda/language/kernel.py:13-55` | CUDA 方言 `T.Kernel(..., threads, prelude, cluster_dims)` | 已核验（2026-10-01） |
 | S6 | `_vendor/tilelang-v0.1.15/tilelang/engine/lower.py:26-44, :65-106, :109-141, :144-213, :216-244` | engine 的四个入口与 host/device 判定 | 已核验（2026-10-01） |
 | S7 | `_vendor/tilelang-v0.1.15/tilelang/engine/semantic_check.py:9-31` | `PreLowerSemanticCheck` 与它的开关、四个检查器 | 已核验（2026-10-01） |
@@ -117,7 +117,7 @@
 | S61 | `_vendor/tilelang-v0.1.15/tilelang/ascend/transform/__init__.py:9-11, :240` | 昇腾侧 pass 的正确名字是 **`InsertNd2Nz`**（不是 `InsertNd`）；正文 4.6 段 B 与 R10 的口径说明引用 | 已核验（2026-10-01） |
 | S62 | `_vendor/tilelang-v0.1.15/src/transform/make_packed_api.cc:38-42, :342-355, :421-475` | 打包入口 `(args, num_args)`、`tilelang_out_idx` / `tilelang_callee_allocated_outputs` 两个属性、参数断言；正文 4.8 节引用 | 已核验（2026-10-01） |
 | S63 | `_vendor/tilelang-v0.1.15/src/cuda/transform/lower_shared_tmem.cc:3` | `LowerSharedTmem` 的职责（`shared.tmem` → plain shared + PTX init）；正文 4.9 节引用 | 已核验（2026-10-01） |
-| S64 | `_vendor/tilelang-v0.1.15/README.md:113-135` | 官方后端支持表：CUDA 为 Primary、Ascend 950 为 Supported、「TMA, WGMMA, and TMEM features require the corresponding GPU architecture」（:123）；正文 4.9 节与 references 4.3 节引用 | 已核验（2026-10-01） |
+| S64 | `_vendor/tilelang-v0.1.15/README.md:113-135` | 官方后端支持表：CUDA 为 Primary、Ascend 950 为 Supported、“TMA, WGMMA, and TMEM features require the corresponding GPU architecture”（:123）；正文 4.9 节与 references 4.3 节引用 | 已核验（2026-10-01） |
 
 ### 2.5 版本边界（v0.1.15 vs main）
 
@@ -140,12 +140,12 @@
 | R2 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/get_started/targets.md:10-22` | https://tilelang.com/get_started/targets.html | 常见 target 列表与 `auto` 探测顺序（CUDA → HIP → Metal） | 已核验（2026-10-01） |
 | R3 | `../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/get_started/targets.md:37-51` | https://tilelang.com/get_started/targets.html | target 的四种输入形式（字符串 / dict / `Target` / `auto`） | 已核验（2026-10-01） |
 | R4 | `../tilelang-corpus/02-tilelang-core-repo/raw/PROVENANCE.md` | https://github.com/tile-ai/tilelang | **main 快照的 commit 是 `994b44eca1a8`（2026-09-30）**，与 v0.1.15（`a35f8dd`）不是同一个提交；本表用于版本对照，不作为 v0.1.15 的证据 | 已核验（2026-10-01）：`git log -1` → `994b44e [Ascend] Add PTO backend for Ascend950 (#3310)` |
-| R5 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3308.md` | https://github.com/tile-ai/tilelang/pull/3308 | 「[Public Release 9/30] Introduce Ascend 950 backend」——昇腾后端进入主线的那个 PR | 已核验（2026-10-01）：本地为抓取的 PR 页面正文；**PR 标题仅作线索，判据以 S54–S56 的 grep 为准** |
-| R6 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3310.md` | https://github.com/tile-ai/tilelang/pull/3310 | 「[Ascend] Add PTO backend for Ascend950」——正文 5.3 节用它解释「main 有、v0.1.15 没有」的 PTO 路径 | 已核验（2026-10-01）：同上 |
+| R5 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3308.md` | https://github.com/tile-ai/tilelang/pull/3308 | “[Public Release 9/30] Introduce Ascend 950 backend”，昇腾后端进入主线的那个 PR | 已核验（2026-10-01）：本地为抓取的 PR 页面正文；**PR 标题仅作线索，判据以 S54–S56 的 grep 为准** |
+| R6 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3310.md` | https://github.com/tile-ai/tilelang/pull/3310 | “[Ascend] Add PTO backend for Ascend950”，正文 5.3 节用它解释“main 有、v0.1.15 没有”的 PTO 路径 | 已核验（2026-10-01）：同上 |
 | R7 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3320.md` | https://github.com/tile-ai/tilelang/pull/3320 | `AutoSimtVF` pass（未合入） | 已核验（2026-10-01）：本地文件存在；**未合入状态以 S55 的 grep 为准** |
 | R8 | `../tilelang-corpus/08-frontier-unmerged/raw/github-pr-3325.md` | https://github.com/tile-ai/tilelang/pull/3325 | `T.PersistentKernel` + `AutoPersistent`（未合入） | 已核验（2026-10-01）：同上；**判据见 S56** |
-| R9 | `../tilelang-corpus/08-frontier-unmerged/raw/github-issue-2115.md` | https://github.com/tile-ai/tilelang/issues/2115 | 「[RoadMap] Multi-Backend Refactoring/Decoupling」——本章 4.4 节所讲抽象的设计动机 | 已核验（2026-10-01）：本地为抓取的 issue 正文；本章只引用其结构性描述 |
-| R10 | `../tilelang-corpus/90-synthesis/02-compiler-internals-map.md:7-35, :94-118` | （编者综合稿，非上游） | 与本章 4.1–4.6 节互为对照：同一份「编译参与者」与「昇腾调度段」的另一版叙述 | **部分核验**：这是 corpus 编者的综合文档，**属于二手材料**；本章只把它当对照，所有行号仍以 `_vendor/` 为准。另注：该文档正文所依据的是 corpus 的 main 快照（`994b44e`），其中 `InsertNd` 的表述与 v0.1.15 里实际存在的 `InsertNd2Nz` 略有出入，本章采用 `InsertNd2Nz` |
+| R9 | `../tilelang-corpus/08-frontier-unmerged/raw/github-issue-2115.md` | https://github.com/tile-ai/tilelang/issues/2115 | “[RoadMap] Multi-Backend Refactoring/Decoupling”，本章 4.4 节所讲抽象的设计动机 | 已核验（2026-10-01）：本地为抓取的 issue 正文；本章只引用其结构性描述 |
+| R10 | `../tilelang-corpus/90-synthesis/02-compiler-internals-map.md:7-35, :94-118` | （编者综合稿，非上游） | 与本章 4.1–4.6 节互为对照：同一份“编译参与者”与“昇腾调度段”的另一版叙述 | **部分核验**：这是 corpus 编者的综合文档，**属于二手材料**；本章只把它当对照，所有行号仍以 `_vendor/` 为准。另注：该文档正文所依据的是 corpus 的 main 快照（`994b44e`），其中 `InsertNd` 的表述与 v0.1.15 里实际存在的 `InsertNd2Nz` 略有出入，本章采用 `InsertNd2Nz` |
 | R11 | `../tilelang-corpus/90-synthesis/03-ascend-route.md:1-14, :48-65, :97-111` | （编者综合稿，非上游） | 昇腾两条路线（AscendC/PTO 与 AscendNPU IR）的定位，以及未合入前沿清单 | **部分核验**：同样属于编者综合材料；本章 5.3 节的结论已用 S54–S56 独立复核 |
 
 ---
@@ -156,7 +156,7 @@
 
 | 项 | `VERSIONS.md` 的说法 | 本章实测 | 处理方式 |
 | --- | --- | --- | --- |
-| `examples/` 规模 | 「有 57 个目录」 | 54 个目录 + 3 个顶层文件（`conftest.py` / `pytest.ini` / `quickstart.py`），共 57 项 | 本章采用实测口径，并在正文 2.3 节与图 1 中说明；建议后续版本把 `VERSIONS.md` 的措辞改为「57 项（54 目录 + 3 文件）」 |
+| `examples/` 规模 | “有 57 个目录” | 54 个目录 + 3 个顶层文件（`conftest.py` / `pytest.ini` / `quickstart.py`），共 57 项 | 本章采用实测口径，并在正文 2.3 节与图 1 中说明；建议后续版本把 `VERSIONS.md` 的措辞改为“57 项（54 目录 + 3 文件）” |
 
 ### 4.2 尚需在真实硬件上验证的事项（本章不宣称）
 
@@ -172,6 +172,6 @@
 
 | 缺什么 | 为什么需要 | 建议来源 |
 | --- | --- | --- |
-| TileLang 官方对「backend 抽象」的设计文档（RFC 级别） | 本章 4.4 节目前只能引用 `tilelang/backend/README.md` 与 issue #2115；缺少一份跨版本的正式设计说明，难判断哪些字段是稳定契约 | `tile-ai/tilelang` 的 `docs/developer_guide/` 或 RFC 目录 |
-| v0.1.15 官方 release note 的完整文本 | 本章用 `git log -1` 确认了 tag 的 commit，但缺少 release note 来核对「本版新增/移除」的官方表述 | https://github.com/tile-ai/tilelang/releases/tag/v0.1.15 |
+| TileLang 官方对“backend 抽象”的设计文档（RFC 级别） | 本章 4.4 节目前只能引用 `tilelang/backend/README.md` 与 issue #2115；缺少一份跨版本的正式设计说明，难判断哪些字段是稳定契约 | `tile-ai/tilelang` 的 `docs/developer_guide/` 或 RFC 目录 |
+| v0.1.15 官方 release note 的完整文本 | 本章用 `git log -1` 确认了 tag 的 commit，但缺少 release note 来核对“本版新增/移除”的官方表述 | https://github.com/tile-ai/tilelang/releases/tag/v0.1.15 |
 | 昇腾 950 后端在 v0.1.15 中的官方支持等级说明 | `_vendor/tilelang-v0.1.15/README.md:113-135` 的表格标注 Ascend 950 为 `Supported`，但缺少与 CI 覆盖范围对应的说明 | `tile-ai/tilelang` 的 CI 配置与 `tilelang/ascend/README.md` 更新 |

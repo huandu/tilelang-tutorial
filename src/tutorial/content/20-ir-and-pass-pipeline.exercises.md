@@ -1,7 +1,7 @@
 # 第 20 章 习题
 
 难度：`★` 入门 / `★★` 需要读一点源码 / `★★★` 需要动手或综合。
-「需要硬件」一栏标明是否必须在有 GPU/NPU 的机器上做；本章绝大多数习题都可以在
+“需要硬件”一栏标明是否必须在有 GPU/NPU 的机器上做；本章绝大多数习题都可以在
 任意机器上完成。
 
 ---
@@ -22,7 +22,7 @@ CUDA 与 Ascend 调用 `MaterializeKernelLaunch` 时的参数不同。写出两�
 
 1. `lower_thread_binding=False` 对 Ascend 意味着什么？
 2. `launch_dim_tags=["cthread"]` 里的 `cthread` 是什么维度，谁读回它？
-3. 为什么「保留线程域」这件事会直接决定两侧编程模型的形状？
+3. 为什么“保留线程域”这件事会直接决定两侧编程模型的形状？
 
 *需要硬件：否*
 
@@ -30,7 +30,7 @@ CUDA 与 Ascend 调用 `MaterializeKernelLaunch` 时的参数不同。写出两�
 
 ### E3 代码阅读题 ★★
 
-`PipelinePlanning` 把一个 `num_stages=3` 的循环（体里是「copy A / copy B / gemm」
+`PipelinePlanning` 把一个 `num_stages=3` 的循环（体里是“copy A / copy B / gemm”
 三条语句）改写成：
 
 ```python
@@ -46,7 +46,7 @@ annotations={
 
 1. `stage=[0,0,2]` 说明这三条语句分别属于第几级？为什么 gemm 是 2 而不是 3？
 2. `async_producers=[1,1,0]` 里 `1` 与 `0` 分别代表什么？
-3. 为什么这个 pass「循环体一个字都没改」？谁负责真正的改写？
+3. 为什么这个 pass“循环体一个字都没改”？谁负责真正的改写？
 
 *需要硬件：否*
 
@@ -54,7 +54,7 @@ annotations={
 
 ### E4 概念题 ★★
 
-本章把 pass 分成「先规划、后改写」两类。请分别举出两个例子，并说明「规划类 pass」
+本章把 pass 分成“先规划、后改写”两类。请分别举出两个例子，并说明“规划类 pass”
 通常把信息写在 IR 的什么地方。
 
 *需要硬件：否*
@@ -79,7 +79,7 @@ def foo(x_handle: T.handle):
 请解释：
 
 1. 为什么参数是 `x_handle: T.handle` 而不是 `x: T.Tensor((2,), "float32")`？
-2. `T.reads()` 与 `T.writes(...)` 是「指令」还是「声明」？证据是什么？
+2. `T.reads()` 与 `T.writes(...)` 是“指令”还是“声明”？证据是什么？
 3. `scope="local.var"` 与 `scope="shared"` 在后续 pass 里的命运差别是什么？
 
 *需要硬件：否*
@@ -95,8 +95,8 @@ cd chapters/20-ir-and-pass-pipeline/code/01-pass-order
 python3 dump_pass_order.py
 ```
 
-报告三个数字：CUDA 的 pass 调用总数、Ascend 的 pass 调用总数、两侧「模块限定名去重后
-取交集」的同名 pass 数。再回答：CUDA 的 `Simplify` 在 Ascend 里也出现吗？
+报告三个数字：CUDA 的 pass 调用总数、Ascend 的 pass 调用总数、两侧“模块限定名去重后
+取交集”的同名 pass 数。再回答：CUDA 的 `Simplify` 在 Ascend 里也出现吗？
 
 *需要硬件：否*
 
@@ -134,8 +134,8 @@ python3 compare_ascend_pipelines.py --grep 'InsertNd('
 
 ### E9 概念题 ★★★
 
-本章说 CUDA 与 Ascend「共享一条 lowering 走廊，在三处主题上分岔」。写出这**三个主题**，
-并为每个主题各列出至少两个「一侧有、另一侧用不同 pass 替代」的例子。
+本章说 CUDA 与 Ascend“共享一条 lowering 走廊，在三处主题上分岔”。写出这**三个主题**，
+并为每个主题各列出至少两个“一侧有、另一侧用不同 pass 替代”的例子。
 
 *需要硬件：否*
 
@@ -143,7 +143,7 @@ python3 compare_ascend_pipelines.py --grep 'InsertNd('
 
 ### E10 动手题 ★★★
 
-设计一个「逐 pass 读 IR」的可复现流程，针对下面这个最小 kernel：
+设计一个“逐 pass 读 IR”的可复现流程，针对下面这个最小 kernel：
 
 ```python
 @T.prim_func
@@ -165,10 +165,10 @@ def main(A: T.Tensor((N,), "float16"), B: T.Tensor((N,), "float16"),
 
 ### E11 概念题 ★★
 
-`ThreadSync` 会打印一条 `LOG(WARNING) "[ThreadSync] Hoisting sync out of an if ...
-This is not a fix"`。请回答：
+`ThreadSync` 会打印一条 `LOG(WARNING) “[ThreadSync] Hoisting sync out of an if ...
+This is not a fix”`。请回答：
 
-1. 这条警告为什么说「不是修复」？
+1. 这条警告为什么说“不是修复”？
 2. 正确的修法是什么？为什么加 `T.assume` 有效？
 3. 另外两条 `LOG(FATAL)`（`:327` 与 `:1068`）分别在什么条件下触发？
 
@@ -178,7 +178,7 @@ This is not a fix"`。请回答：
 
 ### E12 概念题 ★★
 
-`StorageRewrite` 在 v0.1.15 里为什么「reuse 默认关闭」？那么共享内存的复用实际由谁
+`StorageRewrite` 在 v0.1.15 里为什么“reuse 默认关闭”？那么共享内存的复用实际由谁
 完成？CUDA 与 Ascend 各自的入口是什么？给出源码位置。
 
 *需要硬件：否*
@@ -188,7 +188,7 @@ This is not a fix"`。请回答：
 ### E13 综合题 ★★★
 
 把两条 pipeline 按本章的九组职责各画一张表（组名 → pass 列表）。要求：至少为每组
-写出 CUDA 与 Ascend 各一个 pass，并标出「只有一侧有」的组项。最后用一句话总结
-「两条 pipeline 在哪些组上重叠、在哪些组上分岔」。
+写出 CUDA 与 Ascend 各一个 pass，并标出“只有一侧有”的组项。最后用一句话总结
+“两条 pipeline 在哪些组上重叠、在哪些组上分岔”。
 
 *需要硬件：否*

@@ -3,7 +3,7 @@
 来源：本章作者根据 `_vendor/tilelang-v0.1.15/tilelang/backend/` 下 6 个 Python 文件
 与 `tilelang/backend/README.md` 绘制，行号核验日期 2026-10-01。
 
-## 3.1 五种「组件」与一个「上下文」
+## 3.1 五种“组件”与一个“上下文”
 
 ```mermaid
 flowchart LR
@@ -81,4 +81,4 @@ flowchart LR
 ```
 
 这条规则写在 `_vendor/tilelang-v0.1.15/tilelang/backend/README.md:374-392`
-（Ownership Rules），也是「加一个新后端不需要动 engine」这句承诺的实现依据。
+（Ownership Rules），也是“加一个新后端不需要动 engine”这句承诺的实现依据。

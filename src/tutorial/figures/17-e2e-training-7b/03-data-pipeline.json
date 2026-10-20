@@ -25,7 +25,7 @@
     { "from": "g", "to": "l", "dashed": true }
   ],
   "notes": [
-    "streaming=True 是「不落盘」的关键：内存占用只与 buffer 有关（FineWeb-Edu 完整版约 5.84 TB）。",
+    "streaming=True 是“不落盘”的关键：内存占用只与 buffer 有关（FineWeb-Edu 完整版约 5.84 TB）。",
     "shuffle 是带缓冲的局部 shuffle，不是全局 shuffle；固定 seed 是断点续训能重放的前提。",
     "packing 后每条样本定长、没有 padding；GPU 利用率周期性掉零时，先查 num_workers 与 tokenizer，而不是去调 kernel。"
   ]

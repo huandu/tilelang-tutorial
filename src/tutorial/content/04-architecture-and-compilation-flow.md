@@ -4,21 +4,21 @@
 
 读完本章，你应当能够：
 
-1. 说出 v0.1.15 仓库里 16 个顶层模块各自负责什么，并在 30 秒内判断「我要改的这个东西应该落在哪个目录」。
+1. 说出 v0.1.15 仓库里 16 个顶层模块各自负责什么，并在 30 秒内判断“我要改的这个东西应该落在哪个目录”。
 2. 独立画出并讲清 **Python kernel → IRModule → 后端 pass pipeline → 设备源码 → host wrapper →
    可调用对象** 这条链，并指出每一跳的入口函数与文件:行号。
 3. 打开 `tilelang/cuda/pipeline.py` 或 `tilelang/ascend/pipeline.py`，**按源码顺序**列出完整
    pass 序列，并指出哪些 pass 是条件执行的、条件由谁决定。
-4. 用 `tilelang/backend/` 里的五类组件解释这句话：「加一个新后端不需要改 `engine/lower.py`」。
+4. 用 `tilelang/backend/` 里的五类组件解释这句话：“加一个新后端不需要改 `engine/lower.py`”。
 5. 严格区分 **target backend** 与 **execution backend**，并各举 v0.1.15 里的两个真实例子。
-6. 拿到一条关于 TileLang 的说法时，能判断它属于「v0.1.15 里的事实」还是「仅 main / 未合入」，
+6. 拿到一条关于 TileLang 的说法时，能判断它属于“v0.1.15 里的事实”还是“仅 main / 未合入”，
    并给出可复现的核验命令。
 
 ## 前置知识
 
-* 第 3 章「设计哲学与编程模型」：知道 tile / dataflow / schedule 三件事分别指什么，
+* 第 3 章“设计哲学与编程模型”：知道 tile / dataflow / schedule 三件事分别指什么，
   知道 TileLang 有 beginner / developer / expert 三层接口。
-* 会写 Python、看过装饰器（`@decorator`）；知道「编译」大致是把高级代码变成低级代码。
+* 会写 Python、看过装饰器（`@decorator`）；知道“编译”大致是把高级代码变成低级代码。
 * **不需要**读过 TVM，也不需要写过 CUDA。本章出现的 IR、pass、codegen 都会先用一句话解释再给术语。
 
 本章只回答一个问题：**我写的那几十行 Python，到底经过了谁，最后变成了什么？**
@@ -35,9 +35,9 @@
 * `T.gemm(A_shared, B_shared, C_local)` 是一行 Python，它凭什么变成硬件指令？**在哪个文件里变？**
 * 只用公共语言表面写的同一份 kernel，可以分别以 `target="cuda"` 和 `target="ascend"` 编译。
   **分岔点在哪一行？**
-* 官方说「多后端是解耦的」「加后端不用改 engine」。**这句话在仓库里对应哪些文件？**
+* 官方说“多后端是解耦的”“加后端不用改 engine”。**这句话在仓库里对应哪些文件？**
 
-这三个问题没有一个是「怎么用 API」的问题，它们都是**结构问题**。结构问题的答案不该靠背，
+这三个问题没有一个是“怎么用 API”的问题，它们都是**结构问题**。结构问题的答案不该靠背，
 而该靠一张能随时重画的地图。本章就是把这张地图画出来，并且把地图上的每个地名都换成
 `_vendor/tilelang-v0.1.15/` 里真实存在的路径与行号。
 
@@ -50,13 +50,13 @@
 1. **源码只引 `_vendor/tilelang-v0.1.15/`**，行号用 `grep -n` / `sed -n` 现场核对，
    不凭记忆。
 2. **不把 main 当成 v0.1.15**。`_vendor` 之外的任何 checkout（包括 corpus 里那份
-   `02-tilelang-core-repo/` 的 main 快照）都只用于「对照」，且在正文里显式标注。
+   `02-tilelang-core-repo/` 的 main 快照）都只用于“对照”，且在正文里显式标注。
 3. **不宣称未验证的运行结果**。本机是 macOS（Apple Silicon），没有 NVIDIA GPU、
-   没有昇腾 NPU，也没有安装 tilelang/torch，所以任何「跑起来是什么样」的结论都要
-   写成「应当是什么样」并给出验证步骤。
+   没有昇腾 NPU，也没有安装 tilelang/torch，所以任何“跑起来是什么样”的结论都要
+   写成“应当是什么样”并给出验证步骤。
 4. **不写没有出处的性能数字**。本章不讨论性能，只讨论结构。
 
-顺手说清一个容易混的点：**`v0.1.15` 是 tag，不是「最新的 main」**。
+顺手说清一个容易混的点：**`v0.1.15` 是 tag，不是“最新的 main”**。
 在写这一章时（2026-10-01）：
 
 ```text
@@ -87,7 +87,7 @@ _vendor/tilelang-v0.1.15/            git describe --tags → v0.1.15
 ⑤  运行时（runtime）      源码 + wrapper       →  可调用对象（Adapter / torch 函数）
 ```
 
-每一段都有明确的「入口函数」，而且入口函数所在的位置在两条后端上是**同一个**：
+每一段都有明确的“入口函数”，而且入口函数所在的位置在两条后端上是**同一个**：
 
 | 阶段 | 入口 | 位置 |
 | --- | --- | --- |
@@ -98,7 +98,7 @@ _vendor/tilelang-v0.1.15/            git describe --tags → v0.1.15
 | ④ 宿主封装 | `tilelang.engine.lower.host_codegen` | `tilelang/engine/lower.py:65` |
 | ⑤ 运行时 | `JITKernel._create_adapter_from_artifact` | `tilelang/jit/kernel.py:324` |
 
-这张表是本章最重要的一页：**它说明「后端差异」被压缩进了第 ② 阶段的一个函数调用里**
+这张表是本章最重要的一页：**它说明“后端差异”被压缩进了第 ② 阶段的一个函数调用里**
 （`context.lower(mod)`，`tilelang/engine/lower.py:136`）。其余所有阶段都是共享的。
 
 ### 2.2 仓库地图
@@ -132,45 +132,45 @@ tilelang/jit/adapter/  (tvm_ffi / nvrtc / cython / torch / cutedsl)
   examples/ (54 子目录)   docs/ (37 Markdown)
 ```
 
-注意这张图里有一处非常反直觉、但一定要接受的安排：**pass 的「顺序」写在后端包的 Python 里
-（`tilelang/cuda/pipeline.py`、`tilelang/ascend/pipeline.py`），pass 的「行为」写在 C++ 里
-（`src/transform/*.cc`）**。初学者经常在 `src/transform/` 里找「pass 的执行顺序」，那是找不到的；
-反过来，在 `tilelang/cuda/pipeline.py` 里找「LayoutInference 到底做了什么」，也找不到。
+注意这张图里有一处非常反直觉、但一定要接受的安排：**pass 的“顺序”写在后端包的 Python 里
+（`tilelang/cuda/pipeline.py`、`tilelang/ascend/pipeline.py`），pass 的“行为”写在 C++ 里
+（`src/transform/*.cc`）**。初学者经常在 `src/transform/` 里找“pass 的执行顺序”，那是找不到的；
+反过来，在 `tilelang/cuda/pipeline.py` 里找“LayoutInference 到底做了什么”，也找不到。
 
 ### 2.3 十六个模块的职责
 
-下表每一行的「数量」列都来自 `code/repo-map/inventory.py` 的实测输出（v0.1.15）。
+下表每一行的“数量”列都来自 `code/repo-map/inventory.py` 的实测输出（v0.1.15）。
 
 | 模块 | 职责 | 实测规模 |
 | --- | --- | --- |
-| `tilelang/language/` | **语言表面**。`T.Kernel`、`T.alloc_*`、`T.copy`、`T.gemm`、`T.Pipelined` 等 tile op 与 frame 的定义；另有 `parser/`（AST 路线）、`eager/`（builder 路线）、`ast/`、`overrides/` 两类前端实现。 | 47 个 `.py`，6 个子目录 |
-| `tilelang/engine/` | **编译入口**。`lower()` / `lower_with_context()` / `host_codegen()` / `device_codegen()` 全在这里；`semantic_check.py` 放后端无关的前端语义检查；`param.py` 定义 `CompiledArtifact`。 | 5 个 `.py` |
-| `tilelang/transform/` | 通用 pass 的 **Python 包装**。每个 `def LayoutInference()` 都只做一件事：调 `_ffi_api.LayoutInference()` 把 C++ pass 取出来。另有 `simplify.py`、`pass_config.py`。 | 7 个 `.py` |
-| `src/transform/` | pass 的 **C++ 本体**。`layout_inference/`、`inject_pipeline.cc`、`lower_tile_op.cc`、`make_packed_api.cc` … 都在这里。 | 42 个 `.cc`，66 个文件 |
-| `tilelang/layout/` | **布局代数**。`Layout`、`Fragment`、`PartialFragment` 与 swizzle 构造函数（`make_swizzled_layout`、`make_tcgen05mma_swizzled_layout`…），以及昇腾的 `make_ascend_nz_layout` 等。 | 10 个 `.py` |
-| `tilelang/backend/` | **多后端抽象**。注册表、五类组件接口、`BackendContext` 解析、目标探测。本章 2.4 与 4.4 节的主角。 | 9 个 `.py` + `pass_pipeline/` |
-| `tilelang/cuda/` | **CUDA 后端垂直切片**：`language/`（CUDA 方言）、`op/`、`intrinsics/`、`pipeline.py`、`codegen.py`、`backend.py`（manifest）。 | 55 个 `.py` |
-| `tilelang/ascend/` | **昇腾后端垂直切片**：`language/`（`alloc_l1/l0a/l0b/l0c`、`SimtVF`、`dual_copy`…）、`transform/`、`pipeline.py`、`codegen.py`、`backend.py`。 | 35 个 `.py` |
-| `src/ascend/` | 昇腾的 **C++ 侧**：`codegen/codegen_ascend.cc`、`op/`、`layout/`、`transform/`、`runtime/`。 | 80 个 `.cc/.h` |
-| `tilelang/jit/` | **装饰器与运行时装配**：`jit()`、`JITImpl`、`JITKernel`、`adapter/`（tvm_ffi / cython / nvrtc / torch / cutedsl）、`wrapper.py`（生成 host wrapper 源码）。 | 31 个 `.py` |
-| `tilelang/cache/` | **两级缓存**：`KernelCache`（整个 kernel 的磁盘缓存）+ `CUDABinaryCache` / `AscendBinaryCache`（编译产物缓存）。 | 5 个 `.py` |
-| `tilelang/autotuner/` | **参数搜索**：`autotune` / `AutoTuner` / `capture` / `grouped_compile`。 | 5 个 `.py` |
-| `tilelang/carver/` | **tile 配置推荐**：给 GEMM / reduction / elementwise 生成并排序 tiling 候选，可转给 TVM / Triton / TileLang。 | 34 个 `.py` |
-| `tilelang/tools/` | **开发者工具**：`plot_layout`、`lower_trace/`（逐 pass 对比 IR）、`pass_visualizer/`、`pass_timing.py`、`Analyzer.py`、`compile_only.py`。 | 20 个 `.py` |
-| `examples/` | 官方示例。GEMM 家族、FlashAttention、DeepSeek MLA/NSA/MoE、`quickstart.py` 等。 | 54 个子目录 + 3 个顶层文件（共 57 项） |
-| `docs/` | 官方文档源文件（Sphinx）。`compiler_internals/`、`runtime_internals/`、`programming_guides/`、`deeplearning_operators/`、`tutorials/`、`tools/`、`get_started/`。 | 37 个 `.md`，9 个子目录 |
+| `tilelang/language/` | **语言表面**。`T.Kernel`、`T.alloc_*`、`T.copy`、`T.gemm`、`T.Pipelined` 等 tile op 与 frame 的定义；另有 `parser/`（AST 路线）、`eager/`（builder 路线）、`ast/`、`overrides/` 两类前端实现。| 47 个 `.py`，6 个子目录 |
+| `tilelang/engine/` | **编译入口**。`lower()` / `lower_with_context()` / `host_codegen()` / `device_codegen()` 全在这里；`semantic_check.py` 放后端无关的前端语义检查；`param.py` 定义 `CompiledArtifact`。| 5 个 `.py` |
+| `tilelang/transform/` | 通用 pass 的 **Python 包装**。每个 `def LayoutInference()` 都只做一件事：调 `_ffi_api.LayoutInference()` 把 C++ pass 取出来。另有 `simplify.py`、`pass_config.py`。| 7 个 `.py` |
+| `src/transform/` | pass 的 **C++ 本体**。`layout_inference/`、`inject_pipeline.cc`、`lower_tile_op.cc`、`make_packed_api.cc` … 都在这里。| 42 个 `.cc`，66 个文件 |
+| `tilelang/layout/` | **布局代数**。`Layout`、`Fragment`、`PartialFragment` 与 swizzle 构造函数（`make_swizzled_layout`、`make_tcgen05mma_swizzled_layout`…），以及昇腾的 `make_ascend_nz_layout` 等。| 10 个 `.py` |
+| `tilelang/backend/` | **多后端抽象**。注册表、五类组件接口、`BackendContext` 解析、目标探测。本章 2.4 与 4.4 节的主角。| 9 个 `.py` + `pass_pipeline/` |
+| `tilelang/cuda/` | **CUDA 后端垂直切片**：`language/`（CUDA 方言）、`op/`、`intrinsics/`、`pipeline.py`、`codegen.py`、`backend.py`（manifest）。| 55 个 `.py` |
+| `tilelang/ascend/` | **昇腾后端垂直切片**：`language/`（`alloc_l1/l0a/l0b/l0c`、`SimtVF`、`dual_copy`…）、`transform/`、`pipeline.py`、`codegen.py`、`backend.py`。| 35 个 `.py` |
+| `src/ascend/` | 昇腾的 **C++ 侧**：`codegen/codegen_ascend.cc`、`op/`、`layout/`、`transform/`、`runtime/`。| 80 个 `.cc/.h` |
+| `tilelang/jit/` | **装饰器与运行时装配**：`jit()`、`JITImpl`、`JITKernel`、`adapter/`（tvm_ffi / cython / nvrtc / torch / cutedsl）、`wrapper.py`（生成 host wrapper 源码）。| 31 个 `.py` |
+| `tilelang/cache/` | **两级缓存**：`KernelCache`（整个 kernel 的磁盘缓存）+ `CUDABinaryCache` / `AscendBinaryCache`（编译产物缓存）。| 5 个 `.py` |
+| `tilelang/autotuner/` | **参数搜索**：`autotune` / `AutoTuner` / `capture` / `grouped_compile`。| 5 个 `.py` |
+| `tilelang/carver/` | **tile 配置推荐**：给 GEMM / reduction / elementwise 生成并排序 tiling 候选，可转给 TVM / Triton / TileLang。| 34 个 `.py` |
+| `tilelang/tools/` | **开发者工具**：`plot_layout`、`lower_trace/`（逐 pass 对比 IR）、`pass_visualizer/`、`pass_timing.py`、`Analyzer.py`、`compile_only.py`。| 20 个 `.py` |
+| `examples/` | 官方示例。GEMM 家族、FlashAttention、DeepSeek MLA/NSA/MoE、`quickstart.py` 等。| 54 个子目录 + 3 个顶层文件（共 57 项） |
+| `docs/` | 官方文档源文件（Sphinx）。`compiler_internals/`、`runtime_internals/`、`programming_guides/`、`deeplearning_operators/`、`tutorials/`、`tools/`、`get_started/`。| 37 个 `.md`，9 个子目录 |
 
 两个容易被忽略的事实：
 
 * `tilelang/language/__init__.py` 的第 11–12 行写着
   `from tilelang.cuda.language import *`，文件末尾还有 `__tilelang_dialect__ = "cuda"`
   （`tilelang/language/__init__.py:1-32`）。也就是说，**`import tilelang.language as T` 拿到的
-  其实是「公共表面 + CUDA 扩展」**；昇腾要用 `from tilelang.ascend import language as T`。
-  这是 v0.1.13 引入「多后端语言方言」之后的现状，不是临时 hack。
+  其实是“公共表面 + CUDA 扩展”**；昇腾要用 `from tilelang.ascend import language as T`。
+  这是 v0.1.13 引入“多后端语言方言”之后的现状，不是临时 hack。
 * `tilelang/transform/__init__.py` 与 `src/transform/` 是**成对**的：想在 pipeline 里用一个新的
   C++ pass，必须先在这里加一个薄包装函数，否则 Python 侧拿不到它。
 
-### 2.4 两类「后端」
+### 2.4 两类“后端”
 
 这是本章最容易混、也最有价值的一个区分（图见 `figures/fig-03-backend-abstraction.md`）：
 
@@ -194,8 +194,8 @@ metal / c / llvm / webgpu → 各自               见各包 execution_backend.p
 （CUDA → Ascend）会换掉 pipeline，但执行层可以继续用同一个 `tvm_ffi`。
 
 官方把这条设计原则写在 `tilelang/backend/README.md:76-78`：
-「CUDA can execute through `tvm_ffi`, `nvrtc`, or `cython`; selecting `nvrtc` does not select
-a different target architecture or pass pipeline.」
+“CUDA can execute through `tvm_ffi`, `nvrtc`, or `cython`; selecting `nvrtc` does not select
+a different target architecture or pass pipeline.”
 
 ---
 
@@ -239,7 +239,7 @@ def matmul(A, B, block_M: int, block_N: int, block_K: int):
 kernel = matmul.compile(M=1024, N=1024, K=1024, block_M=128, block_N=128, block_K=32)
 ```
 
-这 20 行里有 4 个「语义级」的声明，编译器后面所有工作都是为了兑现它们：
+这 20 行里有 4 个“语义级”的声明，编译器后面所有工作都是为了兑现它们：
 
 | 声明 | 语义 | 谁来兑现 |
 | --- | --- | --- |
@@ -249,7 +249,7 @@ kernel = matmul.compile(M=1024, N=1024, K=1024, block_M=128, block_N=128, block_
 | `T.gemm` | tile 级矩阵乘 | `LowerTileOp` → mma / wgmma / tcgen05 / Cube |
 | `T.Pipelined(..., num_stages=3)` | 软件流水 + 多缓冲 | `PipelinePlanning` + `InjectSoftwarePipeline`（两侧都用） |
 
-注意最后一列：**用户写的每一个高层原语，都能对应到一个具体的 pass**。这条「原语 ↔ pass」
+注意最后一列：**用户写的每一个高层原语，都能对应到一个具体的 pass**。这条“原语 ↔ pass”
 的对应关系是第 20 章的主线；本章只保证你能定位到它们。
 
 ### 3.2 按图走一遍
@@ -268,7 +268,7 @@ kernel = matmul.compile(M=1024, N=1024, K=1024, block_M=128, block_N=128, block_
    `JITKernel`，**整个 pipeline 一步都不跑**。
 4. **上下文阶段。** 未命中时构造 `JITKernel`（`tilelang/jit/kernel.py:41`），
    它在 `:113` 处 `create_backend_context(target, target_host, execution_backend)`
-   （`tilelang/backend/module.py:310`）——**整个编译过程只解析一次后端**。
+   （`tilelang/backend/module.py:310`），**整个编译过程只解析一次后端**。
 5. **编译阶段。** `JITKernel._compile_artifact`（`tilelang/jit/kernel.py:288`）在
    `tvm.transform.PassContext(opt_level=3, config=pass_configs, ...)` 里调用
    `tilelang.engine.lower.lower_with_context`（`tilelang/engine/lower.py:144`）。
@@ -299,7 +299,7 @@ kernel = matmul.compile(M=1024, N=1024, K=1024, block_M=128, block_N=128, block_
 
 ### 3.3 我想自己看一遍
 
-三个由浅入深的做法，从「不用装任何东西」到「要真实设备」：
+三个由浅入深的做法，从“不用装任何东西”到“要真实设备”：
 
 ```bash
 # (a) 不装 tilelang，只看结构：本章自带的三个离线脚本
@@ -340,11 +340,11 @@ python3 code/quickstart-gemm/quickstart_gemm.py --out /tmp/tl-debug
 
 两条路线的共同产物是 `PrimFunc`；`tilelang/jit/__init__.py:394-415` 的
 `_infer_jit_mode` / `initialize_jit_mode` 决定一个装饰过的函数走哪条路
-（「函数返回 `PrimFunc`」= lazy；「函数体使用 builder 模式」= eager）。
+（“函数返回 `PrimFunc`”= lazy；“函数体使用 builder 模式”= eager）。
 
 **这一步不产生硬件信息。** 前端只建立三类事实：buffer（形状、dtype、scope）、
-访问关系（谁读谁写）、并行域（网格与循环结构）。把「数据怎么放、指令怎么发」留白，
-正是第 3 章讲的「dataflow 与 schedule 解耦」。
+访问关系（谁读谁写）、并行域（网格与循环结构）。把“数据怎么放、指令怎么发”留白，
+正是第 3 章讲的“dataflow 与 schedule 解耦”。
 
 ### 4.2 engine：`BackendContext` 只解析一次
 
@@ -360,9 +360,9 @@ def device_codegen(device_mod, context) -> tvm.IRModule                         
 
 `lower()` 只做一件事：`context = create_backend_context(target, target_host, "auto")`
 （`:237`），然后转交 `lower_with_context`。为什么要拆成两个函数？
-因为 `lower()` 是「用户入口」，而 `lower_with_context()` 是「已经知道后端的人用的入口」——
+因为 `lower()` 是“用户入口”，而 `lower_with_context()` 是“已经知道后端的人用的入口”，
 JIT 层、缓存层、autotuner 都走后者，避免重复解析（`tilelang/jit/kernel.py:113-115`
-明确写了「Direct callers may omit it and let this public entry resolve one context」）。
+明确写了“Direct callers may omit it and let this public entry resolve one context”）。
 
 `BackendContext` 本身是 `frozen=True, slots=True` 的 dataclass
 （`tilelang/backend/module.py:188-231`），并在 `__post_init__` 里断言
@@ -386,10 +386,10 @@ CUDA_PIPELINE = PassPipeline("cuda", CUDAPassPipelineBody)   # :284
 
 `PassPipeline`（`tilelang/backend/pass_pipeline/pipeline.py:11-39`）只是个薄壳：
 它把执行包在 `pass_pipeline(self.name)` 的 instrumentation 会话里，
-并在异常时调用 `enrich_error(exc)` 补上源码位置。**它不做任何 pass 调度**——
+并在异常时调用 `enrich_error(exc)` 补上源码位置。**它不做任何 pass 调度**，
 顺序完全由传进去的 `lower` 函数（即 `CUDAPassPipelineBody`）决定。
 
-这句「不做任何调度」很重要，它意味着：
+这句“不做任何调度”很重要，它意味着：
 
 > 想给 CUDA 后端加一个 pass，你**不需要**学一套描述语言，只需要在
 > `tilelang/cuda/pipeline.py` 里找到合适的位置插一行 `mod = XxxPass()(mod)`。
@@ -426,11 +426,11 @@ BackendModule(name="cutedsl", target_kinds=("cuda",),
 两个 manifest 都占 `cuda` 这个 kind，靠 `is_plain_cuda_target` /
 `is_cutedsl_target` 区分（`tilelang/cuda/codegen.py:8-13`），
 而且 CuTeDSL **显式复用** CUDA 的 pipeline。这正是 README 说的
-「Pipeline reuse must be explicit; it must not come from target-specific branching in the engine」
+“Pipeline reuse must be explicit; it must not come from target-specific branching in the engine”
 （`tilelang/backend/README.md:137-138`）。
 
-**（b）五类组件。** 每个组件都是一个 `frozen` dataclass 或小类，只描述「怎么调」，
-不描述「调什么」：
+**（b）五类组件。** 每个组件都是一个 `frozen` dataclass 或小类，只描述“怎么调”，
+不描述“调什么”：
 
 | 组件 | 类型定义 | 职责 |
 | --- | --- | --- |
@@ -459,7 +459,7 @@ STANDARD_HOST_CODEGENS = {
 下面的表来自 `code/pass-order/dump_pass_order.py` 在 v0.1.15 上的实际输出：
 它逐行扫 `tilelang/cuda/pipeline.py`，只认 `mod = <pass>(...)` 语句，记录 1-based 行号与
 当前 `if` 守卫。共 **73 步** = `CUDAPassPipelineBodyPrologue`（33 步）+ `Body`
-中 prologue 之后的 40 步。表中「条件」列写 `（无条件）` 表示该 pass 一定会跑。
+中 prologue 之后的 40 步。表中“条件”列写 `（无条件）` 表示该 pass 一定会跑。
 
 | # | 行号 | pass | 条件 |
 | --- | --- | --- | --- |
@@ -541,8 +541,8 @@ STANDARD_HOST_CODEGENS = {
 
 * **第 36 步 `LowerSharedBarrier` 是无条件的**，但紧邻它的
   `if not have_mbarrier(target) and _module_has_shared_barrier(mod): raise ValueError(...)`
-  （`:186-195`）会在 pre-Hopper 上直接报错。也就是说：**「pass 一定会跑」与
-  「这段代码一定会成功」是两回事**。
+  （`:186-195`）会在 pre-Hopper 上直接报错。也就是说：**“pass 一定会跑”与
+  “这段代码一定会成功”是两回事**。
 * 第 20–25 步（`PipelinePlanning` → `InjectSoftwarePipeline` → `LayoutInference` →
   `LowerTileOp`）是 CUDA 侧最核心的六步，第 20–22 章的正文就落在这里。
 * 第 60 步 `SplitHostDevice` 之后，剩下 13 步都是在**已经分开的 device IR 上**做同步、
@@ -551,7 +551,7 @@ STANDARD_HOST_CODEGENS = {
 ### 4.6 Ascend pipeline 的 80 步
 
 同样方法扫 `tilelang/ascend/pipeline.py`，得到 **80 步**（全部来自
-`AscendPassPipelineBody`）。为了可读性，下面用「分段」呈现，但每一段内部严格保持源码顺序，
+`AscendPassPipelineBody`）。为了可读性，下面用“分段”呈现，但每一段内部严格保持源码顺序，
 行号也标出来。完整可复制版本用 `python3 code/pass-order/dump_pass_order.py` 生成。
 
 **段 A：绑定与规范化（1–13）**
@@ -665,7 +665,7 @@ STANDARD_HOST_CODEGENS = {
 | 80 | 186 | `LowerDeviceKernelLaunch` | （无条件） |
 
 注意第 72 步：**`InferBufferAliases` 只在自动调度关闭时跑**。这是个典型的
-「关闭 A 就要打开 B」的例子——调度器自己会推导 buffer 别名，所以人写逻辑时需要显式补上。
+“关闭 A 就要打开 B”的例子，调度器自己会推导 buffer 别名，所以人写逻辑时需要显式补上。
 
 ### 4.7 两条 pipeline 对照
 
@@ -686,8 +686,8 @@ STANDARD_HOST_CODEGENS = {
 | 同步 | `ThreadSync("shared")` ×2 + `InjectFenceProxy` + `InjectTcgen05Fence` | `AscendThreadSync("global"/"shared"/"shared.dyn")` + `RewriteFlagToBuf` |
 | 收尾 | `MakePackedAPI` → `LowerDeviceKernelLaunch` → `PersistThreadblock` | `MakePackedAPI` → `LowerDeviceKernelLaunch` |
 
-一句话总结：**两侧共享的是一条「tile op 之后」的标准 lowering 走廊（39 个同名 pass），
-真正的差异集中在三处——网格物化的参数、流水/调度由谁负责、同步与片上存储怎么合并。**
+一句话总结：**两侧共享的是一条“tile op 之后”的标准 lowering 走廊（39 个同名 pass），
+真正的差异集中在三处，网格物化的参数、流水/调度由谁负责、同步与片上存储怎么合并。**
 
 ### 4.8 codegen、host wrapper 与可调用对象
 
@@ -711,9 +711,9 @@ target.build.tilelang_ascend
 target.build.tilelang_ascend_without_compile
 ```
 
-宿主侧的关键 pass 是 `MakePackedAPI`——它的 C++ 本体在
+宿主侧的关键 pass 是 `MakePackedAPI`。它的 C++ 本体在
 `src/transform/make_packed_api.cc`，文件头注释写着
-「Lower PrimFunc to use the packed function API」（`:2`）。
+“Lower PrimFunc to use the packed function API”（`:2`）。
 这一步把 `PrimFunc` 改写成符合 TVM-FFI 打包调用约定的入口：新的入口形如
 `(args, num_args)`（`:434-437`），用 `MakeAssertEQ` 一类断言检查参数个数与合法性
 （`:421-475`），并按 `tilelang_out_idx` / `tilelang_callee_allocated_outputs`
@@ -732,8 +732,8 @@ tilelang/jit/adapter/
 ```
 
 `tilelang/backend/README.md:244-270` 把这条契约写得很清楚：
-target backend 需要提供「compiled 或 source-only 的 device codegen、按需的 host codegen、
-source/artifact/global-symbol/argument/launch metadata、目标相关的校验与工具链回调」，
+target backend 需要提供“compiled 或 source-only 的 device codegen、按需的 host codegen、
+source/artifact/global-symbol/argument/launch metadata、目标相关的校验与工具链回调”，
 然后由 execution backend 负责利用它们完成缓存、加载、绑定与启动。
 
 ### 4.9 缓存：两级
@@ -749,13 +749,13 @@ source/artifact/global-symbol/argument/launch metadata、目标相关的校验�
 （`tvm_ffi` / `cython` / `nvrtc` / `cutedsl` / `torch`）加两条昇腾专用路径
 （`AscendTVMFFIKernelCache` / `AscendCythonKernelCache`）。注意派发依据是
 **resolved backend module 名**，不是 target kind（`:68-69` 的注释
-「Dispatch on the resolved backend module rather than on the target kind」）。
+“Dispatch on the resolved backend module rather than on the target kind”）。
 
 CUDA pipeline 第 34 步是 `LowerSharedTmem`（`tilelang/cuda/pipeline.py:175`）；
-它的 C++ 本体做的事是「Convert `shared.tmem` buffers to plain shared + ptx init」
+它的 C++ 本体做的事是“Convert `shared.tmem` buffers to plain shared + ptx init”
 （`src/cuda/transform/lower_shared_tmem.cc:3`），而 `tmem` 属于需要特定架构才有的资源
-（仓库根 `README.md:123` 的原话是「TMA, WGMMA, and TMEM features require the
-corresponding GPU architecture」）。架构相关的 lowering 正是二进制缓存必须把 arch 写进 key
+（仓库根 `README.md:123` 的原话是“TMA, WGMMA, and TMEM features require the
+corresponding GPU architecture”）。架构相关的 lowering 正是二进制缓存必须把 arch 写进 key
 的原因：同一份 CUDA C 在不同 `sm_*` 上要编出不同 cubin。
 `tilelang/cuda/backend.py:59-120` 的 `tilelang_callback_cuda_compile`
 把 `target_arch` / `target_code_list` / `compile_format` / `options` 全塞进 `make_key`。
@@ -766,7 +766,7 @@ corresponding GPU architecture」）。架构相关的 lowering 正是二进制�
 
 ### 5.1 pass 序列是带分支的程序，不是静态表
 
-最容易犯的错误，是把 4.5 / 4.6 的表格背下来当成「TileLang 的 pass 顺序」。
+最容易犯的错误，是把 4.5 / 4.6 的表格背下来当成“TileLang 的 pass 顺序”。
 它其实是**在默认 `pass_configs` 下、针对一个普通 kernel 的顺序**。至少有三类因素会改变它：
 
 **（a）`pass_configs`。** 表中所有带条件列的 pass 都由
@@ -788,7 +788,7 @@ def should_enable_race_check(pass_ctx=None) -> bool:        # :58
 ```
 
 **（b）目标硬件。** `allow_warp_specialized`（`tilelang/cuda/pipeline.py:27-36`）要求
-「是 CUDA target」且「有 TMA」；`has_tma` 又让
+“是 CUDA target”且“有 TMA”；`has_tma` 又让
 `FuseMBarrierArriveExpectTx` 单独成一步（表格第 37 步）。所以同一份 kernel 在
 sm_80 与 sm_90 上跑的 pass 数目并不相同。
 
@@ -796,7 +796,7 @@ sm_80 与 sm_90 上跑的 pass 数目并不相同。
 `TL_ENABLE_AUTO_SCHEDULE` 为真时执行（`tilelang/ascend/pipeline.py:22-33`），
 关闭时第 72 步的 `InferBufferAliases` 才会补位。
 
-**可复现的结论**：任何「TileLang 的 pass 顺序是 X」的说法都必须附带
+**可复现的结论**：任何“TileLang 的 pass 顺序是 X”的说法都必须附带
 `target` + `pass_configs` + 是否开启的开关。这也是本书第 20 章会坚持给每条结论加条件的原因。
 
 ### 5.2 五个具体陷阱
@@ -806,24 +806,24 @@ sm_80 与 sm_90 上跑的 pass 数目并不相同。
    并在 `:32` 声明 `__tilelang_dialect__ = "cuda"`。写昇腾 kernel 要
    `from tilelang.ascend import language as T`；混用两套 `T` 会拿到不同签名的 `T.Kernel`。
 2. **不要在 `engine/lower.py` 里找后端分支。** 那里只有一次 `context.lower(mod)`
-   （`:136`）。任何「按 target 分支」的逻辑都应该在对应后端的 `pipeline.py` 或
+   （`:136`）。任何“按 target 分支”的逻辑都应该在对应后端的 `pipeline.py` 或
    `backend.py` 里。如果你在 engine 里加了 target 分支，等于把 `README.md:240-242`
-   明令禁止的事情做了（「The engine must not contain a `target.kind.name` dispatch table
-   for backend codegen.」）。
+   明令禁止的事情做了（“The engine must not contain a `target.kind.name` dispatch table
+   for backend codegen.”）。
 3. **改完 pass 没生效，先怀疑缓存。** `KernelCache` 命中时 pipeline 一步都不跑；
    调试编译器时应当设 `TILELANG_CACHE_DIR` 或直接 `tilelang.disable_cache()`，
-   否则很容易把「缓存命中」误判成「pass 没起作用」。
+   否则很容易把“缓存命中”误判成“pass 没起作用”。
 4. **`SplitHostDevice` 之后 IR 是两个模块。** 在 pipeline 后半段做调试打印时，
-   如果只打印一个模块，会以为「代码丢了」。engine 在 `tilelang/engine/lower.py:138-139`
+   如果只打印一个模块，会以为“代码丢了”。engine 在 `tilelang/engine/lower.py:138-139`
    用两个 `Filter` 分开，调试时也要分开看。
-5. **别把「共享前端」理解成「共享 IR」。** 前端（`tilelang/language/`）确实共享，
+5. **别把“共享前端”理解成“共享 IR”。** 前端（`tilelang/language/`）确实共享，
    但已经进到 `AscendLayoutInference` 的 IR 与进了 `LayoutInference` 的 IR
    已经是两套不同的抽象（前者带 fractal / NZ 信息，后者带 fragment / swizzle 信息）。
    第 21 章会把这两套 layout 代数并排讲。
 
 ### 5.3 v0.1.15 事实 vs 仅 main / 未合入
 
-这一节是本章的「版本边界」。判据全部可以现场复现（命令按顺序给）：
+这一节是本章的“版本边界”。判据全部可以现场复现（命令按顺序给）：
 
 ```bash
 cd _vendor/tilelang-v0.1.15
@@ -847,7 +847,7 @@ grep -rn "PersistentKernel" tilelang src  # 无输出
 
 两点补充：
 
-* PR 编号只是**线索**，判据永远是「在哪个 checkout 里 grep 得到什么」。
+* PR 编号只是**线索**，判据永远是“在哪个 checkout 里 grep 得到什么”。
   v0.1.15 对应的 PR 是 #3309（bump version），而 corpus 的 main 快照停在 #3310。
 * 昇腾还有**另一条完整路线**：独立仓库 `tile-ai/tilelang-ascend`
   （本章锁定 `_vendor/tilelang-ascend-v0.1.2.000/`，其 `VERSION` 文件写 `0.1.4`，

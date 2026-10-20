@@ -1,7 +1,7 @@
 {
   "id": "03-pipeline-compile-flow",
   "title": "从 T.Pipelined 到多缓冲 IR 的编译期两步",
-  "caption": "用户只写一句 T.Pipelined，编译器把它拆成「先规划（只写注解）」与「再改写（加版本维、插同步）」两个 pass。",
+  "caption": "用户只写一句 T.Pipelined，编译器把它拆成“先规划（只写注解）”与“再改写（加版本维、插同步）”两个 pass。",
   "kind": "flow",
   "direction": "TB",
   "nodeMaxEm": 22,

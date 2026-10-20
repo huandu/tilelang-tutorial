@@ -6,26 +6,26 @@
       "stem": "正方形（M=N=K）fp16 GEMM 的算术强度可以化简成什么？",
       "options": ["AI = 2M / (3b)", "AI = 3b / (2M)", "AI = 2MNK", "AI = b·(MK+KN+MN)"],
       "answer": 0,
-      "explain": "见 §1.1：AI = 2MNK / [b(MK+KN+MN)]，正方形时退化成 2M/(3b)，随边长线性增长，这正是「换规模判类会翻转」的来源。"
+      "explain": "见 §1.1：AI = 2MNK / [b(MK+KN+MN)]，正方形时退化成 2M/(3b)，随边长线性增长，这正是“换规模判类会翻转”的来源。"
     },
     {
       "id": "q2",
-      "stem": "五级阶梯里，正文说「大多数应用算子的终点」是哪一级？",
+      "stem": "五级阶梯里，正文说“大多数应用算子的终点”是哪一级？",
       "options": [
         "⑤ intrinsic：手写 ldmatrix / mma",
-        "④ swizzle / layout 注解",
         "③ T.Pipelined 多级流水",
+        "④ swizzle / layout 注解",
         "② shared + T.gemm"
       ],
-      "answer": 2,
-      "explain": "见 §2.6：③ 是「从会写到写得快」的分水岭，也是多数应用算子的终点；④–⑤ 留给生产算子与需要榨最后几个百分点的人。"
+      "answer": 1,
+      "explain": "见 §2.6：③ 是“从会写到写得快”的分水岭，也是多数应用算子的终点；④–⑤ 留给生产算子与需要榨最后几个百分点的人。"
     },
     {
       "id": "q3",
       "stem": "当输出块数小于设备可并行的核数时，应该考虑哪个变体？",
       "options": ["batched GEMM", "stream-K", "split-K", "grouped GEMM"],
       "answer": 2,
-      "explain": "见 §4.1 与 §4.5：输出块数 < 核数时 grid 太小、一部分核闲着，用 split-K 把 K 切开换并行度（代价是写出量变成 split_k 倍）；stream-K 解决的是「块数够多、最后一波不满」。"
+      "explain": "见 §4.1 与 §4.5：输出块数 < 核数时 grid 太小、一部分核闲着，用 split-K 把 K 切开换并行度（代价是写出量变成 split_k 倍）；stream-K 解决的是“块数够多、最后一波不满”。"
     },
     {
       "id": "q4",
@@ -37,19 +37,19 @@
         "它默认是累加（+=），第一次迭代前必须 T.clear / clear_accum 清零"
       ],
       "answer": 3,
-      "explain": "见 §8.2：默认是累加而不是赋值；忘了清零会得到「多了前一次的值」的脏数据，昇腾上的 init=(k == 0) 也是同一个道理。"
+      "explain": "见 §8.2：默认是累加而不是赋值；忘了清零会得到“多了前一次的值”的脏数据，昇腾上的 init=(k == 0) 也是同一个道理。"
     },
     {
       "id": "q5",
       "stem": "T.use_swizzle 改变的是什么？",
       "options": [
-        "buffer 的物理布局",
         "block 的遍历顺序，用来提高 L2 命中率",
+        "buffer 的物理布局",
         "数据的 dtype",
         "warp 的划分方式"
       ],
-      "answer": 1,
-      "explain": "见 §3.2：T.use_swizzle 改「block 按什么顺序跑」，T.annotate_layout 改「数据怎么摆」；两者都不改变 FLOPs。"
+      "answer": 0,
+      "explain": "见 §3.2：T.use_swizzle 改“block 按什么顺序跑”，T.annotate_layout 改“数据怎么摆”；两者都不改变 FLOPs。"
     },
     {
       "id": "q6",
@@ -65,21 +65,21 @@
     },
     {
       "id": "q7",
-      "stem": "要与 cuBLAS / CATLASS「对齐」，正文要求先说死的五件事是哪一组？",
+      "stem": "要与 cuBLAS / CATLASS“对齐”，正文要求先说死的五件事是哪一组？",
       "options": [
         "只看 TFLOP/s 与 shape",
-        "GPU 型号、驱动、CUDA 版本、编译器、操作系统",
         "基线、同一个 shape、同一个 dtype 与累加精度、同一个 epilogue、同一套测量协议",
+        "GPU 型号、驱动、CUDA 版本、编译器、操作系统",
         "block_M/N/K、num_stages、threads、policy、split_k"
       ],
-      "answer": 2,
-      "explain": "见 §6.3 与 §7.1：只有这五条全部一致，「0.98×」「1.2×」才是可比较的两个数；block 参数与硬件环境是随附信息，不是对齐的前提。"
+      "answer": 1,
+      "explain": "见 §6.3 与 §7.1：只有这五条全部一致，“0.98×”“1.2×”才是可比较的两个数；block 参数与硬件环境是随附信息，不是对齐的前提。"
     },
     {
       "id": "q8",
       "stem": "编译报 shared memory 超限时，正文建议先调整什么？",
-      "options": ["先降 block_K", "先加 threads", "先换 dtype", "先降 num_stages"],
-      "answer": 3,
+      "options": ["先降 block_K", "先加 threads", "先降 num_stages", "先换 dtype"],
+      "answer": 2,
       "explain": "见 §8.3：三张约束表能提前算出占用；超限时先降 num_stages，而不是先动 block_K，否则会连带改变 layout 推断与流水行为。"
     }
   ]

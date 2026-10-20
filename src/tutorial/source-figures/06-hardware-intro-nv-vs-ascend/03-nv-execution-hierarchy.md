@@ -33,12 +33,12 @@ H100（cc9.0）公开规格：每 warp 32 线程；每 SM 最多 64 warp / 2048 
 * **SIMT = 每个线程独立寻址 + warp 级合并发射。** 收益是灵活（分支、离散访存），
   代价是 warp 内分支发散会串行执行，且访存需要合并才能高效。
 * **层次越高，共享越强、同步越粗。** `thread → warp → block → cluster`，每一层都有
-  自己的「可以互相看到什么」和「怎么对齐」。
+  自己的“可以互相看到什么”和“怎么对齐”。
 
 ## 事实来源
 
 * 执行层次与规格：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-blog-hopper-architecture-in-depth.md`
-  （Hopper 博客；「Compute capability: V100 vs. A100 vs. H100」表）。
+  （Hopper 博客；“Compute capability: V100 vs. A100 vs. H100”表）。
 * cluster / DSM / 上限：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-hopper-tuning-guide.md`
   与 `../tilelang-corpus/05-nvidia-backend/raw/nvidia-blackwell-tuning-guide.md`。
 * SIMT 的访存合并：`../tilelang-corpus/05-nvidia-backend/raw/nvidia-cuda-best-practices.md`。

@@ -13,27 +13,26 @@ const totalFigures = TUTORIAL.chapters.reduce(
 );
 const totalMinutes = TUTORIAL.chapters.reduce((sum, c) => sum + c.readingMinutes, 0);
 
-const paths = [
+const readingPaths = [
   {
     label: '只想快点能写算子',
-    route: '第 1–5 章 → 第 7–15 章 → 第 27–28 章',
-    blurb: '跳过编译器内部细节，先把语言、原语与四类算子实战走一遍，再补上性能方法论。',
+    route: '第 1–15 章 → 第 27–28 章',
+    blurb: '先写语言与算子，再补性能和精度判断。',
   },
   {
     label: '要训练 / 推理大模型',
-    route: '第一、二部分全部 → 第 16–18 章',
-    blurb: '在算子实战之后接上 MoE/MLA，然后完成 7B 模型的训练与推理两条端到端链路。',
+    route: '第 1–16 章 → 第 17–18 章',
+    blurb: '从基础算子走到 MoE、MLA，以及 7B 模型的训练和推理。',
   },
   {
     label: '要改编译器与后端',
     route: '第 1–4 章 → 第 12 章 → 第 20–26 章 → 第 29–31 章',
-    blurb: 'IR 与 pass、布局推导、流水与同步、两条后端，最后落到写 pass 与提交 PR。',
+    blurb: '读 IR、布局、流水和后端，最后写 pass 并提交上游。',
   },
   {
     label: '要在昇腾上做真实项目',
     route: '第 1–12 章 → 第 19、23、25 章 → 第五部分（第 32–39 章）',
-    blurb:
-      '先把语言、原语与昇腾后端打通，再逐章拆解 DeepSeek 2026-09-30 开源的整套昇腾基础设施，最后拼成训练与推理的完整链路。',
+    blurb: '从昇腾基础一路读到 DeepSeek 的 128 卡训练与推理链路。',
   },
 ];
 ---
@@ -52,7 +51,7 @@ const paths = [
       ></div>
       <div class="flex flex-wrap items-center gap-2">
         <span class="badge badge-primary badge-outline font-mono">TileLang v0.1.15</span>
-        <span class="badge badge-outline">DeepSeek 昇腾全栈（2026-09-30 开源）</span>
+        <span class="badge badge-outline">DeepSeek 昇腾全栈</span>
       </div>
       <h1 class="mt-4 flex flex-wrap items-baseline gap-x-2 text-4xl font-semibold tracking-tight sm:text-5xl">
         <span>从零到一：</span>
@@ -60,15 +59,9 @@ const paths = [
           <span class="text-primary">TileLang</span> 系统教程
         </span>
       </h1>
-      <p class="mt-5 max-w-3xl text-lg leading-relaxed opacity-80">
-        一套面向「会用 PyTorch、但没写过 kernel」的研发人员的完整教材：先建立宏观心智模型， 再按
-        PyTorch tutorial 的节奏动手写算子、训练并推理一个 7B 模型，最后深入编译期、 NVIDIA
-        与华为昇腾两条后端。所有结论都指向锁定版本的源码与资料。
-      </p>
-      <p class="mt-3 max-w-3xl leading-relaxed opacity-70">
-        第五部分把 DeepSeek 在 2026-09-30 面向昇腾开源的整套基础设施（TileLang 昇腾版、
-        TileKernels、DeepGEMM-Ascend、FlashMLA、DeepSelect、DeepEP-Ascend）逐层拆开， 以 TileLang
-        为主线讲透从训练到推理的全流程。
+      <p class="mt-5 max-w-2xl text-lg leading-relaxed opacity-80">
+        面向会写 PyTorch、还没写过 kernel 的研发人员。从第一个算子写到 GEMM、Attention 与
+        MoE，再进入编译器和 NVIDIA、昇腾两条后端。
       </p>
 
       <dl class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -99,11 +92,8 @@ const paths = [
         <a class="btn btn-outline" href="#outline">
           查看全部 {TUTORIAL.chapters.length} 章
         </a>
-        <a class="btn btn-outline" href="/notes/">
-          编者笔记
-        </a>
-        <a class="btn btn-outline" href="/references/">
-          资料与版本
+        <a class="btn btn-outline" href="#reading-paths">
+          按目标选路线
         </a>
         <span class="text-sm opacity-60">
           通读约 {Math.round(totalMinutes / 60)} 小时（不含动手练习）
@@ -116,49 +106,15 @@ const paths = [
       <ProgressOverview chapters={TUTORIAL.chapters} />
     </div>
 
-    <!-- Why -->
-    <section class="mt-14">
-      <h2 class="text-2xl font-semibold tracking-tight">这份教材解决什么问题</h2>
-      <div class="mt-6 grid gap-5 md:grid-cols-3">
-        <div class="card border border-base-300 bg-base-100">
-          <div class="card-body">
-            <h3 class="card-title text-base">不是语法速查，而是心智模型</h3>
-            <p class="text-sm leading-relaxed opacity-70">
-              从「为什么一个算子会慢」讲到 roofline 与算术强度，先建立可计算、可验证的
-              性能直觉，再谈写法。每个概念都先回答「它解决什么问题」。
-            </p>
-          </div>
-        </div>
-        <div class="card border border-base-300 bg-base-100">
-          <div class="card-body">
-            <h3 class="card-title text-base">理论与源码对齐</h3>
-            <p class="text-sm leading-relaxed opacity-70">
-              每一条机制都落到锁定版本的具体文件与行号，写清「用户写法 → IR → pass →
-              目标代码」。全书基于 release tag，而不是每天都在变的 main。
-            </p>
-          </div>
-        </div>
-        <div class="card border border-base-300 bg-base-100">
-          <div class="card-body">
-            <h3 class="card-title text-base">两条硬件主线</h3>
-            <p class="text-sm leading-relaxed opacity-70">
-              NVIDIA 与华为昇腾并重：既讲通用抽象，也讲 Cube/Vector、UB/L1/L0A-L0C、 MTE
-              流水与自动调度这些让昇腾真正跑起来的差异。
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Reading paths -->
-    <section class="mt-14">
-      <h2 class="text-2xl font-semibold tracking-tight">三条阅读路径</h2>
-      <p class="mt-2 text-sm opacity-70">按目标选一条；每条路径都从第 1 章开始，不必从头读到尾。</p>
-      <div class="mt-6 grid gap-5 md:grid-cols-3">
-        {paths.map((item, index) => (
+    <section class="mt-14 scroll-mt-24" id="reading-paths">
+      <h2 class="text-2xl font-semibold tracking-tight">按目标阅读</h2>
+      <p class="mt-2 text-sm opacity-70">四条路线都从第 1 章开始。也可以不看路线，直接顺序阅读。</p>
+      <div class="mt-6 grid gap-5 sm:grid-cols-2">
+        {readingPaths.map((item, index) => (
           <div class="card border border-base-300 bg-base-100">
             <div class="card-body">
-              <span class="badge badge-ghost font-mono">路径 {index + 1}</span>
+              <span class="badge badge-ghost font-mono">路线 {index + 1}</span>
               <h3 class="card-title text-base">{item.label}</h3>
               <p class="font-mono text-xs leading-relaxed opacity-80">{item.route}</p>
               <p class="text-sm leading-relaxed opacity-70">{item.blurb}</p>
@@ -172,8 +128,7 @@ const paths = [
     <section class="mt-14" id="outline">
       <h2 class="text-2xl font-semibold tracking-tight">全部章节</h2>
       <p class="mt-2 text-sm opacity-70">
-        五部分递进：宏观 → 实用 → 深入 → 前沿 → 一次真实开源的完整拆解。
-        每章都有独立页面、可交互习题与整章自测。
+        五部分递进：宏观、实用、深入、前沿，最后拆解一套真实开源栈。每章都含习题、自测和代码。
       </p>
       <div class="mt-8 space-y-12">
         {TUTORIAL.parts.map((part) => {
@@ -199,26 +154,20 @@ const paths = [
       </div>
     </section>
 
-    <!-- Footer notes -->
-    <section class="mt-16 rounded-2xl border border-base-300 bg-base-100 p-6">
-      <h2 class="text-lg font-semibold">版本与验证边界</h2>
-      <ul class="mt-3 space-y-2 text-sm leading-relaxed opacity-70">
-        <li>
-          全书基于 <span class="font-mono">TileLang v0.1.15</span>（
-          <span class="font-mono">a35f8df</span>）与
-          <span class="font-mono">TileLang-Ascend v0.1.2.000-release</span>（
-          <span class="font-mono">89a9364</span>）；只在 <span class="font-mono">main</span> 上的
-          能力一律显式标注。
-        </li>
-        <li>
-          写作环境没有 NVIDIA GPU 与昇腾 NPU，需要加速器的示例都标注为「仅静态核对」，
-          性能数字全部来自有出处的引用，并且带测量条件。请把本书当作地图，而不是实测报告。
-        </li>
-        <li>
-          习题答案是参考答案；文本题需要你自己判断，客观题由浏览器本地评分。所有学习进度
-          都只存在本机浏览器。
-        </li>
-      </ul>
+    <section class="mt-14 rounded-2xl border border-base-300 bg-base-100 p-6">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="max-w-2xl">
+          <h2 class="text-lg font-semibold">版本与验证边界</h2>
+          <p class="mt-2 text-sm leading-relaxed opacity-70">
+            基于 TileLang <span class="font-mono">v0.1.15</span> 与 TileLang-Ascend
+            <span class="font-mono">v0.1.2.000-release</span>。需要 GPU 或 NPU
+            的示例均标为静态核对， 性能数字保留原始测量条件。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="/versions/">
+          查看版本与边界
+        </a>
+      </div>
     </section>
   </div>
 </TutorialLayout>

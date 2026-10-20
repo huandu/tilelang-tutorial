@@ -3,10 +3,10 @@
 ## 目的
 
 演示本章 3.3 节：在 C++ 里写一个新 pass 需要改的**全部**位置，以及怎么把它编译
-出来、跑起来。模板本身是一个「报告型」pass：遍历 IR，数出所有
+出来、跑起来。模板本身是一个“报告型”pass：遍历 IR，数出所有
 `For(kind=kParallel)`，打成一条警告，然后原样返回 func。
 
-它是幂等的，所以可以先用它把「编辑 → 重编 → 挂 pipeline → 跑测试」这条链路走通，
+它是幂等的，所以可以先用它把“编辑 → 重编 → 挂 pipeline → 跑测试”这条链路走通，
 再往里面加真正改 IR 的算法。
 
 ## 文件
@@ -84,5 +84,5 @@ python3 maint/scripts/audit_cpp_api_style.py     # 建议性的 API/头文件审
 | Python 薄包装 | `tilelang/transform/__init__.py:86-94` |
 | pytest 的 `capfd` 断言 | `testing/python/transform/test_tilelang_transform_verify_parallel_loop.py:23-37` |
 
-**「能编译」这件事本机没有验证过**，请把它当作待验证项：在按上面步骤跑通、
-看到第 3/4 步的真实输出之前，不要引用任何「已编译通过」的说法。
+**“能编译”这件事本机没有验证过**，请把它当作待验证项：在按上面步骤跑通、
+看到第 3/4 步的真实输出之前，不要引用任何“已编译通过”的说法。

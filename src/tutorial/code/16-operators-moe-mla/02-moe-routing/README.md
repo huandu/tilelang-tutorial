@@ -1,8 +1,8 @@
 # 02-moe-routing · 路由与重排的可逆性
 
 **目的**：把 MoE 的非矩阵乘部分走一遍：gating → top-k → 按专家重排 →
-生成 block metadata → 专家计算 → combine（scatter-reduce）。证明「重排 + 聚合」
-与「不重排的参考实现」等价，并量化不均衡与 padding 浪费。
+生成 block metadata → 专家计算 → combine（scatter-reduce）。证明“重排 + 聚合”
+与“不重排的参考实现”等价，并量化不均衡与 padding 浪费。
 
 **运行前提**：Python 3.9+，纯标准库。
 

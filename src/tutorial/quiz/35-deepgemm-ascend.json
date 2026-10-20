@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "q1",
-      "stem": "DeepGEMM-Ascend 说它「完全兼容 DeepGEMM 的 API」，这个承诺覆盖的是哪一部分？",
+      "stem": "DeepGEMM-Ascend 说它“完全兼容 DeepGEMM 的 API”，这个承诺覆盖的是哪一部分？",
       "options": [
         "kernel 接口：包名、函数名、参数形态与后缀含义",
         "全部工具函数，包括 set_tc_util / set_pdl 等设置项",
@@ -11,18 +11,18 @@
         "数值结果：同一输入必须逐位相等"
       ],
       "answer": 0,
-      "explain": "README 明确说「kernel API 见 DeepGEMM 的接口」，兼容承诺只覆盖 kernel 接口；工具函数两边并不相同（NVIDIA 有 set_tc_util/set_pdl，Ascend 换成 set_npu_arch 等）。数值上 BF16 因累加顺序不同最多差约 1 ULP，测试用阈值而不是逐位相等。见 §2.1。"
+      "explain": "README 明确说“kernel API 见 DeepGEMM 的接口”，兼容承诺只覆盖 kernel 接口；工具函数两边并不相同（NVIDIA 有 set_tc_util/set_pdl，Ascend 换成 set_npu_arch 等）。数值上 BF16 因累加顺序不同最多差约 1 ULP，测试用阈值而不是逐位相等。见 §2.1。"
     },
     {
       "id": "q2",
       "stem": "昇腾侧 scaling factor 的存储格式是哪一种？",
       "options": [
         "每个 scale 一个 fp32，按 K-major 存放",
-        "每 4 个 UE8M0 打进一个 int，按 MN-major 存放",
         "每 2 个 UE8M0 打进一个 int16，按 MN-major 存放",
+        "每 4 个 UE8M0 打进一个 int，按 MN-major 存放",
         "每个 scale 一个 fp8，按 K-major 存放"
       ],
-      "answer": 2,
+      "answer": 1,
       "explain": "README 的 NOTE 写明：K 方向每两个 UE8M0 打包成 int16、按 MN-major 存放。每 4 个打进一个 int 是 NVIDIA SM100 的格式，fp32 是 SM90 的格式。见 §2.2。"
     },
     {
@@ -30,11 +30,11 @@
       "stem": "在 MAD 抽象层的 mad() 里，走 asc_mmad_mx 而不是 asc_mmad 的判据是什么？",
       "options": [
         "操作数是否 MN-major",
-        "sizeof(TA) == 1 || sizeof(TB) == 1，也就是 fp8 或打包后的 fp4",
         "block_k 是否大于 256",
+        "sizeof(TA) == 1 || sizeof(TB) == 1，也就是 fp8 或打包后的 fp4",
         "是否开启了 dual_aiv_dequant"
       ],
-      "answer": 1,
+      "answer": 2,
       "explain": "mad() 用 sizeof 判断：fp8 是 1 字节、fp4 打包成 float4_e2m1x2_t 也是 1 字节，都走带 scale 的 asc_mmad_mx；bf16 是 2 字节，走 asc_mmad。走 mx 是因为要带 scale，不代表更快。见 §2.3。"
     },
     {
@@ -42,11 +42,11 @@
       "stem": "关于 README 表里的 Hardware limit 列（bf16 432 / fp8 865 / fp4 1730 TFLOPS），下面哪个说法正确？",
       "options": [
         "它们是厂商规格书上的芯片峰值，与源码无关",
-        "它们由 get_mad_flops_per_cycle × 主频 × 核数算出，与元素位宽成反比",
         "它们是本机实测出来的最大值",
-        "它们与量化格式无关，只由矩阵形状决定"
+        "它们与量化格式无关，只由矩阵形状决定",
+        "它们由 get_mad_flops_per_cycle × 主频 × 核数算出，与元素位宽成反比"
       ],
-      "answer": 1,
+      "answer": 3,
       "explain": "heuristics.hpp 里 get_mad_flops_per_cycle(elem_bits) = 8192 × 16 / elem_bits，乘 1650 MHz 与 32 核正好得到 432.5 / 865.0 / 1730.1，与表格列吻合。它是源码里的硬件模型，而不是实测或规格书宣传。见 §4.4 与 §5.1。"
     },
     {
@@ -90,11 +90,11 @@
       "stem": "为什么同一份代码里，mHC prenorm GEMM 用 TileLang 写，而 GEMM / MQA / MegaMoE 用 Ascend C + MAD 写？最符合本章分析的答案是：",
       "options": [
         "因为 prenorm 用 TileLang 写是遗留代码，官方计划重写",
-        "因为 prenorm 是 memory-bound 且形状规整（N=24、K=28672），TileLang 已接近 HBM 峰值带宽；而 GEMM 要榨 Cube 的最后 1%，必须手工调 mad/L1/L0/stage 参数",
         "因为 TileLang 不支持 fp8/fp4，只能写 bf16",
-        "因为 prenorm 不需要 correctness 验证，用哪种都行"
+        "因为 prenorm 不需要 correctness 验证，用哪种都行",
+        "因为 prenorm 是 memory-bound 且形状规整（N=24、K=28672），TileLang 已接近 HBM 峰值带宽；而 GEMM 要榨 Cube 的最后 1%，必须手工调 mad/L1/L0/stage 参数"
       ],
-      "answer": 1,
+      "answer": 3,
       "explain": "hc_prenorm 的算术强度 ≈ 24 FLOP/byte，带宽已到 3463/3500 ≈ 98.9%，下钻收益极小；dense GEMM 的 98.3%–99.8% 是靠 mad_m/n/k、L1/L0 stage、L2 hint、resident_*、dual_aiv_dequant 等编译期常量拿到的。见 §5.7、§6.6 与 §7.3。"
     }
   ]

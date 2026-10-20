@@ -8,7 +8,7 @@
   4. MakeGemmFragment8x8 的线程/槽位分配是否无碰撞。
 
 参考（v0.1.15）：
-  _vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:45-53   MakeGemmFragment8x8
+  _vendor/tilelang-v0.1.15/src/layout/gemm_layouts.cc:45-52   MakeGemmFragment8x8
   _vendor/tilelang-v0.1.15/src/layout/layout.cc:1150-1160    inverse 的 round-trip 检查
 """
 

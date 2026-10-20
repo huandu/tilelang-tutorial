@@ -2,7 +2,7 @@
 
 ## 目的
 
-本章 §5 的「第一个昇腾 GEMM」。展示 `GM → L1 → L0A/L0B → Cube → L0C → GM` 的完整
+本章 §5 的“第一个昇腾 GEMM”。展示 `GM → L1 → L0A/L0B → Cube → L0C → GM` 的完整
 通路，并说明 `T.gemm_v0` 这一行背后展开成了多少件事（L1→L0 搬运、Cube MAD、L0C 写回）。
 
 ## 关键 API（逐个在 A 树里核对过）

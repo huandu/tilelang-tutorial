@@ -7,7 +7,7 @@ mHC 前向/反向在训练里被拆成六个以上的 kernel。这个脚本用 C
 
 * 每个 token 的 `mixes` 张量为什么是 `24` 个分量？`24 = 2 × 4 + 4 × 4` 各是什么？
 * `pre_apply_mix`、`post` 分别在算哪个公式？
-* `expand` 与 `head_compute_mix` 这两条「边界」算子在干什么？
+* `expand` 与 `head_compute_mix` 这两条“边界”算子在干什么？
 
 公式与形状全部抄自 corpus 的纯 PyTorch 基线与 kernel 断言：
 
@@ -59,10 +59,10 @@ python3 mhc_mix_flow.py
 ## 怎么读这些结果
 
 * `pre` / `post` 各是 **每个 token 4 个数**（一个 head 一个缩放），`comb` 是
-  **4 × 4 的连接权重**——这就是 Engram 论文 §2.4 说的「M 条并行分支、信息流由
-  可学习连接权重调制」落到代码里的样子。
+  **4 × 4 的连接权重**——这就是 Engram 论文 §2.4 说的“M 条并行分支、信息流由
+  可学习连接权重调制”落到代码里的样子。
 * `comb` 经过 Sinkhorn 之后，行列和都是 `1`（误差 `1e-6` 级，来自 `eps`）。
-  这就是 mHC 的「manifold constraint」：mix 矩阵被约束在**双随机矩阵流形**上。
+  这就是 mHC 的“manifold constraint”：mix 矩阵被约束在**双随机矩阵流形**上。
 * 每层反向/重算时，残差流的递推是
   `res_{l+1}[o] = post[o] · out_l + Σ_m comb[m, o] · res_l[m]`。
   `mhc_post` 与 `mhc_multilayer_recompute` 实现的是同一个递推，后者只是把它
@@ -74,7 +74,7 @@ python3 mhc_mix_flow.py
 
 **CPU 逻辑验证**：在 macOS (Apple Silicon)、Python 3.11、torch 2.1.1 上实际运行过。
 `pre/post/comb` 的拆分与 `post` 的收缩顺序与 corpus 基线逐项对齐；脚本跑出来的
-「行列和 = 1」用的是同一份 `sinkhorn_normalize_ref`。**没有跑过 kernel，也没有对比过
+“行列和 = 1”用的是同一份 `sinkhorn_normalize_ref`。**没有跑过 kernel，也没有对比过
 `mhc_pre_big_fuse` 的融合实现。**
 
 ## 已知局限

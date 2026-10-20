@@ -37,7 +37,7 @@ python3 ascend_tile_library_sketch.py
   必须通过。
 * `ascend_tile_library_sketch.py`：`T.tile.select` 的输出必须等于
   `torch.where(mask_bits.view_as(x) != 0, x, y)` 的等价写法；
-  `T.tile.sort` 的输出必须满足「相邻两两一组、第一项降序、第二项是原始位置」。
+  `T.tile.sort` 的输出必须满足“相邻两两一组、第一项降序、第二项是原始位置”。
 * 性能口径（若要做）：用 `tilelang.profiler.do_bench(..., backend="msprof")`，
   并记录 NPU 型号、CANN 版本与 TileLang 版本。
 

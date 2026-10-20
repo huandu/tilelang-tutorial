@@ -5,7 +5,7 @@
   "direction": "LR",
   "nodeMaxEm": 16,
   "section": "1.1",
-  "caption": "左侧是 DSA 的 Lightning Indexer：用轻量打分从海量 context token 里选出 k 个最相关的位置；右侧是采样器：从约 128K 的词表 logits 里选出 k 个候选 token。两处都是「k 小、N 大」。",
+  "caption": "左侧是 DSA 的 Lightning Indexer：用轻量打分从海量 context token 里选出 k 个最相关的位置；右侧是采样器：从约 128K 的词表 logits 里选出 k 个候选 token。两处都是“k 小、N 大”。",
   "nodes": [
     { "id": "score", "label": "indexer 打分", "sub": "轻量 QK + 权重归约", "tone": "compute" },
     {
@@ -38,7 +38,7 @@
     { "label": "采样器 Sampler", "nodes": ["logits", "tk2", "cand", "dist"], "tone": "default" }
   ],
   "notes": [
-    "两个场景的共同点是「k 很小（≤ 4096，主要优化 512）、N 很大」，所以瓶颈是访存与选择，不是浮点计算。",
-    "两个场景的差异（dtype、行长、后端支持）见第 6 张图；topk=512 取自仓库自述「DeepSeek V4 的 topk」。"
+    "两个场景的共同点是“k 很小（≤ 4096，主要优化 512）、N 很大”，所以瓶颈是访存与选择，不是浮点计算。",
+    "两个场景的差异（dtype、行长、后端支持）见第 6 张图；topk=512 取自仓库自述“DeepSeek V4 的 topk”。"
   ]
 }

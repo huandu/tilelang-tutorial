@@ -50,7 +50,7 @@ ok   fp4 with the wrong total bit count             -> vecadd.A is a subtype, bu
 
 * 退出码 0；
 * `13/13`；
-* 任何一条 `FAIL` 都表示「模拟与源码描述不符」——先回去读源码，再改这个脚本。
+* 任何一条 `FAIL` 都表示“模拟与源码描述不符”——先回去读源码，再改这个脚本。
 
 ## 这个示例**没有**证明什么
 

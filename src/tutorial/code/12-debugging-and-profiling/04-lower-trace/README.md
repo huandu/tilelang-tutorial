@@ -2,7 +2,7 @@
 
 ## 目的
 
-「某个 lowering 阶段之后 IR 就错了」是 TileLang 里最常见的生成类问题。
+“某个 lowering 阶段之后 IR 就错了”是 TileLang 里最常见的生成类问题。
 `gemm_lower_trace.py` 用同一个 GEMM 演示三种看法：
 
 | 模式 | 入口 | 什么时候用 |

@@ -2,7 +2,7 @@
 
 ## 目的
 
-把「不做流水会怎样」「多深才够」变成可以自己复算的算术，而不是靠感觉。它模拟一个
+把“不做流水会怎样”“多深才够”变成可以自己复算的算术，而不是靠感觉。它模拟一个
 `copy -> compute` 的 reduction 循环：每个 iteration 有一次搬运（占用 copy engine
 `issue` 个周期，数据在 `latency` 个周期后可用）和一次计算（占用 compute 单元
 `compute` 个周期）。`stages` 就是 `T.Pipelined(num_stages=...)` 的值，也就是
@@ -60,8 +60,8 @@ model: copy -> compute, greedy list schedule, abstract cycles
 每轮周期 = max( compute, issue, (latency + compute) / depth )
 ```
 
-第 1 条就是这个式子在 `depth = 1` 时的取值；第 2 条是它从「缓冲区不够」转到
-「计算本身是瓶颈」的拐点。注意打印出来的是有限轮数的平均值，会带上填充段的影响，
+第 1 条就是这个式子在 `depth = 1` 时的取值；第 2 条是它从“缓冲区不够”转到
+“计算本身是瓶颈”的拐点。注意打印出来的是有限轮数的平均值，会带上填充段的影响，
 所以 `stages=2` 那行的 `compute_iv` 是 24.3 而不是式子的 25.0——把 `--iterations`
 开大会向 25 收敛。
 

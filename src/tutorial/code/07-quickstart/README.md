@@ -12,7 +12,7 @@
 | 目录 | 内容 | 是否需要加速器 | 验证级别 |
 | --- | --- | --- | --- |
 | `01-first-kernel/` | 一维向量加法（`T.Kernel` + `T.Parallel`；以及显式 buffer + `T.copy` 两种写法） | 需要 NVIDIA GPU | 仅静态核对 |
-| `02-inspect-source/` | 把「Python ↔ 生成 CUDA」对照关系与官方生成结果打印出来 | 不需要 | 在本机运行过 |
+| `02-inspect-source/` | 把“Python ↔ 生成 CUDA”对照关系与官方生成结果打印出来 | 不需要 | 在本机运行过 |
 | `03-jit-and-cache/` | `@tilelang.jit` 的 lazy / eager 两种用法与编译缓存 | 需要 NVIDIA GPU | 仅静态核对 |
 | `04-api-surface-check/` | 离线核对本章用到的 API 是否真的存在于锁定版本源码 | 不需要 | 在本机运行过 |
 | `05-ascend-first-kernel/` | 昇腾侧同一个 `C = A + B`（对照） | 需要昇腾 NPU | 仅静态核对 |
@@ -33,8 +33,8 @@ cd ../06-env-check && python check_env.py             # 体检本机环境
 ## 验证级别的含义
 
 * **仅静态核对**：作者本机是 macOS（Apple Silicon），**既没有 NVIDIA GPU，也没有昇腾
-  NPU，也没有安装 tilelang**。这类示例只做到「`python3 -m py_compile` 通过」+「每个
-  API 名/签名在 `_vendor/` 里核对过」，**没有运行过**。
+  NPU，也没有安装 tilelang**。这类示例只做到“`python3 -m py_compile` 通过”+“每个
+  API 名/签名在 `_vendor/` 里核对过”，**没有运行过**。
 * **在本机运行过**：这类示例是纯 Python，不 import tilelang，作者在本机跑过，输出
   可复现。
 

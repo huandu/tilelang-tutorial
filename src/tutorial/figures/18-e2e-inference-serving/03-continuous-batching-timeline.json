@@ -5,9 +5,18 @@
   "section": "3.2",
   "columns": ["static batching", "continuous batching"],
   "rows": [
-    { "label": "一步的耗时由谁决定", "values": ["这一批里最长的序列", "这一批里所有在跑的序列"] },
-    { "label": "早完成的序列", "values": ["空占槽位，陪跑到底", "每个 step 结束就能让位"] },
-    { "label": "新请求什么时候进来", "values": ["等整批结束后才开始", "下一个 step 就能补进来"] },
+    {
+      "label": "一步的耗时由谁决定",
+      "values": ["这一批里最长的序列", "这一批里所有在跑的序列"]
+    },
+    {
+      "label": "早完成的序列",
+      "values": ["空占槽位，陪跑到底", "每个 step 结束就能让位"]
+    },
+    {
+      "label": "新请求什么时候进来",
+      "values": ["等整批结束后才开始", "下一个 step 就能补进来"]
+    },
     {
       "label": "对 kernel 的要求",
       "values": ["固定长度即可", "变长 batch、paged KV、prefill/decode 混步"]
@@ -19,8 +28,8 @@
   ],
   "caption": "每个 decode step 的耗时基本不随 batch 变化，所以空槽位是纯浪费；continuous batching 让完成的序列立刻退出、新请求立刻补进。",
   "notes": [
-    "仿真参数：64 个请求、8 个槽位、decode step 固定 8 ms、prefill 12 us/token、输出长度离散——换参数倍数会变，方向不变。",
+    "仿真参数：64 个请求、8 个槽位、decode step 固定 8 ms、prefill 12 us/token、输出长度离散，换参数倍数会变，方向不变。",
     "平均 E2E 延迟从 12084 ms 降到 3953 ms（仿真，非测量）。",
-    "若槽位被占满，再加并发只会拉长排队延迟——吞吐与延迟的权衡在这里才出现。"
+    "若槽位被占满，再加并发只会拉长排队延迟，吞吐与延迟的权衡在这里才出现。"
   ]
 }

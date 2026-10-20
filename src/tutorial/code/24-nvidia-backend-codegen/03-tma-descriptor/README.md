@@ -2,7 +2,7 @@
 
 ## 目的
 
-`T.copy` 走 TMA 时，真正的「描述符」是在 **host 上**编码的：
+`T.copy` 走 TMA 时，真正的“描述符”是在 **host 上**编码的：
 `_vendor/tilelang-v0.1.15/tilelang/jit/adapter/wrapper.py:111-131` 的模板会生成
 `cuTensorMapEncodeTiled(&tmap, dtype, rank, gaddr, gdim, gstride + 1, boxdim,
 estride, interleave, swizzle, l2promotion, oobfill)`。
@@ -67,6 +67,6 @@ self-check: ok
    `(CUtensorMapDataType){1}` 这种形式插入）。
 3. 不做 swizzle 布局推导（`AnalyzeTMASharedLayout`）；swizzle 由 shared 侧 layout
    决定，本脚本只按元素数校验 box 上限 256
-   （`_vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:40`，`kTmaMaxBoxDim = 256`）。
+   （`_vendor/tilelang-v0.1.15/src/cuda/op/tma_layout.h:41-42`，`kTmaMaxBoxDim = 256`）。
 4. 不做 2D/3D 坐标推导（`TMABulkCopyPlan::TmaCoords`），只算描述符本身。
 5. 不做 1D（`kBulkLoad1D`）路径——那条路径根本不建描述符，直接传 device 侧地址。

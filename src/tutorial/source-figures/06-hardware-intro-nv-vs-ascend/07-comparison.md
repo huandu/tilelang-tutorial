@@ -45,7 +45,7 @@ flowchart LR
 
 ## 这张图想说什么
 
-* 两台机器在五个维度上**一一对应但取值不同**；不存在「一边全是 SIMT、一边全是 SIMD」
+* 两台机器在五个维度上**一一对应但取值不同**；不存在“一边全是 SIMT、一边全是 SIMD”
   的简单二分。
 * TileLang 的位置是中间那条虚线：同一套 tile 前端，后端各自落到上面的具体资源。
 
@@ -57,7 +57,7 @@ flowchart LR
   `../tilelang-corpus/06-huawei-ascend/raw/hiascend/llms-content/document/detail/canncommercial/canncommercial_900_programug_Ascendcopdevg_atlas_ascendc_10_0008_html.md`、
   `.../hardware/zh_hardware_processor.md`、`.../hardware/zh_hardware_accelerator-card.md`、
   `.../canncommercial_900_programug_Ascendcopdevg_atlas_ascendc_10_10064_html.md`。
-* 「跨核同步」的定性描述也引用了社区文章：
+* “跨核同步”的定性描述也引用了社区文章：
   `../tilelang-corpus/09-zhihu-da-zhi-ruo-yu/raw/zhihu-dazhiruoyu-deepseek-ascend.md`
   （**社区文章，非厂商官方文档**）。
 

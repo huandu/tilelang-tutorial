@@ -19,11 +19,11 @@
 ## 要点
 
 * **硬件是 950 级别**：不要假设 A2 / A3 也能跑；DeepEP-Ascend 明确说其它代际与 CANN
-  版本「has not been established by these measurements」。
+  版本“has not been established by these measurements”。
 * **CANN 版本以各 README 为准**：9.2.0（TileKernels、FlashMLA）与 9.20
   （DeepGEMM-Ascend）都出现在原文里，不要互相套用。
 * **状态分三档**：已发布（有性能表）、实验性（接口存在但标 experimental）、
-  未实现（只有 API 预留）——DeepEP-Ascend 的 `Ongoing` 一节是最好的例子。
+  未实现（只有 API 预留），DeepEP-Ascend 的 `Ongoing` 一节是最好的例子。
 * **kernel 在运行时编译**：环境里必须一直有 CANN / Bisheng，不是装完就能删。
 
 来源：各仓库 README 的 `Requirements` / `News` / `Ongoing`，见 `../references.md`

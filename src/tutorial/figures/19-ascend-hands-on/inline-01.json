@@ -5,7 +5,7 @@
   "direction": "TB",
   "nodeMaxEm": 15,
   "inlineQuote": "§3 环境      §4 add（UB/Vector）      §5 GEMM（L1/L0/Cube）\n   │                │                          │\n   └────────► §6 Ascend C 对照 ◄───────────────┘",
-  "caption": "本章按「装环境 → 跑最小 kernel → 对照 Ascend C → 认全原语 → 调优 → 入图部署 → 调试 → 避坑」推进，每一步都能独立执行。",
+  "caption": "本章按“装环境 → 跑最小 kernel → 对照 Ascend C → 认全原语 → 调优 → 入图部署 → 调试 → 避坑”推进，每一步都能独立执行。",
   "nodes": [
     { "id": "env", "label": "§3 环境准备", "sub": "驱动 / CANN / torch_npu / 两棵树" },
     { "id": "add", "label": "§4 add", "sub": "UB + Vector 的最小算子", "tone": "compute" },
@@ -13,7 +13,7 @@
     { "id": "ascendc", "label": "§6 Ascend C 对照", "sub": "同一个算子手写一遍", "tone": "accent" },
     {
       "id": "prims",
-      "label": "§7 原语与「哪棵树」",
+      "label": "§7 原语与“哪棵树”",
       "sub": "昇腾专属原语 + A 树/M 树选择规则",
       "tone": "accent"
     },

@@ -4,7 +4,7 @@
 
 读完本章，你应当能够：
 
-1. 用「性能账本」的方式解释一个 GEMM 慢在哪里：写出它的 FLOPs 与最小 DRAM
+1. 用“性能账本”的方式解释一个 GEMM 慢在哪里：写出它的 FLOPs 与最小 DRAM
    访存量，算出算术强度，并据此判断它是 compute-bound 还是 memory-bound。
 2. 从 tile 尺寸出发，估算一份配置的**片上访存**（shared memory 占用）与
    **寄存器压力**（每个线程要持有的累加器个数），并在写代码之前说清它能不能
@@ -13,11 +13,11 @@
    ① 朴素分块版 → ② `T.gemm` + shared memory → ③ `T.Pipelined` 多级流水 →
    ④ swizzle / layout 注解 → ⑤ 官方 intrinsic / 手动 MMA。
 4. 判断该用哪种变体：普通 GEMM、split-K、stream-K、grouped GEMM、batched
-   GEMM；每种都给得出「什么时候用它」的具体判据（而不是「看情况」）。
+   GEMM；每种都给得出“什么时候用它”的具体判据（而不是“看情况”）。
 5. 说清 fp8 / int4 / dequantize / block-scaled 这四类低精度 GEMM 在**结构**和
    **调用方式**上的区别（数值细节留给第 27 章）。
 6. 在昇腾上把 TileLang 实现与 CATLASS / 手写基线对齐：知道要比什么、怎么比、
-   什么才算「对齐了」，以及一个可复用的性能对比清单（dtype、shape、epilogue、
+   什么才算“对齐了”，以及一个可复用的性能对比清单（dtype、shape、epilogue、
    预热与重复次数）。
 
 ## 前置知识
@@ -44,11 +44,11 @@ GPU，也没有昇腾 NPU**。因此本章所有 TileLang kernel 代码的最高
 
 ### 1.1 一笔账：FLOPs、字节与算术强度
 
-GEMM 是「性能账本」这个概念最好的教材，因为它的账目干净得可以手算。对
+GEMM 是“性能账本”这个概念最好的教材，因为它的账目干净得可以手算。对
 $C_{M\times N} = A_{M\times K} B_{K\times N}$：
 
 * **计算量**：输出的每个元素要做 $K$ 次乘加，每次乘加 2 FLOP，所以总计算量是
-  $2MNK$ FLOP。注意它和「怎么切块」无关——切块只影响数据怎么流动，不改变要算
+  $2MNK$ FLOP。注意它和“怎么切块”无关，切块只影响数据怎么流动，不改变要算
   多少次。
 * **最小 DRAM 访存量**：在最理想的情况下，$A$、$B$ 各从显存读一次，$C$ 写一次，
   即 $b\,(MK + KN + MN)$ 字节，其中 $b$ 是每个元素的字节数。
@@ -59,7 +59,7 @@ $$
 $$
 
 对正方形 $M=N=K$ 退化成 $AI = \frac{2M}{3b}$，即**算术强度随边长线性增长**。
-这一点非常关键：它意味着「同样算法，换规模，判类会翻转」。
+这一点非常关键：它意味着“同样算法，换规模，判类会翻转”。
 
 用第 2 章的机器模型套一下（H100 SXM5，公开规格 fp16 张量核 1000 TFLOPS、
 HBM3 带宽 over 3 TB/s，机器平衡点约 333 FLOP/Byte）：
@@ -72,13 +72,13 @@ HBM3 带宽 over 3 TB/s，机器平衡点约 333 FLOP/Byte）：
 
 这张表由 `code/01-gemm-ledger/gemm_ledger.py` 复算，机器参数与第 2 章同源。
 它能直接回答一个日常问题：**为什么大模型里的 GEMM 要拼命做 tile，而小
-GEMM（batch=1 的 GEMV 类）再怎么调 block 也没用——它根本不吃算力。**
+GEMM（batch=1 的 GEMV 类）再怎么调 block 也没用。它根本不吃算力。**
 
 ### 1.2 为什么大 GEMM 是 compute-bound
 
 上面那条 $AI \approx 2M/(3b)$ 说明：只要 $M$ 足够大，算术强度就会远远超过
 机器平衡点。把 333 代回去，fp16 的正方形 GEMM 在 $M \approx 10^3$ 附近跨过
-平衡点。**这条线的意义是：它给出「可以靠调 tile 提性能」的下限规模。**
+平衡点。**这条线的意义是：它给出“可以靠调 tile 提性能”的下限规模。**
 低于这条线的 GEMM 该做的是减少访存（融合、量化、复用），而不是加流水。
 
 但也别把结论读死。真实 GEMM 的 DRAM 流量**总是高于**这个下界，原因有两个：
@@ -90,8 +90,8 @@ GEMM（batch=1 的 GEMV 类）再怎么调 block 也没用——它根本不吃�
 2. **片上放不下，需要多趟**。如果 $m_1$、$n_1$ 选得小，重复读的倍率就大；
    如果选得大，片上又放不下（见 1.3）。
 
-所以「为什么大 GEMM 是 compute-bound」是**上限判断**；「为什么我的实现
-还是慢」往往要回到这张账本上，看实际 DRAM 流量离下界差多少。
+所以“为什么大 GEMM 是 compute-bound”是**上限判断**；“为什么我的实现
+还是慢”往往要回到这张账本上，看实际 DRAM 流量离下界差多少。
 
 ### 1.3 tile 尺寸决定两件事：片上访存与寄存器压力
 
@@ -111,7 +111,7 @@ $$
 对 $block\_M=block\_N=128,\ block\_K=32,\ b=2$（fp16），单级是
 $(128\cdot32 + 32\cdot128)\times2 = 16\,\mathrm{KB}$，三级流水 48 KB。
 H100 每个 SM 的 shared memory 可配到 228 KB（厂商公开资料），所以这个配置
-理论上能驻留约 4 个 block——但还要和寄存器的账一起算。
+理论上能驻留约 4 个 block。但还要和寄存器的账一起算。
 
 **（b）寄存器压力：累加器。** $C_{\text{block}}$ 在计算期间必须以累加器
 fragment 的形式常驻寄存器。它的元素个数是 $block\_M \times block\_N$，
@@ -127,8 +127,8 @@ $$
 也就是光累加器就吃掉 128 个 32 位寄存器。这不是小数目：CUDA 最佳实践文档
 写明，compute capability 7.0 的 SM 有 65536 个 32 位寄存器、最多 2048 个
 驻留线程，折算下来**每个线程 32 个寄存器才能到 100% occupancy**，而且寄存器
-分配以「每 warp 256 个」为单位向上取整。所以「把 $block\_M \times block\_N$
-开大」和「保持高 occupancy」天然是一对矛盾：**大 tile 换来更少的重复读，
+分配以“每 warp 256 个”为单位向上取整。所以“把 $block\_M \times block\_N$
+开大”和“保持高 occupancy”天然是一对矛盾：**大 tile 换来更少的重复读，
 但用寄存器换的。**
 
 ### 1.4 三张约束表
@@ -142,13 +142,13 @@ $$
 | 寄存器 | $\frac{m_1 n_1 \cdot 4}{\text{threads}} \lesssim 255$ | 溢出到 local memory（`ld.local`/`st.local`），性能断崖 |
 
 第一行是**下界**，越接近越好；第二、三行是**硬上限**，越接近越危险（剩下的
-空间要留给别的东西）。第 11 章给出的「先算占用再编译」方法，在 GEMM 上就是
+空间要留给别的东西）。第 11 章给出的“先算占用再编译”方法，在 GEMM 上就是
 把这三张表填满。
 
 ### 1.5 昇腾的同款账本：CATLASS 的 tiling 建模
 
 这套账不是 NVIDIA 专属。CATLASS（昇腾算子模板库）在
-`docs/zh/2_Design/01_kernel_design/04_matmul_summary.md` 里把「Common 模板」
+`docs/zh/2_Design/01_kernel_design/04_matmul_summary.md` 里把“Common 模板”
 的约束写成了和我们上面几乎一一对应的形式：
 
 $$
@@ -178,12 +178,12 @@ NV 上没有的等式：$m_0=m_1$、$n_0=n_1$（即 L0 层不再细分 M/N），
 
 > **PyTorch 参考 → TileLang 代码 → 性能瓶颈分析 → 下一级要解决什么**
 
-五级之间的关系不是「谁替代谁」，而是**每一级把一个被暴露出来的瓶颈收进
+五级之间的关系不是“谁替代谁”，而是**每一级把一个被暴露出来的瓶颈收进
 编译器**：
 
 | 级 | 关键改动 | 收进编译器的东西 | 解决后的瓶颈 |
 | --- | --- | --- | --- |
-| ① 朴素分块 | 直接读 global 做乘加 | —— | 功能正确（基准） |
+| ① 朴素分块 | 直接读 global 做乘加 | 无 | 功能正确（基准） |
 | ② `T.gemm` + shared | 把 tile 先搬进 shared，再调 tile 级 GEMM | 线程映射、MMA 指令选择 | 访存复用 |
 | ③ `T.Pipelined` | 沿 K 显式流水 | 多缓冲、同步插入 | 搬运与计算的重叠 |
 | ④ swizzle / layout | 注解 shared 的物理排布和金块顺序 | bank conflict 规避、L2 局部性 | 片上带宽与 cache 命中 |
@@ -222,12 +222,12 @@ def gemm_naive(A, B, block_M, block_N, dtype=T.float16, accum_dtype=T.float32):
     return C
 ```
 
-它已经用了「分块」和 `T.Parallel` 把输出切开，但**每个输出元素仍然沿着
+它已经用了“分块”和 `T.Parallel` 把输出切开，但**每个输出元素仍然沿着
 整个 $K$ 从 global memory 顺序读**。
 
 **性能瓶颈。** 访存量退化成 $O(MNK)$ 量级：$A$ 的第 $i$ 行会被同一 block
 里 $block\_N$ 个输出列各读一遍，$B$ 同理。对 $4096^3$ 的 fp16 GEMM，
-最小访存是 96 MiB，而这一版光读 $A$、$B$ 就是 $2 \times 4096^3 \times 2 \approx 275$ GB——差了三个数量级。**它是一道算术题，不是一道性能题。**
+最小访存是 96 MiB，而这一版光读 $A$、$B$ 就是 $2 \times 4096^3 \times 2 \approx 275$ GB，差了三个数量级。**它是一道算术题，不是一道性能题。**
 
 **下一级要解决什么。** 让同一块数据被多次使用：把 $A_{\text{tile}}$、
 $B_{\text{tile}}$ 搬进片上（shared memory），让它被 block 内所有线程
@@ -236,8 +236,8 @@ $B_{\text{tile}}$ 搬进片上（shared memory），让它被 block 内所有线
 
 ### 2.2 第 ② 级：`T.gemm` + shared memory
 
-**PyTorch 参考。** 语义不变，仍然是 `C = A @ B`；变的是「我们开始按块把
-数据搬上片」。
+**PyTorch 参考。** 语义不变，仍然是 `C = A @ B`；变的是“我们开始按块把
+数据搬上片”。
 
 **TileLang 代码**（`RUNG_1`，也就是官方
 `examples/gemm/example_gemm.py` 去掉 `T.Pipelined` 的版本）：
@@ -263,13 +263,13 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx,
 `T.gemm(A, B, C, transpose_A=False, transpose_B=False, policy=GemmWarpPolicy.Square, clear_accum=False, annotations=None)`
 （`_vendor/tilelang-v0.1.15/tilelang/language/gemm_op.py:160`）。
 
-**为什么这一级就快很多。** `T.gemm` 不是「一个会算矩阵的函数」，它是一个
+**为什么这一级就快很多。** `T.gemm` 不是“一个会算矩阵的函数”，它是一个
 **tile op**：编译器会把它降到硬件矩阵乘指令（NV 上是 MMA，昇腾上是 Cube 的
 MAD），并负责把 `C_local` 的 fragment 按线程切开、决定每个 warp 负责哪一块。
-这正是第 9 章说的「tile op 不直接展成 CUDA」——它是留给编译器的调度空间。
+这正是第 9 章说的“tile op 不直接展成 CUDA”。它是留给编译器的调度空间。
 
 **性能瓶颈。** 这一版里 `T.copy`（搬运）和 `T.gemm`（计算）是**串行**的：
-每次迭代都是「搬 → 等 → 算 → 搬 → 等 → 算」。GPU 上搬运是内存延迟主导、
+每次迭代都是“搬 → 等 → 算 → 搬 → 等 → 算”。GPU 上搬运是内存延迟主导、
 计算是张量核吞吐主导，两者本可以并行。现在每次迭代都要付一遍
 global→shared 的延迟，张量核有相当一部分时间在等数据。
 
@@ -278,8 +278,8 @@ global→shared 的延迟，张量核有相当一部分时间在等数据。
 
 ### 2.3 第 ③ 级：`T.Pipelined` 多级流水
 
-**PyTorch 参考。** 没有对应的 PyTorch 写法——这是 kernel 层面的优化，
-PyTorch 把它藏在 cuBLAS 内部。**这一步是「从会写到写得快」的分水岭。**
+**PyTorch 参考。** 没有对应的 PyTorch 写法。这是 kernel 层面的优化，
+PyTorch 把它藏在 cuBLAS 内部。**这一步是“从会写到写得快”的分水岭。**
 
 **TileLang 代码**（`RUNG_2`，就是官方最小示例的确切形态）：
 
@@ -295,16 +295,16 @@ for ko in T.Pipelined(T.ceildiv(K, block_K), num_stages=3):
 
 **它做了什么。** 第 11 章已经把机制讲透，这里只重复结论：`num_stages=3`
 意味着在片上保留 3 个版本的 A/B tile，编译器重排循环，让
-「搬 stage $i+2$」「算 stage $i$」在时间上重叠。填充（prologue）和排空
+“搬 stage $i+2$”“算 stage $i$”在时间上重叠。填充（prologue）和排空
 （epilogue）只占一次迭代，稳态里搬运延迟被计算时间掩盖。
 
 顺带说一个容易踩的点：**`num_stages=0` 等于不做流水**。`T.Pipelined`
-的 docstring 明确写着：「For compiler-inferred pipelines, if `num_stages`
-is 0, pipeline will not be enabled」（`tilelang/language/loop.py:112-140`）。
+的 docstring 明确写着：“For compiler-inferred pipelines, if `num_stages`
+is 0, pipeline will not be enabled”（`tilelang/language/loop.py:112-140`）。
 你在 `examples/gemm_splitk` 里看到的 `T.Pipelined(..., num_stages=0)` 就是
-「借 `T.Pipelined` 的语法但故意不流水」。
+“借 `T.Pipelined` 的语法但故意不流水”。
 
-**性能瓶颈。** 流水解决「搬运/计算重叠」，但没解决**片上带宽**：
+**性能瓶颈。** 流水解决“搬运/计算重叠”，但没解决**片上带宽**：
 `A_shared` 从 shared memory 读进 MMA fragment 时，如果物理排布是朴素行主序，
 同一个 warp 的线程会撞上 bank conflict；同时，输出块的调度顺序若不好，
 相邻 block 之间无法复用 L2。这两件事都不改变 DRAM 流量的下界，却会让
@@ -350,7 +350,7 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx,
   `tilelang/cuda/intrinsics/layout/mma_layout.py:336`，它先算
   `can_swizzle = shape[-1] * dtype.bits % 512 == 0`：行宽的比特数不是 512
   的整数倍就退回恒等布局，是才生成 swizzle 变换。（`example_gemm_intrinsics.py`
-  里另抄了一份简化版，把判据写成了「恰好 512 bit」；读源码时注意这两处的
+  里另抄了一份简化版，把判据写成了“恰好 512 bit”；读源码时注意这两处的
   差别。）
 * `T.use_swizzle`（`annotations.py:30`）不改数据，改的是**block 的遍历顺序**
   （`rasterization2DRow` 等）。`panel_size=10` 表示按 10 个 block 宽的
@@ -360,15 +360,15 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx,
 **注意一个常见误解**：第 10 章讲过，TileLang 会**自动做 layout inference**，
 所以第 ③ 级的代码在多数情况下也能跑出正确结果、甚至自动选到不错的布局。
 加 `T.annotate_layout` 的价值在于**当自动推断的结果不是最优、或你想固定
-行为做可复现的对比时**，把布局从「编译器猜」变成「我说了算」。这也是
+行为做可复现的对比时**，把布局从“编译器猜”变成“我说了算”。这也是
 第 21 章 layout inference 的引子。
 
-**性能瓶颈。** 到这一级，你已经把「分块、复用、流水、布局、调度」都表达
+**性能瓶颈。** 到这一级，你已经把“分块、复用、流水、布局、调度”都表达
 出来了。剩下的差距来自两处：
 
 1. **指令级的细节**（`ldmatrix` 的选取、`cp.async` / TMA 的用法、是否用
    warp specialization）；
-2. **编译器对你这版配置的调度选择未必是全局最优的**——它是在你给的约束里
+2. **编译器对你这版配置的调度选择未必是全局最优的**。它是在你给的约束里
    做选择。
 
 **下一级要解决什么。** 要么把配置交给 autotuner 搜（第 11 章），要么**下钻
@@ -412,12 +412,12 @@ tile（`warp_row_tiles`/`warp_col_tiles`）以及 MMA 的微形状
 在 shared 与寄存器之间的流动。`TensorCoreIntrinEmitter` 定义在
 `tilelang/cuda/intrinsics/macro/mma_macro_generator.py:46`。
 
-在 Blackwell（sm100）上，「intrinsic 版」换了形态：`T.gemm` 默认的同步
+在 Blackwell（sm100）上，“intrinsic 版”换了形态：`T.gemm` 默认的同步
 路径会自动降级到 `tcgen05`，并隐式插入 `mbarrier_wait_parity`；想手写异步
 调度则用 `T.tcgen05_gemm(...)` + 显式 `T.mbarrier_wait_parity(...)`
 （`T.gemm` docstring 与 `examples/gemm_tcgen05/README.md`）。也就是说，
-**第 ⑤ 级在 Hopper 上是「手动 ldmatrix + mma」，在 Blackwell 上是「手动
-TMEM + mbarrier 协议」**。
+**第 ⑤ 级在 Hopper 上是“手动 ldmatrix + mma”，在 Blackwell 上是“手动
+TMEM + mbarrier 协议”**。
 
 **什么时候值得下钻到第 ⑤ 级？** 只有两种：一是你要的能力编译器还没暴露
 （比如某个新的 PTX 指令、某个特殊的内存序）；二是你已经用第 ④ 级 + 自动
@@ -430,7 +430,7 @@ TMEM + mbarrier 协议」**。
 
 | 级 | 相对上一级多做的事 | 主要收益 | 主要代价 | 什么时候停在这里 |
 | --- | --- | --- | --- | --- |
-| ① 朴素 | —— | 正确性基准 | DRAM 流量 $O(MNK)$ | 只用来验证算法 |
+| ① 朴素 | 无 | 正确性基准 | DRAM 流量 $O(MNK)$ | 只用来验证算法 |
 | ② shared + `T.gemm` | 片上复用 | 访存降一个数量级 | 搬运/计算串行 | 教学、极小规模 |
 | ③ `T.Pipelined` | 重叠 | 掩盖搬运延迟 | 更多片上缓冲 | **大多数应用算子的终点** |
 | ④ swizzle/layout | 物理排布与调度 | 片上带宽 + L2 命中 | 需要理解布局 | 生产算子 + 自动调优 |
@@ -452,8 +452,8 @@ PipelinePlanning → InjectSoftwarePipeline → LayoutInference → LowerTileOp
 读法：
 
 1. **PipelinePlanning / InjectSoftwarePipeline** 先把 `T.Pipelined` 展开成
-   多缓冲的显式循环——所以 `num_stages` 是在**布局推断之前**定下来的，
-   这解释了「为什么改 `num_stages` 会连带改变 layout 结果」。
+   多缓冲的显式循环。所以 `num_stages` 是在**布局推断之前**定下来的，
+   这解释了“为什么改 `num_stages` 会连带改变 layout 结果”。
 2. **LayoutInference** 给 fragment 和 shared buffer 定物理布局。若你在
    第 ④ 级写了 `T.annotate_layout`，这一步会尊重你的注解。
 3. **LowerTileOp** 才把 `tl.tileop.gemm` 降到具体的 MMA 指令、把
@@ -468,7 +468,7 @@ EstimateLatency → AutoSchedule → PrepareMultiBuffer → InsertSync → Mater
 
 区别最大的一点是 **`InsertSync`**：NV 侧大量同步是 `cp.async`/TMA 的
 隐式等待和 `__syncthreads()`，而昇腾要显式插入 MTE/Cube/Vector 之间的
-Set/Wait 标志——TileLang 把它变成了编译器的事（第 22、25 章展开）。
+Set/Wait 标志，TileLang 把它变成了编译器的事（第 22、25 章展开）。
 
 ### 3.2 swizzle 与 layout inference
 
@@ -479,7 +479,7 @@ Set/Wait 标志——TileLang 把它变成了编译器的事（第 22、25 章�
 | `T.annotate_layout` | buffer 的**物理布局** | 消除 bank conflict、匹配 MMA 取数模式 | `tilelang/language/annotations.py:45` |
 | `T.use_swizzle` | **block 的遍历顺序** | 提高 L2 命中率 | `tilelang/language/annotations.py:30` |
 
-一个改「数据怎么摆」，一个改「block 按什么顺序跑」。推理链是：
+一个改“数据怎么摆”，一个改“block 按什么顺序跑”。推理链是：
 `T.use_swizzle` 让相邻 block 的 $A$/$B$ tile 尽量相邻 → L2 命中率上升 →
 DRAM 流量接近 1.4 节的下界；`T.annotate_layout` 让 shared→fragment 的
 读不会撞 bank → 张量核供给更顺。两者都不改变 FLOPs。
@@ -507,7 +507,7 @@ DRAM 流量接近 1.4 节的下界；`T.annotate_layout` 让 shared→fragment �
 
 ## 4. 变体家族：split-K / stream-K / grouped / batched
 
-主阶梯解决的是「一个 $M\times N\times K$ 的 GEMM 怎么写快」。真实负载里，
+主阶梯解决的是“一个 $M\times N\times K$ 的 GEMM 怎么写快”。真实负载里，
 GEMM 的形状分布很极端，于是长出四个变体。判断依据全部落在一句话上：
 **输出的并行度够不够填满设备，以及 K 要不要被切开。**
 
@@ -546,15 +546,15 @@ with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), split_k, threads=128
 **什么时候不要用。** 输出块数已经远大于 SM 数时，split-K 只会凭空增加写出
 流量和原子竞争，纯亏。
 
-### 4.2 stream-K：当输出块数和设备数「不整除」
+### 4.2 stream-K：当输出块数和设备数“不整除”
 
 **什么时候需要它。** 纯数据并行（4.1 之外的默认做法）会让 grid 排成
-若干「波」（wave）。如果总块数不是 SM 数的整数倍，最后一波会只有一部分
-SM 在干活——这叫 **tail wave / wave quantization**。split-K 可以解决
-「块数太少」，但对「块数够多、只是最后一波不满」无能为力。
+若干“波”（wave）。如果总块数不是 SM 数的整数倍，最后一波会只有一部分
+SM 在干活。这叫 **tail wave / wave quantization**。split-K 可以解决
+“块数太少”，但对“块数够多、只是最后一波不满”无能为力。
 
-**做法。** stream-K 不再按「一个 block 一个输出块」分配，而是把
-「$K$ 方向的所有迭代」当成一个总工作量，平均切成与 SM 数相等的份。
+**做法。** stream-K 不再按“一个 block 一个输出块”分配，而是把
+“$K$ 方向的所有迭代”当成一个总工作量，平均切成与 SM 数相等的份。
 看 `examples/gemm_streamk/example_tilelang_gemm_streamk.py`：先算出
 `streamk_tiles`（需要跨 SM 切 K 的块）与 `blocking_tiles`（整块分给一个
 SM 的块），然后：
@@ -567,13 +567,13 @@ SM 的块），然后：
 也就是**只有被切开的块才需要原子合并**，其余保持确定性写出。
 
 **什么时候用。** 形状不规则（比如 MoE 里每个专家的 token 数不一致）、
-或者你发现 profiler 上 kernel 尾部有一段「只有少数 SM 在跑」的平台期。
+或者你发现 profiler 上 kernel 尾部有一段“只有少数 SM 在跑”的平台期。
 代价是实现了复杂度（要自己算 tile 划分和 fixup），以及比纯数据并行更长
 的编译/deprecated 调试成本。
 
 > 提醒：以上两条判据都基于官方 example 的实现方式，**不是实测结论**。
 > 判断某个具体 shape 该用哪种，最终要用第 12 章的工具在真机上量出
-> 「kernel 结束前的 SM 占用曲线」。
+> “kernel 结束前的 SM 占用曲线”。
 
 ### 4.3 grouped GEMM：MoE 的必需品
 
@@ -583,7 +583,7 @@ SM 的块），然后：
 把每个专家的 GEMM 单独启动既浪费启动开销、又没法保证设备打满。
 
 **做法。** 官方 `examples/grouped_gemm/example_grouped_gemm_fwd.py` 给的是
-「拼成一个大张量 + 偏移表」的写法：把 $G$ 个专家的 $A$ 按 M 拼成一个
+“拼成一个大张量 + 偏移表”的写法：把 $G$ 个专家的 $A$ 按 M 拼成一个
 `[batch_sum, K]`，再传入 `batch_sizes` / `batch_offsets` /
 `batch_padded_offsets` 三个 int32 表，grid 的大小是
 `total_m_blocks = sum(ceildiv(size, block_M))`。kernel 内先用偏移表反推出
@@ -608,8 +608,8 @@ m_start = m_start_padded - batch_padded_offsets[cur_batch_idx] + batch_offsets[c
 * “Multi-stage software pipelining on ptr-backed tensors is not correct yet”,
   所以那份实现把 `copy_num_stages` 固定为 1。
 
-**判断依据。** 用 grouped GEMM 当且仅当「多个 GEMM 的形状不同、或数量
-动态」。如果 $G$ 个 GEMM 形状完全一致，用 4.4 的 batched GEMM 更简单也
+**判断依据。** 用 grouped GEMM 当且仅当“多个 GEMM 的形状不同、或数量
+动态”。如果 $G$ 个 GEMM 形状完全一致，用 4.4 的 batched GEMM 更简单也
 更快（pointer table 的间接寻址有代价）。
 
 ### 4.4 batched GEMM：形状一致的批量
@@ -671,7 +671,7 @@ flowchart TD
 
 ### 5.1 fp8
 
-结构上和 fp16 没有区别——只是 `dtype` 变成 fp8（E4M3 或 E5M2），累加仍在
+结构上和 fp16 没有区别，只是 `dtype` 变成 fp8（E4M3 或 E5M2），累加仍在
 fp32。看 `examples/gemm_fp8/example_tilelang_gemm_fp8.py`：kernel 主体与
 `example_gemm.py` 一字不差，`T.gemm(A_shared, B_shared, C_local, transpose_B=True)`，
 只是 `dtype` 由 `determine_fp8_type()` 给出（默认 E4M3，可传 `"e5m2"`）。
@@ -701,12 +701,12 @@ expectation: T.gemm should accept int4 operands directly”），示例里还附
 
 ### 5.3 dequantize GEMM
 
-结构上，dequantize GEMM = 「搬入时顺手反量化」+ 「普通 GEMM」。权重以
+结构上，dequantize GEMM = “搬入时顺手反量化”+ “普通 GEMM”。权重以
 int4/int8/fp4 存放，kernel 把量化权重搬进 shared/寄存器时乘上 scale，还原
 成 fp16/bf16，再喂给 `T.gemm`。粒度分 per-tensor / per-channel /
 per-group / fine-grained，示例目录 `examples/dequantize_gemm/` 里
 `example_dequant_gemm_w4a8.py`、`example_dequant_gemm_fine_grained.py`
-分别对应不同粒度。**本章只需记住：它是「访存减少 + 反量化算力开销」的
+分别对应不同粒度。**本章只需记住：它是“访存减少 + 反量化算力开销”的
 交换；粒度越细，反量化的元数据和算力开销越大。**
 
 ### 5.4 block-scaled（MX 系列）
@@ -733,7 +733,7 @@ gemm_mxfp8_blockscaled_1d1d.py`：文件头写 “Blockscale size:
 昇腾侧有对应的 `T.gemm_blockscaled` 方言重载
 （`tilelang/ascend/language/gemm_op.py:110`），它把
 `sf_*_granularity_k` 固定成 32（MX 规范），scale 的 K 偏移从 SFA 切片
-自己推。**同一个概念，不同硬件的 scale 粒度不同——这正是第 27 章要
+自己推。**同一个概念，不同硬件的 scale 粒度不同。这正是第 27 章要
 对齐的事情之一。**
 
 | 变体 | 输入 dtype | 累加 dtype | 额外输入 | 结构上多出的东西 |
@@ -813,18 +813,18 @@ with T.Kernel(m_num * n_num, is_npu=True) as (cid, _):
 `T.barrier_all()` 就是昇腾必须显式处理的同步（在主干后端里这一步被
 `InsertSync` 自动做掉了）。
 
-### 6.3 怎样才算「对齐了手写基线」
+### 6.3 怎样才算“对齐了手写基线”
 
 这是本章最容易被含糊过去、也最需要纪律的一节。CATLASS 的 README 说：为
-定制场景提供性能优化模块，「在定制 shape 下的性能能达到相应算子标杆性能的
-0.98~1.2 倍」。**这句话本身就是「对齐」的模板**：它同时给定了
+定制场景提供性能优化模块，“在定制 shape 下的性能能达到相应算子标杆性能的
+0.98~1.2 倍”。**这句话本身就是“对齐”的模板**：它同时给定了
 （a）对比对象（标杆性能）、（b）条件（定制 shape）、（c）区间（0.98–1.2×）。
 
 反过来，主干 v0.1.15 的昇腾 README 给的是另一种口径：TileLang 与
 **Torch NPU** 对比，用 BF16 GEMM、FP8 casting、GQA backward 各 4 个 shape，
 compute-bound 的报 TFLOP/s、memory-bound 的报 GB/s。
 
-两条口径都成立，所以「对齐手写基线」必须先把下面五件事说死：
+两条口径都成立，所以“对齐手写基线”必须先把下面五件事说死：
 
 1. **基线是谁**：cuBLAS / CATLASS 模板 / Ascend C 手写 kernel /
    Torch NPU 算子。不同基线结论完全不同。
@@ -836,8 +836,8 @@ compute-bound 的报 TFLOP/s、memory-bound 的报 GB/s。
 5. **同一套测量协议**：预热与重复次数（见 7 节）、是否 flush L2、取
    mean/median/min、kernel-only 还是含启动开销。
 
-只有这五条全部一致，「0.98×」和「1.2×」才是可比较的两个数。任何一条不同，
-数字就没有可比性——这就是在第 6.3 节反复出现的「口径」二字的全部含义。
+只有这五条全部一致，“0.98×”和“1.2×”才是可比较的两个数。任何一条不同，
+数字就没有可比性。这就是在第 6.3 节反复出现的“口径”二字的全部含义。
 
 ---
 
@@ -845,7 +845,7 @@ compute-bound 的报 TFLOP/s、memory-bound 的报 GB/s。
 
 ### 7.1 先固定口径
 
-对比 cuBLAS / CATLASS 时，最容易犯的错是「两个数字都写 TFLOP/s，就直接比」。
+对比 cuBLAS / CATLASS 时，最容易犯的错是“两个数字都写 TFLOP/s，就直接比”。
 下面这份清单来自三个上游实现（Triton benchmark 脚本、cuBLAS benchmark、
 TileLang `do_bench`）的实测口径，可以直接当模板：
 
@@ -862,7 +862,7 @@ TileLang `do_bench`）的实测口径，可以直接当模板：
 
 ### 7.2 预热与重复次数
 
-为什么不写「预热与重复次数」的对比结果不可信？因为 GPU 的时钟、L2 状态和
+为什么不写“预热与重复次数”的对比结果不可信？因为 GPU 的时钟、L2 状态和
 编译器/驱动的热身都会改变前几次测量的结果。三个上游实现给的口径是：
 
 | 上游 | 预热 | 重复 | 备注 |
@@ -892,7 +892,7 @@ TileLang `do_bench`）的实测口径，可以直接当模板：
 ```
 
 `code/06-bench-methodology/bench_methodology.py` 把上面第 3、4 条做成了一个
-纯标准库的小工具：它按「目标毫秒数 → 迭代次数」的换算规则算出一份
+纯标准库的小工具：它按“目标毫秒数 → 迭代次数”的换算规则算出一份
 对比表，可以离线复算，**但它不测量任何真实性能**。
 
 ---
@@ -904,7 +904,7 @@ TileLang `do_bench`）的实测口径，可以直接当模板：
    多占片上缓冲。
 2. **忘记 `clear_accum` / `T.clear`。** 默认 `T.gemm` 是**累加**（`+`），
    不是赋值。第一次迭代前不清零，或者在昇腾上用 `init=(k == 0)` 传错，
-   结果就是脏数据（数值上表现为「多了前一次的值」）。
+   结果就是脏数据（数值上表现为“多了前一次的值”）。
 3. **`num_stages` 与片上容量打架。** 4.1 节那张表能提前算出来；编译报
    shared memory 超限时，先降 `num_stages`，不是先降 `block_K`。
 4. **split-K 之后用 fp16 累加。** 官方 split-K 示例把输出 C 声明成
@@ -912,7 +912,7 @@ TileLang `do_bench`）的实测口径，可以直接当模板：
    损失；用 fp16 累加会放大误差。
 5. **int4/fp8 直接当 fp16 用。** 打包格式、K 对齐、scale factor 的粒度
    都是硬约束，不是可选项。
-6. **用「仅静态核对」的示例结果当实测数字。** 本章所有 kernel 都**没有**
+6. **用“仅静态核对”的示例结果当实测数字。** 本章所有 kernel 都**没有**
    在硬件上运行过；任何写进报告的性能数字都必须来自真机，且带 7.1 的口径。
 
 ---
@@ -931,7 +931,7 @@ TileLang `do_bench`）的实测口径，可以直接当模板：
 * **低精度**：fp8（只换 dtype）、int4（打包）、dequantize（搬入时反量化）、
   block-scaled（多一对 SFA/SFB）。数值正确性 = 第 27 章。
 * **昇腾对照**：CATLASS 的 Kernel/Block/Tile + dispatchPolicy + swizzle，
-  与 TileLang 的阶梯一一对应；「对齐手写基线」= 固定基线、shape、dtype、
+  与 TileLang 的阶梯一一对应；“对齐手写基线”= 固定基线、shape、dtype、
   epilogue、测量协议五件事。
 * **性能对比纪律**：所有数字必须带来源与条件；预热/重复/L2 flush/取数
   口径要一致；本章没有实测数字。

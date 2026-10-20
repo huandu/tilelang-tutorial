@@ -36,7 +36,7 @@
     }
   ],
   "notes": [
-    "官方原文的表述是：T.Kernel 之内是「block level, not thread level」。",
+    "官方原文的表述是：T.Kernel 之内是“block level, not thread level”。",
     "想要 thread-level 也可以，用 T.get_thread_binding()，属 expert 层。",
     "同一个块里的 256 个元素，可能由 32 个线程各做 8 个，也可能由 256 个线程各做 1 个。"
   ]

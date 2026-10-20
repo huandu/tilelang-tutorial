@@ -5,7 +5,7 @@
 ## 一、为什么昇腾需要 fractal
 
 NVIDIA 的张量核从 shared memory 取数据时可以配合 `ldmatrix` 做细粒度分块；昇腾的
-Cube 单元则期望数据在 L1 中就是**分形（fractal）**摆放——即以 16 行为一组、
+Cube 单元则期望数据在 L1 中就是**分形（fractal）**摆放，即以 16 行为一组、
 宽度为 C0 的小块，C0 由元素位宽决定（bf16/fp16 为 16，fp8 为 32，fp32 为 8）。
 
 逻辑上一块 `[rows, cols]`，物理上被摆成 `[cols/C0, rows/16, 16, C0]`
@@ -50,7 +50,7 @@ GM / UB 上的张量通常是 ND（row-major，就是普通二维数组）；Cub
     [M, K] 元素按行连续                                 [K/C0, M/16, 16, C0]
 ```
 
-重排不是「再存一份」，而是把同一次搬运的目标地址换成 NZ 公式；代价是搬运指令里
+重排不是“再存一份”，而是把同一次搬运的目标地址换成 NZ 公式；代价是搬运指令里
 多一层索引计算，收益是 Cube 可以直接吃。
 
 ## 三、OOB padding：边界不对齐时的补零
@@ -75,7 +75,7 @@ GM / UB 上的张量通常是 ND（row-major，就是普通二维数组）；Cub
 
 * 昇腾 fractal 是同一件事（逻辑→物理映射）在另一套硬件上的形态；
 * 区别在于：NVIDIA 的 fragment 布局是**推导出来的**，昇腾的 fractal 是**硬件规定的**，
-  编译器要做的是「把逻辑 shape 归一化 + 补零 + 重排」去迎合它，而不是自由选择；
+  编译器要做的是“把逻辑 shape 归一化 + 补零 + 重排”去迎合它，而不是自由选择；
 * 第 21 章会把 `NormalizeAscendFractalStorage`、`InsertNd2Nz`、
   `AscendInsertOOBPadding` 三个 pass 的顺序、约束与转换代价展开讲。
 

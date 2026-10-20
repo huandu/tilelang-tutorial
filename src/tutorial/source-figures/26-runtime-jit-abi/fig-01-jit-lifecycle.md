@@ -28,7 +28,7 @@ flowchart TD
     T --> K
 ```
 
-## ASCII 版（每跳都是「入口函数 + 文件:行号」）
+## ASCII 版（每跳都是“入口函数 + 文件:行号”）
 
 ```text
 ① 装饰          @tilelang.jit                       tilelang/jit/__init__.py:588
@@ -76,6 +76,6 @@ flowchart TD
   `kernel_lib.so`（`tilelang/cache/kernel_cache.py:641-731`）；缓存未命中才走完整条链。
 * **②→③ 的顺序不能颠倒**：`lower` 需要的是 `PrimFunc`，而 `PrimFunc` 来自
   `get_tir`；缓存 key 又建立在 `func.script()` 上（`kernel_cache.py:269`），
-  所以「先取 TIR、再算 key」是设计上必须的顺序。
+  所以“先取 TIR、再算 key”是设计上必须的顺序。
 * **⑦ 只有一个出口**：不管后端是哪一个，`JITKernel` 对外的调用面都是
-  `adapter.func`。所有「框架集成」的差异都收敛在第 ⑥ 步。
+  `adapter.func`。所有“框架集成”的差异都收敛在第 ⑥ 步。

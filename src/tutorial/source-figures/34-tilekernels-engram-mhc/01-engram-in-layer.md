@@ -55,7 +55,7 @@ flowchart TB
 1. **输入是 token id，不是 hidden state。** 这是 Engram 与 MoE 最本质的区别：
    MoE 的路由依赖运行期隐藏状态，Engram 的 index 在**前向开始前**就定了。
    因此前者不能预取，后者可以。
-2. **门控是「对齐检查」。** `α_t` 是 hidden state 与 memory 经过 RMSNorm 后的
+2. **门控是“对齐检查”。** `α_t` 是 hidden state 与 memory 经过 RMSNorm 后的
    余弦型相似度（再乘 `1/√d`、再套 signed-sqrt 与 sigmoid）。如果取回的静态记忆与
    当前上下文相矛盾，`α_t → 0`，噪声被抑制（论文 2.3 节的表述）。
 3. **不是每层都挂。** 论文 §2.5 说 Engram 的放置位置要同时满足建模与系统延迟两个

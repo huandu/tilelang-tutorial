@@ -3,7 +3,7 @@
 ## 目的
 
 同一批算子（向量加、RMSNorm）在昇腾上的两个写法，用来对照第 6、9 章讲的
-「GPU 与 NPU 的抽象差异」在代码上具体长什么样：
+“GPU 与 NPU 的抽象差异”在代码上具体长什么样：
 
 | 文件 | 语言面 | UB 的写法 | 线程级并行 | 向量计算 |
 | --- | --- | --- | --- | --- |
@@ -35,7 +35,7 @@ python3 ascend_mainline_kernels.py
 python3 ascend_adapter_sketch.py
 ```
 
-复现「两个方言的 API 不通用」这条结论：
+复现“两个方言的 API 不通用”这条结论：
 
 ```bash
 cd ../07-api-audit
@@ -71,8 +71,8 @@ python3 api_audit.py --root ../06-ascend \
 1. **UB 就是 `T.alloc_shared`**：主干里没有 `T.alloc_ub`
    （`_vendor/tilelang-v0.1.15/tilelang/ascend/language/allocate.py:15-23` 明确写了
    "Allocate a UB buffer"）。适配器把它改名为 `T.alloc_ub`。
-2. **`T.Kernel` 没有 `threads=`**：主干是「一维 AI Core 网格」
-   （`_vendor/tilelang-v0.1.15/tilelang/ascend/language/kernel.py:139-160`），
+2. **`T.Kernel` 没有 `threads=`**：主干是“一维 AI Core 网格”
+   （`_vendor/tilelang-v0.1.15/tilelang/ascend/language/kernel.py:139-159`），
    线程域要另外用 `T.SimtVF` 开。适配器是
    `T.Kernel(n, is_npu=True) as (cid, vid)`，多一个向量子核维度。
 3. **归约的写法不同**：SimtVF 里推荐 `T.alloc_reducer` / `T.reducer_update` /
@@ -86,5 +86,5 @@ python3 api_audit.py --root ../06-ascend \
 ## 作者验证级别
 
 **仅静态核对**：`python3 -m py_compile` 通过；两个文件各自用到了正确的语言面
-（`07-api-audit` 的两轮检查都通过，包含「主干没有 `T.alloc_ub`、没有 `T.tile`」
+（`07-api-audit` 的两轮检查都通过，包含“主干没有 `T.alloc_ub`、没有 `T.tile`”
 的负向断言）。**未在昇腾 NPU 上编译或运行过**，不含任何实测数字。

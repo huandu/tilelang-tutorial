@@ -57,7 +57,7 @@
     { "from": "m", "to": "docs" }
   ],
   "notes": [
-    "图里每个方框都对应仓库里的实际文件；「RFC 无专用模板」与「性能回归要 maintainer 触发」是两条容易踩空的规则。",
+    "图里每个方框都对应仓库里的实际文件；“RFC 无专用模板”与“性能回归要 maintainer 触发”是两条容易踩空的规则。",
     "CI 的四个 job 展开在下一张图（upstream-flow-b）里。",
     "文档构建不在 PR 阶段验证：文档改动要先在本地 bash maint/scripts/build_docs.sh 跑一遍。"
   ]

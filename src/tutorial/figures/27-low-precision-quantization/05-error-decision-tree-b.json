@@ -7,18 +7,44 @@
   "nodeMaxEm": 24,
   "section": "5.4",
   "nodes": [
-    { "id": "num", "label": "① 正常的数值误差", "tone": "accent" },
+    {
+      "id": "num",
+      "label": "① 正常的数值误差",
+      "tone": "accent"
+    },
     {
       "id": "q3",
       "label": "误差分布：少数离群点还是整体偏大？",
       "shape": "diamond",
       "tone": "muted"
     },
-    { "id": "ok", "label": "通过：用 max_mismatched_ratio 允许离群元素", "tone": "accent" },
-    { "id": "q4", "label": "参照自己也做了量化吗？", "shape": "diamond", "tone": "muted" },
-    { "id": "fixref", "label": "④ 参照选错：换量化感知的参照，不是改 kernel", "tone": "warn" },
-    { "id": "q5", "label": "累加器是什么类型？", "shape": "diamond", "tone": "muted" },
-    { "id": "acc", "label": "⑤ 累加器精度不足：换 fp32 累加器，或分段累加", "tone": "warn" },
+    {
+      "id": "ok",
+      "label": "通过：用 max_mismatched_ratio 允许离群元素",
+      "tone": "accent"
+    },
+    {
+      "id": "q4",
+      "label": "参照自己也做了量化吗？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "fixref",
+      "label": "④ 参照选错：换量化感知的参照，不是改 kernel",
+      "tone": "warn"
+    },
+    {
+      "id": "q5",
+      "label": "累加器是什么类型？",
+      "shape": "diamond",
+      "tone": "muted"
+    },
+    {
+      "id": "acc",
+      "label": "⑤ 累加器精度不足：换 fp32 累加器，或分段累加",
+      "tone": "warn"
+    },
     {
       "id": "deep",
       "label": "回到分块与 epilogue",
@@ -27,16 +53,43 @@
     }
   ],
   "edges": [
-    { "from": "num", "to": "q3" },
-    { "from": "q3", "to": "ok", "label": "少数离群点（不匹配 < 1e-3）" },
-    { "from": "q3", "to": "q4", "label": "整体偏大" },
-    { "from": "q4", "to": "fixref", "label": "没有（拿量化前的 fp32 当参照）" },
-    { "from": "q4", "to": "q5", "label": "有" },
-    { "from": "q5", "to": "acc", "label": "fp16 / 低精度累加" },
-    { "from": "q5", "to": "deep", "label": "fp32 / int32" }
+    {
+      "from": "num",
+      "to": "q3"
+    },
+    {
+      "from": "q3",
+      "to": "ok",
+      "label": "少数离群点（不匹配 < 1e-3）"
+    },
+    {
+      "from": "q3",
+      "to": "q4",
+      "label": "整体偏大"
+    },
+    {
+      "from": "q4",
+      "to": "fixref",
+      "label": "没有（拿量化前的 fp32 当参照）"
+    },
+    {
+      "from": "q4",
+      "to": "q5",
+      "label": "有"
+    },
+    {
+      "from": "q5",
+      "to": "acc",
+      "label": "fp16 / 低精度累加"
+    },
+    {
+      "from": "q5",
+      "to": "deep",
+      "label": "fp32 / int32"
+    }
   ],
   "notes": [
-    "参照 = 同一个量化规则 + 同一个粒度 + 同一个累加类型（或更高）；「两边一致」不等于「两边都对」——两边犯同一个错也会通过。",
+    "参照 = 同一个量化规则 + 同一个粒度 + 同一个累加类型（或更高）；“两边一致”不等于“两边都对”，两边犯同一个错也会通过。",
     "补充信号：数值误差随 K 按 1/sqrt(K) 缩小；如果误差随 K 增大而变大，几乎一定是累加器精度不足或归约顺序有问题。"
   ]
 }

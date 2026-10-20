@@ -62,14 +62,14 @@ flowchart TB
 
 1. **融合省下的主要是中间张量往返。** `normed_x` 与 `normed_k` 是
    `num_tokens × hc_mult × hidden_size` 级别的张量（bf16/fp32），写成文件再读回来
-   正是「访存为主」算子的典型浪费。融合后它们根本不落地。
+   正是“访存为主”算子的典型浪费。融合后它们根本不落地。
 2. **两次扫描不是浪费。** Pass 1 需要完整的约简结果（`rstd_*`、`dot`）才能算出 `α`，
-   而 `α` 又要乘到每个 `v_d` 上——所以必须两遍。CUDA 版把 `x` 留在 shared memory、
+   而 `α` 又要乘到每个 `v_d` 上。所以必须两遍。CUDA 版把 `x` 留在 shared memory、
    `v` 用双缓冲按 tile 预取，两遍之间不碰 HBM。
 3. **`fused_weight` 是个真正的预处理 kernel。** `w_h · w_e` 只在权重更新后变一次，
    所以它被单独算成 fp32（`engram_fused_weight_kernel.py:7`），门控 kernel 每次直接
-   读它——这就是「把链式法则里的乘积提前算好」。
-4. **signed-sqrt + sigmoid 是有意为之。** `sign(x)·sqrt(|x|)` 把「大负相关」也映射到
+   读它。这就是“把链式法则里的乘积提前算好”。
+4. **signed-sqrt + sigmoid 是有意为之。** `sign(x)·sqrt(|x|)` 把“大负相关”也映射到
    一个有限区间，再交给 sigmoid；`clamp_min(clamp_value)` 防止 `sqrt` 在 0 附近的梯度
    爆炸（反向里那条 `T.Select(abs(dot)·scalar·rstd_x·rstd_k < clamp_value, 0, …)`
    就是它的导数处理，见 `engram_gate_bwd_cuda.py:249-253`）。

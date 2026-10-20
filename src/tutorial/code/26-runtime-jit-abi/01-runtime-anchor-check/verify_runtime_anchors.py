@@ -34,6 +34,7 @@ Exit code 0 = every anchor still matches, 1 = at least one moved.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -258,10 +259,16 @@ _CITATION = re.compile(r"([A-Za-z0-9_./\-]+\.(?:py|cc|h|pyx|txt)):(\d{1,4})(?:-(
 
 def find_book_root(start: Path) -> Path:
     """Walk upwards until we find the book root that owns `_vendor/`."""
+    configured = os.environ.get("TILELANG_TUTORIAL_BOOK_ROOT")
+    start = Path(configured).resolve() if configured else start
     for candidate in (start, *start.parents):
         if (candidate / "_vendor").is_dir():
             return candidate
-    raise SystemExit(f"could not find a directory containing `_vendor/` above {start}")
+    raise SystemExit(
+        f"could not find a directory containing `_vendor/` above {start}. "
+        "Pass `--book-root /path/to/checkout` or set "
+        "`TILELANG_TUTORIAL_BOOK_ROOT`. See VERSIONS.md."
+    )
 
 
 def check(root: Path, anchor: Anchor) -> tuple[bool, str]:
@@ -300,18 +307,19 @@ def scan_citations(root: Path, chapter_dir: Path) -> list[str]:
             if relpath is None:
                 continue  # a citation into the chapter's own files
             target = root / prefix_of(tree) / relpath
+            doc_label = doc.relative_to(chapter_dir)
             if not target.is_file():
-                problems.append(f"{doc.relative_to(root)}: {relpath} (file not found)")
+                problems.append(f"{doc_label}: {relpath} (file not found)")
                 continue
             lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
             for line_no in ([start] + ([int(end)] if end else [])):
                 checked += 1
                 if line_no < 1 or line_no > len(lines):
                     problems.append(
-                        f"{doc.relative_to(root)}: {relpath}:{line_no} out of range (file has {len(lines)} lines)"
+                        f"{doc_label}: {relpath}:{line_no} out of range (file has {len(lines)} lines)"
                     )
                 elif not lines[line_no - 1].strip():
-                    problems.append(f"{doc.relative_to(root)}: {relpath}:{line_no} points at a blank line")
+                    problems.append(f"{doc_label}: {relpath}:{line_no} points at a blank line")
     print(f"citation scan: {checked} line references checked")
     return problems
 
@@ -325,6 +333,12 @@ def main() -> int:
     parser.add_argument("--quiet", action="store_true", help="print failures and the summary only")
     parser.add_argument("--list", action="store_true", dest="list_anchors", help="print the anchor table and exit")
     parser.add_argument("--no-scan", action="store_true", help="skip the citation scan and check only the anchor table")
+    parser.add_argument(
+        "--book-root",
+        type=Path,
+        default=None,
+        help="directory containing _vendor/ (also settable via TILELANG_TUTORIAL_BOOK_ROOT)",
+    )
     args = parser.parse_args()
 
     if args.list_anchors:
@@ -333,7 +347,7 @@ def main() -> int:
         print(f"\n{len(ANCHORS)} anchors")
         return 0
 
-    root = find_book_root(Path(__file__).resolve().parent)
+    root = (args.book_root.resolve() if args.book_root else find_book_root(Path(__file__).resolve().parent))
     failures: list[tuple[Anchor, str]] = []
     for a in ANCHORS:
         ok, detail = check(root, a)

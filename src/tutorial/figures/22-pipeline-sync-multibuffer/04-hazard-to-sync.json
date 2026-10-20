@@ -84,8 +84,8 @@
     { "from": "a4", "to": "o2" }
   ],
   "notes": [
-    "上半支：CUDA 按「位置」表达同步，barrier 本身不区分生产者与消费者。",
-    "下半支：昇腾按「有向事件」表达同步，HardEvent = PROD_CONS 天生区分方向。",
+    "上半支：CUDA 按“位置”表达同步，barrier 本身不区分生产者与消费者。",
+    "下半支：昇腾按“有向事件”表达同步，HardEvent = PROD_CONS 天生区分方向。",
     "CUDA 的 FindConflict 排除规则：不同 buffer 无关、两个 atomic 之间无关、下标恒等且参与者相同无关；否则用 Z3 证字节区间不相交，证不出来就保守认定冲突。",
     "昇腾的 event_id = iteration % num_versions + base：一个版本一个事件槽，版本数直接乘在 flag 需求上。",
     "cp.async 的完成由 wait_group 负责，__syncthreads() 不会等它；mbarrier 靠 parity 把第 k 圈的 arrive 与第 k 圈的 wait 配对。"

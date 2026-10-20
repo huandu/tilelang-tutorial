@@ -5,7 +5,7 @@
 锁定版本的仓库里**没有** RFC 模板：`.github/ISSUE_TEMPLATE/` 只有 bug、feature、
 question、release-plan 四个模板，RFC 是以普通 issue 形式提交的（见
 `../tilelang-corpus/08-frontier-unmerged/raw/`）。模板缺失的后果是评审者要在评论里
-反复索要同样的信息。这个脚本把「一份能被评审的 RFC 需要哪些章节」固化成检查项。
+反复索要同样的信息。这个脚本把“一份能被评审的 RFC 需要哪些章节”固化成检查项。
 
 ## 运行前提
 
@@ -47,4 +47,4 @@ python3 rfc_lint.py --self-test              # 自测
 
 ## 已知限制
 
-脚本只能查「章节在不在」，不能判断论证是否成立。它不替代维护者对 RFC 的技术判断。
+脚本只能查“章节在不在”，不能判断论证是否成立。它不替代维护者对 RFC 的技术判断。

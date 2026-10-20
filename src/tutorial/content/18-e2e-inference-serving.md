@@ -11,7 +11,7 @@
    省了多少、代价是什么。
 3. 说明 paged KV 解决的是什么问题、它的块账怎么算、它对 attention kernel 提出了
    什么新要求（间接寻址）。
-4. 解释 continuous batching 为什么决定吞吐，以及「batch 内长度不齐」为什么把
+4. 解释 continuous batching 为什么决定吞吐，以及“batch 内长度不齐”为什么把
    varlen 与 paged KV 变成 kernel 的硬要求而不是可选项。
 5. 读懂并在锁定版本的 `examples/` 里指出三个推理算子的实现位置：decode
    attention（`flash_decoding/`）、fused MoE（`fusedmoe/`）、量化 GEMM
@@ -26,13 +26,13 @@
 
 ## 前置知识
 
-* 第 02 章：roofline、算术强度、机器平衡点——本章全部账本都用这一套口径。
-* 第 14 章：`T.gemm` 的 M/N/K 协议、split-K 与 grouped GEMM——decode 的
+* 第 02 章：roofline、算术强度、机器平衡点，本章全部账本都用这一套口径。
+* 第 14 章：`T.gemm` 的 M/N/K 协议、split-K 与 grouped GEMM，decode 的
   attention 与 MoE 都是它们的变体。
 * 第 15 章：online softmax 的推导、`varlen` 的 `cu_seqlens`、split-KV 的
   `ℓ_s / Σℓ` 加权、paged KV 的 `block_table`、昇腾上 `QKᵀ` 必须绕 workspace。
-* 第 16 章：一个 decode step 的 MoE / MLA 成本账本与「哪些算子受什么限制」的
-  结论表——本章第 4 节的表直接建立在那张表上。
+* 第 16 章：一个 decode step 的 MoE / MLA 成本账本与“哪些算子受什么限制”的
+  结论表，本章第 4 节的表直接建立在那张表上。
 * 第 17 章：训练循环、checkpoint、把热点算子换成 TileLang kernel 的方法。
   本章假设你已经有一个训练好的 7B 模型权重。
 
@@ -40,12 +40,12 @@
 **没有 NVIDIA GPU，也没有昇腾 NPU**。因此本章出现的数字只有四类，来源都写清：
 
 * **本书模型的输出**：`code/01`–`code/05`、`code/07` 里的纯 CPU 程序，
-  可在任意机器上复算，标为「CPU 逻辑验证」；
-* **仿真输出**：`code/04` 的调度仿真，参数人为设定，标为「仿真，非测量」；
+  可在任意机器上复算，标为“CPU 逻辑验证”；
+* **仿真输出**：`code/04` 的调度仿真，参数人为设定，标为“仿真，非测量”；
 * **厂商/上游资料的既有数字**：带 corpus 路径与测量条件，标为
-  「厂商自报/文档自报，作者未复现」；
+  “厂商自报/文档自报，作者未复现”；
 * **静态核对结果**：`code/06`–`code/08` 的 kernel 骨架只做了语法与 API 核对，
-  标为「仅静态核对」。
+  标为“仅静态核对”。
 
 本章**没有任何一条本机实测的 kernel 性能数字**，也**不声称任何 kernel 被运行过**。
 
@@ -57,8 +57,8 @@
 训练里不存在的事：
 
 1. **自回归生成**：模型每次只产出 1 个 token，然后把它接回输入再算一次。
-   训练时一次前向处理整段序列；推理时被拆成了「先处理 prompt」和「再一个
-   一个吐 token」两个性质完全不同的阶段。
+   训练时一次前向处理整段序列；推理时被拆成了“先处理 prompt”和“再一个
+   一个吐 token”两个性质完全不同的阶段。
 2. **缓存**：每个 token 的 K、V 一旦算出来就不会再变，于是可以缓存起来复用。
    这份 KV cache 的体积会随并发数与上下文长度线性增长，成为显存的主要消费者。
 3. **调度**：请求来自四面八方、长度各不相同、随时到达随时结束。一次只服务
@@ -66,13 +66,13 @@
 4. **算子之外的接口**：kernel 再快，也要先满足框架对形状、dtype、stream 与
    图模式的契约，才会真正被调用。
 
-第 4 个问题把本章和第 14–16 章区分开：那三章回答「kernel 怎么写才快」，
-本章回答「服务为什么慢、慢在哪、以及 kernel 该写成什么样才能被用上」。
+第 4 个问题把本章和第 14–16 章区分开：那三章回答“kernel 怎么写才快”，
+本章回答“服务为什么慢、慢在哪、以及 kernel 该写成什么样才能被用上”。
 
 一句话概括全章：
 
-> **推理的性能不是由「哪个 kernel 最快」决定的，而是由「这个算子在这一步里
-> 占多少时间、以及调度把它放在什么形状下执行」决定的。**
+> **推理的性能不是由“哪个 kernel 最快”决定的，而是由“这个算子在这一步里
+> 占多少时间、以及调度把它放在什么形状下执行”决定的。**
 
 ---
 
@@ -91,7 +91,7 @@
 | 主要瓶颈 | 张量核的利用率、`N²` 中间结果的搬运 | HBM 带宽：权重 + KV |
 | 优化手段 | 分块 + online softmax + 流水（第 15 章） | 批量、KV 分块并行、量化 |
 
-注意 prefill 也不是「纯 compute」：第 15 章算过，朴素 attention 的瓶颈是
+注意 prefill 也不是“纯 compute”：第 15 章算过，朴素 attention 的瓶颈是
 `O(N²)` 的中间矩阵在 HBM 上来回。prefill 与 decode 的区别不是 compute 与
 memory 的二分，而是**算术强度高低**的连续谱：prefill 的 M 大，`AI` 高于机器
 平衡点；decode 的 M 只有 batch 大小，`AI` 远低于平衡点。
@@ -100,37 +100,42 @@ memory 的二分，而是**算术强度高低**的连续谱：prefill 的 M 大�
 
 沿用第 14 章的口径。GEMM `C[M,N] = A[M,K] @ B[K,N]` 的算术强度是
 
-```text
-FLOP  = 2·M·N·K
-Byte  = b·(M·K + K·N + M·N)          # A、B 各读一次，C 写一次
-AI    = FLOP / Byte
-```
+$$
+\begin{aligned}
+\mathrm{FLOP} &= 2MNK,\\
+\mathrm{Byte} &= b(MK+KN+MN),\\
+\mathrm{AI} &= \frac{\mathrm{FLOP}}{\mathrm{Byte}}.
+\end{aligned}
+$$
+
+字节账按 `A`、`B` 各读一次、`C` 写一次计算。
 
 当 `M ≪ N, K` 时，`K·N`（权重）项主导分母，于是
 
-```text
-AI ≈ 2·M·N·K / (b·K·N) = 2M / b
-```
+$$
+\mathrm{AI}\approx\frac{2MNK}{bKN}=\frac{2M}{b}
+$$
 
 也就是**与矩阵的形状无关，只与 M 和元素字节数有关**。代入 bf16（`b = 2`）
 与 H100 的公开平衡点（fp16 1000 TFLOPS / HBM3 over 3 TB/s，约 333 FLOP/Byte），
 翻转点是
 
-```text
-M* ≈ balance · b / 2 = 333 · 2 / 2 = 333
-```
+$$
+M^*\approx\frac{\mathrm{balance}\cdot b}{2}
+=\frac{333\cdot2}{2}=333
+$$
 
 把被省略的 `M·K` 与 `M·N` 两项放回去再二分求解，
 `code/01-prefill-decode-roofline/` 得到的实际值是 375
-（N=18944, K=3584）与 400（N=3584, K=4608）——比简化式略大。
+（N=18944, K=3584）与 400（N=3584, K=4608），比简化式略大。
 这个量级解释了一切：
 
 * prompt 长度是几千，prefill 稳稳落在 compute-bound 一侧；
 * decode 的 M 是 batch 大小。`batch = 1` 时 `AI ≈ 1`，比平衡点低两个半
-  数量级——这是「decode 必须靠批量才能跑快」的算术依据。
+  数量级。这是“decode 必须靠批量才能跑快”的算术依据。
 
 顺带一个容易混淆的点：第 14 章给的方形 GEMM 翻转点约 `10³`，本章给的是 375。
-两个都对，前提不同——方形 GEMM 里 M、N、K 一起涨，字节数约 `3b·M²`、
+两个都对，前提不同，方形 GEMM 里 M、N、K 一起涨，字节数约 `3b·M²`、
 `AI = 2M/(3b)`；本章固定 N、K 只让 M 涨。**报翻转点时必须一起报形状。**
 
 ### 2.3 decode 的权重底线
@@ -146,14 +151,14 @@ Qwen2.5-7B 有 7.61B 参数（模型卡给出的数字），bf16 下是 15.23 GB
 换算成单请求的生成速度上界约 197 tok/s（**下界模型，不含 KV 流量，也不是实测**）。
 这个数字有两个直接推论：
 
-* **不可能靠优化 kernel 突破它**。它是「读一遍权重」的物理成本，只能靠
+* **不可能靠优化 kernel 突破它**。它是“读一遍权重”的物理成本，只能靠
   （a）把 batch 做大，让同一份权重服务多个请求；（b）把权重读得更少
   （量化）；（c）把权重切到多张卡上（TP/EP，代价是通信）。
-* **batch 的直接收益是「摊薄权重流量」**：batch 从 1 到 8，单请求分摊的权重
+* **batch 的直接收益是“摊薄权重流量”**：batch 从 1 到 8，单请求分摊的权重
   流量从 15.23 GB 降到 1.90 GB，理想上界从 197 tok/s 涨到 1576 tok/s。
   但 KV 流量也在随 batch 增长，所以这个线性关系只在小 batch 段成立。
 
-这也是为什么第 16 章那张表里「MLP gate+up」「MLP down」的占比最高：
+这也是为什么第 16 章那张表里“MLP gate+up”“MLP down”的占比最高：
 它们的权重最大。在一个 batch=1、context=8192 的 decode step 里，账本给出的
 占比是 52.0% 与 26.0%（见 4.1 节的表）。
 
@@ -169,21 +174,22 @@ V_cache[layer][token][kv_head][head_dim]
 第 15 章已经把这套结构用在 attention kernel 里：decode 时 `Q` 只有 1 行，
 `K`、`V` 却是整段历史。本章关心的是它的**显存形状**：
 
-```text
-每 token 每层字节 = 2 · n_kv_heads · head_dim · b
-                  └ 2 = K 与 V 各一份
-```
+$$
+B_{\text{kv/token/layer}}=2H_{\text{kv}}d_{\text{head}}b,
+$$
+
+其中因子 2 对应 K 与 V 各一份，$b$ 是每个元素的字节数。
 
 GQA（grouped-query attention）的要点是 `n_kv_heads < n_q_heads`：多个 query
-head 共享同一份 KV。第 16 章给过一个只用形状就能写出来的结论——decode
+head 共享同一份 KV。第 16 章给过一个只用形状就能写出来的结论，decode
 attention 的算术强度是
 
-```text
-AI = 2 · H_q / (H_kv · b)
-```
+$$
+\mathrm{AI}=\frac{2H_q}{H_{\mathrm{kv}}b}
+$$
 
-与序列长度无关，只取决于「每字节 KV 被几个 query head 复用」。Qwen2.5-7B 的
-`H_q = 28`、`H_kv = 4`，所以复用率是 7，`AI = 7 FLOP/Byte`（bf16）——
+与序列长度无关，只取决于“每字节 KV 被几个 query head 复用”。Qwen2.5-7B 的
+`H_q = 28`、`H_kv = 4`，所以复用率是 7，`AI = 7 FLOP/Byte`（bf16），
 依然远低于平衡点 333，这就是 decode attention 天生是 memory-bound 的原因。
 
 ### 2.5 KV cache：Qwen2.5-7B 的显存账本
@@ -191,10 +197,16 @@ AI = 2 · H_q / (H_kv · b)
 用模型卡的配置（28 层、28 个 query head、4 个 KV head、上下文 131072、
 参数量 7.61B / 非嵌入 6.53B）算下去：
 
-```text
-每 token 每层：2 · 4 · 128 · 2 B = 2048 B = 2.0 KiB
-每 token 全模型：2048 B · 28        = 57344 B = 56.0 KiB
-```
+$$
+\begin{aligned}
+B_{\text{token/layer}}
+  &=2\times4\times128\times2\ \mathrm{B}
+   =2048\ \mathrm{B}=2.0\ \mathrm{KiB},\\
+B_{\text{token/model}}
+  &=2048\ \mathrm{B}\times28
+   =57344\ \mathrm{B}=56.0\ \mathrm{KiB}.
+\end{aligned}
+$$
 
 | context | GQA（4 KV heads） | MHA（28 KV heads） | GQA 占 MHA |
 | --- | --- | --- | --- |
@@ -213,52 +225,52 @@ AI = 2 · H_q / (H_kv · b)
    直接给出 `hidden_size = 3584`、`intermediate_size = 18944`、`vocab_size = 152064`；
    本章早期草稿曾用参数量反推同一组数值（误差 0.07%），现在是引用而非推导。
    `intermediate_size = 18944` 这三个字段模型卡没有直接写出来。本章用
-   「按形状算出的参数量必须等于卡片上的 6.53B / 7.61B」反推并互校，误差
+   “按形状算出的参数量必须等于卡片上的 6.53B / 7.61B”反推并互校，误差
    0.07%。这是做显存估算时非常实用的一招（`code/01` 与 `code/03` 都做了这个自检）。
-2. **GQA 省 7 倍显存，代价是算术强度只有 MHA 的 1/7。** 省显存和「每字节能
-   算多少」是同一枚硬币的两面，报结论时不能只报一面。
+2. **GQA 省 7 倍显存，代价是算术强度只有 MHA 的 1/7。** 省显存和“每字节能
+   算多少”是同一枚硬币的两面，报结论时不能只报一面。
 3. **并发数与 context 成反比。** 80 GB 卡、权重占 14.17 GiB、留 10% 给运行时，
    KV 预算约 57.83 GiB：context=8192 时能放约 132 条序列，context=131072 时
    只剩 8 条。这正是长上下文服务要做 KV 量化、prefix caching、KV 换出的原因。
 
 ### 2.6 paged KV：为什么需要分页
 
-KV 的长度事先不知道：输出长度未知，请求随时到达。连续分配只能按「最坏情况」
-预留，浪费来自「整条序列跑不满预留长度」，在变长输出下这个浪费远大于块内碎片。
+KV 的长度事先不知道：输出长度未知，请求随时到达。连续分配只能按“最坏情况”
+预留，浪费来自“整条序列跑不满预留长度”，在变长输出下这个浪费远大于块内碎片。
 
-paged KV 把「逻辑位置」与「物理位置」解耦：
+paged KV 把“逻辑位置”与“物理位置”解耦：
 
 ```text
 K_cache[layer][physical_block][block_size][kv_head][head_dim]
 block_table[sequence][logical_block] = physical_block
 ```
 
-好处是显存按块分配，碎片上界变成「每条序列的最后一块最多空 block_size-1 个
-槽位」；代价有三条：
+好处是显存按块分配，碎片上界变成“每条序列的最后一块最多空 block_size-1 个
+槽位”；代价有三条：
 
 1. **attention kernel 里 KV 的地址要查表**，从 `k · block_N` 变成
-   「读 `block_table` + 偏移」。第 15 章 4.6 节的
+   “读 `block_table` + 偏移”。第 15 章 4.6 节的
    `_vendor/tilelang-ascend-v0.1.2.000/examples/flash_attention/paged_flash_attn_bhsd.py`
    就是这种写法。
 2. **间接寻址破坏了 TMA 的静态描述符**：描述符要在编译期确定，而查表结果
    是运行期的。
-3. **块表本身要占显存**，而且块大小是「元数据开销」与「碎片」之间的折中：
+3. **块表本身要占显存**，而且块大小是“元数据开销”与“碎片”之间的折中：
    `block_size = 16` 时，Qwen2.5-7B 全模型每块 896 KiB。
 
 ### 2.7 continuous batching 与 varlen
 
-如果每个 decode step 都只服务「同一批、且这批要一起跑完」的请求，
+如果每个 decode step 都只服务“同一批、且这批要一起跑完”的请求，
 早完成的序列会一直占着槽位。continuous batching（也叫 iteration-level
 scheduling）改成：**每个 decode step 结束时，已完成的序列立刻退出，
 新请求立刻补进来**。vLLM 的文档把它和自己的其他特性并列成一句话：
 
-> 「Continuous batching of incoming requests, chunked prefill, prefix caching」
-> ——`../tilelang-corpus/13-e2e-training-and-serving/raw/vllm-docs.md`
+> “Continuous batching of incoming requests, chunked prefill, prefix caching”
+> 来源：`../tilelang-corpus/13-e2e-training-and-serving/raw/vllm-docs.md`
 
 代价是 kernel 必须接受**长度不齐的 batch**：
 
 * 同一批里，各请求的 KV 长度不同；
-* 同一批里，可能既有「正在 decode 的请求」也有「刚进来要 prefill 的请求」
+* 同一批里，可能既有“正在 decode 的请求”也有“刚进来要 prefill 的请求”
   （chunked prefill 把长 prompt 切成几段，和 decode 混在同一步里跑）；
 * 每个请求的 KV 在显存里不连续（paged）。
 
@@ -273,7 +285,7 @@ cu_seqlens = [0, 5, 8, 15]
 
 这个约定在 corpus 里有独立佐证：昇腾侧的 GDN 内核文档用完全一样的定义
 （`../tilelang-corpus/06-huawei-ascend/raw/megagdn-pto/blog/mega_gdn_en.md`
-「Dynamic axes」一节），并指出 NPU 与 CUDA/Triton 的一个差别——NPU 通常把
+“Dynamic axes”一节），并指出 NPU 与 CUDA/Triton 的一个差别，NPU 通常把
 `block_dim` 固定成核数、在核内循环分配工作量，所以不需要 Triton 那套
 `chunk_indices` / `chunk_offset` 的旁路元数据。
 
@@ -281,8 +293,8 @@ cu_seqlens = [0, 5, 8, 15]
 
 > **`max_seqlen` 是编译期常量。** grid 大小按它开，短样本靠越界 guard 跳过。
 
-这意味着「换一个更长的 prompt」会触发一次重新编译（第 7 章的 JIT 缓存），
-也是后面 6.2 节「入图要求静态形状」的根源。
+这意味着“换一个更长的 prompt”会触发一次重新编译（第 7 章的 JIT 缓存），
+也是后面 6.2 节“入图要求静态形状”的根源。
 
 ---
 
@@ -309,10 +321,10 @@ cu_seqlens = [0, 5, 8, 15]
 
 这张表有四个必须一起说清的读法：
 
-1. **每一步都在读权重。** 占比前 5 名的算子全是「权重流量」类的，加起来
+1. **每一步都在读权重。** 占比前 5 名的算子全是“权重流量”类的，加起来
    95.3%。这就是 2.3 节的权重底线在算子层面的样子。
 2. **attention 在这个配置下只占 3.2%**，因为 batch=1、context=8192 时 KV 流量
-   （448 MiB）比权重流量（约 13 GiB）小得多。**别急着下结论**——
+   （448 MiB）比权重流量（约 13 GiB）小得多。**别急着下结论**，
 3. **占比随 batch 与 context 剧烈变化**（同一套账本，`code/03`）：
 
    | batch | context | attention 占比 | 权重类算子占比 | 单步下界 |
@@ -322,7 +334,7 @@ cu_seqlens = [0, 5, 8, 15]
    | 32 | 8,192 | 51.2% | 48.7% | 9.79 ms |
    | 32 | 131,072 | 94.4% | 5.6% | 84.95 ms |
 
-4. **所以「该优化什么」取决于你的服务形态**：短上下文、高并发做的是权重
+4. **所以“该优化什么”取决于你的服务形态**：短上下文、高并发做的是权重
    （量化、大 batch）；长上下文、低并发做的是 KV 带宽（KV 量化、更好的
    attention kernel）。报一张占比表而不报 batch / context，等于没报。
 
@@ -332,13 +344,13 @@ cu_seqlens = [0, 5, 8, 15]
 * 命令：`python3 code/03-decode-step-share/decode_step_share.py`
   与 `--batch 32 --context 8192`。
 * 期望输出：与上表一致的数字，外加一段自检
-  「每层参数 233.05 M × 28 层 + 嵌入/头 1089.99 M = 7.615 B
-  （模型卡 7.61 B，相对误差 0.0694%）」。
+  “每层参数 233.05 M × 28 层 + 嵌入/头 1089.99 M = 7.615 B
+  （模型卡 7.61 B，相对误差 0.0694%）”。
 * 验证级别：**CPU 逻辑验证**（写作机上实际运行过；见 `code/README.md`）。
 
 ### 3.2 调度：static 与 continuous
 
-把「调度」单独拿出来做仿真，才看得清它的分量。`code/04-serving-schedule-sim/`
+把“调度”单独拿出来做仿真，才看得清它的分量。`code/04-serving-schedule-sim/`
 用一组人为参数（64 个请求、8 个槽位、decode step 固定 8 ms、
 prefill 12 us/token、输出长度离散）对比两种策略：
 
@@ -354,7 +366,7 @@ prefill 12 us/token、输出长度离散）对比两种策略：
 
 * 一个 decode step 的耗时**不随 batch 里有多少条序列而变化**（权重流量
   被摊薄，见 2.3 节），所以空槽位是纯浪费；
-* 输出长度离散时，「整批等最长的那个」会让多数槽位长时间空转；
+* 输出长度离散时，“整批等最长的那个”会让多数槽位长时间空转；
 * 只有让完成的序列立刻退出、新请求立刻补进来，槽位利用率才接近 1。
 
 **运行步骤**：
@@ -385,7 +397,7 @@ prefill 12 us/token、输出长度离散）对比两种策略：
 * 命令：`sed -n '60,130p' _vendor/tilelang-v0.1.15/examples/flash_decoding/example_gqa_decode_varlen_logits.py`。
 * 期望输出：能看到 `cu_seqlens_k` 被用来算 `cur_start_k` / `cur_end_k` /
   `cur_seqlen_k`，以及 `loop_range = T.ceildiv(cur_seqlen_k // num_split, block_N)`
-  这样的「按本序列长度决定的循环上界」。
+  这样的“按本序列长度决定的循环上界”。
 * 验证级别：**仅静态核对**（作者读过源码并逐行比对，未运行）。
 
 ---
@@ -407,7 +419,7 @@ grid 是 `(ceildiv(seq_q, block_M), heads, batch)`；`seq_q = 1` 时第一维是
 flash decoding（split-KV）用两步解决（图 `figures/04-decode-split-kv.md`）：
 
 * **split 段**：把 KV 切成 `num_splits` 段，第 `sid` 段只扫
-  `[split_start(sid), split_end(sid))`，写出两样东西——本段**已归一化**的
+  `[split_start(sid), split_end(sid))`，写出两样东西，本段**已归一化**的
   输出 `Output_partial[..., sid, :]` 与本段的 lse；
 * **combine 段**：按 `ℓ_s / Σ_s' ℓ_s'` 加权合并。
 
@@ -421,15 +433,19 @@ flash decoding（split-KV）用两步解决（图 `figures/04-decode-split-kv.md
 
 **为什么必须加权合并。** 每一段输出已经各自除过自己的 `ℓ_s`：
 
-```text
-O_s = (1/ℓ_s) · Σ_{j∈段 s} exp(s·x_j − m_s) · v_j
-O   = Σ_j P_j v_j = ( Σ_s ℓ_s · O_s ) / ( Σ_s ℓ_s )
-```
+$$
+\begin{aligned}
+O_s &= \frac{1}{\ell_s}
+  \sum_{j\in \mathrm{segment}\ s}\exp(sx_j-m_s)v_j,\\
+O &= \sum_j P_jv_j
+  = \frac{\sum_s \ell_sO_s}{\sum_s \ell_s}.
+\end{aligned}
+$$
 
 所以权重是 `ℓ_s / Σ_{s'} ℓ_{s'}`，不是 1。第 15 章 5.4 节推导过这一点，
 并给了量级：昇腾 backward 里 dQ 用 bf16 跨 64 个 KV tile 原子累加，
 相对 L2 误差约 1.024%（**厂商自报，作者未复现**）。归约顺序真的会影响
-正确性，不只是「理论上的舍入」。
+正确性，不只是“理论上的舍入”。
 
 `code/06-tilelang-decode-attention/decode_attention_splitkv.py` 是本章的骨架，
 相比官方示例只有三处简化（写在文件头）：只做 decode、KV 用 varlen、
@@ -454,7 +470,7 @@ split 边界按比例切（`split_start = cur_seqlen_k * sid // num_splits`）�
 decode 的每个投影在 `batch = 1` 时就是 GEMV：`(1, K) × (K, N)`。
 corpus 里有一篇专门的官方教程
 （`../tilelang-corpus/01-tilelang-official-docs/raw/site/_sources/deeplearning_operators/gemv.md`，
-文件开头自标「still experimental and may be incomplete」），
+文件开头自标“still experimental and may be incomplete”），
 它把 GEMV 从慢到快做了五级，并给出在 **Hopper GPU** 上的一组耗时：
 
 | 实现 | 延迟 |
@@ -474,7 +490,7 @@ corpus 里有一篇专门的官方教程
 
 * 第 3 行（0.166 ms）说明**把 GEMM 的 tile 策略直接搬到 M=1 上会灾难性地差**：
   权重只读一遍，但线程没有并行度可言；
-* 第 4 行（0.024 ms）说明 M 不够就**沿 K 并行**——这正是 4.1 节 split-KV
+* 第 4 行（0.024 ms）说明 M 不够就**沿 K 并行**。这正是 4.1 节 split-KV
   的同一种思路（并行维不够，就切归约维）；
 * 第 5、6 行说明 GEMV 是**纯带宽问题**：把每次读写做成 128 bit 事务、
   再用更好的 all-reduce 收尾，就能追平甚至略超 cuBLAS。
@@ -492,8 +508,8 @@ corpus 里有一篇专门的官方教程
 
 ### 4.3 fused MoE：把 dispatch 的代价算进来
 
-MoE 推理的一条专家链是「路由 → permute（dispatch）→ grouped GEMM →
-combine」。第 16 章的账本已经指出：permute 与 combine 是**零 FLOP 的纯搬运**，
+MoE 推理的一条专家链是“路由 → permute（dispatch）→ grouped GEMM →
+combine”。第 16 章的账本已经指出：permute 与 combine 是**零 FLOP 的纯搬运**，
 却最容易在账本里被忽略。
 
 锁定版本的实现把它拆成两个 kernel：
@@ -531,7 +547,7 @@ top_k=2、4 个专家）的输出是：
 ```
 
 注意源码里对齐用的是 `ceil((count + 1) / padding_M) * padding_M`，比
-`ceil(count / padding_M)` 多留了一行——读别人的实现时这类 `+1` 要单独确认。
+`ceil(count / padding_M)` 多留了一行，读别人的实现时这类 `+1` 要单独确认。
 
 **运行步骤**：
 
@@ -547,7 +563,7 @@ top_k=2、4 个专家）的输出是：
 
 ### 4.4 量化 GEMM 的接入方式
 
-decode 是 memory-bound，所以「让权重少占字节」直接换来速度。三条常见路线：
+decode 是 memory-bound，所以“让权重少占字节”直接换来速度。三条常见路线：
 
 | 路线 | 量化对象 | 典型格式 | 在 TileLang 里的落点 |
 | --- | --- | --- | --- |
@@ -579,7 +595,7 @@ for i, j in T.Parallel(block_N, block_K):
 * scale / zero-point 的形状与 dtype 必须一致（block-scaled 的 scale 在
   v0.1.15 里可以是 `uint32` 打包的，见第 14 章 S26）；
 * 量化后的权重需要重新反量化成推理框架能识别的 checkpoint 格式，
-  或者反过来——推理框架要能接受「未反量化」的权重。
+  或者反过来，推理框架要能接受“未反量化”的权重。
 
 **运行步骤**：
 
@@ -602,21 +618,21 @@ vLLM 的文档首页把它的能力列成了一张清单
 
 * 用 PagedAttention 管理 attention 的 key/value 显存；
 * continuous batching + chunked prefill + prefix caching；
-* 「Fast and flexible model execution with piecewise and full CUDA/HIP graphs」；
+* “Fast and flexible model execution with piecewise and full CUDA/HIP graphs”；
 * 量化支持 FP8、MXFP8/MXFP4、NVFP4、INT8、INT4、GPTQ/AWQ、GGUF、
   compressed-tensors、ModelOpt、TorchAO 等；
-* 「Optimized attention kernels including FlashAttention, FlashInfer,
-  TRTLLM-GEN, FlashMLA, and Triton」；
-* 「Optimized GEMM/MoE kernels for various precisions using CUTLASS,
-  TRTLLM-GEN, CuTeDSL」。
+* “Optimized attention kernels including FlashAttention, FlashInfer,
+  TRTLLM-GEN, FlashMLA, and Triton”；
+* “Optimized GEMM/MoE kernels for various precisions using CUTLASS,
+  TRTLLM-GEN, CuTeDSL”。
 
 把 TileLang kernel 塞进去的**机会点**就在这两条 kernel 清单里：attention
-（decode）与 GEMM/MoE（量化）各有多个可替换实现，而框架已经把「用哪个
-实现」做成了后端选择；KV 的分配与 paging 则已经被 PagedAttention 接管，
+（decode）与 GEMM/MoE（量化）各有多个可替换实现，而框架已经把“用哪个
+实现”做成了后端选择；KV 的分配与 paging 则已经被 PagedAttention 接管，
 自定义 kernel 必须按它的块布局与 `block_table` 语义来写。
 
-corpus 里的 vLLM 资料**只有文档首页**（见 `references.md` 的「待补资料」），
-所以本章不给「怎么注册一个自定义算子」的具体接口名——那是版本相关的细节，
+corpus 里的 vLLM 资料**只有文档首页**（见 `references.md` 的“待补资料”），
+所以本章不给“怎么注册一个自定义算子”的具体接口名。那是版本相关的细节，
 写出来就要随 vLLM 版本漂移。这里只给可以自查的办法：
 
 * 在装好 vLLM 的环境里用 `python -c "import vllm; print(vllm.__file__)"`
@@ -628,29 +644,29 @@ corpus 里的 vLLM 资料**只有文档首页**（见 `references.md` 的「待�
 
 TileRT 的定位和 vLLM 明显不同：它公开宣称优先优化**单用户延迟**而不是
 吞吐（`../tilelang-corpus/12-operator-libraries/raw/github-tile-ai-tilert.md`）。
-它对本章的价值在于给出了「TileLang 系技术进入生产服务」的一条完整形态：
+它对本章的价值在于给出了“TileLang 系技术进入生产服务”的一条完整形态：
 
 | 事实 | 出处 |
 | --- | --- |
-| 定位是「Tile-Based Runtime for Ultra-Low-Latency LLM Inference」，目标是把 TPOT 压到毫秒级 | README 概述段 |
-| 做法是「把 LLM 算子拆成细粒度 tile 级任务，运行时在多个设备间动态重排计算、I/O、通信」 | 同段 |
-| 「the underlying compiler techniques will be gradually shared with the community as they are integrated into TileLang and TileScale」 | 同段 |
-| v0.1.6 的 wheel 里**一个进程只能加载一个 backend 库**（`libtilert_dsv32.so` / `libtilert_glm5.so` / `libtilert_glm52_rocm.so`），`tilert.load_backend()` 还会校验 PyTorch 的版本与 flavor | README「Installation」与 `[!NOTE]` |
-| 支持以 **vLLM prefill + TileRT decode** 的 PD 分离：connector 通过 vLLM V1 的 `kv_connector_module_path` 加载，不需要 fork vLLM | README「Disaggregated Serving」 |
+| 定位是“Tile-Based Runtime for Ultra-Low-Latency LLM Inference”，目标是把 TPOT 压到毫秒级 | README 概述段 |
+| 做法是“把 LLM 算子拆成细粒度 tile 级任务，运行时在多个设备间动态重排计算、I/O、通信” | 同段 |
+| “the underlying compiler techniques will be gradually shared with the community as they are integrated into TileLang and TileScale” | 同段 |
+| v0.1.6 的 wheel 里**一个进程只能加载一个 backend 库**（`libtilert_dsv32.so` / `libtilert_glm5.so` / `libtilert_glm52_rocm.so`），`tilert.load_backend()` 还会校验 PyTorch 的版本与 flavor | README“Installation”与 `[!NOTE]` |
+| 支持以 **vLLM prefill + TileRT decode** 的 PD 分离：connector 通过 vLLM V1 的 `kv_connector_module_path` 加载，不需要 fork vLLM | README“Disaggregated Serving” |
 | **两端 KV cache dtype 必须一致**（示例里 vLLM 侧 `fp8_ds_mla`、TileRT 侧 `fp8`），不一致会在握手时被拒 | 同节 Prerequisites |
 | decode 引擎一次只服务一条序列，router 为每个请求独占一个节点，忙时返回 429；`--queue-timeout` 可以让请求排队 | 同节末段 |
-| 支持 MTP（multi-token prediction），会打印 `Accepted length: mean=..., min=..., max=...` | README「MTP」 |
+| 支持 MTP（multi-token prediction），会打印 `Accepted length: mean=..., min=..., max=...` | README“MTP” |
 
 性能数字（**厂商自报，作者未复现，条件是各自博客/README 里写的硬件与形状**）：
 GLM-5.3 在 8×AMD MI355X 上单用户 469 tok/s（AgentX 榜首位）、
 MiMo-V2.5-Pro-UltraSpeed 在单节点 8 卡上超过 1000 tok/s（1T 参数模型）、
 v0.1.3 在 GLM-5-FP8 上最高 500 tok/s、DeepSeek-V3.2 上最高 600 tok/s。
 **这些数字与本章的模型账本没有可比性**，引用它们的唯一目的是说明
-「超低延迟这条路线在工程上确实存在，而且它的公开实现建立在同一套 tile 抽象上」。
+“超低延迟这条路线在工程上确实存在，而且它的公开实现建立在同一套 tile 抽象上”。
 
 对本章最有指导意义的是最后一条结构信息：**PD 分离时，prefill 与 decode 可以
 在两套完全不同的引擎上跑，只要 KV cache 的 dtype 与布局对齐**。
-这正好对应本章 2.1 节的结论——两个阶段的瓶颈不同，所以在系统层面被拆开。
+这正好对应本章 2.1 节的结论，两个阶段的瓶颈不同，所以在系统层面被拆开。
 
 ### 5.3 vllm-ascend：昇腾上的服务形态
 
@@ -659,16 +675,16 @@ v0.1.3 在 GLM-5-FP8 上最高 500 tok/s、DeepSeek-V3.2 上最高 600 tok/s。
 
 | 事实 | 出处 |
 | --- | --- |
-| 定位是 vLLM 的**社区维护的硬件插件**，遵循 vLLM 的 hardware-pluggable RFC | README「Overview」 |
-| 硬件前提：Atlas 800I A2 / A2 训练系列 / 800I A3 / A3 训练系列（300I Duo 为实验性） | README「Prerequisites」 |
+| 定位是 vLLM 的**社区维护的硬件插件**，遵循 vLLM 的 hardware-pluggable RFC | README“Overview” |
+| 硬件前提：Atlas 800I A2 / A2 训练系列 / 800I A3 / A3 训练系列（300I Duo 为实验性） | README“Prerequisites” |
 | 软件前提（快照日 2026-09-30）：Python ≥3.10 且 <3.13、**CANN == 9.1.0**、**PyTorch == 2.10.0**、**TorchNPU == 2.10.0.post4**、vLLM 与 vllm-ascend 同版本 | 同节 |
-| 分支策略：`main` 跟随 vLLM main；`releases/vX.Y.Z` 跟随对应 vLLM 版本 | README「Branch」 |
+| 分支策略：`main` 跟随 vLLM main；`releases/vX.Y.Z` 跟随对应 vLLM 版本 | README“Branch” |
 | 快照里标注的 latest stable 是 v0.23.0，另有 v0.26.0rc1 作为发布候选 | README 的 News 与 Getting Started 表 |
 
-对「用 TileLang 写算子」的人来说，这个仓库的意义是：**它定义了昇腾上
+对“用 TileLang 写算子”的人来说，这个仓库的意义是：**它定义了昇腾上
 算子必须满足的接口与环境**。你的 kernel 要能跑在服务里，就得和它声明的
-CANN / torch_npu / vLLM 版本对齐——版本不匹配是最常见的「本地跑得通、
-进服务就崩」的原因。
+CANN / torch_npu / vLLM 版本对齐，版本不匹配是最常见的“本地跑得通、
+进服务就崩”的原因。
 
 ### 5.4 自定义 kernel 进入服务框架的接口与约束
 
@@ -702,16 +718,16 @@ DLPack 交换层的补丁**把自己接进这条流：
 
 > Patches Torch's DLPack Exchange API table so TVM-FFI submits Ascend kernels
 > to Torch's current NPU stream.
-> —— `_vendor/tilelang-v0.1.15/tilelang/ascend/torch_npu_exchange.pyx:1-6`
+> 来源：`_vendor/tilelang-v0.1.15/tilelang/ascend/torch_npu_exchange.pyx:1-6`
 
 实现方式是替换 `current_work_stream` 回调：当设备类型是 NPU 时返回
 `torch_npu` 当前 stream 的句柄，其它设备类型转回原来的实现
 （同文件 `:44-56`）。
 
-**这件事为什么重要。** 如果 TileLang 在自己的 stream 上跑，那么「torch 前置
-算子 → TileLang kernel → torch 后置算子」之间就要显式同步；decode 每步几十个
-算子，每次同步都是一次 host 往返。`.pyx:1-6` 那两行注释，是本章「stream 与
-图模式」那条约束在昇腾上的具体形态。
+**这件事为什么重要。** 如果 TileLang 在自己的 stream 上跑，那么“torch 前置
+算子 → TileLang kernel → torch 后置算子”之间就要显式同步；decode 每步几十个
+算子，每次同步都是一次 host 往返。`.pyx:1-6` 那两行注释，是本章“stream 与
+图模式”那条约束在昇腾上的具体形态。
 
 ### 6.2 ACLGraph：capture 一次，replay 多次
 
@@ -720,7 +736,7 @@ ACLGraph 是昇腾上的图模式（NPU 侧的 CUDA Graph）。适配器文档�
 > aclGraph 通过将 eager 模式任务下发即执行区分为下发 capture + 执行 replay
 > 两阶段，通过采用 1 次 capture + 多次 replay 的执行模式减小交互开销，
 > 对 HostBound 场景做运行时加速，不承载图编译和图优化功能。
-> —— `../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/TileLang-Ascend Programming Guide.md` 第 7.1.1 节
+> 来源：`../tilelang-corpus/07-tilelang-ascend-adapter/raw/tilelang-ascend/docs/TileLang-Ascend Programming Guide.md` 第 7.1.1 节
 
 用法只有三行（`examples/aclgraph/README.md` 与文档第 7.1.2 节）：
 
@@ -735,15 +751,15 @@ g.replay()
 三个必须知道的约束：
 
 1. **capture 阶段只是记录，不执行**；真正的执行在 `g.replay()`。
-2. **入图要求形状静态。** 这与 2.7 节的「`max_seqlen` 是编译期常量」是同一件
+2. **入图要求形状静态。** 这与 2.7 节的“`max_seqlen` 是编译期常量”是同一件
    事的两面。昇腾侧的工程实践也印证了这一点：vLLM-Ascend 的图路径只覆盖
-   `decode_only`，prefill 仍走 eager，因为「prefill tensor shapes change often,
-   but capturing and replaying graphs prefer fixed static shapes」，动态形状
+   `decode_only`，prefill 仍走 eager，因为“prefill tensor shapes change often,
+   but capturing and replaying graphs prefer fixed static shapes”，动态形状
    要靠 padding / bucketing 之类的变通
    （`../tilelang-corpus/06-huawei-ascend/raw/megagdn-pto/blog/mega_gdn_en.md`
-   「Host overhead in eager PyTorch」一节）。
-3. **图模式不改变语义**，只把 host 侧下发摊掉。所以验证方式是「eager 与
-   graph replay 的结果一致」。
+   “Host overhead in eager PyTorch”一节）。
+3. **图模式不改变语义**，只把 host 侧下发摊掉。所以验证方式是“eager 与
+   graph replay 的结果一致”。
 
 `code/08-ascend-aclgraph/aclgraph_decode_block.py` 是本章的骨架，它用的是
 **适配器仓库**的 API（`T.Kernel(..., is_npu=True)`、
@@ -818,11 +834,18 @@ g.replay()
 
 同一组数（TTFT 420 ms、E2E 9000 ms、输出 512 token）用三种算法算 TPOT：
 
-```text
-(E2E − TTFT) / (n − 1) = 16.79 ms     ← 推荐
-(E2E − TTFT) / n       = 16.76 ms
-E2E / n                = 17.58 ms     ← 把 TTFT 摊进每 token，不能叫 TPOT
-```
+$$
+\begin{aligned}
+\frac{\text{E2E}-\text{TTFT}}{n-1}
+  &=16.79\ \mathrm{ms} &&\text{推荐},\\
+\frac{\text{E2E}-\text{TTFT}}{n}
+  &=16.76\ \mathrm{ms},\\
+\frac{\text{E2E}}{n}
+  &=17.58\ \mathrm{ms} &&\text{不是 TPOT}.
+\end{aligned}
+$$
+
+最后一种算法把 TTFT 摊进了每个 token，不能称为 TPOT。
 
 差异 0.2% 与 4.9%。**报 TPOT 必须写出公式、n 是否含 EOS、以及 TTFT 的起点
 （请求到达 / 入队完成 / prefill 开始）。**
@@ -831,17 +854,17 @@ E2E / n                = 17.58 ms     ← 把 TTFT 摊进每 token，不能叫 T
 （`vllm/v1/metrics/stats.py` 的 `RequestStateStats`），并且报告的是
 **中位数**而不是平均数
 （`../tilelang-corpus/06-huawei-ascend/raw/megagdn-pto/blog/mega_gdn_en.md`
-「Full-model results」一节，原文注明对应 vLLM v0.19.1）。
+“Full-model results”一节，原文注明对应 vLLM v0.19.1）。
 
 ### 7.2 避免结论被缓存与预热污染
 
 五类污染，每一类都能把数字改掉一个数量级：
 
 **（1）首次编译 / autotune 落进测量窗口。** `code/05` 的演示：稳态 0.350 ms、
-首次 3200 ms、测 100 次，均值从 0.350 ms 变成 32.350 ms——抬高 92.43 倍。
+首次 3200 ms、测 100 次，均值从 0.350 ms 变成 32.350 ms，抬高 92.43 倍。
 这就是 `do_bench` 默认要有 25 ms 预热的原因
 （`_vendor/tilelang-v0.1.15/tilelang/profiler/bench.py:31-34`）。
-但预热只能吃掉「一次性的」开销：autotune 的搜索、显存池首次增长、
+但预热只能吃掉“一次性的”开销：autotune 的搜索、显存池首次增长、
 graph capture 都必须先做一遍再开始计时。
 
 **（2）KV / prefix cache 命中。** 第二次跑同一批 prompt 时 TTFT 会显著变低。
@@ -869,7 +892,7 @@ graph capture 都必须先做一遍再开始计时。
 
 * 前提：Python 3.9+，仅标准库。
 * 命令：`python3 code/05-bench-methodology/bench_methodology.py`。
-* 期望输出：三节内容——定义表、TPOT 三种算法的换算（16.79/16.76/17.58 ms）、
+* 期望输出：三节内容，定义表、TPOT 三种算法的换算（16.79/16.76/17.58 ms）、
   污染演示（均值被抬高 92.43 倍）、四类假数字、12 条清单。
 * 验证级别：**CPU 逻辑验证**（写作机上实际运行过）。
 
@@ -879,22 +902,22 @@ graph capture 都必须先做一遍再开始计时。
 
 **（1）把 batch=1 的结论当成通用结论。** 3.1 节那张占比表在 batch=1 时
 attention 只占 3.2%，但 batch=32、context=131072 时占 94.4%。
-「decode 的瓶颈是 attention」和「decode 的瓶颈是权重」都对，取决于配置。
+“decode 的瓶颈是 attention”和“decode 的瓶颈是权重”都对，取决于配置。
 写结论时必须带配置。
 
-**（2）忘了 KV 的写入成本。** attention 的账本里通常只算「读 K/V」，
+**（2）忘了 KV 的写入成本。** attention 的账本里通常只算“读 K/V”，
 但每个 decode step 还要往 KV cache 里**写**一个新 token 的 K、V。
 在 batch 大、层数多时这是一笔可观的写流量；只有在 KV 长度很长时它才
 相对可忽略。
 
 **（3）把 `max_seqlen` / `group_sum` 这类编译期常量当成运行时参数。**
 它们进 JIT 缓存键（第 7 章）。服务里换一个更长的 prompt 就触发重编译，
-表现为「第一次请求特别慢」。真实框架的做法是按桶（bucket）编译，
+表现为“第一次请求特别慢”。真实框架的做法是按桶（bucket）编译，
 或者干脆把形状固定住再 padding。
 
 **（4）量化后忘记核对元数据的打包顺序。** 4.4 节的 `j // num_elems_per_byte`
 与 `j % num_elems_per_byte` 决定了哪个半字节是哪个元素。打包方与解包方
-不一致时，数值会「大致对但精度异常」，比崩溃更难查。
+不一致时，数值会“大致对但精度异常”，比崩溃更难查。
 
 **（5）split-KV 的并行度与 combine 成本。** `num_splits` 太小喂不饱机器，
 太大则 `Output_partial`（`batch × heads × num_splits × dim`）的写读流量
@@ -902,7 +925,7 @@ attention 只占 3.2%，但 batch=32、context=131072 时占 94.4%。
 （`example_gqa_decode.py:16-23` 的 `[1, 2, 4, 8]`）正是因为它没有解析最优解。
 
 **（6）block-scaled 量化的 scale 是一等公民。** MXFP8/MXFP4 的 scale 不是
-标量而是按块张量，粒度写错会让结果「量级对、细节错」。v0.1.15 的
+标量而是按块张量，粒度写错会让结果“量级对、细节错”。v0.1.15 的
 `T.gemm_blockscaled(..., SFA, SFB, k_start, sf_a_granularity_k,
 sf_b_granularity_k)` 把这几个参数显式曝光出来
 （`_vendor/tilelang-v0.1.15/tilelang/language/gemm_op.py:275`），
@@ -911,7 +934,7 @@ sf_b_granularity_k)` 把这几个参数显式曝光出来
 **（7）昇腾的两套方言不能混用。** 6.2 节已经写明：适配器用
 `T.Kernel(..., is_npu=True)` + `TL_ASCEND_*` pass configs，
 主干 v0.1.15 用 `tilelang.ascend.language` 的 `T.Kernel(N_CORES)` +
-pass context。把两边的代码片段拼在一起是最常见的「照抄跑不通」。
+pass context。把两边的代码片段拼在一起是最常见的“照抄跑不通”。
 
 **（8）PD 分离只解决了阶段不匹配，不解决一致性。** 5.2 节的 TileRT 例子
 里，prefill 与 decode 两端 KV cache 的 dtype 必须一致（`fp8_ds_mla` ↔ `fp8`），
@@ -949,7 +972,7 @@ paged KV、以及 prefill/decode 混步。
 （`examples/flash_decoding/`）；GEMV 有五级阶梯，从 0.166 ms 到 0.00675 ms
 （官方文档自报，Hopper，shape 未写明）；fused MoE 的关键是 host 侧四张表与
 kernel 侧那一行 `m_start` 公式（`examples/fusedmoe/`）；量化 GEMM 的关键是
-「在 fragment 里解包再 `T.gemm`」（`examples/dequantize_gemm/`）。
+“在 fragment 里解包再 `T.gemm`”（`examples/dequantize_gemm/`）。
 
 **进服务要过四层接口。** 形状与元数据契约、dtype 与 layout、stream 与图模式、
 调度接口。vLLM 提供可替换的 attention / GEMM / MoE 后端与 PagedAttention；
@@ -958,7 +981,7 @@ vllm-ascend 定义了昇腾上的环境与插件形态。
 
 **昇腾上先解决 host-bound。** `torch_npu` 的 DLPack 补丁让 kernel 落在 torch
 当前的 NPU stream 上；ACLGraph 用 capture + replay 摊掉下发开销，
-代价是**形状必须静态**——这正是 vLLM-Ascend 只对 decode 入图的原因。
+代价是**形状必须静态**。这正是 vLLM-Ascend 只对 decode 入图的原因。
 验证用 msProf（`msprof op` / `msprof op simulator`）。
 
 **报数字前先固定口径。** TTFT、TPOT、吞吐的定义、预热、L2 flush、

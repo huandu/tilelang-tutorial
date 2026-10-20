@@ -3,19 +3,19 @@
   "items": [
     {
       "id": "q1",
-      "stem": "论文把 Engram 称为与 MoE 互补的「第二条稀疏轴」。两者的「稀疏」分别稀疏在哪？",
+      "stem": "论文把 Engram 称为与 MoE 互补的“第二条稀疏轴”。两者的“稀疏”分别稀疏在哪？",
       "options": [
+        "MoE 稀疏激活专家（条件计算），Engram 稀疏读取静态记忆行（条件记忆）",
         "MoE 稀疏跳过层，Engram 稀疏跳过 token",
         "MoE 稀疏用低位宽，Engram 稀疏用低位宽",
-        "MoE 稀疏激活专家（条件计算），Engram 稀疏读取静态记忆行（条件记忆）",
         "MoE 稀疏训练数据，Engram 稀疏推理请求"
       ],
-      "answer": 2,
-      "explain": "论文的口径是 conditional computation（MoE，用运行期 hidden state 动态选专家）与 conditional memory（Engram，用 token id 确定性取静态 embedding）互补，见 §1.2。其余选项把「稀疏」错解成层、精度或数据层面的概念。"
+      "answer": 0,
+      "explain": "论文的口径是 conditional computation（MoE，用运行期 hidden state 动态选专家）与 conditional memory（Engram，用 token id 确定性取静态 embedding）互补，见 §1.2。其余选项把“稀疏”错解成层、精度或数据层面的概念。"
     },
     {
       "id": "q2",
-      "stem": "为什么说 Engram 的「确定性寻址」是它能把大表卸载到 host memory 的前提？",
+      "stem": "为什么说 Engram 的“确定性寻址”是它能把大表卸载到 host memory 的前提？",
       "options": [
         "因为表的行数固定，永远不会增长",
         "因为索引只由 token id 决定，前向开始前就能知道要读哪些行，可以提前预取",
@@ -23,7 +23,7 @@
         "因为确定性寻址让查表变成矩阵乘"
       ],
       "answer": 1,
-      "explain": "见 §2.3：index 不依赖 hidden state，所以可以在上一层还在计算时异步搬运 embedding 行；论文报告 100B 参数表的卸载开销 < 3%。A 项与论文「槽位数可到千万」矛盾；C 项事实错误；D 项查表仍是 gather。"
+      "explain": "见 §2.3：index 不依赖 hidden state，所以可以在上一层还在计算时异步搬运 embedding 行；论文报告 100B 参数表的卸载开销 < 3%。A 项与论文“槽位数可到千万”矛盾；C 项事实错误；D 项查表仍是 gather。"
     },
     {
       "id": "q3",
@@ -35,7 +35,7 @@
         "因为 RMSNorm(x,w_h)ᵀ·RMSNorm(k,w_e) = rstd_x·rstd_k·Σ x·(w_h⊙w_e)·k，权重是逐元素相乘的"
       ],
       "answer": 3,
-      "explain": "见 §3.1 的恒等式：带权重的 RMSNorm 是「归一化后逐元素乘权重」，所以两个权重可以先合并。这是代数恒等式，不是精度近似；A–C 都不是理由。"
+      "explain": "见 §3.1 的恒等式：带权重的 RMSNorm 是“归一化后逐元素乘权重”，所以两个权重可以先合并。这是代数恒等式，不是精度近似；A–C 都不是理由。"
     },
     {
       "id": "q4",
@@ -54,7 +54,7 @@
       "stem": "关于两处 Sinkhorn，下面哪句话是对的？",
       "options": [
         "两处都是同一份代码，只是 repeat 不同",
-        "mHC 用「先行 softmax，再交替行列求和归一化」推成双随机矩阵；Engram 用行/列 L2 缩放并拆成四个 kernel",
+        "mHC 用“先行 softmax，再交替行列求和归一化”推成双随机矩阵；Engram 用行/列 L2 缩放并拆成四个 kernel",
         "两处都先做列 softmax 再做行归一化",
         "mHC 用 L2 范数，Engram 用行列求和"
       ],
@@ -71,11 +71,11 @@
         "把 mix 矩阵的迭代次数从 10 降到 1"
       ],
       "answer": 1,
-      "explain": "见 §6.5 与论文 §4.3.2：它不减少计算，反而多做一遍前向；省的是每层 [n,4,h] 的 residual 保存（论文 Table 3 把激活分成「每 L_r 层存」「每层存」「块内重算」三类）。A 项方向相反；C、D 与重计算无关。"
+      "explain": "见 §6.5 与论文 §4.3.2：它不减少计算，反而多做一遍前向；省的是每层 [n,4,h] 的 residual 保存（论文 Table 3 把激活分成“每 L_r 层存”“每层存”“块内重算”三类）。A 项方向相反；C、D 与重计算无关。"
     },
     {
       "id": "q7",
-      "stem": "本章给出的「这个算子该不该用 TileLang 写」判断法中，最先要问的是什么？",
+      "stem": "本章给出的“这个算子该不该用 TileLang 写”判断法中，最先要问的是什么？",
       "options": [
         "这个算子能不能用 T.gemm 表达",
         "算子是不是开源的",
@@ -87,15 +87,15 @@
     },
     {
       "id": "q8",
-      "stem": "mHC 论文自己把「哪些 kernel 用 TileLang 实现」的边界划在哪里？",
+      "stem": "mHC 论文自己把“哪些 kernel 用 TileLang 实现”的边界划在哪里？",
       "options": [
         "全部 kernel 都用 TileLang，包括 prenorm GEMM",
-        "除式 (14)–(15) 的 prenorm GEMM 之外，其余 kernel 都用 TileLang",
         "只有 Sinkhorn 用 TileLang，其余都是手写 CUDA",
+        "除式 (14)–(15) 的 prenorm GEMM 之外，其余 kernel 都用 TileLang",
         "只有 DualPipe 相关的 kernel 用 TileLang"
       ],
-      "answer": 1,
-      "explain": "论文 §4.3.1 的最后一段（paper-deepseek-mhc.md:502）写的是「the majority of kernels (excluding Eq. (14) to (15)) using TileLang」——被排除的正是 prenorm GEMM，它在本仓库里由 DeepGEMM-Ascend 承担。这与本章 §7.3「什么时候下钻」的判断法一致（见 §6.6 与 §7.3）。"
+      "answer": 2,
+      "explain": "论文 §4.3.1 的最后一段（paper-deepseek-mhc.md:502）写的是“the majority of kernels (excluding Eq. (14) to (15)) using TileLang”，被排除的正是 prenorm GEMM，它在本仓库里由 DeepGEMM-Ascend 承担。这与本章 §7.3“什么时候下钻”的判断法一致（见 §6.6 与 §7.3）。"
     }
   ]
 }

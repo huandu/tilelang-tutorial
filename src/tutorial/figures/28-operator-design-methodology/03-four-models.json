@@ -57,7 +57,7 @@
     { "label": "层 4：测量", "nodes": ["d1", "d2"], "tone": "default" }
   ],
   "notes": [
-    "手工账本能答「是不是 memory-bound、下界是多少」，答不了具体 tile 配置与绝对时间；出错时长这样：用错 roof。",
+    "手工账本能答“是不是 memory-bound、下界是多少”，答不了具体 tile 配置与绝对时间；出错时长这样：用错 roof。",
     "carver 能挡掉不可行配置并给排序，但在 block_K 上没有分辨率、会大量并列；Analyzer 只统计 tl.gemm 与跨 global 的 tl.copy，sm_90/sm_100 上 estimated_time 会静默退化成访存时间。",
     "昇腾的 EstimateLatency + Z3 能算每条 pipe 的 latency 与 II，但换芯片要重新标定常量。"
   ]

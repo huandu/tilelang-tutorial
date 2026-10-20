@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `matmul_auto` | `T.Pipelined(n, num_stages=3)` | 只给深度，`PipelinePlanning` 自己推 stage/order |
 | `matmul_manual` | `T.Pipelined(n, stage=[0,0,1], order=[0,1,2])` | 手工指定；故意不给 `num_stages`（深度由 `max(stage)+1` 推出） |
-| `matmul_plain` | `T.serial(n)` | 完全不流水，作为「不做流水会怎样」的对照组 |
+| `matmul_plain` | `T.serial(n)` | 完全不流水，作为“不做流水会怎样”的对照组 |
 
 原型：`_vendor/tilelang-v0.1.15/examples/gemm/example_gemm_autotune.py`。
 
@@ -32,7 +32,7 @@ python3 pipelined_gemm.py --block-m 256 --block-n 256 --block-k 64 --stages 4
 
 `--block-m 256 --block-n 256 --block-k 64 --stages 4` 是**故意**给一个超预算的配置：
 期望看到 `[OVER]`，并且在编译或启动阶段报 shared memory 相关的错误。把 `--stages 3`
-换回去应当恢复正常——这条对照就是正文第 4.5 节与第 5.1 节说的「stage 数不是越大越好」。
+换回去应当恢复正常——这条对照就是正文第 4.5 节与第 5.1 节说的“stage 数不是越大越好”。
 
 ## 期望输出（正确性 + 观察项）
 
@@ -40,7 +40,7 @@ python3 pipelined_gemm.py --block-m 256 --block-n 256 --block-k 64 --stages 4
    （fp16 输入、fp32 累加）。本目录没有把对照写进脚本，是因为它需要 GPU 才能执行，
    读者请自行加上并记录结果。
 2. **生成码观察项（下面是预期，需要你在自己机器上核对，作者没有跑过）**：
-   * `matmul_plain` 的循环体里，`__syncthreads()` 应当出现在「拷贝完」和「gemm 完」
+   * `matmul_plain` 的循环体里，`__syncthreads()` 应当出现在“拷贝完”和“gemm 完”
      两处，搬运与计算之间没有重叠；
    * `matmul_auto` / `matmul_manual` 的稳态循环体里，异步拷贝与其等待应当分处不同位置，
      shared buffer 的索引应当带一个随迭代变化的偏移（多缓冲版本维）；
