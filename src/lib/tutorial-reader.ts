@@ -1,10 +1,10 @@
 /**
  * Reading mode for the tutorial.
  *
- * Every page that renders through `TutorialLayout` gets reading mode for free:
- * the layout prints the controls and `src/components/tutorial/reader-client.ts`
- * drives them. This module holds the pure decisions (which colour styles exist,
- * how a stored value is validated, which DaisyUI theme backs each style) so the
+ * Chapter pages opt into reading mode through `TutorialLayout`; the layout
+ * prints the controls and `src/components/tutorial/reader-client.ts` drives
+ * them. This module holds the pure decisions (which colour styles exist, how a
+ * stored value is validated, which DaisyUI theme backs each style) so the
  * browser script stays thin and the rules stay unit testable — see
  * `tests/tutorial-reader.test.ts`.
  */

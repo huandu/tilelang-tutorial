@@ -51,10 +51,11 @@ so `/notes/` and `/versions/` do not resolve as chapters.
 
 ## Reading mode
 
-`TutorialLayout` mounts the reading controls and browser script on every page.
-The client writes `data-reader` and `data-reader-theme` on `<html>`; CSS hides
-site chrome and elements marked with `data-reader-hide`, constrains the page to
-a readable measure and switches DaisyUI tokens.
+`TutorialLayout` mounts the reading controls on chapter pages that opt in. The
+client writes `data-reader` and `data-reader-theme` on `<html>`; CSS hides site
+chrome and elements marked with `data-reader-hide`, constrains the page to a
+readable measure and switches DaisyUI tokens. Index, notes, code, version and
+reference pages keep the normal shell so their footer spacing matches the site.
 
 Fullscreen requires a user gesture, so reading mode is intentionally not
 restored across navigation. Only the selected colour is persisted.

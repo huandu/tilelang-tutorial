@@ -2,10 +2,10 @@
 /*
   The floating controls for the tutorial reading mode.
 
-  Rendered by `TutorialLayout`, so every tutorial page gets them. Two states
-  share one fixed row: the entry button (bottom-right) and, once reading mode
-  is on, the colour/exit toolbar (bottom-centre). `reader-client.ts` switches
-  between them by toggling `hidden`; the styles live in
+  Rendered by `TutorialLayout` when a chapter page opts in. Two states share
+  one fixed row: the entry button (bottom-right) and, once reading mode is on,
+  the colour/exit toolbar (bottom-centre). `reader-client.ts` switches between
+  them by toggling `hidden`; the styles live in
   `src/styles/tutorial-reader.css`.
 */
 import { READER_THEMES, READER_THEME_LABELS } from '@lib/tutorial-reader.ts';

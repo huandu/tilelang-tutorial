@@ -35,6 +35,7 @@ const difficulty = (value: number): string => '★'.repeat(Math.min(Math.max(val
 <TutorialLayout
   description={chapter.summary}
   path={chapterPath(chapter.slug)}
+  reader
   title={`第 ${chapter.number} 章 ${chapter.title}`}
 >
   <div class="mx-auto w-full max-w-[80rem] px-5 py-10 sm:px-8" data-chapter-slug={chapter.slug}>
